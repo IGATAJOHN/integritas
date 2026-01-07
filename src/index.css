@@ -89,7 +89,11 @@ body {
   background-color: var(--color-gray-50);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
 }
+
 
 a {
   color: var(--color-primary);
