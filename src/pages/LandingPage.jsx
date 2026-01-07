@@ -28,7 +28,9 @@ import {
     FormatQuote,
 } from '@mui/icons-material';
 import Header from '../components/Header';
+import Footer from '../components/Footer';
 import { useThemeMode } from '../contexts';
+
 
 
 // Theme-aware colors function
@@ -93,7 +95,7 @@ const LandingPage = () => {
             price: '$499',
         },
         {
-            image: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=400&h=250&fit=crop',
+            image: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=400&h=250&fit=crop',
             category: 'POLICY ANALYSIS',
             categoryColor: '#22C55E',
             categoryIcon: <Assessment sx={{ fontSize: 14, color: '#22C55E' }} />,
@@ -104,7 +106,7 @@ const LandingPage = () => {
             price: '$399',
         },
         {
-            image: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=400&h=250&fit=crop',
+            image: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=400&h=250&fit=crop',
             category: 'DIGITAL GOV',
             categoryColor: '#F97316',
             categoryIcon: <CloudQueue sx={{ fontSize: 14, color: '#F97316' }} />,
@@ -225,7 +227,7 @@ const LandingPage = () => {
                                 sx={{
                                     bgcolor: 'rgba(17, 82, 212, 1)',
                                     '&:hover': {
-                                        bgcolor: 'rgba(13, 65, 170, 1)',
+                                        bgcolor: 'rgba(13, 65, 170, 1)', color: '#FFFFFF',
                                     },
                                     textTransform: 'none',
                                     fontWeight: 600,
@@ -247,6 +249,7 @@ const LandingPage = () => {
                                     bgcolor: 'transparent',
                                     '&:hover': {
                                         borderColor: 'rgba(255, 255, 255, 0.5)',
+                                        color: '#FFFFFF',
                                         bgcolor: 'rgba(255, 255, 255, 0.1)',
                                     },
                                     textTransform: 'none',
@@ -717,121 +720,18 @@ const LandingPage = () => {
                             </Button>
                         </Stack>
                         <Typography sx={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.7)' }}>
-                            No credit card required for trial
+                            free account with government employess with .gov email
                         </Typography>
                     </Box>
                 </Container>
             </Box>
 
 
+
             {/* Footer */}
-            <Box component="footer" sx={{ bgcolor: colors.bgDarker, py: 8 }}>
-                <Container maxWidth="lg">
-                    <Grid container spacing={6} sx={{ mb: 6 }}>
-                        <Grid item xs={12} lg={4}>
-                            <Stack spacing={3}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 700 }}>
-                                    <span>🏛️</span>
-                                    <span>Good Governance Hub</span>
-                                </Box>
-                                <Typography sx={{ color: colors.textMuted, fontSize: '0.9375rem', lineHeight: 1.6 }}>
-                                    Empowering civil servants and public leaders with
-                                    world-class education for better governance.
-                                </Typography>
-                                <Stack direction="row" spacing={1.5}>
-                                    <IconButton
-                                        sx={{ bgcolor: colors.border, '&:hover': { bgcolor: colors.borderLight } }}
-                                    >
-                                        <Twitter sx={{ fontSize: 18, color: colors.textWhite }} />
-                                    </IconButton>
-                                    <IconButton
-                                        sx={{ bgcolor: colors.border, '&:hover': { bgcolor: colors.borderLight } }}
-                                    >
-                                        <LinkedIn sx={{ fontSize: 18, color: colors.textWhite }} />
-                                    </IconButton>
-                                    <IconButton
-                                        sx={{ bgcolor: colors.border, '&:hover': { bgcolor: colors.borderLight } }}
-                                    >
-                                        <YouTube sx={{ fontSize: 18, color: colors.textWhite }} />
-                                    </IconButton>
-                                </Stack>
-                            </Stack>
-                        </Grid>
-                        <Grid item xs={12} lg={8}>
-                            <Grid container spacing={4}>
-                                {[
-                                    { title: 'Platform', links: ['Browse Courses', 'Certificates', 'For Instructors', 'Pricing'] },
-                                    { title: 'Company', links: ['About Us', 'Careers', 'Partners', 'Press'] },
-                                    { title: 'Resources', links: ['Blog', 'Help Center', 'Community', 'Contact'] },
-                                ].map((col) => (
-                                    <Grid item xs={6} md={4} key={col.title}>
-                                        <Typography
-                                            sx={{
-                                                fontSize: '0.875rem',
-                                                fontWeight: 600,
-                                                color: colors.textWhite,
-                                                mb: 2.5,
-                                                textTransform: 'uppercase',
-                                                letterSpacing: '0.05em',
-                                            }}
-                                        >
-                                            {col.title}
-                                        </Typography>
-                                        <Stack spacing={1.5}>
-                                            {col.links.map((link) => (
-                                                <Box
-                                                    key={link}
-                                                    component={Link}
-                                                    to={`/${link.toLowerCase().replace(' ', '-')}`}
-                                                    sx={{
-                                                        color: colors.textMuted,
-                                                        textDecoration: 'none',
-                                                        fontSize: '0.9375rem',
-                                                        '&:hover': { color: colors.textWhite },
-                                                    }}
-                                                >
-                                                    {link}
-                                                </Box>
-                                            ))}
-                                        </Stack>
-                                    </Grid>
-                                ))}
-                            </Grid>
-                        </Grid>
-                    </Grid>
-
-                    <Divider sx={{ borderColor: colors.border, mb: 4 }} />
-
-                    <Stack
-                        direction={{ xs: 'column', md: 'row' }}
-                        justifyContent="space-between"
-                        alignItems="center"
-                        spacing={2}
-                    >
-                        <Typography sx={{ fontSize: '0.875rem', color: colors.textDark }}>
-                            © 2026 Good Governance Hub. All rights reserved.
-                        </Typography>
-                        <Stack direction="row" spacing={4}>
-                            {['Privacy Policy', 'Terms of Service', 'Cookies'].map((item) => (
-                                <Box
-                                    key={item}
-                                    component={Link}
-                                    to={`/${item.toLowerCase().replace(' ', '-')}`}
-                                    sx={{
-                                        color: colors.textDark,
-                                        textDecoration: 'none',
-                                        fontSize: '0.875rem',
-                                        '&:hover': { color: colors.textWhite },
-                                    }}
-                                >
-                                    {item}
-                                </Box>
-                            ))}
-                        </Stack>
-                    </Stack>
-                </Container>
-            </Box>
+            <Footer />
         </Box >
+
     );
 };
 
