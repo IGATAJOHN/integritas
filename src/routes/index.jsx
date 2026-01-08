@@ -16,7 +16,7 @@ import { AdminDashboard, UserManagement, AdminSettings } from '../modules/admin'
 import { TutorDashboard, MyCourses, Students } from '../modules/tutor';
 
 // Learner Module
-import { LearnerDashboard, BrowseCourses, MyEnrollments } from '../modules/learner';
+import { LearnerDashboard, BrowseCourses, MyEnrollments, MyLearning, CourseLesson, CourseLessonV2, Checkout, MyProgress } from '../modules/learner';
 
 const router = createBrowserRouter([
     {
@@ -97,6 +97,10 @@ const router = createBrowserRouter([
                 element: <LearnerDashboard />,
             },
             {
+                path: 'my-learning',
+                element: <MyLearning />,
+            },
+            {
                 path: 'courses',
                 element: <BrowseCourses />,
             },
@@ -104,7 +108,26 @@ const router = createBrowserRouter([
                 path: 'enrollments',
                 element: <MyEnrollments />,
             },
+            {
+                path: 'progress',
+                element: <MyProgress />,
+            },
         ],
+    },
+    // Course Lesson - Full Page (outside LearnerLayout)
+    {
+        path: '/learner/lesson/:courseId/:lessonId',
+        element: <CourseLesson />,
+    },
+    // Course Lesson V2 - Full Page with Left Sidebar
+    {
+        path: '/learner/lesson-v2/:courseId/:lessonId',
+        element: <CourseLessonV2 />,
+    },
+    // Checkout Page
+    {
+        path: '/checkout',
+        element: <Checkout />,
     },
 ]);
 

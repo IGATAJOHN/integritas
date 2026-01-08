@@ -1,3 +1,8 @@
 export { default as LearnerDashboard } from './pages/Dashboard';
 export { default as BrowseCourses } from './pages/BrowseCourses';
 export { default as MyEnrollments } from './pages/MyEnrollments';
+export { default as MyLearning } from './pages/MyLearning';
+export { default as CourseLesson } from './pages/CourseLesson';
+export { default as CourseLessonV2 } from './pages/CourseLessonV2';
+export { default as Checkout } from './pages/Checkout';
+export { default as MyProgress } from './pages/MyProgress';
