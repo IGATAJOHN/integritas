@@ -74,7 +74,6 @@ const VerifyPage = () => {
         e.preventDefault();
         const verificationCode = code.join('');
         console.log('Verification code submitted:', verificationCode);
-        // TODO: Implement verification logic
     };
 
     const handleResend = () => {
