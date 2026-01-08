@@ -148,11 +148,11 @@ const LoginPage = () => {
                             component="img"
                             src="/src/assets/images/GGH_icon.png"
                             alt="GGH Logo"
-                            sx={{ height: 50, width: '50', borderRadius: 1 }}
+                            sx={{ height: 50, width: 50, }}
                         />
                         <Typography
                             sx={{
-                                fontSize: '0.875rem',
+                                fontSize: '1.2rem',
                                 fontWeight: 600,
                                 color: '#FFFFFF',
                             }}
