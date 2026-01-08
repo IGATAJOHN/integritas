@@ -36,7 +36,7 @@ const Footer = () => {
 
     return (
         <Box component="footer" sx={{ bgcolor: colors.bgDarker, py: 8, px: { xs: 2, md: 4, lg: 6 } }}>
-            <Container maxWidth="lg">
+            <Box maxWidth="lg" sx={{ mx: 'auto' }}>
                 <Grid container spacing={6} sx={{ mb: 6 }}>
                     {/* Brand Section */}
                     <Grid item xs={12} lg={4}>
@@ -168,7 +168,7 @@ const Footer = () => {
                         ))}
                     </Stack>
                 </Stack>
-            </Container>
+            </Box>
         </Box>
     );
 };

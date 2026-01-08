@@ -7,7 +7,7 @@ import TutorLayout from './layouts/TutorLayout';
 import LearnerLayout from './layouts/LearnerLayout';
 
 // Pages
-import { Home, NotFound, LandingPage } from '../pages';
+import { Home, NotFound, LandingPage, LoginPage } from '../pages';
 
 // Admin Module
 import { AdminDashboard, UserManagement, AdminSettings } from '../modules/admin';
@@ -22,6 +22,10 @@ const router = createBrowserRouter([
     {
         path: '/',
         element: <LandingPage />,
+    },
+    {
+        path: '/login',
+        element: <LoginPage />,
     },
     {
         path: '/home',
