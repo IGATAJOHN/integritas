@@ -187,7 +187,7 @@ const LearnerDashboard = () => {
                             <Button
                                 variant="contained"
                                 startIcon={<PlayArrow />}
-                                onClick={() => navigate('/learner/lesson/1/1.2')}
+                                onClick={() => navigate('/explore/lesson/1/1.2')}
                                 sx={{ borderRadius: 2, px: 3 }}
                             >
                                 Resume Course

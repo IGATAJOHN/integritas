@@ -35,6 +35,7 @@ import {
     LocalOffer,
     SupportAgent
 } from '@mui/icons-material';
+import logo from '../../../assets/images/GGH_logo.png';
 
 /**
  * Checkout Component
@@ -69,6 +70,10 @@ const Checkout = () => {
             display: 'flex',
             flexDirection: 'column'
         }}>
+
+
+            // ... (existing imports)
+
             {/* Header */}
             <Box sx={{
                 borderBottom: '1px solid rgba(255,255,255,0.1)',
@@ -79,9 +84,12 @@ const Checkout = () => {
                 justifyContent: 'space-between'
             }}>
                 <Stack direction="row" alignItems="center" spacing={1.5}>
-                    <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>
-                        <Person sx={{ fontSize: 18 }} />
-                    </Avatar>
+                    <Box
+                        component="img"
+                        src={logo}
+                        alt="Good Governance Hub"
+                        sx={{ width: 32, height: 32, objectFit: 'contain' }}
+                    />
                     <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#fff' }}>
                         Good Governance Hub
                     </Typography>

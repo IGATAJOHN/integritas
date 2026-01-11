@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
+import logo from '../assets/images/GGH_logo.png';
 
 const DashboardLayout = ({ sidebarItems = [], title = 'Dashboard' }) => {
     const location = useLocation();
@@ -10,7 +11,10 @@ const DashboardLayout = ({ sidebarItems = [], title = 'Dashboard' }) => {
             {/* Sidebar */}
             <aside className="dashboard-sidebar">
                 <div className="sidebar-header">
-                    <h2 className="sidebar-title">{title}</h2>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                        <img src={logo} alt="GGH Logo" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
+                        <h2 className="sidebar-title" style={{ margin: 0 }}>{title}</h2>
+                    </div>
                     <button
                         className="sidebar-toggle"
                         onClick={() => setSidebarOpen(!sidebarOpen)}

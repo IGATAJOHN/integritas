@@ -5,6 +5,7 @@ import { MainLayout } from '../layouts';
 import AdminLayout from './layouts/AdminLayout';
 import TutorLayout from './layouts/TutorLayout';
 import LearnerLayout from './layouts/LearnerLayout';
+import ModernLearnerLayout from './layouts/ModernLearnerLayout';
 
 // Pages
 import { Home, NotFound, LandingPage, LoginPage, VerifyPage, ForgotPasswordPage } from '../pages';
@@ -16,7 +17,7 @@ import { AdminDashboard, UserManagement, AdminSettings } from '../modules/admin'
 import { TutorDashboard, MyCourses, Students } from '../modules/tutor';
 
 // Learner Module
-import { LearnerDashboard, BrowseCourses, MyEnrollments, MyLearning, CourseLesson, CourseLessonV2, Checkout, MyProgress } from '../modules/learner';
+import { LearnerDashboard, BrowseCourses, MyEnrollments, MyLearning, CourseLesson, CourseLessonV2, Checkout, MyProgress, Explore } from '../modules/learner';
 
 const router = createBrowserRouter([
     {
@@ -87,14 +88,14 @@ const router = createBrowserRouter([
             },
         ],
     },
-    // Learner Routes
+    // Explore Routes (formerly Learner)
     {
-        path: '/learner',
-        element: <LearnerLayout />,
+        path: '/explore',
+        element: <ModernLearnerLayout />,
         children: [
             {
                 index: true,
-                element: <LearnerDashboard />,
+                element: <Explore />,
             },
             {
                 path: 'my-learning',
@@ -114,14 +115,14 @@ const router = createBrowserRouter([
             },
         ],
     },
-    // Course Lesson - Full Page (outside LearnerLayout)
+    // Course Lesson - Full Page (outside layout)
     {
-        path: '/learner/lesson/:courseId/:lessonId',
+        path: '/explore/lesson/:courseId/:lessonId',
         element: <CourseLesson />,
     },
     // Course Lesson V2 - Full Page with Left Sidebar
     {
-        path: '/learner/lesson-v2/:courseId/:lessonId',
+        path: '/explore/lesson-v2/:courseId/:lessonId',
         element: <CourseLessonV2 />,
     },
     // Checkout Page

@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import { Twitter, LinkedIn, YouTube } from '@mui/icons-material';
 import { useThemeMode } from '../contexts';
+import logo from '../assets/images/GGH_logo.png';
 
 // Theme-aware colors function
 const getColors = (isDark) => ({
@@ -55,14 +56,14 @@ const Footer = () => {
                             >
                                 <Box
                                     component="img"
-                                    src="/src/assets/images/GGH_logo.png"
+                                    src={logo}
                                     alt="GGH Logo"
                                     sx={{ height: 32, width: 'auto' }}
                                 />
                                 <span>Good Governance Hub</span>
                             </Box>
                             <Typography sx={{ color: colors.textMuted, fontSize: '0.9375rem', lineHeight: 1.6 }}>
-                               Empowering institutions and individuals with
+                                Empowering institutions and individuals with
                                 the knowledge to build better, more
                                 transparent societies.
                             </Typography>

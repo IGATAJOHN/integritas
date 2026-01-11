@@ -17,6 +17,8 @@ import {
     CloudOutlined,
     LockOutlined,
 } from '@mui/icons-material';
+import logo from '../assets/images/GGH_logo.png';
+import icon from '../assets/images/GGH_icon.png';
 
 const LoginPage = () => {
     const [showPassword, setShowPassword] = useState(false);
@@ -94,7 +96,7 @@ const LoginPage = () => {
                     {/* Icon */}
                     <Box
                         component="img"
-                        src="/src/assets/images/GGH_logo.png"
+                        src={logo}
                         alt="GGH Logo"
                         sx={{ height: 100, width: 100, borderRadius: 2, mb: 2 }}
                     />
@@ -146,7 +148,7 @@ const LoginPage = () => {
                     <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
                         <Box
                             component="img"
-                            src="/src/assets/images/GGH_icon.png"
+                            src={icon}
                             alt="GGH Logo"
                             sx={{ height: 50, width: 50, }}
                         />

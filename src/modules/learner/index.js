@@ -6,3 +6,4 @@ export { default as CourseLesson } from './pages/CourseLesson';
 export { default as CourseLessonV2 } from './pages/CourseLessonV2';
 export { default as Checkout } from './pages/Checkout';
 export { default as MyProgress } from './pages/MyProgress';
+export { default as Explore } from './pages/Explore';

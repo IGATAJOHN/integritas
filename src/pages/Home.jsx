@@ -19,10 +19,10 @@ const Home = () => {
             color: '#3498db'
         },
         {
-            title: 'Learner',
+            title: 'Explore',
             description: 'Browse courses, track progress, and earn certificates',
             icon: '🎓',
-            path: '/learner',
+            path: '/explore',
             color: '#2ecc71'
         }
     ];

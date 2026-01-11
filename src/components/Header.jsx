@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import { LightMode, DarkMode, Menu, Close } from '@mui/icons-material';
 import { useThemeMode } from '../contexts';
+import logo from '../assets/images/GGH_logo.png';
 
 const Header = () => {
     const navItems = ['Courses', 'About Us', 'Partners'];
@@ -59,7 +60,7 @@ const Header = () => {
                 >
                     <Box
                         component="img"
-                        src="/src/assets/images/GGH_logo.png"
+                        src={logo}
                         alt="GGH Logo"
                         sx={{ height: 32, width: 'auto' }}
                     />
@@ -203,7 +204,7 @@ const Header = () => {
                         >
                             <Box
                                 component="img"
-                                src="/src/assets/images/GGH_logo.png"
+                                src={logo}
                                 alt="GGH Logo"
                                 sx={{ height: 36, width: 'auto' }}
                             />

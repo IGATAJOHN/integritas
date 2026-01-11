@@ -25,6 +25,7 @@ import {
     CalendarToday as CalendarIcon,
     Person as PersonIcon
 } from '@mui/icons-material';
+import logo from '../assets/images/GGH_logo.png';
 
 const drawerWidth = 260;
 
@@ -70,13 +71,20 @@ const ModernDashboardLayout = ({ sidebarItems = [], title = 'Dashboard' }) => {
      * This component defines the content inside the drawer.
      * It includes the brand logo, navigation list, and bottom action buttons.
      */
+
+
+    // ... (existing imports)
+
     const drawerContent = (
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: '#0C1322', color: '#fff' }}>
             {/* Logo / Brand Section */}
-            <Box sx={{ p: 4, display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>
-                    <PersonIcon sx={{ fontSize: 20 }} />
-                </Avatar>
+            <Box sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box
+                    component="img"
+                    src={logo}
+                    alt="Good Governance Hub"
+                    sx={{ width: 40, height: 40, objectFit: 'contain' }}
+                />
                 <Box>
                     <Typography variant="subtitle1" sx={{ fontWeight: 700, lineHeight: 1.2, whiteSpace: 'nowrap' }}>
                         Good Governance Hub
@@ -90,11 +98,11 @@ const ModernDashboardLayout = ({ sidebarItems = [], title = 'Dashboard' }) => {
             <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
 
             {/* Navigation Items List */}
-            <List sx={{ px: 3, pt: 4, flexGrow: 1 }}>
+            <List sx={{ px: 2, pt: 2, flexGrow: 1 }}>
                 {sidebarItems.map((item) => {
                     const isActive = location.pathname === item.path;
                     return (
-                        <ListItem key={item.path} disablePadding sx={{ mb: 2 }}>
+                        <ListItem key={item.path} disablePadding sx={{ mb: 0.5 }}>
                             <ListItemButton
                                 onClick={() => {
                                     navigate(item.path);
@@ -102,6 +110,7 @@ const ModernDashboardLayout = ({ sidebarItems = [], title = 'Dashboard' }) => {
                                 }}
                                 sx={{
                                     borderRadius: 2,
+                                    py: 1,
                                     bgcolor: isActive ? 'rgba(255,255,255,0.1)' : 'transparent',
                                     color: isActive ? '#fff' : 'rgba(255,255,255,0.6)',
                                     '&:hover': {
@@ -124,7 +133,7 @@ const ModernDashboardLayout = ({ sidebarItems = [], title = 'Dashboard' }) => {
             </List>
 
             {/* Bottom Actions (Logout) */}
-            <Box sx={{ p: 3 }}>
+            <Box sx={{ p: 2 }}>
                 <ListItemButton
                     onClick={handleLogout}
                     sx={{
@@ -203,7 +212,7 @@ const ModernDashboardLayout = ({ sidebarItems = [], title = 'Dashboard' }) => {
                 {/* Centered Container for Content */}
                 <Container maxWidth="xl" sx={{ mx: 'auto', px: 0 }}>
                     {/* Top Header Section - Only show if showWelcome is true */}
-                    {title === 'Learner Portal' && location.pathname === '/learner' && (
+                    {title === 'Learner Portal' && location.pathname === '/explore' && (
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, pt: { xs: 5, md: 0 } }}>
                             <Box>
                                 <Typography variant="h4" sx={{ fontWeight: 700, color: theme.palette.text.primary }}>
