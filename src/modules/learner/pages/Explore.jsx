@@ -272,45 +272,50 @@ const Explore = () => {
                         { title: 'Topic', items: ['Ethics & Integrity', 'Public Administration', 'Digital Governance', 'Civic Leadership', 'Policy Analysis'], type: 'checkbox' },
                         { title: 'Level', items: ['Beginner', 'Intermediate', 'Expert'], type: 'checkbox' },
                         { title: 'Rating', items: ['4.5 & Up', '4.0 & Up'], type: 'radio' }
-                    ].map((section) => (
-                        <Box key={section.title} sx={{ mb: 4 }}>
-                            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                                <Typography variant="caption" sx={{ fontWeight: 600, color: colors.text, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                    {section.title}
-                                </Typography>
-                                <ChevronDownIcon sx={{ fontSize: 16, color: colors.textSecondary }} />
-                            </Stack>
-                            <Stack spacing={1}>
-                                {section.items.map((item) => (
-                                    <FormControlLabel
-                                        key={item}
-                                        control={
-                                            section.type === 'checkbox' ? (
-                                                <Checkbox
-                                                    size="small"
-                                                    checked={filters[section.title]?.includes(item)}
-                                                    onChange={() => handleFilterChange(section.title, item, 'checkbox')}
-                                                    sx={{ color: colors.textSecondary, '&.Mui-checked': { color: colors.primary } }}
-                                                />
-                                            ) : (
-                                                <Radio
-                                                    size="small"
-                                                    checked={filters[section.title] === item}
-                                                    onChange={() => handleFilterChange(section.title, item, 'radio')}
-                                                    sx={{ color: colors.textSecondary, '&.Mui-checked': { color: colors.primary } }}
-                                                />
-                                            )
-                                        }
-                                        label={
-                                            <Typography variant="body2" sx={{ color: (section.type === 'checkbox' ? filters[section.title]?.includes(item) : filters[section.title] === item) ? colors.text : colors.textSecondary, fontSize: '0.85rem' }}>
-                                                {item}
-                                            </Typography>
-                                        }
-                                        sx={{ m: 0 }}
-                                    />
-                                ))}
-                            </Stack>
-                        </Box>
+                    ].map((section, index, array) => (
+                        <React.Fragment key={section.title}>
+                            <Box sx={{ mb: 4 }}>
+                                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                                    <Typography variant="caption" sx={{ fontWeight: 600, color: colors.text, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                        {section.title}
+                                    </Typography>
+                                    <ChevronDownIcon sx={{ fontSize: 16, color: colors.textSecondary }} />
+                                </Stack>
+                                <Stack spacing={1}>
+                                    {section.items.map((item) => (
+                                        <FormControlLabel
+                                            key={item}
+                                            control={
+                                                section.type === 'checkbox' ? (
+                                                    <Checkbox
+                                                        size="small"
+                                                        checked={filters[section.title]?.includes(item)}
+                                                        onChange={() => handleFilterChange(section.title, item, 'checkbox')}
+                                                        sx={{ color: colors.textSecondary, '&.Mui-checked': { color: colors.primary } }}
+                                                    />
+                                                ) : (
+                                                    <Radio
+                                                        size="small"
+                                                        checked={filters[section.title] === item}
+                                                        onChange={() => handleFilterChange(section.title, item, 'radio')}
+                                                        sx={{ color: colors.textSecondary, '&.Mui-checked': { color: colors.primary } }}
+                                                    />
+                                                )
+                                            }
+                                            label={
+                                                <Typography variant="body2" sx={{ color: (section.type === 'checkbox' ? filters[section.title]?.includes(item) : filters[section.title] === item) ? colors.text : colors.textSecondary, fontSize: '0.85rem' }}>
+                                                    {item}
+                                                </Typography>
+                                            }
+                                            sx={{ m: 0 }}
+                                        />
+                                    ))}
+                                </Stack>
+                            </Box>
+                            {index < array.length - 1 && (
+                                <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.05)', mb: 4 }} />
+                            )}
+                        </React.Fragment>
                     ))}
                 </Box>
 
