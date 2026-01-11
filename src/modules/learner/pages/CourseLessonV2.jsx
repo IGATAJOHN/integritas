@@ -36,6 +36,7 @@ import {
     Person,
     ArrowBack
 } from '@mui/icons-material';
+import logo from '../../../assets/images/GGH_logo.png';
 
 /**
  * CourseLessonV2 Component
@@ -312,7 +313,7 @@ const CourseLessonV2 = () => {
                     <Button
                         fullWidth
                         startIcon={<ArrowBack />}
-                        onClick={() => navigate('/learner')}
+                        onClick={() => navigate('/explore')}
                         sx={{
                             justifyContent: 'flex-start',
                             color: theme.palette.text.secondary,
@@ -349,6 +350,12 @@ const CourseLessonV2 = () => {
                         <IconButton size="small" sx={{ color: theme.palette.text.secondary }}>
                             <Menu />
                         </IconButton>
+                        <Box
+                            component="img"
+                            src={logo}
+                            alt="Good Governance Hub"
+                            sx={{ width: 32, height: 32, objectFit: 'contain', mr: 1 }}
+                        />
                         <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
                             Course / {course.title} / Module 2
                         </Typography>

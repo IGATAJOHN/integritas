@@ -44,6 +44,7 @@ import {
     Notifications,
     Person
 } from '@mui/icons-material';
+import logo from '../../../assets/images/GGH_logo.png';
 
 /**
  * CourseLesson Component
@@ -140,6 +141,10 @@ const CourseLesson = () => {
                     justifyContent: 'space-between'
                 }}
             >
+
+
+                // ... (existing imports)
+
                 {/* Left: Logo and Search */}
                 <Stack direction="row" alignItems="center" spacing={3}>
                     <Stack
@@ -147,11 +152,14 @@ const CourseLesson = () => {
                         alignItems="center"
                         spacing={1}
                         sx={{ cursor: 'pointer' }}
-                        onClick={() => navigate('/learner')}
+                        onClick={() => navigate('/explore')}
                     >
-                        <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>
-                            <Person sx={{ fontSize: 18 }} />
-                        </Avatar>
+                        <Box
+                            component="img"
+                            src={logo}
+                            alt="Good Governance Hub"
+                            sx={{ width: 32, height: 32, objectFit: 'contain' }}
+                        />
                         <Typography variant="subtitle1" sx={{ fontWeight: 700, color: theme.palette.text.primary, whiteSpace: 'nowrap' }}>
                             Good Governance Hub
                         </Typography>
@@ -205,7 +213,7 @@ const CourseLesson = () => {
                             fontWeight: 600,
                             cursor: 'pointer'
                         }}
-                        onClick={() => navigate('/learner')}
+                        onClick={() => navigate('/explore')}
                     >
                         My Dashboard
                     </Typography>

@@ -11,6 +11,7 @@ import {
     LockResetOutlined,
     ArrowBack,
 } from '@mui/icons-material';
+import icon from '../assets/images/GGH_icon.png';
 
 const ForgotPasswordPage = () => {
     const [email, setEmail] = useState('');
@@ -60,7 +61,7 @@ const ForgotPasswordPage = () => {
                 <Stack direction="row" alignItems="center" spacing={1}>
                     <Box
                         component="img"
-                        src="/src/assets/images/GGH_icon.png"
+                        src={icon}
                         alt="GGH Logo"
                         sx={{ height: 28, width: 28 }}
                     />

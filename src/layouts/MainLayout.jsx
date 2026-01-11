@@ -1,5 +1,6 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
+import logo from '../assets/images/GGH_logo.png';
 
 const MainLayout = () => {
     const location = useLocation();
@@ -8,14 +9,15 @@ const MainLayout = () => {
         { path: '/', label: 'Home' },
         { path: '/admin', label: 'Admin' },
         { path: '/tutor', label: 'Tutor' },
-        { path: '/learner', label: 'Learner' },
+        { path: '/explore', label: 'Explore' },
     ];
 
     return (
         <div className="main-layout">
             <header className="main-header">
                 <div className="header-brand">
-                    <Link to="/" className="brand-link">
+                    <Link to="/" className="brand-link" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
+                        <img src={logo} alt="GGH Logo" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
                         <h1>GGH Platform</h1>
                     </Link>
                 </div>
