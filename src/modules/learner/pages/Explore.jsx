@@ -267,38 +267,39 @@ const Explore = () => {
                 boxSizing: 'border-box',
                 gap: 2
             }}>
-                <Stack direction="row" alignItems="center" spacing={1.5}>
-                    <Box component="img" src={logo} alt="GGH Logo" sx={{ width: { xs: 28, sm: 32 }, height: { xs: 28, sm: 32 }, objectFit: 'contain' }} />
-                    <Typography variant="subtitle1" sx={{ fontWeight: 700, whiteSpace: 'nowrap', fontSize: { xs: '0.9rem', sm: '1rem' } }}>Good Governance Hub</Typography>
-                </Stack>
+                <Stack direction="row" alignItems="center" spacing={{ xs: 2, sm: 3, md: 4 }}>
+                    <Stack direction="row" alignItems="center" spacing={1.5}>
+                        <Box component="img" src={logo} alt="GGH Logo" sx={{ width: { xs: 28, sm: 32 }, height: { xs: 28, sm: 32 }, objectFit: 'contain' }} />
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700, whiteSpace: 'nowrap', fontSize: { xs: '0.9rem', sm: '1rem' } }}>Good Governance Hub</Typography>
+                    </Stack>
 
-                <Box sx={{
-                    bgcolor: colors.card,
-                    borderRadius: 2,
-                    px: 2,
-                    ml: { sm: 4, md: 6, lg: 8 },
-                    display: { xs: 'none', sm: 'flex' },
-                    alignItems: 'center',
-                    gap: 1,
-                    width: '231px',
-                    height: '40px',
-                    boxSizing: 'border-box'
-                }}>
-                    <SearchIcon sx={{ color: colors.textSecondary, fontSize: 20 }} />
-                    <InputBase
-                        placeholder="Search"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        sx={{
-                            color: colors.text,
-                            fontSize: '0.9rem',
-                            width: '100%',
-                            height: '100%',
-                            '& input': { border: 'none', padding: 0, outline: 'none', height: '100%' },
-                            '& .MuiInputBase-input:focus': { outline: 'none', boxShadow: 'none' }
-                        }}
-                    />
-                </Box>
+                    <Box sx={{
+                        bgcolor: colors.card,
+                        borderRadius: 2,
+                        px: 2,
+                        display: { xs: 'none', sm: 'flex' },
+                        alignItems: 'center',
+                        gap: 1,
+                        width: '231px',
+                        height: '40px',
+                        boxSizing: 'border-box'
+                    }}>
+                        <SearchIcon sx={{ color: colors.textSecondary, fontSize: 20 }} />
+                        <InputBase
+                            placeholder="Search"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            sx={{
+                                color: colors.text,
+                                fontSize: '0.9rem',
+                                width: '100%',
+                                height: '100%',
+                                '& input': { border: 'none', padding: 0, outline: 'none', height: '100%' },
+                                '& .MuiInputBase-input:focus': { outline: 'none', boxShadow: 'none' }
+                            }}
+                        />
+                    </Box>
+                </Stack>
 
                 <Stack direction="row" alignItems="center" spacing={{ xs: 1, sm: 2 }}>
                     <Stack direction="row" spacing={3} sx={{ display: { xs: 'none', lg: 'flex' }, mr: 2 }}>
