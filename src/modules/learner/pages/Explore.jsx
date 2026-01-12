@@ -35,8 +35,10 @@ import {
     ExpandMore as ChevronDownIcon,
     School as SchoolIcon,
     SignalCellularAlt as LevelIcon,
-    Sort as SortIcon
+    Sort as SortIcon,
+    Close as CloseIcon
 } from '@mui/icons-material';
+import { Drawer } from '@mui/material';
 import logo from '../../../assets/images/GGH_logo.png';
 import CourseCard from '../components/CourseCard';
 
@@ -67,6 +69,7 @@ const Explore = () => {
     const [isPlayingTrailer, setIsPlayingTrailer] = useState(false);
     const [sortAnchorEl, setSortAnchorEl] = useState(null);
     const [sortBy, setSortBy] = useState('Most Popular');
+    const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
     const handleSortClick = (event) => {
         setSortAnchorEl(event.currentTarget);
@@ -153,6 +156,75 @@ const Explore = () => {
         warning: '#F59E0B'
     };
 
+    const FilterContent = () => (
+        <>
+            <Box sx={{ mb: 4 }}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                    <Typography variant="caption" sx={{ fontWeight: 600, color: colors.text, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Filters
+                    </Typography>
+                    <Typography
+                        variant="caption"
+                        onClick={resetFilters}
+                        sx={{ color: colors.primary, cursor: 'pointer', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
+                    >
+                        Reset
+                    </Typography>
+                </Stack>
+            </Box>
+
+            {[
+                { title: 'Topic', items: ['Ethics & Integrity', 'Public Administration', 'Digital Governance', 'Civic Leadership', 'Policy Analysis'], type: 'checkbox' },
+                { title: 'Level', items: ['Beginner', 'Intermediate', 'Expert'], type: 'checkbox' },
+                { title: 'Rating', items: ['4.5 & Up', '4.0 & Up'], type: 'radio' }
+            ].map((section, index, array) => (
+                <React.Fragment key={section.title}>
+                    <Box sx={{ mb: 4 }}>
+                        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                            <Typography variant="caption" sx={{ fontWeight: 600, color: colors.text, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                {section.title}
+                            </Typography>
+                            <ChevronDownIcon sx={{ fontSize: 16, color: colors.textSecondary }} />
+                        </Stack>
+                        <Stack spacing={1}>
+                            {section.items.map((item) => (
+                                <FormControlLabel
+                                    key={item}
+                                    control={
+                                        section.type === 'checkbox' ? (
+                                            <Checkbox
+                                                size="small"
+                                                checked={filters[section.title]?.includes(item)}
+                                                onChange={() => handleFilterChange(section.title, item, 'checkbox')}
+                                                sx={{ color: colors.textSecondary, '&.Mui-checked': { color: colors.primary } }}
+                                            />
+                                        ) : (
+                                            <Radio
+                                                size="small"
+                                                checked={filters[section.title] === item}
+                                                onChange={() => handleFilterChange(section.title, item, 'radio')}
+                                                sx={{ color: colors.textSecondary, '&.Mui-checked': { color: colors.primary } }}
+                                            />
+                                        )
+                                    }
+                                    label={
+                                        <Typography variant="body2" sx={{ color: (section.type === 'checkbox' ? filters[section.title]?.includes(item) : filters[section.title] === item) ? colors.text : colors.textSecondary, fontSize: '0.85rem' }}>
+                                            {item}
+                                        </Typography>
+                                    }
+                                    sx={{ m: 0 }}
+                                />
+                            ))}
+                        </Stack>
+                    </Box>
+                    {index < array.length - 1 && (
+                        <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.05)', mb: 4 }} />
+                    )}
+                </React.Fragment>
+            ))}
+        </>
+    );
+
     return (
         <Box sx={{ bgcolor: colors.bg, color: colors.text, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
             {/* Header */}
@@ -162,7 +234,6 @@ const Explore = () => {
                 py: '12px',
                 height: { xs: 'auto', md: '65px' },
                 display: 'flex',
-                flexDirection: { xs: 'column', md: 'row' },
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
@@ -170,44 +241,42 @@ const Explore = () => {
                 top: 0,
                 zIndex: 100,
                 boxSizing: 'border-box',
-                gap: { xs: 2, md: 0 }
+                gap: 2
             }}>
-                <Stack direction={{ xs: 'column', sm: 'row' }} alignItems="center" spacing={{ xs: 2, sm: 4 }} sx={{ width: { xs: '100%', md: 'auto' } }}>
-                    <Stack direction="row" alignItems="center" spacing={1.5} sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}>
-                        <Box component="img" src={logo} alt="GGH Logo" sx={{ width: 32, height: 32, objectFit: 'contain' }} />
-                        <Typography variant="subtitle1" sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}>Good Governance Hub</Typography>
-                    </Stack>
-                    <Box sx={{
-                        bgcolor: colors.card,
-                        borderRadius: 2,
-                        px: 2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                        width: { xs: '100%', sm: '231px' },
-                        height: '40px',
-                        minWidth: { xs: '100%', sm: '160px' },
-                        maxWidth: { xs: '100%', sm: '256px' },
-                        boxSizing: 'border-box'
-                    }}>
-                        <SearchIcon sx={{ color: colors.textSecondary, fontSize: 20 }} />
-                        <InputBase
-                            placeholder="Search"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            sx={{
-                                color: colors.text,
-                                fontSize: '0.9rem',
-                                width: '100%',
-                                height: '100%',
-                                '& input': { border: 'none', padding: 0, outline: 'none', height: '100%' },
-                                '& .MuiInputBase-input:focus': { outline: 'none', boxShadow: 'none' }
-                            }}
-                        />
-                    </Box>
+                <Stack direction="row" alignItems="center" spacing={1.5}>
+                    <Box component="img" src={logo} alt="GGH Logo" sx={{ width: { xs: 28, sm: 32 }, height: { xs: 28, sm: 32 }, objectFit: 'contain' }} />
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700, whiteSpace: 'nowrap', fontSize: { xs: '0.9rem', sm: '1rem' } }}>Good Governance Hub</Typography>
                 </Stack>
-                <Stack direction="row" alignItems="center" spacing={{ xs: 1, sm: 3 }} sx={{ width: { xs: '100%', md: 'auto' }, justifyContent: { xs: 'space-between', md: 'flex-end' } }}>
-                    <Stack direction="row" spacing={3} sx={{ display: { xs: 'none', lg: 'flex' } }}>
+
+                <Box sx={{
+                    bgcolor: colors.card,
+                    borderRadius: 2,
+                    px: 2,
+                    display: { xs: 'none', sm: 'flex' },
+                    alignItems: 'center',
+                    gap: 1,
+                    width: '231px',
+                    height: '40px',
+                    boxSizing: 'border-box'
+                }}>
+                    <SearchIcon sx={{ color: colors.textSecondary, fontSize: 20 }} />
+                    <InputBase
+                        placeholder="Search"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        sx={{
+                            color: colors.text,
+                            fontSize: '0.9rem',
+                            width: '100%',
+                            height: '100%',
+                            '& input': { border: 'none', padding: 0, outline: 'none', height: '100%' },
+                            '& .MuiInputBase-input:focus': { outline: 'none', boxShadow: 'none' }
+                        }}
+                    />
+                </Box>
+
+                <Stack direction="row" alignItems="center" spacing={{ xs: 1, sm: 2 }}>
+                    <Stack direction="row" spacing={3} sx={{ display: { xs: 'none', lg: 'flex' }, mr: 2 }}>
                         {['Explore', 'My Learning', 'Community', 'Resources'].map((link) => (
                             <Typography
                                 key={link}
@@ -225,23 +294,55 @@ const Explore = () => {
                             </Typography>
                         ))}
                     </Stack>
-                    <Stack direction="row" spacing={2}>
+                    <Stack direction="row" spacing={{ xs: 1, sm: 2 }}>
                         <IconButton sx={{ bgcolor: colors.card, color: colors.text, borderRadius: 2, '&:hover': { bgcolor: alpha(colors.card, 0.8) } }}>
                             <BellIcon fontSize="small" />
                         </IconButton>
                         <IconButton sx={{ bgcolor: colors.card, color: colors.text, borderRadius: 2, '&:hover': { bgcolor: alpha(colors.card, 0.8) } }}>
                             <UserIcon fontSize="small" />
                         </IconButton>
+                        <IconButton
+                            onClick={() => setIsMobileFilterOpen(true)}
+                            sx={{
+                                display: { xs: 'flex', md: 'none' },
+                                bgcolor: colors.card,
+                                color: colors.text,
+                                borderRadius: 2,
+                                '&:hover': { bgcolor: alpha(colors.card, 0.8) }
+                            }}
+                        >
+                            <FilterIcon fontSize="small" />
+                        </IconButton>
                     </Stack>
                 </Stack>
-                {/* Mobile Menu Icon (Placeholder) */}
-                <IconButton sx={{ display: { xs: 'flex', lg: 'none' }, color: colors.text, position: 'absolute', top: 12, right: 12 }}>
-                    <FilterIcon />
-                </IconButton>
             </Box>
 
             <Box sx={{ display: 'flex', flex: 1 }}>
-                {/* Sidebar */}
+                {/* Mobile Filter Drawer */}
+                <Drawer
+                    anchor="left"
+                    open={isMobileFilterOpen}
+                    onClose={() => setIsMobileFilterOpen(false)}
+                    PaperProps={{
+                        sx: {
+                            width: 280,
+                            bgcolor: colors.paper,
+                            color: colors.text,
+                            p: 3,
+                            boxSizing: 'border-box'
+                        }
+                    }}
+                >
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 700 }}>Filters</Typography>
+                        <IconButton onClick={() => setIsMobileFilterOpen(false)} sx={{ color: colors.text }}>
+                            <CloseIcon />
+                        </IconButton>
+                    </Stack>
+                    <FilterContent />
+                </Drawer>
+
+                {/* Desktop Sidebar */}
                 <Box component="aside" sx={{
                     width: 240,
                     p: 4,
@@ -253,70 +354,7 @@ const Explore = () => {
                     height: 'calc(100vh - 65px)',
                     overflowY: 'auto'
                 }}>
-                    <Box sx={{ mb: 4 }}>
-                        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                            <Typography variant="caption" sx={{ fontWeight: 600, color: colors.text, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                Filters
-                            </Typography>
-                            <Typography
-                                variant="caption"
-                                onClick={resetFilters}
-                                sx={{ color: colors.primary, cursor: 'pointer', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
-                            >
-                                Reset
-                            </Typography>
-                        </Stack>
-                    </Box>
-
-                    {[
-                        { title: 'Topic', items: ['Ethics & Integrity', 'Public Administration', 'Digital Governance', 'Civic Leadership', 'Policy Analysis'], type: 'checkbox' },
-                        { title: 'Level', items: ['Beginner', 'Intermediate', 'Expert'], type: 'checkbox' },
-                        { title: 'Rating', items: ['4.5 & Up', '4.0 & Up'], type: 'radio' }
-                    ].map((section, index, array) => (
-                        <React.Fragment key={section.title}>
-                            <Box sx={{ mb: 4 }}>
-                                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                                    <Typography variant="caption" sx={{ fontWeight: 600, color: colors.text, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                        {section.title}
-                                    </Typography>
-                                    <ChevronDownIcon sx={{ fontSize: 16, color: colors.textSecondary }} />
-                                </Stack>
-                                <Stack spacing={1}>
-                                    {section.items.map((item) => (
-                                        <FormControlLabel
-                                            key={item}
-                                            control={
-                                                section.type === 'checkbox' ? (
-                                                    <Checkbox
-                                                        size="small"
-                                                        checked={filters[section.title]?.includes(item)}
-                                                        onChange={() => handleFilterChange(section.title, item, 'checkbox')}
-                                                        sx={{ color: colors.textSecondary, '&.Mui-checked': { color: colors.primary } }}
-                                                    />
-                                                ) : (
-                                                    <Radio
-                                                        size="small"
-                                                        checked={filters[section.title] === item}
-                                                        onChange={() => handleFilterChange(section.title, item, 'radio')}
-                                                        sx={{ color: colors.textSecondary, '&.Mui-checked': { color: colors.primary } }}
-                                                    />
-                                                )
-                                            }
-                                            label={
-                                                <Typography variant="body2" sx={{ color: (section.type === 'checkbox' ? filters[section.title]?.includes(item) : filters[section.title] === item) ? colors.text : colors.textSecondary, fontSize: '0.85rem' }}>
-                                                    {item}
-                                                </Typography>
-                                            }
-                                            sx={{ m: 0 }}
-                                        />
-                                    ))}
-                                </Stack>
-                            </Box>
-                            {index < array.length - 1 && (
-                                <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.05)', mb: 4 }} />
-                            )}
-                        </React.Fragment>
-                    ))}
+                    <FilterContent />
                 </Box>
 
                 {/* Content Area */}
@@ -341,7 +379,6 @@ const Explore = () => {
                         justifyContent: 'space-between',
                         alignItems: 'center',
                         gap: '24px',
-                        height: { md: '412.39px' },
                         mb: 6,
                         position: 'relative',
                         overflow: 'hidden',
@@ -351,12 +388,11 @@ const Explore = () => {
                     }}>
                         <Box sx={{
                             zIndex: 1,
-                            width: { md: '838.17px' },
-                            height: { md: '346.39px' },
+                            width: { xs: '100%', md: '50%' },
                             display: 'flex',
                             flexDirection: 'column',
                             justifyContent: 'center',
-                            gap: '2                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         px'
+                            gap: '24px'
                         }}>
                             <Chip
                                 label="Featured Course"
@@ -391,11 +427,9 @@ const Explore = () => {
                                     fontSize: { xs: '14px', md: '18px' },
                                     lineHeight: { xs: '22px', md: '28px' },
                                     letterSpacing: '0%',
-                                    width: { md: '672px                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     ' },
                                     maxWidth: '672px',
-                                    height: { md: '56px' },
                                     display: '-webkit-box',
-                                    WebkitLineClamp: 2,
+                                    WebkitLineClamp: 3,
                                     WebkitBoxOrient: 'vertical',
                                     overflow: 'hidden'
                                 }}>
@@ -436,14 +470,12 @@ const Explore = () => {
                                 </Button>
                             </Stack>
                         </Box>
-                        <Box sx={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: { xs: '100%', md: 'auto' } }}>
+                        <Box sx={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: { xs: '100%', md: '50%' } }}>
                             <Box sx={{
                                 position: 'relative',
-                                width: { xs: '100%', md: '615.83px' },
-                                height: { xs: 'auto', md: '346.39px' },
-                                aspectRatio: { xs: '16/9', md: 'auto' },
-                                maxWidth: '100%',
-                                maxHeight: '100%'
+                                width: '100%',
+                                aspectRatio: '16/9',
+                                maxWidth: '615px'
                             }}>
                                 {isPlayingTrailer ? (
                                     <Box sx={{ width: '100%', height: '100%', borderRadius: '12px', overflow: 'hidden' }}>
@@ -639,16 +671,13 @@ const Explore = () => {
                     </Stack>
 
                     {/* Course Grid */}
-                    <Box sx={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: '24px',
-                        justifyContent: 'flex-start'
-                    }}>
+                    <Grid container spacing={3} sx={{ alignItems: 'stretch' }}>
                         {courses.map(course => (
-                            <CourseCard key={course.id} course={course} colors={colors} />
+                            <Grid item xs={12} sm={6} lg={4} xl={3} key={course.id} sx={{ display: 'flex' }}>
+                                <CourseCard course={course} colors={colors} />
+                            </Grid>
                         ))}
-                    </Box>
+                    </Grid>
                 </Box>
             </Box>
         </Box >

@@ -27,8 +27,8 @@ const CourseCard = ({ course, colors }) => {
             transition: 'transform 0.2s',
             '&:hover': { transform: 'translateY(-4px)' },
             boxShadow: 'none',
-            width: { xs: '100%', lg: '498.66px' },
-            height: { xs: 'auto', lg: '423px' },
+            width: '100%',
+            height: '100%',
             display: 'flex',
             flexDirection: 'column',
             border: '1px solid rgba(255, 255, 255, 0.05)',
@@ -77,7 +77,7 @@ const CourseCard = ({ course, colors }) => {
                     WebkitLineClamp: 2,
                     WebkitBoxOrient: 'vertical',
                     overflow: 'hidden',
-                    minHeight: '2.8em' // Ensure uniform title height
+                    height: '2.8em', // Fixed height for title
                 }}>
                     {course.title}
                 </Typography>
@@ -89,7 +89,7 @@ const CourseCard = ({ course, colors }) => {
                     WebkitLineClamp: 2,
                     WebkitBoxOrient: 'vertical',
                     overflow: 'hidden',
-                    minHeight: '3em' // Ensure uniform description height
+                    height: '3em', // Fixed height for description
                 }}>
                     {course.description}
                 </Typography>
