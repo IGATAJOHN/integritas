@@ -109,15 +109,15 @@ const Explore = () => {
     const courses = [
         new Course(
             1,
-            'Introduction to Civic Data Analytics',
-            'Learn how to leverage big data to make informed policy decisions and optimize public services.',
-            'Dr. A. Smith',
-            'individual',
-            'Intermediate',
-            4.8,
-            120,
-            '12h 30m',
-            'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80'
+            'Cybersecurity for Public Sector',
+            'Protecting critical infrastructure and sensitive citizen data from modern cyber threats.',
+            'Tech Institute',
+            'institution',
+            'Advanced',
+            4.5,
+            230,
+            '20h 00m',
+            'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&q=80'
         ),
         new Course(
             2,
@@ -133,15 +133,39 @@ const Explore = () => {
         ),
         new Course(
             3,
-            'Cybersecurity for Public Sector',
-            'Protecting critical infrastructure and sensitive citizen data from modern cyber threats.',
-            'Tech Institute',
+            'Introduction to Civic Data Analytics',
+            'Learn how to leverage big data to make informed policy decisions and optimize public services.',
+            'Dr. A. Smith',
+            'individual',
+            'Intermediate',
+            4.8,
+            120,
+            '12h 30m',
+            'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80'
+        ),
+        new Course(
+            4,
+            'Public Policy Fundamentals',
+            'Understanding the principles and processes behind effective policy-making in democratic societies.',
+            'Policy Academy',
             'institution',
-            'Advanced',
-            4.5,
-            230,
-            '20h 00m',
-            'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&q=80'
+            'Beginner',
+            4.7,
+            312,
+            '10h 45m',
+            'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=800&q=80'
+        ),
+        new Course(
+            5,
+            'Digital Transformation in Government',
+            'Strategies for modernizing public services through technology and innovation.',
+            'Dr. M. Johnson',
+            'individual',
+            'Intermediate',
+            4.6,
+            198,
+            '15h 20m',
+            'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&q=80'
         )
     ];
 
@@ -671,9 +695,9 @@ const Explore = () => {
                     </Stack>
 
                     {/* Course Grid */}
-                    <Grid container spacing={3} sx={{ alignItems: 'stretch' }}>
+                    <Grid container spacing={2} sx={{ alignItems: 'stretch' }}>
                         {courses.map(course => (
-                            <Grid item xs={12} sm={6} lg={4} xl={3} key={course.id} sx={{ display: 'flex' }}>
+                            <Grid item xs={12} sm={6} md={4} lg={3} xl={3} key={course.id} sx={{ display: 'flex' }}>
                                 <CourseCard course={course} colors={colors} />
                             </Grid>
                         ))}
