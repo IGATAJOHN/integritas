@@ -109,15 +109,15 @@ const Explore = () => {
     const courses = [
         new Course(
             1,
-            'Introduction to Civic Data Analytics',
-            'Learn how to leverage big data to make informed policy decisions and optimize public services.',
-            'Dr. A. Smith',
-            'individual',
-            'Intermediate',
-            4.8,
-            120,
-            '12h 30m',
-            'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80'
+            'Cybersecurity for Public Sector',
+            'Protecting critical infrastructure and sensitive citizen data from modern cyber threats.',
+            'Tech Institute',
+            'institution',
+            'Advanced',
+            4.5,
+            230,
+            '20h 00m',
+            'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&q=80'
         ),
         new Course(
             2,
@@ -133,15 +133,39 @@ const Explore = () => {
         ),
         new Course(
             3,
-            'Cybersecurity for Public Sector',
-            'Protecting critical infrastructure and sensitive citizen data from modern cyber threats.',
-            'Tech Institute',
+            'Introduction to Civic Data Analytics',
+            'Learn how to leverage big data to make informed policy decisions and optimize public services.',
+            'Dr. A. Smith',
+            'individual',
+            'Intermediate',
+            4.8,
+            120,
+            '12h 30m',
+            'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80'
+        ),
+        new Course(
+            4,
+            'Public Policy Fundamentals',
+            'Understanding the principles and processes behind effective policy-making in democratic societies.',
+            'Policy Academy',
             'institution',
-            'Advanced',
-            4.5,
-            230,
-            '20h 00m',
-            'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&q=80'
+            'Beginner',
+            4.7,
+            312,
+            '10h 45m',
+            'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=800&q=80'
+        ),
+        new Course(
+            5,
+            'Digital Transformation in Government',
+            'Strategies for modernizing public services through technology and innovation.',
+            'Dr. M. Johnson',
+            'individual',
+            'Intermediate',
+            4.6,
+            198,
+            '15h 20m',
+            'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&q=80'
         )
     ];
 
@@ -243,37 +267,39 @@ const Explore = () => {
                 boxSizing: 'border-box',
                 gap: 2
             }}>
-                <Stack direction="row" alignItems="center" spacing={1.5}>
-                    <Box component="img" src={logo} alt="GGH Logo" sx={{ width: { xs: 28, sm: 32 }, height: { xs: 28, sm: 32 }, objectFit: 'contain' }} />
-                    <Typography variant="subtitle1" sx={{ fontWeight: 700, whiteSpace: 'nowrap', fontSize: { xs: '0.9rem', sm: '1rem' } }}>Good Governance Hub</Typography>
-                </Stack>
+                <Stack direction="row" alignItems="center" spacing={{ xs: 2, sm: 3, md: 4 }}>
+                    <Stack direction="row" alignItems="center" spacing={1.5}>
+                        <Box component="img" src={logo} alt="GGH Logo" sx={{ width: { xs: 28, sm: 32 }, height: { xs: 28, sm: 32 }, objectFit: 'contain' }} />
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700, whiteSpace: 'nowrap', fontSize: { xs: '0.9rem', sm: '1rem' } }}>Good Governance Hub</Typography>
+                    </Stack>
 
-                <Box sx={{
-                    bgcolor: colors.card,
-                    borderRadius: 2,
-                    px: 2,
-                    display: { xs: 'none', sm: 'flex' },
-                    alignItems: 'center',
-                    gap: 1,
-                    width: '231px',
-                    height: '40px',
-                    boxSizing: 'border-box'
-                }}>
-                    <SearchIcon sx={{ color: colors.textSecondary, fontSize: 20 }} />
-                    <InputBase
-                        placeholder="Search"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        sx={{
-                            color: colors.text,
-                            fontSize: '0.9rem',
-                            width: '100%',
-                            height: '100%',
-                            '& input': { border: 'none', padding: 0, outline: 'none', height: '100%' },
-                            '& .MuiInputBase-input:focus': { outline: 'none', boxShadow: 'none' }
-                        }}
-                    />
-                </Box>
+                    <Box sx={{
+                        bgcolor: colors.card,
+                        borderRadius: 2,
+                        px: 2,
+                        display: { xs: 'none', sm: 'flex' },
+                        alignItems: 'center',
+                        gap: 1,
+                        width: '231px',
+                        height: '40px',
+                        boxSizing: 'border-box'
+                    }}>
+                        <SearchIcon sx={{ color: colors.textSecondary, fontSize: 20 }} />
+                        <InputBase
+                            placeholder="Search"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            sx={{
+                                color: colors.text,
+                                fontSize: '0.9rem',
+                                width: '100%',
+                                height: '100%',
+                                '& input': { border: 'none', padding: 0, outline: 'none', height: '100%' },
+                                '& .MuiInputBase-input:focus': { outline: 'none', boxShadow: 'none' }
+                            }}
+                        />
+                    </Box>
+                </Stack>
 
                 <Stack direction="row" alignItems="center" spacing={{ xs: 1, sm: 2 }}>
                     <Stack direction="row" spacing={3} sx={{ display: { xs: 'none', lg: 'flex' }, mr: 2 }}>
@@ -394,18 +420,33 @@ const Explore = () => {
                             justifyContent: 'center',
                             gap: '24px'
                         }}>
-                            <Chip
-                                label="Featured Course"
-                                size="small"
+                            <Box
                                 sx={{
                                     bgcolor: alpha(colors.primary, 0.2),
                                     color: colors.accent,
-                                    fontWeight: 600,
+                                    px: 2,
+                                    py: 0.5,
+                                    borderRadius: 50,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 1,
                                     fontSize: '0.7rem',
+                                    fontWeight: 600,
+                                    width: 'fit-content',
                                     textTransform: 'uppercase',
-                                    width: 'fit-content'
+                                    letterSpacing: '0.05em',
                                 }}
-                            />
+                            >
+                                <Box
+                                    sx={{
+                                        width: 8,
+                                        height: 8,
+                                        borderRadius: '50%',
+                                        bgcolor: colors.accent,
+                                    }}
+                                />
+                                Featured Course
+                            </Box>
                             <Box sx={{
                                 height: { md: '146px' },
                                 display: 'flex',
@@ -671,9 +712,9 @@ const Explore = () => {
                     </Stack>
 
                     {/* Course Grid */}
-                    <Grid container spacing={3} sx={{ alignItems: 'stretch' }}>
+                    <Grid container spacing={2} sx={{ alignItems: 'stretch' }}>
                         {courses.map(course => (
-                            <Grid item xs={12} sm={6} lg={4} xl={3} key={course.id} sx={{ display: 'flex' }}>
+                            <Grid item xs={12} sm={6} md={4} lg={3} xl={3} key={course.id} sx={{ display: 'flex' }}>
                                 <CourseCard course={course} colors={colors} />
                             </Grid>
                         ))}

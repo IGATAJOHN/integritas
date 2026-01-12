@@ -220,7 +220,7 @@ const LandingPage = () => {
                         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 4 }}>
                             <Button
                                 component={Link}
-                                to="/courses"
+                                to="/explore"
                                 variant="contained"
                                 size="large"
                                 endIcon={<ArrowForward />}
@@ -475,7 +475,7 @@ const LandingPage = () => {
                         </Box>
                         <Button
                             component={Link}
-                            to="/courses"
+                            to="/explore"
                             endIcon={<ArrowForward />}
                             sx={{
                                 color: colors.primary,
