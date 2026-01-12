@@ -17,7 +17,7 @@ import { AdminDashboard, UserManagement, AdminSettings } from '../modules/admin'
 import { TutorDashboard, MyCourses, Students } from '../modules/tutor';
 
 // Learner Module
-import { LearnerDashboard, BrowseCourses, MyEnrollments, MyLearning, CourseLesson, CourseLessonV2, Checkout, MyProgress, Explore } from '../modules/learner';
+import { LearnerDashboard, BrowseCourses, MyEnrollments, MyLearning, CourseLesson, CourseLessonV2, Checkout, MyProgress, Explore, CourseDetail } from '../modules/learner';
 
 const router = createBrowserRouter([
     {
@@ -114,6 +114,11 @@ const router = createBrowserRouter([
                 element: <MyProgress />,
             },
         ],
+    },
+    // Course Detail - Full Page (outside layout)
+    {
+        path: '/explore/course/:courseId',
+        element: <CourseDetail />,
     },
     // Course Lesson - Full Page (outside layout)
     {
