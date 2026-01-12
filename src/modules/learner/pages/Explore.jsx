@@ -276,6 +276,7 @@ const Explore = () => {
                     bgcolor: colors.card,
                     borderRadius: 2,
                     px: 2,
+                    ml: { sm: 4, md: 6, lg: 8 },
                     display: { xs: 'none', sm: 'flex' },
                     alignItems: 'center',
                     gap: 1,
@@ -418,18 +419,33 @@ const Explore = () => {
                             justifyContent: 'center',
                             gap: '24px'
                         }}>
-                            <Chip
-                                label="Featured Course"
-                                size="small"
+                            <Box
                                 sx={{
                                     bgcolor: alpha(colors.primary, 0.2),
                                     color: colors.accent,
-                                    fontWeight: 600,
+                                    px: 2,
+                                    py: 0.5,
+                                    borderRadius: 50,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 1,
                                     fontSize: '0.7rem',
+                                    fontWeight: 600,
+                                    width: 'fit-content',
                                     textTransform: 'uppercase',
-                                    width: 'fit-content'
+                                    letterSpacing: '0.05em',
                                 }}
-                            />
+                            >
+                                <Box
+                                    sx={{
+                                        width: 8,
+                                        height: 8,
+                                        borderRadius: '50%',
+                                        bgcolor: colors.accent,
+                                    }}
+                                />
+                                Featured Course
+                            </Box>
                             <Box sx={{
                                 height: { md: '146px' },
                                 display: 'flex',
