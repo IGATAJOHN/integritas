@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Box,
     Typography,
@@ -58,6 +59,7 @@ class Course {
 }
 
 const Explore = () => {
+    const navigate = useNavigate();
     const theme = useTheme();
     const [activeTopic, setActiveTopic] = useState('All Topics');
     const [searchQuery, setSearchQuery] = useState('');
@@ -378,7 +380,10 @@ const Explore = () => {
                     position: 'sticky',
                     top: '65px',
                     height: 'calc(100vh - 65px)',
-                    overflowY: 'auto'
+                    overflowY: 'auto',
+                    '&::-webkit-scrollbar': { display: 'none' },
+                    scrollbarWidth: 'none',
+                    msOverflowStyle: 'none'
                 }}>
                     <FilterContent />
                 </Box>
@@ -478,19 +483,22 @@ const Explore = () => {
                                 </Typography>
                             </Box>
                             <Stack direction="row" spacing={2}>
-                                <Button variant="contained" sx={{
-                                    bgcolor: colors.primary,
-                                    color: colors.text,
-                                    width: '144px',
-                                    height: '48px',
-                                    pt: '11.5px',
-                                    pr: '24px',
-                                    pb: '12.5px',
-                                    pl: '24px',
-                                    fontWeight: 600,
-                                    textTransform: 'none',
-                                    borderRadius: '8px'
-                                }}>
+                                <Button
+                                    variant="contained"
+                                    onClick={() => navigate('/explore/course/1')}
+                                    sx={{
+                                        bgcolor: colors.primary,
+                                        color: colors.text,
+                                        width: '144px',
+                                        height: '48px',
+                                        pt: '11.5px',
+                                        pr: '24px',
+                                        pb: '12.5px',
+                                        pl: '24px',
+                                        fontWeight: 600,
+                                        textTransform: 'none',
+                                        borderRadius: '8px'
+                                    }}>
                                     View Course
                                 </Button>
                                 <Button

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Box,
     Typography,
@@ -15,6 +16,8 @@ import {
 } from '@mui/icons-material';
 
 const CourseCard = ({ course, colors }) => {
+    const navigate = useNavigate();
+
     const getLevelColor = (level) => {
         switch (level) {
             case 'Beginner': return '#3B82F6';
@@ -25,23 +28,26 @@ const CourseCard = ({ course, colors }) => {
     };
 
     return (
-        <Card sx={{
-            bgcolor: colors.card,
-            borderRadius: '16px',
-            overflow: 'hidden',
-            transition: 'transform 0.2s, box-shadow 0.2s',
-            '&:hover': {
-                transform: 'translateY(-4px)',
-                boxShadow: '0 12px 24px rgba(0, 0, 0, 0.3)'
-            },
-            boxShadow: 'none',
-            width: '100%',
-            maxWidth: '380px',
-            display: 'flex',
-            flexDirection: 'column',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            boxSizing: 'border-box'
-        }}>
+        <Card
+            onClick={() => navigate('/explore/course/1')}
+            sx={{
+                bgcolor: colors.card,
+                borderRadius: '16px',
+                overflow: 'hidden',
+                transition: 'transform 0.2s, box-shadow 0.2s',
+                cursor: 'pointer',
+                '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: '0 12px 24px rgba(0, 0, 0, 0.3)'
+                },
+                boxShadow: 'none',
+                width: '100%',
+                maxWidth: '380px',
+                display: 'flex',
+                flexDirection: 'column',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                boxSizing: 'border-box'
+            }}>
             {/* Image Container with Level Badge */}
             <Box sx={{
                 position: 'relative',
