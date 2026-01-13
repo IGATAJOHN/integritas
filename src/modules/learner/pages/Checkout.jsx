@@ -75,11 +75,12 @@ const Checkout = () => {
             {/* Header */}
             <Box sx={{
                 borderBottom: '1px solid rgba(255,255,255,0.1)',
-                px: 4,
+                px: { xs: 2, md: 4 },
                 py: 2,
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between'
+                justifyContent: 'space-between',
+                gap: 2
             }}>
                 <Stack direction="row" alignItems="center" spacing={1.5}>
                     <Box
@@ -88,7 +89,11 @@ const Checkout = () => {
                         alt="Good Governance Hub"
                         sx={{ width: 32, height: 32, objectFit: 'contain' }}
                     />
-                    <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#fff' }}>
+                    <Typography variant="subtitle1" sx={{
+                        fontWeight: 700,
+                        color: '#fff',
+                        display: { xs: 'none', sm: 'block' }
+                    }}>
                         Good Governance Hub
                     </Typography>
                 </Stack>
