@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
     Box,
     Typography,
@@ -125,6 +125,7 @@ const courseData = {
 
 const CourseDetail = () => {
     const { courseId } = useParams();
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState(0);
     const [expandedModule, setExpandedModule] = useState('module-1');
     const [searchQuery, setSearchQuery] = useState('');
@@ -667,6 +668,7 @@ const CourseDetail = () => {
                                 <Button
                                     fullWidth
                                     variant="contained"
+                                    onClick={() => navigate('/checkout')}
                                     sx={{
                                         bgcolor: colors.primary,
                                         py: 1.25,

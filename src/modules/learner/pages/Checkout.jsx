@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Box,
-    Grid,
     Typography,
     Button,
     IconButton,
     TextField,
+    InputBase,
     InputAdornment,
     Stack,
     Divider,
@@ -20,20 +20,21 @@ import {
     Container
 } from '@mui/material';
 import {
-    Lock,
-    CreditCard,
-    AccountBalance,
-    Payment,
-    CheckCircle,
-    Help,
-    Person,
-    ArrowBack,
-    Security,
-    CalendarToday,
-    VpnKey,
-    LocationOn,
-    LocalOffer,
-    SupportAgent
+    LockOutlined as Lock,
+    CreditCardOutlined as CreditCard,
+    AccountBalanceOutlined as AccountBalance,
+    PaymentOutlined as Payment,
+    CheckCircleOutlined as CheckCircle,
+    HelpOutline as Help,
+    PersonOutlined as Person,
+    ArrowBackOutlined as ArrowBack,
+    SecurityOutlined as Security,
+    CalendarTodayOutlined as CalendarToday,
+    VpnKeyOutlined as VpnKey,
+    LocationOnOutlined as LocationOn,
+    LocalOfferOutlined as LocalOffer,
+    SupportAgentOutlined as SupportAgent,
+    EmailOutlined as Email
 } from '@mui/icons-material';
 import logo from '../../../assets/images/GGH_logo.png';
 
@@ -71,17 +72,15 @@ const Checkout = () => {
             flexDirection: 'column'
         }}>
 
-
-            // ... (existing imports)
-
             {/* Header */}
             <Box sx={{
                 borderBottom: '1px solid rgba(255,255,255,0.1)',
-                px: 4,
+                px: { xs: 2, md: 4 },
                 py: 2,
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between'
+                justifyContent: 'space-between',
+                gap: 2
             }}>
                 <Stack direction="row" alignItems="center" spacing={1.5}>
                     <Box
@@ -90,7 +89,11 @@ const Checkout = () => {
                         alt="Good Governance Hub"
                         sx={{ width: 32, height: 32, objectFit: 'contain' }}
                     />
-                    <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#fff' }}>
+                    <Typography variant="subtitle1" sx={{
+                        fontWeight: 700,
+                        color: '#fff',
+                        display: { xs: 'none', sm: 'block' }
+                    }}>
                         Good Governance Hub
                     </Typography>
                 </Stack>
@@ -113,10 +116,10 @@ const Checkout = () => {
             </Box>
 
             {/* Main Content */}
-            <Container maxWidth="xl" sx={{ flex: 1, py: 6, px: { xs: 2, md: 6 } }}>
-                <Grid container spacing={4}>
+            <Container maxWidth="lg" sx={{ flex: 1, py: 6, px: { xs: 2, md: 4 } }}>
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: { xs: 4, md: 6 }, justifyContent: 'space-between' }}>
                     {/* Left Column - Payment Details */}
-                    <Grid item xs={12} lg={7}>
+                    <Box sx={{ flex: 1, maxWidth: { md: '60%' } }}>
                         {/* Breadcrumb & Title */}
                         <Box sx={{ mb: 4 }}>
                             <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
@@ -147,52 +150,52 @@ const Checkout = () => {
                         <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
                             Payment Method
                         </Typography>
-                        <Grid container spacing={2} sx={{ mb: 4 }}>
+                        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 4 }}>
                             {[
                                 { id: 'card', label: 'Card', icon: <CreditCard sx={{ fontSize: 28 }} /> },
                                 { id: 'paypal', label: 'PayPal', icon: <AccountBalance sx={{ fontSize: 28 }} /> },
                                 { id: 'bank', label: 'Bank Transfer', icon: <AccountBalance sx={{ fontSize: 28 }} /> }
                             ].map((method) => (
-                                <Grid item xs={12} sm={4} key={method.id}>
-                                    <Box
-                                        onClick={() => setPaymentMethod(method.id)}
-                                        sx={{
-                                            border: `1px solid ${paymentMethod === method.id ? '#2563EB' : 'rgba(255,255,255,0.1)'}`,
-                                            bgcolor: paymentMethod === method.id ? 'rgba(37, 99, 235, 0.1)' : 'transparent',
-                                            borderRadius: 2,
-                                            py: 2.5,
-                                            px: 2,
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            alignItems: 'center',
-                                            gap: 1,
-                                            position: 'relative',
-                                            transition: 'all 0.2s ease',
-                                            '&:hover': {
-                                                bgcolor: 'rgba(255,255,255,0.05)',
-                                                borderColor: paymentMethod === method.id ? '#2563EB' : 'rgba(255,255,255,0.2)'
-                                            }
-                                        }}
-                                    >
-                                        {paymentMethod === method.id && (
-                                            <CheckCircle sx={{ position: 'absolute', top: 8, right: 8, color: '#2563EB', fontSize: 16 }} />
-                                        )}
-                                        <Box sx={{ color: paymentMethod === method.id ? '#2563EB' : 'rgba(255,255,255,0.5)' }}>
-                                            {method.icon}
-                                        </Box>
-                                        <Typography variant="body2" sx={{ fontWeight: 600, color: paymentMethod === method.id ? '#fff' : 'rgba(255,255,255,0.7)' }}>
-                                            {method.label}
-                                        </Typography>
+                                <Box
+                                    key={method.id}
+                                    onClick={() => setPaymentMethod(method.id)}
+                                    sx={{
+                                        flex: 1,
+                                        border: `1px solid ${paymentMethod === method.id ? '#2563EB' : 'rgba(255,255,255,0.1)'}`,
+                                        bgcolor: paymentMethod === method.id ? 'rgba(37, 99, 235, 0.1)' : 'transparent',
+                                        borderRadius: 1,
+                                        py: 2.5,
+                                        px: 2,
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        gap: 1,
+                                        position: 'relative',
+                                        transition: 'all 0.2s ease',
+                                        '&:hover': {
+                                            bgcolor: 'rgba(255,255,255,0.05)',
+                                            borderColor: paymentMethod === method.id ? '#2563EB' : 'rgba(255,255,255,0.2)'
+                                        }
+                                    }}
+                                >
+                                    {paymentMethod === method.id && (
+                                        <CheckCircle sx={{ position: 'absolute', top: 8, right: 8, color: '#2563EB', fontSize: 16 }} />
+                                    )}
+                                    <Box sx={{ color: paymentMethod === method.id ? '#2563EB' : 'rgba(255,255,255,0.5)' }}>
+                                        {method.icon}
                                     </Box>
-                                </Grid>
+                                    <Typography variant="body2" sx={{ fontWeight: 600, color: paymentMethod === method.id ? '#fff' : 'rgba(255,255,255,0.7)' }}>
+                                        {method.label}
+                                    </Typography>
+                                </Box>
                             ))}
-                        </Grid>
+                        </Stack>
 
                         {/* Payment Details Form */}
                         <Box sx={{
                             bgcolor: 'rgba(255,255,255,0.02)',
-                            borderRadius: 3,
+                            borderRadius: 1,
                             p: 4,
                             border: '1px solid rgba(255,255,255,0.05)'
                         }}>
@@ -201,165 +204,318 @@ const Checkout = () => {
                                     Payment Details
                                 </Typography>
                                 <Stack direction="row" spacing={1}>
-                                    <Lock sx={{ color: 'rgba(255,255,255,0.3)' }} />
-                                    <CreditCard sx={{ color: 'rgba(255,255,255,0.3)' }} />
+                                    <Lock sx={{ color: '#fff' }} />
+                                    <CreditCard sx={{ color: '#fff' }} />
                                 </Stack>
                             </Box>
 
-                            <Grid container spacing={3}>
-                                <Grid item xs={12}>
-                                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', mb: 1, display: 'block', textTransform: 'uppercase', fontWeight: 600 }}>
-                                        Card Number
-                                    </Typography>
-                                    <TextField
-                                        fullWidth
-                                        placeholder="0000 0000 0000 0000"
-                                        InputProps={{
-                                            startAdornment: <InputAdornment position="start"><CreditCard sx={{ color: 'rgba(255,255,255,0.3)' }} /></InputAdornment>,
-                                            endAdornment: <InputAdornment position="end"><Lock sx={{ color: '#10B981', fontSize: 18 }} /></InputAdornment>,
-                                        }}
-                                        sx={{
-                                            '& .MuiOutlinedInput-root': {
+                            {paymentMethod === 'card' && (
+                                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3 }}>
+                                    {/* Row 1: Card Number - Full Width */}
+                                    <Box sx={{ gridColumn: '1 / -1' }}>
+                                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', mb: 1, display: 'block', textTransform: 'uppercase', fontWeight: 600 }}>
+                                            Card Number
+                                        </Typography>
+                                        <InputBase
+                                            fullWidth
+                                            placeholder="0000 0000 0000 0000"
+                                            startAdornment={<InputAdornment position="start"><CreditCard sx={{ color: 'rgba(255,255,255,0.3)' }} /></InputAdornment>}
+                                            endAdornment={<InputAdornment position="end"><Lock sx={{ color: '#10B981', fontSize: 18 }} /></InputAdornment>}
+                                            sx={{
                                                 bgcolor: 'rgba(255,255,255,0.03)',
                                                 color: '#fff',
-                                                '& fieldset': { borderColor: 'rgba(255,255,255,0.1)' },
-                                                '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.2)' },
-                                                '&.Mui-focused fieldset': { borderColor: '#2563EB' },
-                                            }
-                                        }}
-                                    />
-                                </Grid>
+                                                borderRadius: 1,
+                                                p: 1.5,
+                                                '& .MuiInputBase-input': {
+                                                    border: 'none',
+                                                    outline: 'none',
+                                                    boxShadow: 'none',
+                                                    padding: 0
+                                                }
+                                            }}
+                                        />
+                                    </Box>
 
-                                <Grid item xs={12} md={6}>
-                                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', mb: 1, display: 'block', textTransform: 'uppercase', fontWeight: 600 }}>
-                                        Expiry Date
-                                    </Typography>
-                                    <TextField
-                                        fullWidth
-                                        placeholder="MM / YY"
-                                        InputProps={{
-                                            startAdornment: <InputAdornment position="start"><CalendarToday sx={{ color: 'rgba(255,255,255,0.3)', fontSize: 18 }} /></InputAdornment>,
-                                        }}
-                                        sx={{
-                                            '& .MuiOutlinedInput-root': {
+                                    {/* Row 2: Expiry Date + CVV - Side by Side */}
+                                    <Box>
+                                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', mb: 1, display: 'block', textTransform: 'uppercase', fontWeight: 600 }}>
+                                            Expiry Date
+                                        </Typography>
+                                        <InputBase
+                                            fullWidth
+                                            placeholder="MM / YY"
+                                            startAdornment={<InputAdornment position="start"><CalendarToday sx={{ color: 'rgba(255,255,255,0.3)', fontSize: 18 }} /></InputAdornment>}
+                                            sx={{
                                                 bgcolor: 'rgba(255,255,255,0.03)',
                                                 color: '#fff',
-                                                '& fieldset': { borderColor: 'rgba(255,255,255,0.1)' },
-                                                '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.2)' },
-                                                '&.Mui-focused fieldset': { borderColor: '#2563EB' },
-                                            }
-                                        }}
-                                    />
-                                </Grid>
+                                                borderRadius: 1,
+                                                p: 1.5,
+                                                '& .MuiInputBase-input': {
+                                                    border: 'none',
+                                                    outline: 'none',
+                                                    boxShadow: 'none',
+                                                    padding: 0
+                                                }
+                                            }}
+                                        />
+                                    </Box>
 
-                                <Grid item xs={12} md={6}>
-                                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', mb: 1, display: 'block', textTransform: 'uppercase', fontWeight: 600 }}>
-                                        CVC / CVV
-                                    </Typography>
-                                    <TextField
-                                        fullWidth
-                                        placeholder="123"
-                                        InputProps={{
-                                            startAdornment: <InputAdornment position="start"><Security sx={{ color: 'rgba(255,255,255,0.3)', fontSize: 18 }} /></InputAdornment>,
-                                            endAdornment: <InputAdornment position="end"><Help sx={{ color: 'rgba(255,255,255,0.3)', fontSize: 18 }} /></InputAdornment>,
-                                        }}
-                                        sx={{
-                                            '& .MuiOutlinedInput-root': {
+                                    <Box>
+                                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', mb: 1, display: 'block', textTransform: 'uppercase', fontWeight: 600 }}>
+                                            CVC / CVV
+                                        </Typography>
+                                        <InputBase
+                                            fullWidth
+                                            placeholder="123"
+                                            startAdornment={<InputAdornment position="start"><Security sx={{ color: 'rgba(255,255,255,0.3)', fontSize: 18 }} /></InputAdornment>}
+                                            endAdornment={<InputAdornment position="end"><Help sx={{ color: 'rgba(255,255,255,0.3)', fontSize: 18 }} /></InputAdornment>}
+                                            sx={{
                                                 bgcolor: 'rgba(255,255,255,0.03)',
                                                 color: '#fff',
-                                                '& fieldset': { borderColor: 'rgba(255,255,255,0.1)' },
-                                                '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.2)' },
-                                                '&.Mui-focused fieldset': { borderColor: '#2563EB' },
-                                            }
-                                        }}
-                                    />
-                                </Grid>
+                                                borderRadius: 1,
+                                                p: 1.5,
+                                                '& .MuiInputBase-input': {
+                                                    border: 'none',
+                                                    outline: 'none',
+                                                    boxShadow: 'none',
+                                                    padding: 0
+                                                }
+                                            }}
+                                        />
+                                    </Box>
 
-                                <Grid item xs={12}>
-                                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', mb: 1, display: 'block', textTransform: 'uppercase', fontWeight: 600 }}>
-                                        Name on Card
-                                    </Typography>
-                                    <TextField
-                                        fullWidth
-                                        placeholder="e.g. Elena Rivas"
-                                        InputProps={{
-                                            startAdornment: <InputAdornment position="start"><Person sx={{ color: 'rgba(255,255,255,0.3)' }} /></InputAdornment>,
-                                        }}
-                                        sx={{
-                                            '& .MuiOutlinedInput-root': {
+                                    {/* Row 3: Name on Card - Full Width */}
+                                    <Box sx={{ gridColumn: '1 / -1' }}>
+                                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', mb: 1, display: 'block', textTransform: 'uppercase', fontWeight: 600 }}>
+                                            Name on Card
+                                        </Typography>
+                                        <InputBase
+                                            fullWidth
+                                            placeholder="e.g. Elena Rivas"
+                                            startAdornment={<InputAdornment position="start"><Person sx={{ color: 'rgba(255,255,255,0.3)' }} /></InputAdornment>}
+                                            sx={{
                                                 bgcolor: 'rgba(255,255,255,0.03)',
                                                 color: '#fff',
-                                                '& fieldset': { borderColor: 'rgba(255,255,255,0.1)' },
-                                                '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.2)' },
-                                                '&.Mui-focused fieldset': { borderColor: '#2563EB' },
-                                            }
-                                        }}
-                                    />
-                                </Grid>
+                                                borderRadius: 1,
+                                                p: 1.5,
+                                                '& .MuiInputBase-input': {
+                                                    border: 'none',
+                                                    outline: 'none',
+                                                    boxShadow: 'none',
+                                                    padding: 0
+                                                }
+                                            }}
+                                        />
+                                    </Box>
 
-                                <Grid item xs={12}>
-                                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', mb: 1, display: 'block', textTransform: 'uppercase', fontWeight: 600 }}>
-                                        Billing Zip / Postal Code
-                                    </Typography>
-                                    <TextField
-                                        fullWidth
-                                        placeholder="10001"
-                                        InputProps={{
-                                            startAdornment: <InputAdornment position="start"><LocationOn sx={{ color: 'rgba(255,255,255,0.3)' }} /></InputAdornment>,
-                                        }}
-                                        sx={{
-                                            '& .MuiOutlinedInput-root': {
+                                    {/* Row 4: Billing Zip / Postal Code - Full Width */}
+                                    <Box sx={{ gridColumn: '1 / -1' }}>
+                                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', mb: 1, display: 'block', textTransform: 'uppercase', fontWeight: 600 }}>
+                                            Billing Zip / Postal Code
+                                        </Typography>
+                                        <InputBase
+                                            fullWidth
+                                            placeholder="10001"
+                                            startAdornment={<InputAdornment position="start"><LocationOn sx={{ color: 'rgba(255,255,255,0.3)' }} /></InputAdornment>}
+                                            sx={{
                                                 bgcolor: 'rgba(255,255,255,0.03)',
                                                 color: '#fff',
-                                                '& fieldset': { borderColor: 'rgba(255,255,255,0.1)' },
-                                                '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.2)' },
-                                                '&.Mui-focused fieldset': { borderColor: '#2563EB' },
-                                            }
-                                        }}
-                                    />
-                                </Grid>
+                                                borderRadius: 1,
+                                                p: 1.5,
+                                                '& .MuiInputBase-input': {
+                                                    border: 'none',
+                                                    outline: 'none',
+                                                    boxShadow: 'none',
+                                                    padding: 0
+                                                }
+                                            }}
+                                        />
+                                    </Box>
 
-                                <Grid item xs={12}>
-                                    <FormControlLabel
-                                        control={
-                                            <Checkbox
-                                                checked={saveCard}
-                                                onChange={(e) => setSaveCard(e.target.checked)}
-                                                sx={{
-                                                    color: 'rgba(255,255,255,0.3)',
-                                                    '&.Mui-checked': { color: theme.palette.primary.main }
-                                                }}
-                                            />
-                                        }
-                                        label={
-                                            <Box>
-                                                <Typography variant="body2" sx={{ fontWeight: 600, color: '#fff' }}>
-                                                    Save payment details
-                                                </Typography>
-                                                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>
-                                                    Securely save this card for future governance course enrollments.
-                                                </Typography>
-                                            </Box>
-                                        }
-                                    />
-                                </Grid>
-                            </Grid>
+                                    <Box sx={{ gridColumn: '1 / -1' }}>
+                                        <FormControlLabel
+                                            control={
+                                                <Checkbox
+                                                    checked={saveCard}
+                                                    onChange={(e) => setSaveCard(e.target.checked)}
+                                                    sx={{
+                                                        color: 'rgba(255,255,255,0.3)',
+                                                        '&.Mui-checked': { color: theme.palette.primary.main }
+                                                    }}
+                                                />
+                                            }
+                                            label={
+                                                <Box>
+                                                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#fff' }}>
+                                                        Save payment details
+                                                    </Typography>
+                                                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>
+                                                        Securely save this card for future governance course enrollments.
+                                                    </Typography>
+                                                </Box>
+                                            }
+                                        />
+                                    </Box>
+                                </Box>
+                            )}
+
+                            {paymentMethod === 'paypal' && (
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                    <Box>
+                                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', mb: 1, display: 'block', textTransform: 'uppercase', fontWeight: 600 }}>
+                                            PayPal Email
+                                        </Typography>
+                                        <InputBase
+                                            fullWidth
+                                            placeholder="username@example.com"
+                                            startAdornment={<InputAdornment position="start"><Email sx={{ color: 'rgba(255,255,255,0.3)' }} /></InputAdornment>}
+                                            sx={{
+                                                bgcolor: 'rgba(255,255,255,0.03)',
+                                                color: '#fff',
+                                                borderRadius: 1,
+                                                p: 1.5,
+                                                '& .MuiInputBase-input': {
+                                                    border: 'none',
+                                                    outline: 'none',
+                                                    boxShadow: 'none',
+                                                    padding: 0
+                                                }
+                                            }}
+                                        />
+                                    </Box>
+                                    <Box sx={{ p: 2, bgcolor: 'rgba(37, 99, 235, 0.1)', borderRadius: 1, border: '1px solid rgba(37, 99, 235, 0.3)' }}>
+                                        <Typography variant="body2" sx={{ color: '#fff', textAlign: 'center' }}>
+                                            You will be redirected to PayPal to complete your purchase securely.
+                                        </Typography>
+                                    </Box>
+                                </Box>
+                            )}
+
+                            {paymentMethod === 'bank' && (
+                                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3 }}>
+                                    <Box sx={{ gridColumn: '1 / -1' }}>
+                                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', mb: 1, display: 'block', textTransform: 'uppercase', fontWeight: 600 }}>
+                                            Bank Name
+                                        </Typography>
+                                        <InputBase
+                                            readOnly
+                                            fullWidth
+                                            value="First Bank of Nigeria"
+                                            startAdornment={<InputAdornment position="start"><AccountBalance sx={{ color: 'rgba(255,255,255,0.3)' }} /></InputAdornment>}
+                                            sx={{
+                                                bgcolor: 'rgba(255,255,255,0.03)',
+                                                color: '#fff',
+                                                borderRadius: 1,
+                                                p: 1.5,
+                                                cursor: 'default',
+                                                '& .MuiInputBase-input': {
+                                                    border: 'none',
+                                                    outline: 'none',
+                                                    boxShadow: 'none',
+                                                    padding: 0
+                                                }
+                                            }}
+                                        />
+                                    </Box>
+
+                                    <Box sx={{ gridColumn: '1 / -1' }}>
+                                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', mb: 1, display: 'block', textTransform: 'uppercase', fontWeight: 600 }}>
+                                            Account Name
+                                        </Typography>
+                                        <InputBase
+                                            readOnly
+                                            fullWidth
+                                            value="Good Governance Hub"
+                                            startAdornment={<InputAdornment position="start"><Person sx={{ color: 'rgba(255,255,255,0.3)' }} /></InputAdornment>}
+                                            sx={{
+                                                bgcolor: 'rgba(255,255,255,0.03)',
+                                                color: '#fff',
+                                                borderRadius: 1,
+                                                p: 1.5,
+                                                cursor: 'default',
+                                                '& .MuiInputBase-input': {
+                                                    border: 'none',
+                                                    outline: 'none',
+                                                    boxShadow: 'none',
+                                                    padding: 0
+                                                }
+                                            }}
+                                        />
+                                    </Box>
+
+                                    <Box sx={{ gridColumn: '1 / -1' }}>
+                                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', mb: 1, display: 'block', textTransform: 'uppercase', fontWeight: 600 }}>
+                                            Account Number
+                                        </Typography>
+                                        <InputBase
+                                            readOnly
+                                            fullWidth
+                                            value="2034567890"
+                                            startAdornment={<InputAdornment position="start"><CreditCard sx={{ color: 'rgba(255,255,255,0.3)' }} /></InputAdornment>}
+                                            endAdornment={<InputAdornment position="end"><CheckCircle sx={{ color: '#10B981', fontSize: 18 }} /></InputAdornment>}
+                                            sx={{
+                                                bgcolor: 'rgba(255,255,255,0.03)',
+                                                color: '#fff',
+                                                borderRadius: 1,
+                                                p: 1.5,
+                                                cursor: 'default',
+                                                '& .MuiInputBase-input': {
+                                                    border: 'none',
+                                                    outline: 'none',
+                                                    boxShadow: 'none',
+                                                    padding: 0
+                                                }
+                                            }}
+                                        />
+                                    </Box>
+
+                                    <Box sx={{ gridColumn: '1 / -1' }}>
+                                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', mb: 1, display: 'block', textTransform: 'uppercase', fontWeight: 600 }}>
+                                            Payment Reference
+                                        </Typography>
+                                        <InputBase
+                                            readOnly
+                                            fullWidth
+                                            value="GGH-7832-XK9"
+                                            startAdornment={<InputAdornment position="start"><LocalOffer sx={{ color: 'rgba(255,255,255,0.3)' }} /></InputAdornment>}
+                                            sx={{
+                                                bgcolor: 'rgba(255,255,255,0.03)',
+                                                color: '#fff',
+                                                borderRadius: 1,
+                                                p: 1.5,
+                                                cursor: 'default',
+                                                '& .MuiInputBase-input': {
+                                                    border: 'none',
+                                                    outline: 'none',
+                                                    boxShadow: 'none',
+                                                    padding: 0
+                                                }
+                                            }}
+                                        />
+                                    </Box>
+
+                                    <Box sx={{ gridColumn: '1 / -1', p: 2, bgcolor: 'rgba(16, 185, 129, 0.1)', borderRadius: 1, border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                                        <Typography variant="body2" sx={{ color: '#fff', textAlign: 'center' }}>
+                                            Please use the reference code above when making the transfer.
+                                        </Typography>
+                                    </Box>
+                                </Box>
+                            )}
                         </Box>
-                    </Grid>
+                    </Box>
 
                     {/* Right Column - Order Summary */}
-                    <Grid item xs={12} lg={5}>
+                    <Box sx={{ width: { xs: '100%', md: '35%' } }}>
                         <Box sx={{ position: 'sticky', top: 24 }}>
-                            <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
-                                Order Summary
-                            </Typography>
-
                             <Box sx={{
                                 bgcolor: 'rgba(255,255,255,0.02)',
-                                borderRadius: 3,
+                                borderRadius: 1,
                                 p: 3,
                                 border: '1px solid rgba(255,255,255,0.05)'
                             }}>
+                                <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
+                                    Order Summary
+                                </Typography>
                                 {/* Course Item */}
                                 <Box sx={{ display: 'flex', gap: 2, mb: 4 }}>
                                     <Box
@@ -412,27 +568,42 @@ const Checkout = () => {
                                 </Box>
 
                                 {/* Promo Code */}
-                                <Box sx={{ display: 'flex', gap: 1, mb: 4 }}>
-                                    <TextField
+                                <Box sx={{
+                                    display: 'flex',
+                                    gap: 1,
+                                    mb: 4,
+                                    border: '1px dashed rgba(255,255,255,0.2)',
+                                    borderRadius: 1,
+                                    p: 0.5,
+                                    bgcolor: 'rgba(255,255,255,0.05)'
+                                }}>
+                                    <InputBase
                                         fullWidth
-                                        size="small"
                                         placeholder="Promo Code"
                                         sx={{
-                                            '& .MuiOutlinedInput-root': {
-                                                bgcolor: 'rgba(255,255,255,0.05)',
-                                                color: '#fff',
-                                                '& fieldset': { borderColor: 'rgba(255,255,255,0.1)', borderStyle: 'dashed' },
-                                                '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.2)' },
+                                            color: '#fff',
+                                            fontSize: '0.875rem',
+                                            ml: 1,
+                                            '& .MuiInputBase-input': {
+                                                border: 'none',
+                                                outline: 'none',
+                                                boxShadow: 'none',
+                                                padding: 0
+                                            },
+                                            '& input::placeholder': {
+                                                color: 'rgba(255,255,255,0.5)',
+                                                opacity: 1
                                             }
                                         }}
                                     />
                                     <Button
-                                        variant="outlined"
+                                        variant="text"
                                         sx={{
-                                            borderColor: 'rgba(255,255,255,0.2)',
                                             color: 'rgba(255,255,255,0.7)',
                                             textTransform: 'none',
-                                            '&:hover': { borderColor: '#fff', color: '#fff' }
+                                            minWidth: 'auto',
+                                            px: 2,
+                                            '&:hover': { color: '#fff', bgcolor: 'rgba(255,255,255,0.05)' }
                                         }}
                                     >
                                         Apply
@@ -444,6 +615,7 @@ const Checkout = () => {
                                     fullWidth
                                     variant="contained"
                                     size="large"
+                                    onClick={() => navigate('/payment-success')}
                                     startIcon={<Lock />}
                                     sx={{
                                         bgcolor: '#2563EB',
@@ -468,14 +640,17 @@ const Checkout = () => {
                                             256-bit SSL Secure Encryption
                                         </Typography>
                                     </Stack>
-                                    <Stack direction="row" justifyContent="center" spacing={1}>
-                                        <Box sx={{ bgcolor: '#fff', px: 0.5, borderRadius: 0.5, height: 20, display: 'flex', alignItems: 'center' }}>
-                                            <Typography variant="caption" sx={{ color: '#000', fontWeight: 800, fontSize: 10 }}>VISA</Typography>
-                                        </Box>
-                                        <Box sx={{ bgcolor: '#fff', px: 0.5, borderRadius: 0.5, height: 20, display: 'flex', alignItems: 'center' }}>
+                                    <Box sx={{ bgcolor: '#fff', px: 0.75, py: 0.25, borderRadius: 1, display: 'inline-flex', alignItems: 'center', gap: 1.5 }}>
+                                        <Typography variant="caption" sx={{ color: '#000', fontWeight: 800, fontSize: 10 }}>VISA</Typography>
+                                        <Box sx={{ width: 1, height: 10, bgcolor: '#ccc' }} />
+                                        <Stack direction="row" alignItems="center" spacing={0.5}>
+                                            <Box sx={{ position: 'relative', width: 21, height: 14 }}>
+                                                <Box sx={{ position: 'absolute', left: 0, width: 14, height: 14, bgcolor: '#EB001B', borderRadius: '50%' }} />
+                                                <Box sx={{ position: 'absolute', right: 0, width: 14, height: 14, bgcolor: '#F79E1B', borderRadius: '50%', opacity: 0.8 }} />
+                                            </Box>
                                             <Typography variant="caption" sx={{ color: '#000', fontWeight: 800, fontSize: 10 }}>Mastercard</Typography>
-                                        </Box>
-                                    </Stack>
+                                        </Stack>
+                                    </Box>
                                 </Box>
                             </Box>
 
@@ -483,7 +658,7 @@ const Checkout = () => {
                             <Box sx={{
                                 mt: 3,
                                 bgcolor: 'rgba(255,255,255,0.02)',
-                                borderRadius: 3,
+                                borderRadius: 1,
                                 p: 2.5,
                                 border: '1px solid rgba(255,255,255,0.05)',
                                 display: 'flex',
@@ -502,8 +677,8 @@ const Checkout = () => {
                                 </Box>
                             </Box>
                         </Box>
-                    </Grid>
-                </Grid>
+                    </Box>
+                </Box>
             </Container>
 
             {/* Footer */}
