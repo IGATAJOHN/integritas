@@ -17,7 +17,7 @@ import { AdminDashboard, UserManagement, AdminSettings } from '../modules/admin'
 import { TutorDashboard, MyCourses, Students } from '../modules/tutor';
 
 // Learner Module
-import { LearnerDashboard, BrowseCourses, MyEnrollments, MyLearning, CourseLesson, CourseLessonV2, Checkout, MyProgress, Explore, CourseDetail } from '../modules/learner';
+import { LearnerDashboard, BrowseCourses, MyEnrollments, MyLearning, CourseLesson, CourseLessonV2, Checkout, MyProgress, Explore, CourseDetail, PaymentSuccess } from '../modules/learner';
 
 const router = createBrowserRouter([
     {
@@ -134,6 +134,11 @@ const router = createBrowserRouter([
     {
         path: '/checkout',
         element: <Checkout />,
+    },
+    // Payment Success Page
+    {
+        path: '/payment-success',
+        element: <PaymentSuccess />,
     },
 ]);
 

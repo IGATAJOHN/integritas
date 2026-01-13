@@ -8,3 +8,4 @@ export { default as Checkout } from './pages/Checkout';
 export { default as MyProgress } from './pages/MyProgress';
 export { default as Explore } from './pages/Explore';
 export { default as CourseDetail } from './pages/CourseDetail';
+export { default as PaymentSuccess } from './pages/PaymentSuccess';

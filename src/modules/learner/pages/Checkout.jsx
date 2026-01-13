@@ -615,6 +615,7 @@ const Checkout = () => {
                                     fullWidth
                                     variant="contained"
                                     size="large"
+                                    onClick={() => navigate('/payment-success')}
                                     startIcon={<Lock />}
                                     sx={{
                                         bgcolor: '#2563EB',
