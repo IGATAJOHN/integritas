@@ -113,7 +113,7 @@ const TutorDashboard = () => {
     }, []);
 
     return (
-        <Box sx={{ p: { xs: 2, md: 3 }, px: { xs: 2, sm: 4, md: 6, lg: 8 }, bgcolor: '#0C1322', minHeight: 'calc(100vh - 70px)' }}>
+        <Box sx={{ p: 4, bgcolor: '#0C1322', minHeight: 'calc(100vh - 70px)' }}>
             {/* Welcome Header */}
             <Box sx={{ mb: 3 }}>
                 <Typography
@@ -132,98 +132,98 @@ const TutorDashboard = () => {
             </Box>
 
             {/* Stats Cards Row */}
-            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2.5, mb: 3, alignItems: 'stretch' }}>
+            <Grid container spacing={4} sx={{ mb: 4 }}>
                 {statsData.map((stat, index) => (
-                    <Paper
-                        key={index}
-                        sx={{
-                            flex: 1,
-                            bgcolor: '#1A2230',
-                            p: 3,
-                            borderRadius: 2,
-                            border: '1px solid #374151',
-                            minHeight: 120,
-                            height: 'auto',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            justifyContent: 'space-between',
-                        }}
-                    >
-                        {/* Top row - Label and Icon */}
-                        <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-                            <Typography
-                                sx={{
-                                    color: '#9CA3AF',
-                                    fontSize: '0.9rem',
-                                    fontWeight: 500,
-                                }}
-                            >
-                                {stat.label}
-                            </Typography>
-                            <Box
-                                sx={{
-                                    bgcolor: '#0C1322',
-                                    borderRadius: 1.5,
-                                    p: 1,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                }}
-                            >
-                                <stat.icon sx={{ fontSize: 22, color: '#6B7280' }} />
-                            </Box>
-                        </Stack>
+                    <Grid item xs={12} md={4} key={index}>
+                        <Paper
+                            sx={{
+                                bgcolor: '#1A2230',
+                                p: 3,
+                                borderRadius: 2,
+                                border: '1px solid #374151',
+                                minHeight: 120,
+                                height: '100%',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'space-between',
+                            }}
+                        >
+                            {/* Top row - Label and Icon */}
+                            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+                                <Typography
+                                    sx={{
+                                        color: '#9CA3AF',
+                                        fontSize: '0.9rem',
+                                        fontWeight: 500,
+                                    }}
+                                >
+                                    {stat.label}
+                                </Typography>
+                                <Box
+                                    sx={{
+                                        bgcolor: '#0C1322',
+                                        borderRadius: 1.5,
+                                        p: 1,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}
+                                >
+                                    <stat.icon sx={{ fontSize: 22, color: '#6B7280' }} />
+                                </Box>
+                            </Stack>
 
-                        {/* Bottom row - Value and Change */}
-                        <Stack direction="row" alignItems="baseline" spacing={1.5} sx={{ mt: 2 }}>
-                            <Typography
-                                sx={{
-                                    color: '#FFFFFF',
-                                    fontSize: '2.5rem',
-                                    fontWeight: 700,
-                                    lineHeight: 1,
-                                }}
-                            >
-                                {stat.value}
-                            </Typography>
-                            {stat.change && (
-                                <Stack direction="row" alignItems="center" spacing={0.25}>
-                                    {stat.changeType === 'positive' ? (
-                                        <TrendingUp sx={{ fontSize: 14, color: '#10B981' }} />
-                                    ) : (
-                                        <TrendingDown sx={{ fontSize: 14, color: '#EF4444' }} />
-                                    )}
+                            {/* Bottom row - Value and Change */}
+                            <Stack direction="row" alignItems="baseline" spacing={1.5} sx={{ mt: 2 }}>
+                                <Typography
+                                    sx={{
+                                        color: '#FFFFFF',
+                                        fontSize: '2.5rem',
+                                        fontWeight: 700,
+                                        lineHeight: 1,
+                                    }}
+                                >
+                                    {stat.value}
+                                </Typography>
+                                {stat.change && (
+                                    <Stack direction="row" alignItems="center" spacing={0.25}>
+                                        {stat.changeType === 'positive' ? (
+                                            <TrendingUp sx={{ fontSize: 14, color: '#10B981' }} />
+                                        ) : (
+                                            <TrendingDown sx={{ fontSize: 14, color: '#EF4444' }} />
+                                        )}
+                                        <Typography
+                                            sx={{
+                                                color: stat.changeType === 'positive' ? '#10B981' : '#EF4444',
+                                                fontSize: '0.75rem',
+                                                fontWeight: 500,
+                                            }}
+                                        >
+                                            {stat.change}
+                                        </Typography>
+                                    </Stack>
+                                )}
+                                {stat.sublabel && (
                                     <Typography
                                         sx={{
-                                            color: stat.changeType === 'positive' ? '#10B981' : '#EF4444',
+                                            color: stat.sublabelColor || '#F59E0B',
                                             fontSize: '0.75rem',
                                             fontWeight: 500,
                                         }}
                                     >
-                                        {stat.change}
+                                        {stat.sublabel}
                                     </Typography>
-                                </Stack>
-                            )}
-                            {stat.sublabel && (
-                                <Typography
-                                    sx={{
-                                        color: stat.sublabelColor || '#F59E0B',
-                                        fontSize: '0.75rem',
-                                        fontWeight: 500,
-                                    }}
-                                >
-                                    {stat.sublabel}
-                                </Typography>
-                            )}
-                        </Stack>
-                    </Paper>
+                                )}
+                            </Stack>
+                        </Paper>
+                    </Grid>
                 ))}
-            </Box>
+            </Grid>
 
             {/* Main Content - Chart and Reviews */}
-            <Grid container spacing={2} sx={{ mb: 2.5 }}>
+            <Grid container spacing={4} sx={{ mb: 4 }}>
                 {/* Learner Engagement Chart */}
-                <Grid item xs={12} lg={7}>
+                <Grid item xs={12} md={8}>
                     <Paper
                         sx={{
                             bgcolor: '#1A2230',
@@ -319,7 +319,7 @@ const TutorDashboard = () => {
                 </Grid>
 
                 {/* Pending Reviews */}
-                <Grid item xs={12} lg={5}>
+                <Grid item xs={12} md={4}>
                     <Paper
                         sx={{
                             bgcolor: '#1A2230',
@@ -430,7 +430,7 @@ const TutorDashboard = () => {
                     </Button>
                 </Stack>
 
-                <Grid container spacing={2}>
+                <Grid container spacing={4}>
                     {managedCourses.map((course) => (
                         <Grid item xs={12} sm={6} md={4} key={course.id}>
                             <Paper
@@ -439,12 +439,15 @@ const TutorDashboard = () => {
                                     borderRadius: 2,
                                     overflow: 'hidden',
                                     border: '1px solid #374151',
+                                    height: '100%',
+                                    display: 'flex',
+                                    flexDirection: 'column',
                                 }}
                             >
                                 {/* Course Image Placeholder */}
                                 <Box
                                     sx={{
-                                        height: 100,
+                                        height: 120,
                                         bgcolor: '#0C1322',
                                         position: 'relative',
                                     }}
@@ -467,13 +470,13 @@ const TutorDashboard = () => {
                                     )}
                                 </Box>
 
-                                <Box sx={{ p: 1.5 }}>
+                                <Box sx={{ p: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
                                     <Typography
                                         sx={{
                                             color: '#FFFFFF',
                                             fontWeight: 600,
-                                            fontSize: '0.8rem',
-                                            mb: 0.5,
+                                            fontSize: '1rem',
+                                            mb: 1,
                                             lineHeight: 1.3,
                                         }}
                                     >
@@ -482,29 +485,29 @@ const TutorDashboard = () => {
                                     <Typography
                                         sx={{
                                             color: '#6B7280',
-                                            fontSize: '0.65rem',
-                                            mb: 1.25,
+                                            fontSize: '0.85rem',
+                                            mb: 2,
                                             display: '-webkit-box',
                                             WebkitLineClamp: 2,
                                             WebkitBoxOrient: 'vertical',
                                             overflow: 'hidden',
-                                            lineHeight: 1.4,
+                                            lineHeight: 1.5,
                                         }}
                                     >
                                         {course.description}
                                     </Typography>
 
-                                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.25 }}>
-                                        <Stack direction="row" alignItems="center" spacing={0.5}>
-                                            <Group sx={{ fontSize: 12, color: '#6B7280' }} />
-                                            <Typography sx={{ color: '#9CA3AF', fontSize: '0.65rem' }}>
+                                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2, mt: 'auto' }}>
+                                        <Stack direction="row" alignItems="center" spacing={1}>
+                                            <Group sx={{ fontSize: 16, color: '#6B7280' }} />
+                                            <Typography sx={{ color: '#9CA3AF', fontSize: '0.8rem' }}>
                                                 {course.students} Students
                                             </Typography>
                                         </Stack>
                                         {course.rating && (
-                                            <Stack direction="row" alignItems="center" spacing={0.25}>
-                                                <Typography sx={{ color: '#F59E0B', fontSize: '0.65rem' }}>★</Typography>
-                                                <Typography sx={{ color: '#9CA3AF', fontSize: '0.65rem' }}>
+                                            <Stack direction="row" alignItems="center" spacing={0.5}>
+                                                <Typography sx={{ color: '#F59E0B', fontSize: '0.8rem' }}>★</Typography>
+                                                <Typography sx={{ color: '#9CA3AF', fontSize: '0.8rem' }}>
                                                     {course.rating}
                                                 </Typography>
                                             </Stack>

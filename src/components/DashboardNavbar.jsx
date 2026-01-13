@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
     Box,
@@ -9,11 +9,15 @@ import {
     IconButton,
     Avatar,
     Badge,
+    useTheme,
+    useMediaQuery,
+    InputBase,
 } from '@mui/material';
 import {
     Search,
     NotificationsOutlined,
     SettingsOutlined,
+    Menu as MenuIcon,
 } from '@mui/icons-material';
 
 const DashboardNavbar = ({
@@ -22,7 +26,12 @@ const DashboardNavbar = ({
     user = { name: 'User', initials: 'U' },
     notificationCount = 0,
     showSearch = true,
+    onDrawerToggle = () => { },
 }) => {
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+    const [searchQuery, setSearchQuery] = useState('');
+
     return (
         <Box
             sx={{
@@ -32,54 +41,65 @@ const DashboardNavbar = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                px: 3,
+                px: { xs: 2, md: 4 },
+                overflow: 'hidden',
             }}
         >
-            {/* Left - Page Title & Search */}
-            <Stack direction="row" alignItems="center" spacing={3}>
+            <Stack direction="row" alignItems="center" spacing={{ xs: 1, md: 3 }}>
+                <IconButton
+                    onClick={onDrawerToggle}
+                    sx={{
+                        display: { xs: 'flex', md: 'none' },
+                        color: '#FFFFFF',
+                        mr: 1,
+                    }}
+                >
+                    <MenuIcon />
+                </IconButton>
+
                 <Typography
                     sx={{
                         color: '#FFFFFF',
                         fontWeight: 600,
-                        fontSize: '1.1rem',
+                        fontSize: { xs: '1rem', md: '1.1rem' },
                     }}
                 >
                     {title}
                 </Typography>
-                {showSearch && (
-                    <TextField
-                        placeholder={searchPlaceholder}
-                        size="small"
-                        sx={{
-                            width: 280,
-                            '& .MuiOutlinedInput-root': {
-                                bgcolor: '#1A2230',
-                                borderRadius: 2,
-                                height: 44,
-                                '& fieldset': { border: 'none' },
-                            },
-                            '& .MuiInputBase-input': {
-                                color: '#9CA3AF',
+                {showSearch && !isMobile && (
+                    <Box sx={{
+                        bgcolor: "#1F2937",
+                        borderRadius: 1,
+                        px: 2,
+                        display: { xs: 'none', sm: 'flex' },
+                        alignItems: 'center',
+                        gap: 1,
+                        width: '260px',
+                        height: '40px'
+                    }}>
+                        <Search sx={{ color: "#9CA3AF", fontSize: 20 }} />
+                        <InputBase
+                            placeholder="Search courses"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            sx={{
+                                color: "#FFFFFF",
                                 fontSize: '0.9rem',
-                                py: 1,
-                                '&::placeholder': {
-                                    color: '#6B7280',
-                                    opacity: 1,
-                                },
-                            },
-                        }}
-                        InputProps={{
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <Search sx={{ color: '#6B7280', fontSize: 20 }} />
-                                </InputAdornment>
-                            ),
-                        }}
-                    />
+                                width: '100%',
+                                '& input': {
+                                    border: 'none',
+                                    outline: 'none',
+                                    '&:focus': {
+                                        border: 'none',
+                                        outline: 'none'
+                                    }
+                                }
+                            }}
+                        />
+                    </Box>
                 )}
             </Stack>
 
-            {/* Right - Actions & Profile */}
             <Stack direction="row" alignItems="center" spacing={1}>
                 <IconButton
                     sx={{
@@ -90,16 +110,6 @@ const DashboardNavbar = ({
                     <Badge badgeContent={notificationCount} color="error">
                         <NotificationsOutlined sx={{ fontSize: 24 }} />
                     </Badge>
-                </IconButton>
-                <IconButton
-                    component={Link}
-                    to="/settings"
-                    sx={{
-                        color: '#6B7280',
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' },
-                    }}
-                >
-                    <SettingsOutlined sx={{ fontSize: 24 }} />
                 </IconButton>
                 <Avatar
                     src={user.avatar}

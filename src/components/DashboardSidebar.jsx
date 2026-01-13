@@ -10,16 +10,25 @@ import {
     ListItemIcon,
     ListItemText,
     Button,
+    Drawer,
+    useTheme,
+    useMediaQuery,
 } from '@mui/material';
 import { SwapHoriz } from '@mui/icons-material';
+
+const DRAWER_WIDTH = 260;
 
 const DashboardSidebar = ({
     navItems = [],
     switchRolePath = null,
     switchRoleLabel = 'Switch Role',
+    mobileOpen = false,
+    onDrawerClose = () => { },
 }) => {
     const location = useLocation();
     const navigate = useNavigate();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
     const isActive = (path, basePath) => {
         if (path === basePath) {
@@ -30,24 +39,29 @@ const DashboardSidebar = ({
 
     const basePath = navItems.length > 0 ? navItems[0].path : '/';
 
-    return (
+    const handleNavClick = (path) => {
+        navigate(path);
+        if (isMobile) {
+            onDrawerClose();
+        }
+    };
+
+    const drawerContent = (
         <Box
             sx={{
-                width: 260,
-                minWidth: 260,
+                width: DRAWER_WIDTH,
+                minWidth: DRAWER_WIDTH,
+                maxWidth: DRAWER_WIDTH,
                 bgcolor: '#0F1729',
                 borderRight: '1px solid #1F2937',
                 display: 'flex',
                 flexDirection: 'column',
-                height: '100vh',
-                position: 'fixed',
-                left: 0,
-                top: 0,
-                zIndex: 1000,
+                height: '100%',
+                overflowX: 'hidden',
             }}
         >
             {/* Logo */}
-            <Box sx={{ p: 2.5, borderBottom: '1px solid #1F2937' }}>
+            <Box sx={{ p: 2.5, }}>
                 <Stack
                     component={Link}
                     to="/"
@@ -60,7 +74,7 @@ const DashboardSidebar = ({
                         component="img"
                         src="/src/assets/images/GGH_icon.png"
                         alt="GGH Logo"
-                        sx={{ height: 40, width: 40 }}
+                        sx={{ height: 50, width: 50 }}
                     />
                     <Box>
                         <Typography
@@ -79,7 +93,7 @@ const DashboardSidebar = ({
                                 color: '#6B7280',
                             }}
                         >
-                            E-Learning Platform
+                            Tutors Portal
                         </Typography>
                     </Box>
                 </Stack>
@@ -91,8 +105,7 @@ const DashboardSidebar = ({
                     {navItems.map((item) => (
                         <ListItem key={item.path} disablePadding sx={{ mb: 0.5 }}>
                             <ListItemButton
-                                component={Link}
-                                to={item.path}
+                                onClick={() => handleNavClick(item.path)}
                                 sx={{
                                     borderRadius: 1.5,
                                     py: 1.5,
@@ -132,7 +145,10 @@ const DashboardSidebar = ({
                         fullWidth
                         variant="outlined"
                         startIcon={<SwapHoriz />}
-                        onClick={() => navigate(switchRolePath)}
+                        onClick={() => {
+                            navigate(switchRolePath);
+                            if (isMobile) onDrawerClose();
+                        }}
                         sx={{
                             borderColor: '#374151',
                             color: '#9CA3AF',
@@ -150,6 +166,49 @@ const DashboardSidebar = ({
                 </Box>
             )}
         </Box>
+    );
+
+    return (
+        <>
+            {/* Mobile Drawer (Temporary) */}
+            <Drawer
+                variant="temporary"
+                open={mobileOpen}
+                onClose={onDrawerClose}
+                ModalProps={{ keepMounted: true }}
+                sx={{
+                    display: { xs: 'block', md: 'none' },
+                    '& .MuiDrawer-paper': {
+                        boxSizing: 'border-box',
+                        width: DRAWER_WIDTH,
+                        bgcolor: '#0F1729',
+                        border: 'none',
+                        overflowX: 'hidden',
+                    },
+                }}
+            >
+                {drawerContent}
+            </Drawer>
+
+            {/* Desktop Drawer (Permanent) */}
+            <Drawer
+                variant="permanent"
+                sx={{
+                    display: { xs: 'none', md: 'block' },
+                    '& .MuiDrawer-paper': {
+                        boxSizing: 'border-box',
+                        width: DRAWER_WIDTH,
+                        bgcolor: '#0F1729',
+                        border: 'none',
+                        borderRight: '1px solid #1F2937',
+                        overflowX: 'hidden',
+                    },
+                }}
+                open
+            >
+                {drawerContent}
+            </Drawer>
+        </>
     );
 };
 
