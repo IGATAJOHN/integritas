@@ -123,7 +123,8 @@ const PaymentSuccess = () => {
                 </Typography>
 
                 <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 6, textAlign: 'center' }}>
-                    Thank you for your purchase. A confirmation email has been sent to your inbox.
+                    Thank you for your purchase. A confirmation email has been sent to your inbox.<br />
+                    <Box component="span" sx={{ color: '#fff' }}>user@example.com</Box>
                 </Typography>
 
                 {/* Order Details Card */}
@@ -241,7 +242,7 @@ const PaymentSuccess = () => {
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ width: '100%', justifyContent: 'center' }}>
                     <Button
                         variant="contained"
-                        onClick={() => navigate('/explore')}
+                        onClick={() => navigate('/explore/dashboard')}
                         startIcon={<CheckCircle sx={{ fontSize: 20 }} />}
                         sx={{
                             bgcolor: '#2563EB',

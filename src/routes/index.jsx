@@ -98,6 +98,10 @@ const router = createBrowserRouter([
                 element: <Explore />,
             },
             {
+                path: 'dashboard',
+                element: <LearnerDashboard />,
+            },
+            {
                 path: 'my-learning',
                 element: <MyLearning />,
             },

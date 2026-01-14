@@ -1,4 +1,4 @@
-export { default as LearnerDashboard } from './pages/Dashboard';
+export { default as LearnerDashboard } from './pages/LearnerDashboard';
 export { default as BrowseCourses } from './pages/BrowseCourses';
 export { default as MyEnrollments } from './pages/MyEnrollments';
 export { default as MyLearning } from './pages/MyLearning';
