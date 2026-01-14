@@ -1,3 +1,3 @@
-export { default as AdminDashboard } from './pages/Dashboard';
-export { default as UserManagement } from './pages/UserManagement';
-export { default as AdminSettings } from './pages/Settings';
+export { default as AdminLayout } from './layouts/AdminLayout';
+export { default as adminRoutes } from './routes';
+export { AdminDashboard, UserManagement, AdminSettings } from './pages';

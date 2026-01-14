@@ -10,13 +10,10 @@ import ModernLearnerLayout from './layouts/ModernLearnerLayout';
 // Pages
 import { Home, NotFound, LandingPage, LoginPage, VerifyPage, ForgotPasswordPage } from '../pages';
 
-// Admin Module
 import { AdminDashboard, UserManagement, AdminSettings } from '../modules/admin';
 
-// Tutor Module
 import { TutorDashboard, MyCourses, Students } from '../modules/tutor';
 
-// Learner Module
 import { LearnerDashboard, BrowseCourses, MyEnrollments, MyLearning, CourseLesson, CourseLessonV2, Checkout, MyProgress, Explore, CourseDetail, PaymentSuccess } from '../modules/learner';
 
 const router = createBrowserRouter([
@@ -50,7 +47,6 @@ const router = createBrowserRouter([
             },
         ],
     },
-    // Admin Routes
     {
         path: '/admin',
         element: <AdminLayout />,
@@ -69,7 +65,6 @@ const router = createBrowserRouter([
             },
         ],
     },
-    // Tutor Routes
     {
         path: '/tutor',
         element: <TutorLayout />,
@@ -88,7 +83,6 @@ const router = createBrowserRouter([
             },
         ],
     },
-    // Explore Routes (formerly Learner)
     {
         path: '/explore',
         element: <ModernLearnerLayout />,
@@ -115,27 +109,22 @@ const router = createBrowserRouter([
             },
         ],
     },
-    // Course Detail - Full Page (outside layout)
     {
         path: '/explore/course/:courseId',
         element: <CourseDetail />,
     },
-    // Course Lesson - Full Page (outside layout)
     {
         path: '/explore/lesson/:courseId/:lessonId',
         element: <CourseLesson />,
     },
-    // Course Lesson V2 - Full Page with Left Sidebar
     {
         path: '/explore/lesson-v2/:courseId/:lessonId',
         element: <CourseLessonV2 />,
     },
-    // Checkout Page
     {
         path: '/checkout',
         element: <Checkout />,
     },
-    // Payment Success Page
     {
         path: '/payment-success',
         element: <PaymentSuccess />,
