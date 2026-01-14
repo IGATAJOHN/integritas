@@ -1,6 +1,20 @@
 import React from 'react';
-import { Outlet } from 'react-router-dom';
-import { Box } from '@mui/material';
+import {
+    Dashboard as DashboardIcon,
+    School as SchoolIcon,
+    EmojiEvents as TrophyIcon,
+    Folder as ResourcesIcon,
+    Settings as SettingsIcon
+} from '@mui/icons-material';
+import { ModernDashboardLayout } from '../../layouts';
+
+const sidebarItems = [
+    { label: 'Dashboard', path: '/explore/dashboard', icon: <DashboardIcon /> },
+    { label: 'My Courses', path: '/explore/my-learning', icon: <SchoolIcon /> },
+    { label: 'Achievements', path: '/explore/achievements', icon: <TrophyIcon /> },
+    { label: 'Resources', path: '/explore/resources', icon: <ResourcesIcon /> },
+    { label: 'Settings', path: '/explore/settings', icon: <SettingsIcon /> },
+];
 
 /**
  * ModernLearnerLayout
@@ -11,9 +25,7 @@ import { Box } from '@mui/material';
  */
 const ModernLearnerLayout = () => {
     return (
-        <Box sx={{ minHeight: '100vh', bgcolor: '#080D19' }}>
-            <Outlet />
-        </Box>
+        <ModernDashboardLayout sidebarItems={sidebarItems} title="Learner Portal" />
     );
 };
 

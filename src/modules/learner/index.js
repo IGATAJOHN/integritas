@@ -3,7 +3,7 @@ export { default as LearnerLayout } from './layouts/LearnerLayout';
 export { default as ModernLearnerLayout } from './layouts/ModernLearnerLayout';
 
 // Routes
-export { default as learnerRoutes } from './routes';
+export { learnerRoutes } from './routes';
 
 // Pages
 export {
