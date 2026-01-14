@@ -1,11 +1,21 @@
-export { default as LearnerDashboard } from './pages/Dashboard';
-export { default as BrowseCourses } from './pages/BrowseCourses';
-export { default as MyEnrollments } from './pages/MyEnrollments';
-export { default as MyLearning } from './pages/MyLearning';
-export { default as CourseLesson } from './pages/CourseLesson';
-export { default as CourseLessonV2 } from './pages/CourseLessonV2';
-export { default as Checkout } from './pages/Checkout';
-export { default as MyProgress } from './pages/MyProgress';
-export { default as Explore } from './pages/Explore';
-export { default as CourseDetail } from './pages/CourseDetail';
-export { default as PaymentSuccess } from './pages/PaymentSuccess';
+// Layouts
+export { default as LearnerLayout } from './layouts/LearnerLayout';
+export { default as ModernLearnerLayout } from './layouts/ModernLearnerLayout';
+
+// Routes
+export { default as learnerRoutes } from './routes';
+
+// Pages
+export {
+    LearnerDashboard,
+    BrowseCourses,
+    MyEnrollments,
+    MyLearning,
+    CourseLesson,
+    CourseLessonV2,
+    Checkout,
+    MyProgress,
+    Explore,
+    CourseDetail,
+    PaymentSuccess,
+} from './pages';
