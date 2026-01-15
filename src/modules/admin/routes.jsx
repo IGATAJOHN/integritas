@@ -1,5 +1,15 @@
+import { Navigate } from 'react-router-dom';
 import AdminLayout from './layouts/AdminLayout';
-import { AdminDashboard, UserManagement, AdminSettings } from './pages';
+import {
+    AdminDashboard,
+    AdminSettings,
+    StaffManagement,
+    LearnerManagement,
+    TutorManagement,
+    ReviewerManagement,
+    CourseManagement,
+    CategoryManagement,
+} from './pages';
 
 const adminRoutes = {
     path: '/admin',
@@ -11,7 +21,45 @@ const adminRoutes = {
         },
         {
             path: 'users',
-            element: <UserManagement />,
+            children: [
+                {
+                    index: true,
+                    element: <Navigate to="staff" replace />,
+                },
+                {
+                    path: 'staff',
+                    element: <StaffManagement />,
+                },
+                {
+                    path: 'learners',
+                    element: <LearnerManagement />,
+                },
+                {
+                    path: 'tutors',
+                    element: <TutorManagement />,
+                },
+                {
+                    path: 'reviewers',
+                    element: <ReviewerManagement />,
+                },
+            ],
+        },
+        {
+            path: 'content',
+            children: [
+                {
+                    index: true,
+                    element: <Navigate to="courses" replace />,
+                },
+                {
+                    path: 'courses',
+                    element: <CourseManagement />,
+                },
+                {
+                    path: 'lessons',
+                    element: <CategoryManagement />,
+                },
+            ],
         },
         {
             path: 'settings',
@@ -21,3 +69,5 @@ const adminRoutes = {
 };
 
 export default adminRoutes;
+
+

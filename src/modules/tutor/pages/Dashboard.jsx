@@ -2,7 +2,6 @@ import React, { useRef, useState, useEffect } from 'react';
 import {
     Box,
     Typography,
-    Grid,
     Paper,
     Button,
     Stack,
@@ -132,9 +131,9 @@ const TutorDashboard = () => {
             </Box>
 
             {/* Stats Cards Row */}
-            <Grid container spacing={4} sx={{ mb: 4 }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 4, width: '100%' }}>
                 {statsData.map((stat, index) => (
-                    <Grid item xs={12} md={4} key={index}>
+                    <Box key={index} sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(33.33% - 16px)' }, minWidth: 0 }}>
                         <Paper
                             sx={{
                                 bgcolor: '#1A2230',
@@ -216,14 +215,14 @@ const TutorDashboard = () => {
                                 )}
                             </Stack>
                         </Paper>
-                    </Grid>
+                    </Box>
                 ))}
-            </Grid>
+            </Box>
 
             {/* Main Content - Chart and Reviews */}
-            <Grid container spacing={4} sx={{ mb: 4 }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 4, mb: 4, width: '100%' }}>
                 {/* Learner Engagement Chart */}
-                <Grid item xs={12} md={8}>
+                <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 calc(66.67% - 16px)' }, minWidth: 0 }}>
                     <Paper
                         sx={{
                             bgcolor: '#1A2230',
@@ -316,10 +315,10 @@ const TutorDashboard = () => {
                             )}
                         </Box>
                     </Paper>
-                </Grid>
+                </Box>
 
                 {/* Pending Reviews */}
-                <Grid item xs={12} md={4}>
+                <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 calc(33.33% - 16px)' }, minWidth: 0 }}>
                     <Paper
                         sx={{
                             bgcolor: '#1A2230',
@@ -403,8 +402,8 @@ const TutorDashboard = () => {
                             ))}
                         </Stack>
                     </Paper>
-                </Grid>
-            </Grid>
+                </Box>
+            </Box>
 
             {/* Managed Courses */}
             <Box>
@@ -430,9 +429,9 @@ const TutorDashboard = () => {
                     </Button>
                 </Stack>
 
-                <Grid container spacing={4}>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                     {managedCourses.map((course) => (
-                        <Grid item xs={12} sm={6} md={4} key={course.id}>
+                        <Box key={course.id} sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 16px)', md: '1 1 calc(33.33% - 21.33px)' }, minWidth: 0 }}>
                             <Paper
                                 sx={{
                                     bgcolor: '#1A2230',
@@ -544,9 +543,9 @@ const TutorDashboard = () => {
                                     </Stack>
                                 </Box>
                             </Paper>
-                        </Grid>
+                        </Box>
                     ))}
-                </Grid>
+                </Box>
             </Box>
         </Box>
     );

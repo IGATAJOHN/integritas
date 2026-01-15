@@ -1,15 +1,8 @@
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Box, useTheme, useMediaQuery } from '@mui/material';
-import {
-    DashboardOutlined,
-    SchoolOutlined,
-    BarChartOutlined,
-    AssignmentOutlined,
-    PersonOutlined,
-} from '@mui/icons-material';
-import DashboardSidebar from '../../../components/DashboardSidebar';
-import DashboardNavbar from '../../../components/DashboardNavbar';
+import TutorSidebar from '../components/TutorSidebar';
+import TutorNavbar from '../components/TutorNavbar';
 
 const SIDEBAR_WIDTH = 260;
 
@@ -26,14 +19,6 @@ const TutorLayout = () => {
         setMobileOpen(false);
     };
 
-    const sidebarItems = [
-        { path: '/tutor', label: 'Dashboard', icon: <DashboardOutlined sx={{ fontSize: 22 }} /> },
-        { path: '/tutor/courses', label: 'My Courses', icon: <SchoolOutlined sx={{ fontSize: 22 }} /> },
-        { path: '/tutor/analytics', label: 'Teacher Analytics', icon: <BarChartOutlined sx={{ fontSize: 22 }} /> },
-        { path: '/tutor/assignments', label: 'Assignments', icon: <AssignmentOutlined sx={{ fontSize: 22 }} /> },
-        { path: '/tutor/profile', label: 'Profile', icon: <PersonOutlined sx={{ fontSize: 22 }} /> },
-    ];
-
     const user = {
         name: 'Tutor James',
         initials: 'TJ',
@@ -41,10 +26,7 @@ const TutorLayout = () => {
 
     return (
         <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#0C1322', overflowX: 'hidden' }}>
-            <DashboardSidebar
-                navItems={sidebarItems}
-                switchRolePath="/learner"
-                switchRoleLabel="Switch Role"
+            <TutorSidebar
                 mobileOpen={mobileOpen}
                 onDrawerClose={handleDrawerClose}
             />
@@ -60,7 +42,7 @@ const TutorLayout = () => {
                 }}
             >
                 <Box sx={{ position: 'sticky', top: 0, zIndex: 100 }}>
-                    <DashboardNavbar
+                    <TutorNavbar
                         title="Tutor Dashboard"
                         searchPlaceholder="Search courses or students..."
                         user={user}
@@ -78,3 +60,4 @@ const TutorLayout = () => {
 };
 
 export default TutorLayout;
+
