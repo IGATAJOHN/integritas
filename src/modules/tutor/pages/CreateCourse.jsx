@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 import {
     Box,
     Typography,
@@ -38,15 +40,20 @@ import {
     Info,
     Close,
     Send,
+    DescriptionOutlined,
+    MenuBookOutlined,
+    PermMediaOutlined,
+    RateReviewOutlined,
+    ChevronRight,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { textFieldStyle, selectStyle, selectMenuProps, modalStyle } from '../../../styles/formStyles';
 
 const steps = [
-    { label: 'Step 1', sublabel: 'Basic Details' },
-    { label: 'Step 2', sublabel: 'Curriculum' },
-    { label: 'Step 3', sublabel: 'Media' },
-    { label: 'Step 4', sublabel: 'Review' },
+    { label: 'Step 1', sublabel: 'Basic Details', icon: DescriptionOutlined },
+    { label: 'Step 2', sublabel: 'Curriculum', icon: MenuBookOutlined },
+    { label: 'Step 3', sublabel: 'Media', icon: PermMediaOutlined },
+    { label: 'Step 4', sublabel: 'Review', icon: RateReviewOutlined },
 ];
 
 const categories = [
@@ -72,7 +79,6 @@ const CreateCourse = () => {
     const [submitModalOpen, setSubmitModalOpen] = useState(false);
     const [validationErrors, setValidationErrors] = useState({});
 
-    // Course data matching backend payload
     const [courseData, setCourseData] = useState({
         title: '',
         slug: '',
@@ -351,29 +357,78 @@ const CreateCourse = () => {
                         <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1, fontWeight: 500 }}>
                             Description
                         </Typography>
-                        {/* Simple toolbar */}
-                        <Box sx={{ bgcolor: '#1E293B', borderRadius: '6px 6px 0 0', border: '1px solid #374151', borderBottom: 'none', p: 1, display: 'flex', gap: 0.5 }}>
-                            <IconButton size="small" sx={{ color: '#9CA3AF' }}><Typography sx={{ fontWeight: 'bold', fontSize: 14 }}>B</Typography></IconButton>
-                            <IconButton size="small" sx={{ color: '#9CA3AF' }}><Typography sx={{ fontStyle: 'italic', fontSize: 14 }}>I</Typography></IconButton>
-                            <Divider orientation="vertical" flexItem sx={{ mx: 0.5, bgcolor: '#374151' }} />
-                            <IconButton size="small" sx={{ color: '#9CA3AF' }}><Typography sx={{ fontSize: 14 }}>≡</Typography></IconButton>
-                            <IconButton size="small" sx={{ color: '#9CA3AF' }}><Typography sx={{ fontSize: 14 }}>⋮≡</Typography></IconButton>
-                        </Box>
-                        <TextField
-                            fullWidth
-                            multiline
-                            rows={4}
-                            placeholder="Describe what students will learn in this course..."
-                            value={courseData.description}
-                            onChange={(e) => handleInputChange('description', e.target.value)}
+                        <Box
                             sx={{
-                                ...textFieldStyle,
-                                '& .MuiOutlinedInput-root': {
-                                    ...textFieldStyle['& .MuiOutlinedInput-root'],
+                                '& .quill': {
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                },
+                                '& .ql-toolbar': {
+                                    bgcolor: '#1E293B',
+                                    borderColor: '#374151',
+                                    borderRadius: '6px 6px 0 0',
+                                    '& .ql-stroke': {
+                                        stroke: '#9CA3AF',
+                                    },
+                                    '& .ql-fill': {
+                                        fill: '#9CA3AF',
+                                    },
+                                    '& .ql-picker': {
+                                        color: '#9CA3AF',
+                                    },
+                                    '& .ql-picker-options': {
+                                        bgcolor: '#1E293B',
+                                        border: '1px solid #374151',
+                                    },
+                                    '& .ql-picker-item:hover': {
+                                        color: '#fff',
+                                    },
+                                    '& button:hover .ql-stroke': {
+                                        stroke: '#fff',
+                                    },
+                                    '& button:hover .ql-fill': {
+                                        fill: '#fff',
+                                    },
+                                    '& button.ql-active .ql-stroke': {
+                                        stroke: '#1152D4',
+                                    },
+                                    '& button.ql-active .ql-fill': {
+                                        fill: '#1152D4',
+                                    },
+                                },
+                                '& .ql-container': {
+                                    bgcolor: '#0F172A',
+                                    borderColor: '#374151',
                                     borderRadius: '0 0 6px 6px',
+                                    minHeight: 150,
+                                    fontSize: '0.95rem',
+                                },
+                                '& .ql-editor': {
+                                    color: '#fff',
+                                    minHeight: 150,
+                                    '&.ql-blank::before': {
+                                        color: '#6B7280',
+                                        fontStyle: 'normal',
+                                    },
                                 },
                             }}
-                        />
+                        >
+                            <ReactQuill
+                                theme="snow"
+                                value={courseData.description}
+                                onChange={(value) => handleInputChange('description', value)}
+                                placeholder="Describe what students will learn in this course..."
+                                modules={{
+                                    toolbar: [
+                                        [{ 'header': [1, 2, 3, false] }],
+                                        ['bold', 'italic', 'underline', 'strike'],
+                                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                                        ['link'],
+                                        ['clean']
+                                    ],
+                                }}
+                            />
+                        </Box>
                     </Box>
                 </Stack>
             </Box>
@@ -776,55 +831,111 @@ const CreateCourse = () => {
                             color: '#F59E0B',
                             '& .MuiChip-icon': { color: '#F59E0B' },
                         }}
-                    />
+                    /> 
                 </Stack>
             </Stack>
 
             {/* Stepper */}
             <Box sx={{ mb: 4 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0 }}>
-                    {steps.map((step, index) => (
-                        <Box key={step.label} sx={{ display: 'flex', alignItems: 'center' }}>
-                            {/* Step Circle and Labels */}
-                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 100 }}>
+                <Box
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        bgcolor: '#1A2230',
+                        borderRadius: '50px',
+                        p: 0.5,
+                        border: '1px solid #374151',
+                        overflow: 'hidden',
+                    }}
+                >
+                    {steps.map((step, index) => {
+                        const StepIcon = step.icon;
+                        const isActive = index === activeStep;
+                        const isCompleted = index < activeStep;
+                        const isLast = index === steps.length - 1;
+
+                        return (
+                            <React.Fragment key={step.label}>
+                                {/* Step Item */}
                                 <Box
+                                    onClick={() => {
+                                        if (isCompleted) setActiveStep(index);
+                                    }}
                                     sx={{
-                                        width: 36,
-                                        height: 36,
-                                        borderRadius: '50%',
                                         display: 'flex',
                                         alignItems: 'center',
-                                        justifyContent: 'center',
-                                        bgcolor: index < activeStep ? '#10B981' : index === activeStep ? '#1152D4' : '#374151',
-                                        color: '#fff',
-                                        fontWeight: 600,
-                                        fontSize: '0.85rem',
-                                        mb: 1,
+                                        gap: 1.5,
+                                        py: 1.5,
+                                        px: 2.5,
+                                        borderRadius: '50px',
+                                        bgcolor: isActive ? '#1152D4' : 'transparent',
+                                        cursor: isCompleted ? 'pointer' : 'default',
+                                        transition: 'all 0.2s ease',
+                                        '&:hover': {
+                                            bgcolor: isCompleted && !isActive ? 'rgba(17, 82, 212, 0.15)' : isActive ? '#1152D4' : 'transparent',
+                                        },
+                                        flexShrink: 0,
                                     }}
                                 >
-                                    {index < activeStep ? <CheckCircle sx={{ fontSize: 20 }} /> : index + 1}
+                                    <Box
+                                        sx={{
+                                            width: 32,
+                                            height: 32,
+                                            borderRadius: '50%',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            bgcolor: isActive ? 'rgba(255,255,255,0.2)' : isCompleted ? 'rgba(16, 185, 129, 0.2)' : 'rgba(107, 114, 128, 0.2)',
+                                            color: isActive ? '#fff' : isCompleted ? '#10B981' : '#6B7280',
+                                        }}
+                                    >
+                                        {isCompleted ? (
+                                            <CheckCircle sx={{ fontSize: 18 }} />
+                                        ) : (
+                                            <StepIcon sx={{ fontSize: 18 }} />
+                                        )}
+                                    </Box>
+                                    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                                        <Typography
+                                            sx={{
+                                                color: isActive ? '#fff' : isCompleted ? '#10B981' : '#9CA3AF',
+                                                fontSize: '0.75rem',
+                                                fontWeight: 600,
+                                                lineHeight: 1.2,
+                                            }}
+                                        >
+                                            {step.label}
+                                        </Typography>
+                                        <Typography
+                                            sx={{
+                                                color: isActive ? 'rgba(255,255,255,0.7)' : '#6B7280',
+                                                fontSize: '0.7rem',
+                                                lineHeight: 1.2,
+                                            }}
+                                        >
+                                            {step.sublabel}
+                                        </Typography>
+                                    </Box>
                                 </Box>
-                                <Typography sx={{ color: index <= activeStep ? '#fff' : '#6B7280', fontSize: '0.75rem', fontWeight: 600 }}>
-                                    {step.label}
-                                </Typography>
-                                <Typography sx={{ color: '#6B7280', fontSize: '0.7rem' }}>
-                                    {step.sublabel}
-                                </Typography>
-                            </Box>
-                            {/* Connector Line */}
-                            {index < steps.length - 1 && (
-                                <Box
-                                    sx={{
-                                        width: 80,
-                                        height: 2,
-                                        bgcolor: index < activeStep ? '#10B981' : '#374151',
-                                        mx: 1,
-                                        mt: -3,
-                                    }}
-                                />
-                            )}
-                        </Box>
-                    ))}
+
+                                {/* Chevron Separator */}
+                                {!isLast && (
+                                    <Box
+                                        sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            color: '#374151',
+                                            flex: 1,
+                                            justifyContent: 'center',
+                                            minWidth: 40,
+                                        }}
+                                    >
+                                        <ChevronRight sx={{ fontSize: 24 }} />
+                                    </Box>
+                                )}
+                            </React.Fragment>
+                        );
+                    })}
                 </Box>
             </Box>
 

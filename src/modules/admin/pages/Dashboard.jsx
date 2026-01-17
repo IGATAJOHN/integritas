@@ -22,6 +22,8 @@ import {
     Warning,
     CheckCircle,
     Schedule,
+    DescriptionOutlined,
+    ArrowForward,
 } from '@mui/icons-material';
 
 // Stats data for admin dashboard
@@ -94,27 +96,24 @@ const recentUsers = [
 const pendingActions = [
     {
         id: 1,
-        title: 'Tutor Application',
-        description: 'Review new tutor application from Dr. Smith',
-        type: 'Verification',
-        typeColor: '#7C3AED',
+        title: 'Governance Ethics Essay',
+        author: 'John Doe',
         time: '2h ago',
+        action: 'Grade Now',
     },
     {
         id: 2,
-        title: 'Course Approval',
-        description: 'New course "Advanced Policy Analysis" pending',
-        type: 'Course',
-        typeColor: '#10B981',
-        time: '4h ago',
+        title: 'Policy Framework Quiz',
+        author: 'Jane Smith',
+        time: '5h ago',
+        action: 'Review',
     },
     {
         id: 3,
-        title: 'User Report',
-        description: 'Reported content in Ethics Forum',
-        type: 'Report',
-        typeColor: '#EF4444',
-        time: '6h ago',
+        title: 'Final Thesis Draft',
+        author: 'A. Williams',
+        time: '1d ago',
+        action: 'Read',
     },
 ];
 
@@ -350,16 +349,16 @@ const AdminDashboard = () => {
                 <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 calc(33.33% - 16px)' }, minWidth: 0 }}>
                     <Paper
                         sx={{
-                            bgcolor: '#1A2230',
-                            p: 2,
+                            bgcolor: 'transparent',
+                            p: 0,
                             borderRadius: 2,
-                            border: '1px solid #374151',
-                            height: 280,
+                            height: { xs: 'auto', md: 280 },
                             display: 'flex',
                             flexDirection: 'column',
                         }}
+                        elevation={0}
                     >
-                        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
+                        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
                             <Typography sx={{ color: '#FFFFFF', fontWeight: 600, fontSize: '0.85rem' }}>
                                 Pending Actions
                             </Typography>
@@ -368,63 +367,76 @@ const AdminDashboard = () => {
                             </Button>
                         </Stack>
 
-                        <Stack spacing={1} sx={{ flex: 1, overflow: 'auto' }}>
+                        <Stack spacing={1} sx={{ flex: 1 }}>
                             {pendingActions.map((action) => (
                                 <Box
                                     key={action.id}
                                     sx={{
-                                        bgcolor: '#0C1322',
+                                        bgcolor: '#1A2230',
                                         borderRadius: 1.5,
-                                        p: 1.25,
+                                        p: 1.5,
+                                        border: '1px solid #374151',
+                                        transition: 'border-color 0.2s ease',
+                                        '&:hover': {
+                                            borderColor: '#4B5563',
+                                        },
                                     }}
                                 >
-                                    <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                        <Box sx={{ flex: 1, minWidth: 0 }}>
-                                            <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 0.25 }}>
-                                                <Chip
-                                                    label={action.type}
-                                                    size="small"
-                                                    sx={{
-                                                        bgcolor: action.typeColor,
-                                                        color: '#FFFFFF',
-                                                        fontSize: '0.55rem',
-                                                        height: 16,
-                                                        '& .MuiChip-label': { px: 0.75 },
-                                                    }}
-                                                />
+                                    <Stack direction="row" alignItems="center" justifyContent="space-between">
+                                        <Stack direction="row" alignItems="center" spacing={1.5} sx={{ flex: 1, minWidth: 0 }}>
+                                            {/* Icon */}
+                                            <Box
+                                                sx={{
+                                                    width: 32,
+                                                    height: 32,
+                                                    borderRadius: '50%',
+                                                    bgcolor: 'rgba(59, 130, 246, 0.1)',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    flexShrink: 0,
+                                                }}
+                                            >
+                                                <DescriptionOutlined sx={{ fontSize: 16, color: '#3B82F6' }} />
+                                            </Box>
+
+                                            {/* Content */}
+                                            <Box sx={{ flex: 1, minWidth: 0 }}>
                                                 <Typography
                                                     sx={{
                                                         color: '#FFFFFF',
                                                         fontWeight: 600,
-                                                        fontSize: '0.75rem',
-                                                        overflow: 'hidden',
-                                                        textOverflow: 'ellipsis',
-                                                        whiteSpace: 'nowrap',
+                                                        fontSize: '0.8rem',
+                                                        lineHeight: 1.3,
                                                     }}
                                                 >
                                                     {action.title}
                                                 </Typography>
-                                            </Stack>
-                                            <Typography sx={{ color: '#6B7280', fontSize: '0.65rem' }}>
-                                                {action.time}
-                                            </Typography>
-                                        </Box>
+                                                <Typography sx={{ color: '#9CA3AF', fontSize: '0.7rem' }}>
+                                                    {action.author} • {action.time}
+                                                </Typography>
+                                            </Box>
+                                        </Stack>
+
+                                        {/* Action Link */}
                                         <Button
-                                            size="small"
-                                            variant="contained"
+                                            endIcon={<ArrowForward sx={{ fontSize: 12 }} />}
                                             sx={{
-                                                bgcolor: '#1152D4',
-                                                color: '#FFFFFF',
+                                                color: '#3B82F6',
                                                 textTransform: 'none',
-                                                fontSize: '0.65rem',
-                                                px: 1.25,
-                                                py: 0.5,
+                                                fontSize: '0.7rem',
+                                                fontWeight: 600,
+                                                p: 0,
                                                 minWidth: 'auto',
                                                 ml: 1,
-                                                '&:hover': { bgcolor: '#0D41AA' },
+                                                flexShrink: 0,
+                                                '&:hover': {
+                                                    bgcolor: 'transparent',
+                                                    color: '#60A5FA',
+                                                },
                                             }}
                                         >
-                                            Review →
+                                            {action.action}
                                         </Button>
                                     </Stack>
                                 </Box>
