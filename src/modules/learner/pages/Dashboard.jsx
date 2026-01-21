@@ -2,7 +2,6 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Box,
-    Grid,
     Card,
     CardContent,
     Typography,
@@ -20,28 +19,20 @@ import {
     AccessTime,
     EmojiEvents,
     School,
-    TrendingUp
+    TrendingUp,
+    CalendarToday,
+    LocalFireDepartment
 } from '@mui/icons-material';
 
-/**
- * LearnerDashboard Component
- * 
- * This component displays the main dashboard for the learner.
- * It includes sections for continuing learning, active courses, achievements,
- * recommended courses, and upcoming deadlines.
- * 
- * It uses Material UI components and the application theme for styling,
- * supporting both light and dark modes.
- */
 const LearnerDashboard = () => {
     const theme = useTheme();
     const navigate = useNavigate();
 
-    // ==========================================
-    // Mock Data
-    // ==========================================
+    const colors = {
+        card: theme.palette.mode === 'dark' ? '#1F2937' : '#FFFFFF'
+    };
 
-    // Data for the "Continue Learning" hero section
+
     const continueLearning = {
         title: 'Ethics in Public Administration',
         description: 'Deep dive into the ethical frameworks governing public service, focusing on practical scenarios and conflict resolution.',
@@ -50,7 +41,6 @@ const LearnerDashboard = () => {
         image: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&h=400&fit=crop'
     };
 
-    // List of active courses the user is currently enrolled in
     const activeCourses = [
         {
             id: 1,
@@ -70,7 +60,6 @@ const LearnerDashboard = () => {
         }
     ];
 
-    // List of recommended courses based on user's interests
     const recommendedCourses = [
         {
             id: 1,
@@ -117,108 +106,131 @@ const LearnerDashboard = () => {
 
     return (
         <Box>
-            {/* 
-                Continue Learning Section 
-                Displays the most recent course the user was working on.
-            */}
+            {/* Welcome Header */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 4 }}>
+                <Box>
+                    <Typography variant="h4" sx={{ fontWeight: 700, color: theme.palette.text.primary, mb: 0.5 }}>
+                        Welcome back, Alex
+                    </Typography>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                        <LocalFireDepartment sx={{ color: '#F59E0B', fontSize: 20 }} />
+                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                            You're on a 3-day learning streak. Keep it up!
+                        </Typography>
+                    </Stack>
+                </Box>
+                <Button
+                    variant="outlined"
+                    startIcon={<CalendarToday />}
+                    sx={{
+                        borderColor: theme.palette.divider,
+                        color: theme.palette.text.primary,
+                        textTransform: 'none',
+                        borderRadius: 2,
+                        display: { xs: 'none', sm: 'flex' },
+                        '&:hover': { borderColor: theme.palette.primary.main }
+                    }}
+                >
+                    View Calendar
+                </Button>
+            </Box>
+
+            {/* Continue Learning Section */}
             <Typography variant="h6" sx={{ mb: 2, fontWeight: 700, color: theme.palette.text.primary }}>
                 Continue Learning
             </Typography>
             <Card
                 sx={{
                     mb: 5,
-                    bgcolor: theme.palette.mode === 'dark' ? '#1F2937' : '#fff', // Darker background in dark mode
+                    bgcolor: theme.palette.mode === 'dark' ? '#1F2937' : '#fff',
                     color: theme.palette.text.primary,
                     borderRadius: 3,
                     overflow: 'hidden',
                     boxShadow: theme.shadows[2]
                 }}
             >
-                <Grid container>
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' } }}>
                     {/* Course Image */}
-                    <Grid item xs={12} md={4}>
-                        <Box
-                            sx={{
-                                height: '100%',
-                                minHeight: 200,
-                                backgroundImage: `url(${continueLearning.image})`,
-                                backgroundSize: 'cover',
-                                backgroundPosition: 'center',
-                                position: 'relative'
-                            }}
-                        >
-                            <Box sx={{ position: 'absolute', inset: 0, bgcolor: 'rgba(0,0,0,0.3)' }} />
-                        </Box>
-                    </Grid>
+                    <Box
+                        sx={{
+                            width: { xs: '100%', md: '35%' },
+                            minHeight: { xs: 200, md: 'auto' },
+                            backgroundImage: `url(${continueLearning.image})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            position: 'relative'
+                        }}
+                    >
+                        <Box sx={{ position: 'absolute', inset: 0, bgcolor: 'rgba(0,0,0,0.3)' }} />
+                    </Box>
 
                     {/* Course Details */}
-                    <Grid item xs={12} md={8}>
-                        <Box sx={{ p: 3 }}>
-                            <Chip
-                                label={continueLearning.module}
-                                size="small"
-                                sx={{ bgcolor: 'primary.main', color: '#fff', mb: 2, borderRadius: 1 }}
-                            />
-                            <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
-                                {continueLearning.title}
-                            </Typography>
-                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 3 }}>
-                                {continueLearning.description}
-                            </Typography>
+                    <Box sx={{ flex: 1, p: 3 }}>
+                        <Chip
+                            label={continueLearning.module}
+                            size="small"
+                            sx={{ bgcolor: 'primary.main', color: '#fff', mb: 2, borderRadius: 1 }}
+                        />
+                        <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
+                            {continueLearning.title}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 3 }}>
+                            {continueLearning.description}
+                        </Typography>
 
-                            {/* Progress Bar */}
-                            <Box sx={{ mb: 3 }}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                    <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>Progress</Typography>
-                                    <Typography variant="caption" sx={{ fontWeight: 700 }}>{continueLearning.progress}%</Typography>
-                                </Box>
-                                <LinearProgress
-                                    variant="determinate"
-                                    value={continueLearning.progress}
-                                    sx={{
-                                        height: 8,
-                                        borderRadius: 4,
-                                        bgcolor: alpha(theme.palette.primary.main, 0.1),
-                                        '& .MuiLinearProgress-bar': { bgcolor: 'primary.main' }
-                                    }}
-                                />
+                        {/* Progress Bar */}
+                        <Box sx={{ mb: 3 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>Progress</Typography>
+                                <Typography variant="caption" sx={{ fontWeight: 700 }}>{continueLearning.progress}%</Typography>
                             </Box>
-
-                            <Button
-                                variant="contained"
-                                startIcon={<PlayArrow />}
-                                onClick={() => navigate('/explore/lesson/1/1.2')}
-                                sx={{ borderRadius: 2, px: 3 }}
-                            >
-                                Resume Course
-                            </Button>
+                            <LinearProgress
+                                variant="determinate"
+                                value={continueLearning.progress}
+                                sx={{
+                                    height: 8,
+                                    borderRadius: 4,
+                                    bgcolor: alpha(theme.palette.primary.main, 0.1),
+                                    '& .MuiLinearProgress-bar': { bgcolor: 'primary.main' }
+                                }}
+                            />
                         </Box>
-                    </Grid>
-                </Grid>
+
+                        <Button
+                            variant="contained"
+                            startIcon={<PlayArrow />}
+                            onClick={() => navigate('/explore/lesson/1/1.2')}
+                            sx={{ borderRadius: 2, px: 3 }}
+                        >
+                            Resume Course
+                        </Button>
+                    </Box>
+                </Box>
             </Card>
 
-            <Grid container spacing={3}>
+            {/* Main Content - Active Courses, Recommended, and Sidebar */}
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, width: '100%' }}>
                 {/* Left Column: Active Courses & Recommended */}
-                <Grid item xs={12} lg={8}>
+                <Box sx={{ flex: { xs: '1 1 100%', lg: '1 1 calc(66.67% - 12px)' }, minWidth: 0 }}>
 
-                    {/* Active Courses Grid */}
+                    {/* Active Courses */}
                     <Box sx={{ mb: 4 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                             <Typography variant="h6" sx={{ fontWeight: 700, color: theme.palette.text.primary }}>
                                 Active Courses
                             </Typography>
-                            <Button size="small" sx={{ textTransform: 'none' }}>View All</Button>
+                            <Button size="small" sx={{ textTransform: 'none', color: '#3B82F6' }}>View All</Button>
                         </Box>
-                        <Grid container spacing={2}>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                             {activeCourses.map((course) => (
-                                <Grid item xs={12} md={6} key={course.id}>
+                                <Box key={course.id} sx={{ flex: { xs: '1 1 100%', md: '1 1 calc(50% - 8px)' }, minWidth: 0 }}>
                                     <Card
                                         sx={{
-                                            bgcolor: theme.palette.mode === 'dark' ? '#1F2937' : '#fff',
+                                            bgcolor: colors.card,
                                             color: theme.palette.text.primary,
-                                            borderRadius: 3,
-                                            p: 3,
-                                            boxShadow: theme.shadows[1],
+                                            borderRadius: 2,
+                                            p: 2,
+                                            border: '1px solid rgba(255, 255, 255, 0.05)',
                                             height: '100%'
                                         }}
                                     >
@@ -252,38 +264,38 @@ const LearnerDashboard = () => {
                                             </Box>
                                         </Box>
                                     </Card>
-                                </Grid>
+                                </Box>
                             ))}
-                        </Grid>
+                        </Box>
                     </Box>
 
-                    {/* Recommended for You Grid */}
+                    {/* Recommended for You */}
                     <Box>
                         <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: theme.palette.text.primary }}>
                             Recommended for You
                         </Typography>
-                        <Grid container spacing={2}>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                             {recommendedCourses.map((course) => (
-                                <Grid item xs={12} md={4} key={course.id}>
+                                <Box key={course.id} sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 8px)', md: '1 1 calc(33.33% - 10.67px)' }, minWidth: 0 }}>
                                     <Card
                                         sx={{
-                                            bgcolor: theme.palette.mode === 'dark' ? '#1F2937' : '#fff',
+                                            bgcolor: colors.card,
                                             color: theme.palette.text.primary,
-                                            borderRadius: 3,
+                                            borderRadius: 2,
                                             overflow: 'hidden',
                                             height: '100%',
-                                            boxShadow: theme.shadows[1]
+                                            border: '1px solid rgba(255, 255, 255, 0.05)'
                                         }}
                                     >
                                         <Box
                                             sx={{
-                                                height: 120,
+                                                height: 100,
                                                 backgroundImage: `url(${course.image})`,
                                                 backgroundSize: 'cover',
                                                 backgroundPosition: 'center'
                                             }}
                                         />
-                                        <CardContent sx={{ p: 3 }}>
+                                        <CardContent sx={{ p: 2 }}>
                                             <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
                                                 <Chip
                                                     label={course.category}
@@ -311,7 +323,7 @@ const LearnerDashboard = () => {
                                                 size="small"
                                                 onClick={() => navigate('/checkout')}
                                                 sx={{
-                                                    borderColor: theme.palette.divider,
+                                                    borderColor: 'rgba(255, 255, 255, 0.1)',
                                                     color: theme.palette.text.primary,
                                                     '&:hover': { borderColor: theme.palette.primary.main, color: theme.palette.primary.main }
                                                 }}
@@ -320,14 +332,14 @@ const LearnerDashboard = () => {
                                             </Button>
                                         </CardContent>
                                     </Card>
-                                </Grid>
+                                </Box>
                             ))}
-                        </Grid>
+                        </Box>
                     </Box>
-                </Grid>
+                </Box>
 
                 {/* Right Column: Achievements & Deadlines */}
-                <Grid item xs={12} lg={4}>
+                <Box sx={{ flex: { xs: '1 1 100%', lg: '1 1 calc(33.33% - 12px)' }, minWidth: 0 }}>
 
                     {/* Achievements Card */}
                     <Card
@@ -425,8 +437,8 @@ const LearnerDashboard = () => {
                             </Stack>
                         </CardContent>
                     </Card>
-                </Grid>
-            </Grid>
+                </Box>
+            </Box>
         </Box>
     );
 };

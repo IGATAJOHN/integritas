@@ -10,6 +10,7 @@ import {
     CourseLessonV2,
     Checkout,
     PaymentSuccess,
+    LearnerDashboard,
 } from './pages';
 
 export const learnerRoutes = [
@@ -58,6 +59,16 @@ export const learnerRoutes = [
     {
         path: '/payment-success',
         element: <PaymentSuccess />,
+    },
+    {
+        path: '/learner',
+        element: <ModernLearnerLayout />,
+        children: [
+            {
+                index: true,
+                element: <LearnerDashboard />,
+            },
+        ],
     },
 ];
 

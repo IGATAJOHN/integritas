@@ -16,13 +16,6 @@ const sidebarItems = [
     { label: 'Settings', path: '/explore/settings', icon: <SettingsIcon /> },
 ];
 
-/**
- * ModernLearnerLayout
- * 
- * This layout is designed to match the new "Explore" page design.
- * It provides a clean container for pages that manage their own header and sidebar,
- * or it can be expanded to include a global modern header.
- */
 const ModernLearnerLayout = () => {
     return (
         <ModernDashboardLayout sidebarItems={sidebarItems} title="Learner Portal" />

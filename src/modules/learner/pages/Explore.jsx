@@ -21,7 +21,8 @@ import {
     alpha,
     Divider,
     Menu,
-    MenuItem
+    MenuItem,
+    Collapse
 } from '@mui/material';
 import {
     Search as SearchIcon,
@@ -40,7 +41,7 @@ import {
     Close as CloseIcon
 } from '@mui/icons-material';
 import { Drawer } from '@mui/material';
-import logo from '../../../assets/images/GGH_logo.png';
+import logo from '../../../assets/images/GGH_icon.png';
 import CourseCard from '../components/CourseCard';
 
 class Course {
@@ -66,12 +67,24 @@ const Explore = () => {
     const [filters, setFilters] = useState({
         Topic: ['Public Administration'],
         Level: [],
-        Rating: ''
+        Rating: 0
     });
     const [isPlayingTrailer, setIsPlayingTrailer] = useState(false);
     const [sortAnchorEl, setSortAnchorEl] = useState(null);
     const [sortBy, setSortBy] = useState('Most Popular');
     const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+    const [expandedFilters, setExpandedFilters] = useState({
+        Topic: true,
+        Level: true,
+        Rating: true
+    });
+
+    const toggleFilterSection = (section) => {
+        setExpandedFilters(prev => ({
+            ...prev,
+            [section]: !prev[section]
+        }));
+    };
 
     const handleSortClick = (event) => {
         setSortAnchorEl(event.currentTarget);
@@ -201,53 +214,150 @@ const Explore = () => {
 
             {[
                 { title: 'Topic', items: ['Ethics & Integrity', 'Public Administration', 'Digital Governance', 'Civic Leadership', 'Policy Analysis'], type: 'checkbox' },
-                { title: 'Level', items: ['Beginner', 'Intermediate', 'Expert'], type: 'checkbox' },
-                { title: 'Rating', items: ['4.5 & Up', '4.0 & Up'], type: 'radio' }
+                { title: 'Level', items: ['Beginner', 'Intermediate', 'Expert'], type: 'checkbox' }
             ].map((section, index, array) => (
                 <React.Fragment key={section.title}>
-                    <Box sx={{ mb: 4 }}>
-                        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                    <Box>
+                        <Stack
+                            direction="row"
+                            justifyContent="space-between"
+                            alignItems="center"
+                            onClick={() => toggleFilterSection(section.title)}
+                            sx={{
+                                mb: 2,
+                                cursor: 'pointer',
+                                '&:hover': { opacity: 0.8 }
+                            }}
+                        >
                             <Typography variant="caption" sx={{ fontWeight: 600, color: colors.text, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                 {section.title}
                             </Typography>
-                            <ChevronDownIcon sx={{ fontSize: 16, color: colors.textSecondary }} />
+                            <ChevronDownIcon sx={{
+                                fontSize: 16,
+                                color: colors.textSecondary,
+                                transform: expandedFilters[section.title] ? 'rotate(180deg)' : 'rotate(0deg)',
+                                transition: 'transform 0.3s ease'
+                            }} />
                         </Stack>
-                        <Stack spacing={1}>
-                            {section.items.map((item) => (
-                                <FormControlLabel
-                                    key={item}
-                                    control={
-                                        section.type === 'checkbox' ? (
-                                            <Checkbox
-                                                size="small"
-                                                checked={filters[section.title]?.includes(item)}
-                                                onChange={() => handleFilterChange(section.title, item, 'checkbox')}
-                                                sx={{ color: colors.textSecondary, '&.Mui-checked': { color: colors.primary } }}
-                                            />
-                                        ) : (
-                                            <Radio
-                                                size="small"
-                                                checked={filters[section.title] === item}
-                                                onChange={() => handleFilterChange(section.title, item, 'radio')}
-                                                sx={{ color: colors.textSecondary, '&.Mui-checked': { color: colors.primary } }}
-                                            />
-                                        )
-                                    }
-                                    label={
-                                        <Typography variant="body2" sx={{ color: (section.type === 'checkbox' ? filters[section.title]?.includes(item) : filters[section.title] === item) ? colors.text : colors.textSecondary, fontSize: '0.85rem' }}>
-                                            {item}
-                                        </Typography>
-                                    }
-                                    sx={{ m: 0 }}
-                                />
-                            ))}
-                        </Stack>
+                        <Collapse in={expandedFilters[section.title]}>
+                            <Stack spacing={1}>
+                                {section.items.map((item) => (
+                                    <FormControlLabel
+                                        key={item}
+                                        control={
+                                            section.type === 'checkbox' ? (
+                                                <Checkbox
+                                                    size="small"
+                                                    checked={filters[section.title]?.includes(item)}
+                                                    onChange={() => handleFilterChange(section.title, item, 'checkbox')}
+                                                    sx={{ color: colors.textSecondary, '&.Mui-checked': { color: colors.primary } }}
+                                                />
+                                            ) : (
+                                                <Radio
+                                                    size="small"
+                                                    checked={filters[section.title] === item}
+                                                    onChange={() => handleFilterChange(section.title, item, 'radio')}
+                                                    sx={{ color: colors.textSecondary, '&.Mui-checked': { color: colors.primary } }}
+                                                />
+                                            )
+                                        }
+                                        label={
+                                            section.title === 'Rating' ? (
+                                                <Stack direction="row" alignItems="center" spacing={0.5}>
+                                                    {[1, 2, 3, 4, 5].map((star) => {
+                                                        const ratingValue = parseFloat(item.split(' ')[0]);
+                                                        return (
+                                                            <StarIcon
+                                                                key={star}
+                                                                sx={{
+                                                                    fontSize: 16,
+                                                                    color: star <= Math.floor(ratingValue) ? colors.warning :
+                                                                        star === Math.ceil(ratingValue) && ratingValue % 1 !== 0 ? colors.warning :
+                                                                            'rgba(255, 255, 255, 0.2)'
+                                                                }}
+                                                            />
+                                                        );
+                                                    })}
+                                                    <Typography variant="body2" sx={{
+                                                        color: filters[section.title] === item ? colors.text : colors.textSecondary,
+                                                        fontSize: '0.85rem',
+                                                        ml: 0.5
+                                                    }}>
+                                                        {item}
+                                                    </Typography>
+                                                </Stack>
+                                            ) : (
+                                                <Typography variant="body2" sx={{ color: (section.type === 'checkbox' ? filters[section.title]?.includes(item) : filters[section.title] === item) ? colors.text : colors.textSecondary, fontSize: '0.85rem' }}>
+                                                    {item}
+                                                </Typography>
+                                            )
+                                        }
+                                        sx={{ m: 0 }}
+                                    />
+                                ))}
+                            </Stack>
+                        </Collapse>
                     </Box>
                     {index < array.length - 1 && (
                         <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.05)', mb: 4 }} />
                     )}
                 </React.Fragment>
             ))}
+
+            {/* Rating Section with Interactive Stars */}
+            <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.05)', mb: 4 }} />
+            <Box sx={{ mb: 4 }}>
+                <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    onClick={() => toggleFilterSection('Rating')}
+                    sx={{
+                        mb: 2,
+                        cursor: 'pointer',
+                        '&:hover': { opacity: 0.8 }
+                    }}
+                >
+                    <Typography variant="caption" sx={{ fontWeight: 600, color: colors.text, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Rating
+                    </Typography>
+                    <ChevronDownIcon sx={{
+                        fontSize: 16,
+                        color: colors.textSecondary,
+                        transform: expandedFilters['Rating'] ? 'rotate(180deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.3s ease'
+                    }} />
+                </Stack>
+                <Collapse in={expandedFilters['Rating']}>
+                    <Stack direction="row" spacing={0.5} alignItems="center">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                            <IconButton
+                                key={star}
+                                onClick={() => setFilters(prev => ({ ...prev, Rating: prev.Rating === star ? 0 : star }))}
+                                sx={{
+                                    p: 0.5,
+                                    '&:hover': { bgcolor: 'transparent' }
+                                }}
+                            >
+                                <StarIcon
+                                    sx={{
+                                        fontSize: 24,
+                                        color: star <= filters.Rating ? colors.warning : 'rgba(255, 255, 255, 0.2)',
+                                        cursor: 'pointer',
+                                        transition: 'color 0.2s ease',
+                                        '&:hover': { color: colors.warning }
+                                    }}
+                                />
+                            </IconButton>
+                        ))}
+                        {filters.Rating > 0 && (
+                            <Typography variant="body2" sx={{ color: colors.textSecondary, ml: 1 }}>
+                                {filters.Rating}+ stars
+                            </Typography>
+                        )}
+                    </Stack>
+                </Collapse>
+            </Box>
         </>
     );
 
@@ -372,8 +482,8 @@ const Explore = () => {
 
                 {/* Desktop Sidebar */}
                 <Box component="aside" sx={{
-                    width: 240,
-                    p: 4,
+                    width: 290,
+                    p: 3,
                     borderRight: '1px solid rgba(255, 255, 255, 0.05)',
                     bgcolor: colors.paper,
                     display: { xs: 'none', md: 'block' },
@@ -720,13 +830,19 @@ const Explore = () => {
                     </Stack>
 
                     {/* Course Grid */}
-                    <Grid container spacing={2} sx={{ alignItems: 'stretch' }}>
+                    <Box sx={{
+                        display: 'grid',
+                        gridTemplateColumns: {
+                            xs: '1fr',
+                            sm: 'repeat(2, 1fr)',
+                            lg: 'repeat(3, 1fr)'
+                        },
+                        gap: 3
+                    }}>
                         {courses.map(course => (
-                            <Grid item xs={12} sm={6} md={4} lg={3} xl={3} key={course.id} sx={{ display: 'flex' }}>
-                                <CourseCard course={course} colors={colors} />
-                            </Grid>
+                            <CourseCard key={course.id} course={course} colors={colors} />
                         ))}
-                    </Grid>
+                    </Box>
                 </Box>
             </Box>
         </Box >

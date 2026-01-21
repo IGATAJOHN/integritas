@@ -42,7 +42,8 @@ const CourseCard = ({ course, colors }) => {
                 },
                 boxShadow: 'none',
                 width: '100%',
-                maxWidth: '380px',
+                height: '100%',
+                flex: 1,
                 display: 'flex',
                 flexDirection: 'column',
                 border: '1px solid rgba(255, 255, 255, 0.08)',
@@ -104,7 +105,12 @@ const CourseCard = ({ course, colors }) => {
                     fontWeight: 700,
                     fontSize: '1.1rem',
                     lineHeight: 1.3,
-                    color: colors.text
+                    color: colors.text,
+                    minHeight: '2.6em',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden'
                 }}>
                     {course.title}
                 </Typography>
@@ -114,6 +120,7 @@ const CourseCard = ({ course, colors }) => {
                     color: colors.textSecondary,
                     fontSize: '0.875rem',
                     lineHeight: 1.5,
+                    minHeight: '3em',
                     display: '-webkit-box',
                     WebkitLineClamp: 2,
                     WebkitBoxOrient: 'vertical',
@@ -123,7 +130,7 @@ const CourseCard = ({ course, colors }) => {
                 </Typography>
 
                 {/* Instructor/Institution */}
-                <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mt: 1 }}>
+                <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mt: 'auto' }}>
                     <Box sx={{
                         width: 36,
                         height: 36,
