@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
     Box,
     Typography,
@@ -8,8 +8,7 @@ import {
     Stack,
     IconButton,
     InputAdornment,
-    Tabs,
-    Tab,
+    Alert,
 } from '@mui/material';
 import {
     Visibility,
@@ -17,22 +16,21 @@ import {
     CloudOutlined,
     LockOutlined,
 } from '@mui/icons-material';
+import { useAuth } from '../contexts';
 import logo from '../assets/images/GGH_logo.png';
 import icon from '../assets/images/GGH_icon.png';
 
 const LoginPage = () => {
+    const navigate = useNavigate();
+    const { login } = useAuth();
+    
     const [showPassword, setShowPassword] = useState(false);
-    const [userType, setUserType] = useState('learner');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
     const [formData, setFormData] = useState({
         email: '',
         password: '',
     });
-
-    const handleUserTypeChange = (event, newValue) => {
-        if (newValue !== null) {
-            setUserType(newValue);
-        }
-    };
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -42,10 +40,50 @@ const LoginPage = () => {
         }));
     };
 
-    const handleSubmit = (e) => {
+    const getDashboardRoute = (role) => {
+        // Map role/userType to dashboard route
+        if (role === 'administrator' || role === 'admin') {
+            return '/admin';
+        } else if (role === 'tutor') {
+            return '/tutor';
+        } else if (role === 'learner' || role === 'student') {
+            return '/learner'; 
+        }
+        return '/learner';
+    };
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('Login submitted:', { userType, ...formData });
-        // TODO: Implement login logic
+        setError('');
+        
+        if (!formData.email || !formData.password) {
+            setError('Please fill in all fields.');
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            // Login with only email and password - role comes from API response
+            const userData = await login(formData.email, formData.password);
+            
+            // Get role from API response only
+            const userRole = userData?.role || userData?.userType;
+            
+            if (!userRole) {
+                setError('Unable to determine user role. Please contact support.');
+                setLoading(false);
+                return;
+            }
+            
+            const dashboardRoute = getDashboardRoute(userRole);
+            navigate(dashboardRoute);
+        } catch (err) {
+            console.error('Login error:', err);
+            setError(err?.message || 'Login failed. Please check your credentials and try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleTogglePassword = () => {
@@ -189,43 +227,6 @@ const LoginPage = () => {
                         Secure Access for Governance Professionals
                     </Typography>
 
-                    {/* User Type Tabs */}
-                    <Box
-                        sx={{
-                            bgcolor: '#1E293B',
-                            borderRadius: 2,
-                            p: 0.5,
-                            mb: 3,
-                        }}
-                    >
-                        <Tabs
-                            value={userType}
-                            onChange={handleUserTypeChange}
-                            variant="fullWidth"
-                            TabIndicatorProps={{ style: { display: 'none' } }}
-                            sx={{
-                                minHeight: 40,
-                                '& .MuiTab-root': {
-                                    minHeight: 36,
-                                    textTransform: 'none',
-                                    fontWeight: 500,
-                                    fontSize: '0.875rem',
-                                    color: '#9CA3AF',
-                                    borderRadius: 1.5,
-                                    transition: 'all 0.2s',
-                                    '&.Mui-selected': {
-                                        color: '#FFFFFF',
-                                        bgcolor: '#374151',
-                                        boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
-                                    },
-                                },
-                            }}
-                        >
-                            <Tab label="Learner" value="learner" />
-                            <Tab label="Administrator" value="administrator" />
-                        </Tabs>
-                    </Box>
-
                     {/* Login Form */}
                     <Box component="form" onSubmit={handleSubmit}>
                         {/* Email Field */}
@@ -367,11 +368,29 @@ const LoginPage = () => {
                             />
                         </Box>
 
+                        {/* Error Alert */}
+                        {error && (
+                            <Alert 
+                                severity="error" 
+                                sx={{ 
+                                    mb: 2,
+                                    bgcolor: '#1E293B',
+                                    color: '#EF4444',
+                                    '& .MuiAlert-icon': {
+                                        color: '#EF4444',
+                                    },
+                                }}
+                            >
+                                {error}
+                            </Alert>
+                        )}
+
                         {/* Login Button */}
                         <Button
                             type="submit"
                             fullWidth
                             variant="contained"
+                            disabled={loading}
                             sx={{
                                 bgcolor: '#1152D4',
                                 color: '#FFFFFF',
@@ -385,9 +404,13 @@ const LoginPage = () => {
                                     bgcolor: '#0D41AA',
                                     boxShadow: '0 4px 12px rgba(17, 82, 212, 0.3)',
                                 },
+                                '&:disabled': {
+                                    bgcolor: '#374151',
+                                    color: '#9CA3AF',
+                                },
                             }}
                         >
-                            Log In
+                            {loading ? 'Logging in...' : 'Log In'}
                         </Button>
                     </Box>
 
@@ -402,14 +425,14 @@ const LoginPage = () => {
                     >
                         Don't have an account?{' '}
                         <Link
-                            to="/contact"
+                            to="/Signup"
                             style={{
                                 color: '#3B82F6',
                                 textDecoration: 'none',
                                 fontWeight: 600,
                             }}
                         >
-                            Contact Administrator
+                            Click to Register
                         </Link>
                     </Typography>
                 </Box>

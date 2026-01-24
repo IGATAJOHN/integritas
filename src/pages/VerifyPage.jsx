@@ -6,17 +6,22 @@ import {
     Button,
     TextField,
     Stack,
+    Alert,
 } from '@mui/material';
 import {
     EmailOutlined,
     ArrowForward,
 } from '@mui/icons-material';
+import { useAuth } from '../contexts';
 import icon from '../assets/images/GGH_icon.png';
 
 const VerifyPage = () => {
+    const { resendEmail, user } = useAuth();
     const [code, setCode] = useState(['', '', '', '', '', '']);
-    const [timer, setTimer] = useState(300);
+    const [timer, setTimer] = useState(60);
     const [isResending, setIsResending] = useState(false);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
     const inputRefs = useRef([]);
 
     // Timer countdown
@@ -77,12 +82,20 @@ const VerifyPage = () => {
         console.log('Verification code submitted:', verificationCode);
     };
 
-    const handleResend = () => {
+    const handleResend = async () => {
         setIsResending(true);
-        setTimeout(() => {
-            setTimer(300);
+        setError('');
+        setSuccess('');
+        
+        try {
+            await resendEmail();
+            setTimer(60); // Reset timer to 1 minute
+            setSuccess('Verification email has been resent. Please check your inbox.');
+        } catch (err) {
+            setError(err?.message || 'Failed to resend verification email. Please try again.');
+        } finally {
             setIsResending(false);
-        }, 1000);
+        }
     };
 
     const isCodeComplete = code.every(digit => digit !== '');
@@ -212,7 +225,7 @@ const VerifyPage = () => {
                 >
                     We sent a secure code to{' '}
                     <Box component="span" sx={{ color: '#3B82F6', fontWeight: 600 }}>
-                        john.doe@govhub.org
+                        {user?.email || 'your email'}
                     </Box>
                     .
                 </Typography>
@@ -225,6 +238,44 @@ const VerifyPage = () => {
                 >
                     Please enter it below to confirm your identity.
                 </Typography>
+
+                {/* Error Alert */}
+                {error && (
+                    <Alert 
+                        severity="error" 
+                        sx={{ 
+                            mb: 3,
+                            bgcolor: 'rgba(239, 68, 68, 0.1)',
+                            color: '#EF4444',
+                            border: '1px solid rgba(239, 68, 68, 0.2)',
+                            '& .MuiAlert-icon': {
+                                color: '#EF4444',
+                            },
+                        }}
+                        onClose={() => setError('')}
+                    >
+                        {error}
+                    </Alert>
+                )}
+
+                {/* Success Alert */}
+                {success && (
+                    <Alert 
+                        severity="success" 
+                        sx={{ 
+                            mb: 3,
+                            bgcolor: 'rgba(16, 185, 129, 0.1)',
+                            color: '#10B981',
+                            border: '1px solid rgba(16, 185, 129, 0.2)',
+                            '& .MuiAlert-icon': {
+                                color: '#10B981',
+                            },
+                        }}
+                        onClose={() => setSuccess('')}
+                    >
+                        {success}
+                    </Alert>
+                )}
 
                 {/* Code Input */}
                 <Box
@@ -320,15 +371,17 @@ const VerifyPage = () => {
                     Didn't receive the email?{' '}
                     <Box
                         component="span"
-                        onClick={handleResend}
+                        onClick={timer > 0 || isResending ? undefined : handleResend}
                         sx={{
-                            color: '#3B82F6',
-                            cursor: 'pointer',
+                            color: (isResending || timer > 0) ? '#9CA3AF' : '#3B82F6',
+                            cursor: (isResending || timer > 0) ? 'not-allowed' : 'pointer',
                             fontWeight: 500,
-                            '&:hover': { textDecoration: 'underline' },
+                            '&:hover': { 
+                                textDecoration: (isResending || timer > 0) ? 'none' : 'underline' 
+                            },
                         }}
                     >
-                        {isResending ? 'Sending...' : 'Click to resend'}
+                        {isResending ? 'Sending...' : timer > 0 ? `Resend in ${formatTime(timer)}` : 'Click to resend'}
                     </Box>
                 </Typography>
 

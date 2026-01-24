@@ -18,10 +18,12 @@ import {
     Settings as SettingsIcon,
     Logout as LogoutIcon
 } from '@mui/icons-material';
+import { useAuth } from '../../../contexts';
 
 const LearnerSidebar = ({ onClose }) => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { logout } = useAuth();
 
     const colors = {
         bg: '#0C1322',
@@ -120,7 +122,15 @@ const LearnerSidebar = ({ onClose }) => {
                     ))}
                     <ListItem disablePadding sx={{ mb: 0.5 }}>
                         <ListItemButton
-                            onClick={() => navigate('/')}
+                            onClick={async () => {
+                                try {
+                                    await logout();
+                                    navigate('/login');
+                                } catch (error) {
+                                    console.error('Logout error:', error);
+                                    navigate('/login');
+                                }
+                            }}
                             sx={{
                                 borderRadius: 2,
                                 mx: 1,

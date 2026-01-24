@@ -1,5 +1,5 @@
 import TutorLayout from './layouts/TutorLayout';
-import { TutorDashboard, MyCourses, Students, CreateCourse } from './pages';
+import { TutorDashboard, MyCourses, Students, CreateCourse, Kyc } from './pages';
 
 const tutorRoutes = {
     path: '/tutor',
@@ -20,6 +20,10 @@ const tutorRoutes = {
         {
             path: 'students',
             element: <Students />,
+        },
+        {
+            path: 'kyc',
+            element: <Kyc />,
         },
     ],
 };

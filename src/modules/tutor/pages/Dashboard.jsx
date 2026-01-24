@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Box,
     Typography,
@@ -7,6 +8,8 @@ import {
     Stack,
     IconButton,
     Chip,
+    Alert,
+    AlertTitle,
 } from '@mui/material';
 import { LineChart } from '@mui/x-charts/LineChart';
 import {
@@ -97,8 +100,10 @@ const managedCourses = [
 const chartData = [2500, 3200, 2800, 4500, 3800, 5200];
 
 const TutorDashboard = () => {
+    const navigate = useNavigate();
     const chartContainerRef = useRef(null);
     const [chartWidth, setChartWidth] = useState(0);
+    const [kycStatus, setKycStatus] = useState('pending'); // Mock status: pending, submitted, approved
 
     useEffect(() => {
         const updateWidth = () => {
@@ -113,6 +118,26 @@ const TutorDashboard = () => {
 
     return (
         <Box sx={{ p: 4, bgcolor: '#0C1322', minHeight: 'calc(100vh - 70px)' }}>
+            {/* KYC Alert */}
+            {kycStatus === 'pending' && (
+                <Alert
+                    severity="warning"
+                    sx={{
+                        mb: 4,
+                        cursor: 'pointer',
+                        bgcolor: 'rgba(245, 158, 11, 0.1)',
+                        color: '#FCD34D',
+                        border: '1px solid rgba(245, 158, 11, 0.2)',
+                        '& .MuiAlert-icon': { color: '#F59E0B' },
+                        '&:hover': { bgcolor: 'rgba(245, 158, 11, 0.15)' }
+                    }}
+                    onClick={() => navigate('/tutor/kyc')}
+                >
+                    <AlertTitle sx={{ fontWeight: 600 }}>Action Required: Teacher Verification</AlertTitle>
+                    Please complete your KYC verification to start creating courses and accepting students. <strong>Click here to complete now.</strong>
+                </Alert>
+            )}
+
             {/* Welcome Header */}
             <Box sx={{ mb: 3 }}>
                 <Typography

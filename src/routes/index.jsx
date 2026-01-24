@@ -1,9 +1,10 @@
-import { createBrowserRouter } from 'react-router-dom';
-import { MainLayout } from '../layouts';
-import { Home, NotFound, LandingPage, LoginPage, VerifyPage, ForgotPasswordPage } from '../pages';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { NotFound, LandingPage, LoginPage, SignupPage, VerifyPage, ForgotPasswordPage } from '../pages';
 import { adminRoutes } from '../modules/admin';
 import { tutorRoutes } from '../modules/tutor';
 import { learnerRoutes } from '../modules/learner';
+import ProtectedRoute from '../components/ProtectedRoute';
+import PublicRoute from '../components/PublicRoute';
 
 const router = createBrowserRouter([
     {
@@ -12,7 +13,19 @@ const router = createBrowserRouter([
     },
     {
         path: '/login',
-        element: <LoginPage />,
+        element: (
+            <PublicRoute>
+                <LoginPage />
+            </PublicRoute>
+        ),
+    },
+    {
+        path: '/signup',
+        element: (
+            <PublicRoute>
+                <SignupPage />
+            </PublicRoute>
+        ),
     },
     {
         path: '/verify',
@@ -20,25 +33,40 @@ const router = createBrowserRouter([
     },
     {
         path: '/forgot-password',
-        element: <ForgotPasswordPage />,
+        element: (
+            <PublicRoute>
+                <ForgotPasswordPage />
+            </PublicRoute>
+        ),
     },
     {
-        path: '/home',
-        element: <MainLayout />,
-        children: [
-            {
-                index: true,
-                element: <Home />,
-            },
-            {
-                path: '*',
-                element: <NotFound />,
-            },
-        ],
+        ...adminRoutes,
+        element: (
+            <ProtectedRoute>
+                {adminRoutes.element}
+            </ProtectedRoute>
+        ),
     },
-    adminRoutes,
-    tutorRoutes,
-    ...learnerRoutes,
+    {
+        ...tutorRoutes,
+        element: (
+            <ProtectedRoute>
+                {tutorRoutes.element}
+            </ProtectedRoute>
+        ),
+    },
+    ...learnerRoutes.map(route => ({
+        ...route,
+        element: (
+            <ProtectedRoute>
+                {route.element}
+            </ProtectedRoute>
+        ),
+    })),
+    {
+        path: '*',
+        element: <NotFound />,
+    },
 ]);
 
 export default router;

@@ -25,6 +25,7 @@ import {
     CalendarToday as CalendarIcon,
     Person as PersonIcon
 } from '@mui/icons-material';
+import { useAuth } from '../contexts';
 import logo from '../assets/images/GGH_logo.png';
 import Sidebar from '../components/Sidebar';
 
@@ -53,6 +54,7 @@ const ModernDashboardLayout = ({ sidebarItems = [], title = 'Dashboard' }) => {
 
     const location = useLocation();
     const navigate = useNavigate();
+    const { logout } = useAuth();
 
     // Toggle mobile drawer
     const handleDrawerToggle = () => {
@@ -60,10 +62,15 @@ const ModernDashboardLayout = ({ sidebarItems = [], title = 'Dashboard' }) => {
     };
 
     // Handle user logout
-    const handleLogout = () => {
-        // Implement actual logout logic here (e.g., clear tokens, update context)
-        console.log('Logging out...');
-        navigate('/');
+    const handleLogout = async () => {
+        try {
+            await logout();
+            navigate('/login');
+        } catch (error) {
+            console.error('Logout error:', error);
+            // Still navigate to login even if logout fails
+            navigate('/login');
+        }
     };
 
     /**

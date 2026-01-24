@@ -19,12 +19,14 @@ import {
     ExpandMore as ChevronDownIcon,
     Menu as MenuIcon
 } from '@mui/icons-material';
+import { useAuth } from '../../../contexts';
 import logo from '../../../assets/images/GGH_icon.png';
 
 const LearnerNavbar = ({ onMobileMenuToggle }) => {
     const theme = useTheme();
     const navigate = useNavigate();
     const location = useLocation();
+    const { logout } = useAuth();
     const [searchQuery, setSearchQuery] = useState('');
     const [profileAnchor, setProfileAnchor] = useState(null);
 
@@ -234,7 +236,16 @@ const LearnerNavbar = ({ onMobileMenuToggle }) => {
                     <MenuItem onClick={() => { setProfileAnchor(null); navigate('/settings'); }}>
                         Settings
                     </MenuItem>
-                    <MenuItem onClick={() => { setProfileAnchor(null); navigate('/'); }}>
+                    <MenuItem onClick={async () => { 
+                        setProfileAnchor(null); 
+                        try {
+                            await logout();
+                            navigate('/login');
+                        } catch (error) {
+                            console.error('Logout error:', error);
+                            navigate('/login');
+                        }
+                    }}>
                         Logout
                     </MenuItem>
                 </Menu>
