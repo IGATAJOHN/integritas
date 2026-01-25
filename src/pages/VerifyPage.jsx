@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import {
     Box,
     Typography,
@@ -16,13 +16,51 @@ import { useAuth } from '../contexts';
 import icon from '../assets/images/GGH_icon.png';
 
 const VerifyPage = () => {
-    const { resendEmail, user } = useAuth();
-    const [code, setCode] = useState(['', '', '', '', '', '']);
+    const { id, hash } = useParams();
+    const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
+    const { verifyEmail, resendEmail, user, logout } = useAuth();
+
     const [timer, setTimer] = useState(60);
     const [isResending, setIsResending] = useState(false);
+    const [isVerifying, setIsVerifying] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
-    const inputRefs = useRef([]);
+
+    // Handle Auto-Verification from Signed URL
+    useEffect(() => {
+        const autoVerify = async () => {
+            if (id && hash) {
+                setIsVerifying(true);
+                setError('');
+                setSuccess('');
+
+                try {
+                    // Extract all query parameters (expires, signature, etc.)
+                    const queryParams = Object.fromEntries([...searchParams]);
+
+                    await verifyEmail(id, hash, queryParams);
+
+                    setSuccess('Email verified successfully! Redirecting to dashboard...');
+
+                    // Delay redirect to show success message
+                    setTimeout(() => {
+                        const dashboardRoute = user?.role === 'tutor' ? '/tutor' :
+                            (user?.role === 'admin' || user?.role === 'administrator') ? '/admin' :
+                                '/learner';
+                        navigate(dashboardRoute);
+                    }, 3000);
+                } catch (err) {
+                    console.error('Auto-verification error:', err);
+                    setError(err?.message || 'Verification link is invalid or has expired.');
+                } finally {
+                    setIsVerifying(false);
+                }
+            }
+        };
+
+        autoVerify();
+    }, [id, hash, searchParams, verifyEmail, navigate, user?.role]);
 
     // Timer countdown
     useEffect(() => {
@@ -41,52 +79,15 @@ const VerifyPage = () => {
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
 
-    const handleCodeChange = (index, value) => {
-        // Only allow digits
-        if (value && !/^\d$/.test(value)) return;
-
-        const newCode = [...code];
-        newCode[index] = value;
-        setCode(newCode);
-
-        // Auto-focus next input
-        if (value && index < 5) {
-            inputRefs.current[index + 1]?.focus();
-        }
-    };
-
-    const handleKeyDown = (index, e) => {
-        // Handle backspace
-        if (e.key === 'Backspace' && !code[index] && index > 0) {
-            inputRefs.current[index - 1]?.focus();
-        }
-    };
-
-    const handlePaste = (e) => {
-        e.preventDefault();
-        const pastedData = e.clipboardData.getData('text').slice(0, 6);
-        if (/^\d+$/.test(pastedData)) {
-            const newCode = [...code];
-            pastedData.split('').forEach((digit, i) => {
-                if (i < 6) newCode[i] = digit;
-            });
-            setCode(newCode);
-            const lastIndex = Math.min(pastedData.length, 5);
-            inputRefs.current[lastIndex]?.focus();
-        }
-    };
-
     const handleSubmit = (e) => {
         e.preventDefault();
-        const verificationCode = code.join('');
-        console.log('Verification code submitted:', verificationCode);
     };
 
     const handleResend = async () => {
         setIsResending(true);
         setError('');
         setSuccess('');
-        
+
         try {
             await resendEmail();
             setTimer(60); // Reset timer to 1 minute
@@ -97,8 +98,6 @@ const VerifyPage = () => {
             setIsResending(false);
         }
     };
-
-    const isCodeComplete = code.every(digit => digit !== '');
 
     return (
         <Box
@@ -212,38 +211,29 @@ const VerifyPage = () => {
                         mb: 1.5,
                     }}
                 >
-                    Verify your email
+                    {isVerifying ? 'Verifying your email...' : id && hash ? 'Verification in progress' : 'Verify your email'}
                 </Typography>
 
                 {/* Description */}
-                <Typography
-                    sx={{
-                        color: '#9CA3AF',
-                        fontSize: '0.875rem',
-                        mb: 0.5,
-                    }}
-                >
-                    We sent a secure code to{' '}
-                    <Box component="span" sx={{ color: '#3B82F6', fontWeight: 600 }}>
-                        {user?.email || 'your email'}
-                    </Box>
-                    .
-                </Typography>
-                <Typography
-                    sx={{
-                        color: '#6B7280',
-                        fontSize: '0.875rem',
-                        mb: 4,
-                    }}
-                >
-                    Please enter it below to confirm your identity.
+                <Typography sx={{ color: '#9CA3AF', fontSize: '0.875rem', mb: 3 }}>
+                    {id && hash ? (
+                        'Please wait while we confirm your verification link...'
+                    ) : (
+                        <>
+                            We sent a verification link to{' '}
+                            <Box component="span" sx={{ color: '#3B82F6', fontWeight: 600 }}>
+                                {user?.email || 'your email'}
+                            </Box>
+                            . Please click the link in that email to confirm your identity.
+                        </>
+                    )}
                 </Typography>
 
                 {/* Error Alert */}
                 {error && (
-                    <Alert 
-                        severity="error" 
-                        sx={{ 
+                    <Alert
+                        severity="error"
+                        sx={{
                             mb: 3,
                             bgcolor: 'rgba(239, 68, 68, 0.1)',
                             color: '#EF4444',
@@ -260,9 +250,9 @@ const VerifyPage = () => {
 
                 {/* Success Alert */}
                 {success && (
-                    <Alert 
-                        severity="success" 
-                        sx={{ 
+                    <Alert
+                        severity="success"
+                        sx={{
                             mb: 3,
                             bgcolor: 'rgba(16, 185, 129, 0.1)',
                             color: '#10B981',
@@ -277,113 +267,30 @@ const VerifyPage = () => {
                     </Alert>
                 )}
 
-                {/* Code Input */}
-                <Box
-                    component="form"
-                    onSubmit={handleSubmit}
-                >
-                    <Stack
-                        direction="row"
-                        spacing={{ xs: 1, sm: 1.5 }}
-                        justifyContent="center"
-                        sx={{ mb: 3 }}
-                    >
-                        {code.map((digit, index) => (
-                            <TextField
-                                key={index}
-                                inputRef={(el) => (inputRefs.current[index] = el)}
-                                value={digit}
-                                onChange={(e) => handleCodeChange(index, e.target.value)}
-                                onKeyDown={(e) => handleKeyDown(index, e)}
-                                onPaste={index === 0 ? handlePaste : undefined}
-                                inputProps={{
-                                    maxLength: 1,
-                                    style: {
-                                        textAlign: 'center',
-                                        fontSize: '1.25rem',
-                                        fontWeight: 600,
-                                        padding: '14px 0',
-                                    },
-                                }}
-                                sx={{
-                                    width: { xs: 44, sm: 48 },
-                                    '& .MuiOutlinedInput-root': {
-                                        bgcolor: '#0C1322',
-                                        borderRadius: 1.5,
-                                        '& fieldset': {
-                                            border: 'none',
-                                        },
-                                        '&:hover fieldset': {
-                                            border: 'none',
-                                        },
-                                        '&.Mui-focused fieldset': {
-                                            border: '2px solid #1152D4',
-                                        },
-                                    },
-                                    '& .MuiInputBase-input': {
-                                        color: '#FFFFFF',
-                                        border: 'none',
-                                    },
-                                }}
-                            />
-                        ))}
-                    </Stack>
-
-                    {/* Verify Button */}
-                    <Button
-                        type="submit"
-                        fullWidth
-                        variant="contained"
-                        disabled={!isCodeComplete}
-                        endIcon={<ArrowForward />}
-                        sx={{
-                            bgcolor: '#1152D4',
-                            color: '#FFFFFF',
-                            py: 1.5,
-                            textTransform: 'none',
-                            fontWeight: 600,
-                            fontSize: '0.9rem',
-                            borderRadius: 1.5,
-                            boxShadow: 'none',
-                            '&:hover': {
-                                bgcolor: '#0D41AA',
-                                boxShadow: '0 4px 12px rgba(17, 82, 212, 0.3)',
-                            },
-                            '&:disabled': {
-                                bgcolor: '#94A3B8',
+                {!id && !hash && (
+                    <>
+                        <Button
+                            fullWidth
+                            variant="contained"
+                            disabled={isResending || timer > 0}
+                            onClick={handleResend}
+                            sx={{
+                                bgcolor: '#1152D4',
                                 color: '#FFFFFF',
-                            },
-                        }}
-                    >
-                        Verify Email
-                    </Button>
-                </Box>
-
-                {/* Resend Link */}
-                <Typography
-                    sx={{
-                        fontSize: '0.875rem',
-                        color: '#6B7280',
-                        mt: 3,
-                        mb: 4,
-                    }}
-                >
-                    Didn't receive the email?{' '}
-                    <Box
-                        component="span"
-                        onClick={timer > 0 || isResending ? undefined : handleResend}
-                        sx={{
-                            color: (isResending || timer > 0) ? '#9CA3AF' : '#3B82F6',
-                            cursor: (isResending || timer > 0) ? 'not-allowed' : 'pointer',
-                            fontWeight: 500,
-                            '&:hover': { 
-                                textDecoration: (isResending || timer > 0) ? 'none' : 'underline' 
-                            },
-                        }}
-                    >
-                        {isResending ? 'Sending...' : timer > 0 ? `Resend in ${formatTime(timer)}` : 'Click to resend'}
-                    </Box>
-                </Typography>
+                                py: 1.5,
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                fontSize: '0.9rem',
+                                borderRadius: 1.5,
+                                boxShadow: 'none',
+                                '&:hover': { bgcolor: '#0D41AA' },
+                                mb: 3,
+                            }}
+                        >
+                            {isResending ? 'Sending...' : timer > 0 ? `Resend email in ${formatTime(timer)}` : 'Resend Verification Email'}
+                        </Button>
+                    </>
+                )}
 
                 {/* Footer Link inside card */}
                 <Box
@@ -394,20 +301,24 @@ const VerifyPage = () => {
                         justifyContent: 'center',
                     }}
                 >
-                    <Link
-                        to="/login"
-                        style={{
+                    <Typography
+                        onClick={async () => {
+                            await logout();
+                            navigate('/login');
+                        }}
+                        sx={{
                             display: 'flex',
                             alignItems: 'center',
                             gap: '4px',
                             fontSize: '0.875rem',
                             color: '#3B82F6',
-                            textDecoration: 'none',
+                            cursor: 'pointer',
                             fontWeight: 500,
+                            '&:hover': { textDecoration: 'underline' }
                         }}
                     >
-                        ← Back to Login
-                    </Link>
+                        ← {user ? 'Logout & Back to Login' : 'Back to Login'}
+                    </Typography>
                 </Box>
             </Box>
 

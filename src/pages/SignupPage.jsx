@@ -104,6 +104,15 @@ const SignupPage = () => {
     const showConfirmValidation =
         touched.password_confirmation || formData.password_confirmation.length > 0;
 
+    const getPrimaryRole = (u) => {
+        if (u?.role) return u.role;
+        const names = u?.roles?.map(r => r.name) || [];
+        if (names.includes("admin") || names.includes("administrator")) return "admin";
+        if (names.includes("tutor")) return "tutor";
+        if (names.includes("student") || names.includes("learner")) return "learner";
+        return null;
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
@@ -143,23 +152,16 @@ const SignupPage = () => {
                 email: formData.email.trim(),
                 password: formData.password,
                 password_confirmation: formData.password_confirmation,
-                role,
+                role: role,
+                user_type: role, 
             });
 
-            // Get the role from the user data or use the selected role
-            const userRole = userData?.role || role;
+            const userRole = getPrimaryRole(userData) || role;
 
-            // Map role to dashboard route
-            let dashboardRoute = '/learner';
-            if (userRole === 'tutor') {
-                dashboardRoute = '/tutor';
-            } else if (userRole === 'administrator' || userRole === 'admin') {
-                dashboardRoute = '/admin';
-            } else if (userRole === 'learner' || userRole === 'student') {
-                dashboardRoute = '/learner';
-            }
-
-            navigate(dashboardRoute);
+            let dashboardRoute = "/learner";
+            if (userRole === "tutor") dashboardRoute = "/tutor";
+            if (userRole === "admin") dashboardRoute = "/admin";
+            navigate(dashboardRoute)
         } catch (err) {
             console.error(err);
             setError(err?.message || 'Registration failed. Please try again.');

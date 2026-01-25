@@ -70,6 +70,11 @@ const Kyc = () => {
     });
     const [skillInput, setSkillInput] = useState('');
     const [documents, setDocuments] = useState([]);
+    // Required document uploads
+    const [idFrontFile, setIdFrontFile] = useState(null);
+    const [certificateFile, setCertificateFile] = useState(null);
+    const [uploadingIdFront, setUploadingIdFront] = useState(false);
+    const [uploadingCertificate, setUploadingCertificate] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -80,18 +85,30 @@ const Kyc = () => {
             try {
                 const data = await kycService.getKyc();
                 if (data) {
+                    console.log('KYC data received:', data); // Debug log
+                    // Skills might be in data.data.skills or data.skills, and could be a JSON string
+                    let skills = data.data?.skills || data.skills || [];
+                    if (typeof skills === 'string') {
+                        try { skills = JSON.parse(skills); } catch (e) { skills = []; }
+                    }
                     setFormData({
-                        phone: data.data?.phone || '',
-                        country: data.data?.country || '',
-                        state: data.data?.state || '',
-                        city: data.data?.city || '',
-                        address: data.data?.address || '',
-                        bio: data.data?.bio || '',
-                        highest_education: data.data?.highest_education || '',
-                        skills: data.data?.skills || [],
+                        phone: data.data?.phone || data.phone || '',
+                        country: data.data?.country || data.country || '',
+                        state: data.data?.state || data.state || '',
+                        city: data.data?.city || data.city || '',
+                        address: data.data?.address || data.address || '',
+                        bio: data.data?.bio || data.bio || '',
+                        highest_education: data.data?.highest_education || data.highest_education || '',
+                        skills: Array.isArray(skills) ? skills : [],
                     });
                     setDocuments(data.documents || []);
                     setStatus(data.status || 'draft');
+                    // Populate existing required documents
+                    const docs = data.documents || [];
+                    const existingIdFront = docs.find(d => d.type === 'id_front');
+                    const existingCertificate = docs.find(d => d.type === 'certificate');
+                    if (existingIdFront) setIdFrontFile(existingIdFront);
+                    if (existingCertificate) setCertificateFile(existingCertificate);
                 }
             } catch (err) {
                 console.error('Failed to fetch KYC:', err);
@@ -163,6 +180,62 @@ const Kyc = () => {
         setDocuments((prev) => [...prev, ...newDocs]);
     };
 
+    // Upload ID Front document
+    const handleIdFrontUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploadingIdFront(true);
+        setError(null);
+        try {
+            const result = await kycService.uploadDocument(file, 'id_front');
+            setIdFrontFile(result.document || { name: file.name, type: 'id_front', ...result });
+        } catch (err) {
+            setError(err.message || 'Failed to upload ID document.');
+        } finally {
+            setUploadingIdFront(false);
+        }
+    };
+
+    // Upload Certificate document
+    const handleCertificateUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploadingCertificate(true);
+        setError(null);
+        try {
+            const result = await kycService.uploadDocument(file, 'certificate');
+            setCertificateFile(result.document || { name: file.name, type: 'certificate', ...result });
+        } catch (err) {
+            setError(err.message || 'Failed to upload certificate.');
+        } finally {
+            setUploadingCertificate(false);
+        }
+    };
+
+    // Remove uploaded required document
+    const handleRemoveRequiredDoc = async (docType) => {
+        const doc = docType === 'id_front' ? idFrontFile : certificateFile;
+        if (!doc?.id) {
+            // Not yet uploaded to server, just clear local state
+            if (docType === 'id_front') setIdFrontFile(null);
+            else setCertificateFile(null);
+            return;
+        }
+
+        setLoading(true);
+        try {
+            await kycService.deleteDocument(doc.id);
+            if (docType === 'id_front') setIdFrontFile(null);
+            else setCertificateFile(null);
+        } catch (err) {
+            setError(err.message || 'Failed to remove document.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleRemoveDocument = async (index, docId) => {
         setLoading(true);
         try {
@@ -182,7 +255,13 @@ const Kyc = () => {
         setLoading(true);
         setError(null);
         try {
-            await kycService.updateKyc(formData);
+            // Ensure skills is an array before sending
+            const payload = {
+                ...formData,
+                skills: Array.isArray(formData.skills) ? formData.skills : [],
+            };
+            console.log('Saving KYC draft with payload:', payload); // Debug log
+            await kycService.updateKyc(payload);
             setLastSaved(new Date());
         } catch (err) {
             setError(err.message || 'Failed to save draft.');
@@ -196,7 +275,12 @@ const Kyc = () => {
             // Save step 1 data
             setLoading(true);
             try {
-                await kycService.updateKyc(formData);
+                const payload = {
+                    ...formData,
+                    skills: Array.isArray(formData.skills) ? formData.skills : [],
+                };
+                console.log('Saving step 1 with payload:', payload);
+                await kycService.updateKyc(payload);
                 setLastSaved(new Date());
                 setActiveStep((prev) => prev + 1);
             } catch (err) {
@@ -239,7 +323,8 @@ const Kyc = () => {
     };
 
     const isStep2Valid = () => {
-        return documents.length > 0;
+        // Both id_front and certificate are required
+        return idFrontFile && certificateFile;
     };
 
     const canSubmit = isStep1Valid() && isStep2Valid();
@@ -416,100 +501,167 @@ const Kyc = () => {
                     '& .MuiAlert-icon': { color: '#3B82F6' }
                 }}
             >
-                Please upload a clear copy of your <strong>Government-Issued ID</strong> (Passport, National ID, or Voter's Card) and your <strong>Academic Credentials</strong>.
+                Please upload a clear copy of your <strong>Government-Issued ID</strong> (Passport, National ID, or Voter's Card) and your <strong>Academic Certificate</strong>.
             </Alert>
 
-            {!isReadOnly && (
-                <Box
-                    sx={{
-                        border: '2px dashed #374151',
-                        borderRadius: 3,
-                        p: 6,
-                        textAlign: 'center',
-                        mb: 4,
-                        bgcolor: 'rgba(255,255,255,0.02)',
-                        transition: 'all 0.2s',
-                        '&:hover': { borderColor: '#1152D4', bgcolor: 'rgba(17, 82, 212, 0.02)' }
-                    }}
-                >
-                    <input
-                        accept="application/pdf,image/*"
-                        style={{ display: 'none' }}
-                        id="document-upload"
-                        multiple
-                        type="file"
-                        onChange={handleFileSelect}
-                    />
-                    <label htmlFor="document-upload">
-                        <Stack spacing={2} alignItems="center">
-                            <Box sx={{ p: 2, bgcolor: 'rgba(17, 82, 212, 0.1)', borderRadius: '50%' }}>
-                                <CloudUploadOutlined sx={{ fontSize: 40, color: '#1152D4' }} />
-                            </Box>
-                            <Box>
-                                <Typography sx={{ color: '#fff', fontWeight: 600, fontSize: '1.1rem', mb: 0.5 }}>
-                                    Click to upload documents
-                                </Typography>
-                                <Typography sx={{ color: '#6B7280', fontSize: '0.875rem' }}>
-                                    or drag and drop files here (PDF, JPG, PNG up to 10MB)
-                                </Typography>
-                            </Box>
-                            <Button
-                                variant="contained"
-                                component="span"
-                                sx={{
-                                    bgcolor: '#1152D4',
-                                    textTransform: 'none',
-                                    px: 4,
-                                    '&:hover': { bgcolor: '#0D42AF' }
-                                }}
-                            >
-                                Select Files
-                            </Button>
-                        </Stack>
-                    </label>
+            <Stack spacing={3}>
+                {/* ID Front Upload */}
+                <Box>
+                    <Typography sx={{ color: '#E5E7EB', fontSize: '0.875rem', fontWeight: 500, mb: 1 }}>
+                        Government-Issued ID (Front) <Box component="span" sx={{ color: '#EF4444' }}>*</Box>
+                    </Typography>
+                    {idFrontFile ? (
+                        <Paper
+                            sx={{
+                                bgcolor: '#111827',
+                                p: 2,
+                                borderRadius: 2,
+                                border: '1px solid #22C55E',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between'
+                            }}
+                        >
+                            <Stack direction="row" spacing={2} alignItems="center">
+                                <Box sx={{ p: 1, bgcolor: 'rgba(34, 197, 94, 0.1)', borderRadius: 1.5, color: '#22C55E' }}>
+                                    <CheckCircleOutline />
+                                </Box>
+                                <Box>
+                                    <Typography sx={{ color: '#fff', fontSize: '0.9rem', fontWeight: 500 }}>
+                                        {idFrontFile.name || idFrontFile.original_name || 'ID Document'}
+                                    </Typography>
+                                    <Typography sx={{ color: '#22C55E', fontSize: '0.75rem' }}>Uploaded</Typography>
+                                </Box>
+                            </Stack>
+                            {!isReadOnly && (
+                                <IconButton
+                                    onClick={() => handleRemoveRequiredDoc('id_front')}
+                                    sx={{ color: '#EF4444', '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.1)' } }}
+                                >
+                                    <DeleteOutline />
+                                </IconButton>
+                            )}
+                        </Paper>
+                    ) : (
+                        <Box
+                            sx={{
+                                border: '2px dashed #374151',
+                                borderRadius: 2,
+                                p: 3,
+                                textAlign: 'center',
+                                bgcolor: 'rgba(255,255,255,0.02)',
+                                transition: 'all 0.2s',
+                                '&:hover': { borderColor: '#1152D4', bgcolor: 'rgba(17, 82, 212, 0.02)' }
+                            }}
+                        >
+                            <input
+                                accept="application/pdf,image/*"
+                                style={{ display: 'none' }}
+                                id="id-front-upload"
+                                type="file"
+                                onChange={handleIdFrontUpload}
+                                disabled={isReadOnly || uploadingIdFront}
+                            />
+                            <label htmlFor="id-front-upload">
+                                <Stack spacing={1} alignItems="center">
+                                    <CloudUploadOutlined sx={{ fontSize: 32, color: '#1152D4' }} />
+                                    <Button
+                                        variant="outlined"
+                                        component="span"
+                                        disabled={uploadingIdFront}
+                                        sx={{
+                                            color: '#1152D4',
+                                            borderColor: '#1152D4',
+                                            textTransform: 'none',
+                                            '&:hover': { borderColor: '#0D42AF', bgcolor: 'rgba(17, 82, 212, 0.05)' }
+                                        }}
+                                    >
+                                        {uploadingIdFront ? 'Uploading...' : 'Upload ID Document'}
+                                    </Button>
+                                </Stack>
+                            </label>
+                        </Box>
+                    )}
                 </Box>
-            )}
 
-            <Stack spacing={2}>
-                {documents.map((doc, index) => (
-                    <Paper
-                        key={index}
-                        sx={{
-                            bgcolor: '#111827',
-                            p: 2,
-                            borderRadius: 2,
-                            border: '1px solid #374151',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between'
-                        }}
-                    >
-                        <Stack direction="row" spacing={2} alignItems="center">
-                            <Box sx={{ p: 1, bgcolor: 'rgba(17, 82, 212, 0.1)', borderRadius: 1.5, color: '#1152D4' }}>
-                                <DescriptionOutlined />
-                            </Box>
-                            <Box>
-                                <Typography sx={{ color: '#fff', fontSize: '0.9rem', fontWeight: 500 }}>{doc.name}</Typography>
-                                <Typography sx={{ color: '#6B7280', fontSize: '0.75rem' }}>{doc.size} • {doc.type}</Typography>
-                            </Box>
-                        </Stack>
-                        {!isReadOnly && (
-                            <IconButton
-                                onClick={() => handleRemoveDocument(index, doc.id)}
-                                sx={{ color: '#EF4444', '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.1)' } }}
-                            >
-                                <DeleteOutline />
-                            </IconButton>
-                        )}
-                    </Paper>
-                ))}
-                {documents.length === 0 && (
-                    <Box sx={{ textAlign: 'center', py: 6 }}>
-                        <Typography sx={{ color: '#4B5563', fontStyle: 'italic' }}>
-                            No documents uploaded yet.
-                        </Typography>
-                    </Box>
-                )}
+                {/* Certificate Upload */}
+                <Box>
+                    <Typography sx={{ color: '#E5E7EB', fontSize: '0.875rem', fontWeight: 500, mb: 1 }}>
+                        Academic Certificate <Box component="span" sx={{ color: '#EF4444' }}>*</Box>
+                    </Typography>
+                    {certificateFile ? (
+                        <Paper
+                            sx={{
+                                bgcolor: '#111827',
+                                p: 2,
+                                borderRadius: 2,
+                                border: '1px solid #22C55E',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between'
+                            }}
+                        >
+                            <Stack direction="row" spacing={2} alignItems="center">
+                                <Box sx={{ p: 1, bgcolor: 'rgba(34, 197, 94, 0.1)', borderRadius: 1.5, color: '#22C55E' }}>
+                                    <CheckCircleOutline />
+                                </Box>
+                                <Box>
+                                    <Typography sx={{ color: '#fff', fontSize: '0.9rem', fontWeight: 500 }}>
+                                        {certificateFile.name || certificateFile.original_name || 'Certificate'}
+                                    </Typography>
+                                    <Typography sx={{ color: '#22C55E', fontSize: '0.75rem' }}>Uploaded</Typography>
+                                </Box>
+                            </Stack>
+                            {!isReadOnly && (
+                                <IconButton
+                                    onClick={() => handleRemoveRequiredDoc('certificate')}
+                                    sx={{ color: '#EF4444', '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.1)' } }}
+                                >
+                                    <DeleteOutline />
+                                </IconButton>
+                            )}
+                        </Paper>
+                    ) : (
+                        <Box
+                            sx={{
+                                border: '2px dashed #374151',
+                                borderRadius: 2,
+                                p: 3,
+                                textAlign: 'center',
+                                bgcolor: 'rgba(255,255,255,0.02)',
+                                transition: 'all 0.2s',
+                                '&:hover': { borderColor: '#1152D4', bgcolor: 'rgba(17, 82, 212, 0.02)' }
+                            }}
+                        >
+                            <input
+                                accept="application/pdf,image/*"
+                                style={{ display: 'none' }}
+                                id="certificate-upload"
+                                type="file"
+                                onChange={handleCertificateUpload}
+                                disabled={isReadOnly || uploadingCertificate}
+                            />
+                            <label htmlFor="certificate-upload">
+                                <Stack spacing={1} alignItems="center">
+                                    <CloudUploadOutlined sx={{ fontSize: 32, color: '#1152D4' }} />
+                                    <Button
+                                        variant="outlined"
+                                        component="span"
+                                        disabled={uploadingCertificate}
+                                        sx={{
+                                            color: '#1152D4',
+                                            borderColor: '#1152D4',
+                                            textTransform: 'none',
+                                            '&:hover': { borderColor: '#0D42AF', bgcolor: 'rgba(17, 82, 212, 0.05)' }
+                                        }}
+                                    >
+                                        {uploadingCertificate ? 'Uploading...' : 'Upload Certificate'}
+                                    </Button>
+                                </Stack>
+                            </label>
+                        </Box>
+                    )}
+                </Box>
             </Stack>
         </Box>
     );
@@ -553,11 +705,15 @@ const Kyc = () => {
                 {/* Expertise */}
                 <Box>
                     <Typography sx={{ color: '#1152D4', fontWeight: 600, fontSize: '0.9rem', mb: 2 }}>Areas of Expertise</Typography>
-                    <Stack direction="row" spacing={1} flexWrap="wrap">
-                        {formData.skills.map(s => (
-                            <Chip key={s} label={s} size="small" sx={{ bgcolor: 'rgba(16, 185, 129, 0.1)', color: '#10B981', borderRadius: 1 }} />
-                        ))}
-                    </Stack>
+                    {formData.skills && formData.skills.length > 0 ? (
+                        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                            {formData.skills.map(s => (
+                                <Chip key={s} label={s} size="small" sx={{ bgcolor: 'rgba(16, 185, 129, 0.1)', color: '#10B981', borderRadius: 1 }} />
+                            ))}
+                        </Stack>
+                    ) : (
+                        <Typography sx={{ color: '#6B7280', fontStyle: 'italic', fontSize: '0.85rem' }}>No skills added</Typography>
+                    )}
                 </Box>
 
                 <Divider sx={{ borderColor: '#374151' }} />
@@ -566,11 +722,21 @@ const Kyc = () => {
                 <Box>
                     <Typography sx={{ color: '#1152D4', fontWeight: 600, fontSize: '0.9rem', mb: 2 }}>Attached Documents</Typography>
                     <Stack spacing={1}>
-                        {documents.map((doc, i) => (
-                            <Typography key={i} sx={{ color: '#fff', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <CheckCircleOutline sx={{ color: '#10B981', fontSize: 16 }} /> {doc.name}
+                        {idFrontFile && (
+                            <Typography sx={{ color: '#fff', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <CheckCircleOutline sx={{ color: '#10B981', fontSize: 16 }} />
+                                Government ID: {idFrontFile.name || idFrontFile.original_name || 'Uploaded'}
                             </Typography>
-                        ))}
+                        )}
+                        {certificateFile && (
+                            <Typography sx={{ color: '#fff', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <CheckCircleOutline sx={{ color: '#10B981', fontSize: 16 }} />
+                                Certificate: {certificateFile.name || certificateFile.original_name || 'Uploaded'}
+                            </Typography>
+                        )}
+                        {!idFrontFile && !certificateFile && (
+                            <Typography sx={{ color: '#EF4444', fontStyle: 'italic', fontSize: '0.85rem' }}>No documents uploaded</Typography>
+                        )}
                     </Stack>
                 </Box>
             </Stack>

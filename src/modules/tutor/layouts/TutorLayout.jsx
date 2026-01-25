@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Box, useTheme, useMediaQuery } from '@mui/material';
 import TutorSidebar from '../components/TutorSidebar';
 import TutorNavbar from '../components/TutorNavbar';
 import { useAuth } from '../../../contexts';
+import { kycService } from '../services/kycService';
 
 const SIDEBAR_WIDTH = 260;
 
@@ -12,6 +13,22 @@ const TutorLayout = () => {
     const { user, getKycStatus } = useAuth();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [kycStatus, setKycStatus] = useState(getKycStatus() || 'draft');
+
+    // Fetch actual KYC status from API
+    useEffect(() => {
+        const fetchKycStatus = async () => {
+            try {
+                const data = await kycService.getKyc();
+                if (data?.status) {
+                    setKycStatus(data.status);
+                }
+            } catch (err) {
+                console.warn('Failed to fetch KYC status:', err);
+            }
+        };
+        fetchKycStatus();
+    }, []);
 
     const handleDrawerToggle = () => {
         setMobileOpen(!mobileOpen);
@@ -51,7 +68,7 @@ const TutorLayout = () => {
                         user={displayUser}
                         notificationCount={3}
                         onDrawerToggle={handleDrawerToggle}
-                        kycStatus={getKycStatus() || 'draft'}
+                        kycStatus={kycStatus}
                     />
                 </Box>
 
@@ -64,4 +81,3 @@ const TutorLayout = () => {
 };
 
 export default TutorLayout;
-

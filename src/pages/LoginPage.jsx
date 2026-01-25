@@ -40,18 +40,6 @@ const LoginPage = () => {
         }));
     };
 
-    const getDashboardRoute = (role) => {
-        // Map role/userType to dashboard route
-        if (role === 'administrator' || role === 'admin') {
-            return '/admin';
-        } else if (role === 'tutor') {
-            return '/tutor';
-        } else if (role === 'learner' || role === 'student') {
-            return '/learner'; 
-        }
-        return '/learner';
-    };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');

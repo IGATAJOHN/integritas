@@ -36,12 +36,11 @@ const OnboardingGuard = ({ children }) => {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
-    
-    /*
+    // Check if email needs verification
+    // Skip verification check for verify page itself
     if (needsEmailVerification() && location.pathname !== '/verify') {
         return <Navigate to="/verify" replace />;
     }
-    */
 
     // Check if KYC is needed (for tutors)
     // Only check KYC for tutor routes, and skip if already on KYC page

@@ -21,6 +21,7 @@ export const AuthProvider = ({ children }) => {
 
                         // Preserve token from storage
                         userData.token = parsed.token;
+                        userData.role = pickRole(userData) || userData.role;
 
                         // Temporary bypass for testing: Force admin role for specific email
                         if (userData.email === 'admin@test.com') {
@@ -54,6 +55,7 @@ export const AuthProvider = ({ children }) => {
 
             if (token) {
                 userData.token = token;
+                userData.role = pickRole(userData) || userData.role;
             }
 
             // After login, fetch fresh user data with roles and onboarding status
@@ -61,10 +63,7 @@ export const AuthProvider = ({ children }) => {
                 const currentUserData = await authService.getCurrentUser();
                 const freshUserData = currentUserData.user || currentUserData;
                 freshUserData.token = token;
-                // Temporary bypass for testing: Force admin role for specific email
-                if (freshUserData.email === 'admin@test.com') {
-                    freshUserData.role = 'admin';
-                }
+                freshUserData.role = pickRole(freshUserData) || freshUserData.role;
 
                 setUser(freshUserData);
                 localStorage.setItem('user', JSON.stringify(freshUserData));
@@ -72,11 +71,6 @@ export const AuthProvider = ({ children }) => {
             } catch (error) {
                 // If /auth/me fails, use login response data
                 console.warn('Failed to fetch current user after login, using login response:', error);
-
-                // Temporary bypass for testing: Force admin role for specific email
-                if (userData.email === 'admin@test.com') {
-                    userData.role = 'admin';
-                }
 
                 setUser(userData);
                 localStorage.setItem('user', JSON.stringify(userData));
@@ -88,52 +82,69 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const register = async (userData) => {
+    const pickRole = (u) => {
+        const names = u?.roles?.map((r) => r.name) || [];
+        if (u?.role) return u.role;
+        if (names.includes("admin") || names.includes("administrator")) return "admin";
+        if (names.includes("tutor")) return "tutor";
+        if (names.includes("student") || names.includes("learner")) return "learner";
+        return null;
+    };
+
+    const register = async (payload) => {
         try {
-            const data = await authService.register(userData);
-            const user = data.user || data;
-            if (data.token) {
-                user.token = data.token;
-            }
+            const data = await authService.register(payload);
 
-            // After registration, fetch fresh user data with roles and onboarding status
+            const baseUser = data.user || data;
+            const token = data.token;
+
+            const storedUser = { ...baseUser, token };
+            storedUser.role = pickRole(storedUser) || storedUser.role;
+
+            setUser(storedUser);
+            localStorage.setItem("user", JSON.stringify(storedUser));
+
+            let finalUser = storedUser;
             try {
-                const currentUserData = await authService.getCurrentUser();
-                const freshUserData = currentUserData.user || currentUserData;
-                freshUserData.token = user.token;
-                // Temporary bypass for testing: Force admin role for specific email
-                if (freshUserData.email === 'admin@test.com') {
-                    freshUserData.role = 'admin';
-                }
+            const current = await authService.getCurrentUser();
+            const fresh = current.user || current;
+            finalUser = { ...fresh, token };
+            finalUser.role = pickRole(finalUser) || storedUser.role;
 
-                setUser(freshUserData);
-                localStorage.setItem('user', JSON.stringify(freshUserData));
-                return freshUserData;
-            } catch (error) {
-                // If /auth/me fails, use registration response data
-                console.warn('Failed to fetch current user after registration, using registration response:', error);
+            if (finalUser.email === "admin@test.com") finalUser.role = "admin";
 
-                // Temporary bypass for testing: Force admin role for specific email
-                if (user.email === 'admin@test.com') {
-                    user.role = 'admin';
-                }
-
-                setUser(user);
-                localStorage.setItem('user', JSON.stringify(user));
-                return user;
+            setUser(finalUser);
+            localStorage.setItem("user", JSON.stringify(finalUser));
+            } catch (err) {
+            console.warn("Failed to fetch current user after registration, using register response:", err);
             }
+
+            const verified =
+            finalUser?.email_verified === true ||
+            finalUser?.emailVerified === true ||
+            !!finalUser?.email_verified_at ||
+            !!finalUser?.emailVerifiedAt;
+
+            if (!verified) {
+            try {
+                await authService.resendEmail();
+            } catch (emailError) {
+                console.warn("Auto-resend of verification email failed:", emailError);
+            }
+            }
+
+            return finalUser;
         } catch (error) {
-            console.error('Registration failed:', error);
+            console.error("Registration failed:", error);
             throw error;
         }
-    };
+        };
+
 
     const logout = async () => {
         try {
-            // Call logout API to invalidate token on server
             await authService.logout();
         } catch (error) {
-            // Even if API call fails, clear local state
             console.error('Logout API error:', error);
         } finally {
             // Always clear local state regardless of API call result
@@ -157,6 +168,7 @@ export const AuthProvider = ({ children }) => {
             // Preserve token
             if (user?.token) {
                 userData.token = user.token;
+                userData.role = pickRole(userData) || userData.role;
             }
 
             setUser(userData);
@@ -170,7 +182,13 @@ export const AuthProvider = ({ children }) => {
 
     // Helper functions to check onboarding status
     const isEmailVerified = () => {
-        return user?.email_verified === true || user?.emailVerified === true;
+        // Support multiple common field names from backend (boolean or timestamp)
+        return (
+            user?.email_verified === true ||
+            user?.emailVerified === true ||
+            !!user?.email_verified_at ||
+            !!user?.emailVerifiedAt
+        );
     };
 
     const getKycStatus = () => {
@@ -183,9 +201,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     const needsEmailVerification = () => {
-        // Commented out to bypass email verification flow as requested
-        // return !isEmailVerified();
-        return false;
+        return !isEmailVerified();
     };
 
     const needsKyc = () => {
@@ -202,8 +218,15 @@ export const AuthProvider = ({ children }) => {
 
             const data = await authService.verifyEmail(endpoint);
 
-            // After successful verification, refresh user data to update email_verified status
-            await refreshUser();
+            // After successful verification, refresh user data if we have a token
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+                try {
+                    await refreshUser();
+                } catch (refreshError) {
+                    console.warn('Refresh user failed after verification:', refreshError);
+                }
+            }
 
             return data;
         } catch (error) {

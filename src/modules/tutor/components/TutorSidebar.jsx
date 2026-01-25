@@ -16,7 +16,7 @@ import {
     Collapse,
 } from '@mui/material';
 import {
-    SwapHoriz,
+    LogoutOutlined,
     DashboardOutlined,
     SchoolOutlined,
     BarChartOutlined,
@@ -25,6 +25,7 @@ import {
     ExpandLess,
     ExpandMore,
 } from '@mui/icons-material';
+import { useAuth } from '../../../contexts';
 
 const DRAWER_WIDTH = 260;
 
@@ -201,29 +202,30 @@ const TutorSidebar = ({
                 </List>
             </Box>
 
-            {/* Switch Role Button */}
+            {/* Logout Button */}
             <Box sx={{ p: 2, borderTop: '1px solid #1F2937' }}>
                 <Button
                     fullWidth
                     variant="outlined"
-                    startIcon={<SwapHoriz />}
-                    onClick={() => {
-                        navigate('/learner');
+                    startIcon={<LogoutOutlined />}
+                    onClick={async () => {
+                        await logout();
+                        navigate('/login');
                         if (isMobile) onDrawerClose();
                     }}
                     sx={{
                         borderColor: '#374151',
-                        color: '#9CA3AF',
+                        color: '#EF4444',
                         textTransform: 'none',
                         py: 1.25,
                         fontSize: '0.9rem',
                         '&:hover': {
-                            borderColor: '#1152D4',
-                            bgcolor: 'rgba(17, 82, 212, 0.1)',
+                            borderColor: '#EF4444',
+                            bgcolor: 'rgba(239, 68, 68, 0.1)',
                         },
                     }}
                 >
-                    Switch Role
+                    Logout
                 </Button>
             </Box>
         </Box>

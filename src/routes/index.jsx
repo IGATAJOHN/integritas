@@ -43,24 +43,24 @@ const router = createBrowserRouter([
             </PublicRoute>
         ),
     },
-    // {
-    //     ...adminRoutes,
-    //     element: (
-    //         <ProtectedRoute>
-    //             {adminRoutes.element}
-    //         </ProtectedRoute>
-    //     ),
-    // },
-    adminRoutes,
-    // {
-    //     ...tutorRoutes,
-    //     element: (
-    //         <ProtectedRoute>
-    //             {tutorRoutes.element}
-    //         </ProtectedRoute>
-    //     ),
-    // },
-     tutorRoutes,
+    {
+        ...adminRoutes,
+        element: (
+            <ProtectedRoute>
+                {adminRoutes.element}
+            </ProtectedRoute>
+        ),
+    },
+    // adminRoutes,
+    {
+        ...tutorRoutes,
+        element: (
+            <ProtectedRoute>
+                {tutorRoutes.element}
+            </ProtectedRoute>
+        ),
+    },
+    //  tutorRoutes,
     ...learnerRoutes.map(route => ({
         ...route,
         element: (
