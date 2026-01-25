@@ -148,7 +148,7 @@ const ForgotPasswordPage = () => {
             await resetPassword(email, otpCode, password, passwordConfirmation);
             setIsPasswordReset(true);
             // Redirect to login after 2 seconds
-            setTimeout(() => {
+        setTimeout(() => {
                 navigate('/login');
             }, 2000);
         } catch (err) {
@@ -691,7 +691,7 @@ const ForgotPasswordPage = () => {
                                 }}
                             >
                                 {isResetting ? 'Resetting Password...' : 'Reset Password'}
-                            </Button>
+                        </Button>
                         </Box>
                     </Box>
                 ) : (
@@ -707,15 +707,15 @@ const ForgotPasswordPage = () => {
                                 },
                             }}
                         >
-                            <Typography
-                                sx={{
-                                    color: '#10B981',
-                                    fontSize: '0.9rem',
-                                    fontWeight: 500,
-                                }}
-                            >
+                        <Typography
+                            sx={{
+                                color: '#10B981',
+                                fontSize: '0.9rem',
+                                fontWeight: 500,
+                            }}
+                        >
                                 ✓ Password reset successfully! Redirecting to login...
-                            </Typography>
+                        </Typography>
                         </Alert>
                     </Box>
                 )}

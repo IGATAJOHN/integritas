@@ -60,6 +60,7 @@ const AdminSidebar = ({
                 { path: '/admin/content/lessons', label: 'Categories' },
             ]
         },
+        { path: '/admin/kycreview', label: 'KYC Review', icon: <VerifiedUserOutlined sx={{ fontSize: 22 }} /> },
         { path: '/admin/analytics', label: 'Analytics', icon: <BarChartOutlined sx={{ fontSize: 22 }} /> },
         { path: '/admin/verifications', label: 'Verifications', icon: <VerifiedUserOutlined sx={{ fontSize: 22 }} /> },
         { path: '/admin/settings', label: 'Settings', icon: <SettingsOutlined sx={{ fontSize: 22 }} /> },
@@ -138,7 +139,7 @@ const AdminSidebar = ({
 
             {/* Navigation */}
             <Box sx={{ flex: 1, py: 2, overflow: 'auto' }}>
-                <List sx={{ px: 0}}>
+                <List sx={{ px: 0 }}>
                     {navItems.map((item) => (
                         <React.Fragment key={item.label}>
                             <ListItem disablePadding sx={{ mb: 0.5 }}>

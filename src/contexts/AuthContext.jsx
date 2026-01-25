@@ -18,10 +18,15 @@ export const AuthProvider = ({ children }) => {
                     if (parsed.token) {
                         const data = await authService.getCurrentUser();
                         const userData = data.user || data;
-                        
+
                         // Preserve token from storage
                         userData.token = parsed.token;
-                        
+
+                        // Temporary bypass for testing: Force admin role for specific email
+                        if (userData.email === 'admin@test.com') {
+                            userData.role = 'admin';
+                        }
+
                         setUser(userData);
                         localStorage.setItem('user', JSON.stringify(userData));
                     } else {
@@ -37,7 +42,7 @@ export const AuthProvider = ({ children }) => {
             }
             setLoading(false);
         };
-        
+
         initializeAuth();
     }, []);
 
@@ -56,12 +61,23 @@ export const AuthProvider = ({ children }) => {
                 const currentUserData = await authService.getCurrentUser();
                 const freshUserData = currentUserData.user || currentUserData;
                 freshUserData.token = token;
+                // Temporary bypass for testing: Force admin role for specific email
+                if (freshUserData.email === 'admin@test.com') {
+                    freshUserData.role = 'admin';
+                }
+
                 setUser(freshUserData);
                 localStorage.setItem('user', JSON.stringify(freshUserData));
                 return freshUserData;
             } catch (error) {
                 // If /auth/me fails, use login response data
                 console.warn('Failed to fetch current user after login, using login response:', error);
+
+                // Temporary bypass for testing: Force admin role for specific email
+                if (userData.email === 'admin@test.com') {
+                    userData.role = 'admin';
+                }
+
                 setUser(userData);
                 localStorage.setItem('user', JSON.stringify(userData));
                 return userData;
@@ -85,12 +101,23 @@ export const AuthProvider = ({ children }) => {
                 const currentUserData = await authService.getCurrentUser();
                 const freshUserData = currentUserData.user || currentUserData;
                 freshUserData.token = user.token;
+                // Temporary bypass for testing: Force admin role for specific email
+                if (freshUserData.email === 'admin@test.com') {
+                    freshUserData.role = 'admin';
+                }
+
                 setUser(freshUserData);
                 localStorage.setItem('user', JSON.stringify(freshUserData));
                 return freshUserData;
             } catch (error) {
                 // If /auth/me fails, use registration response data
                 console.warn('Failed to fetch current user after registration, using registration response:', error);
+
+                // Temporary bypass for testing: Force admin role for specific email
+                if (user.email === 'admin@test.com') {
+                    user.role = 'admin';
+                }
+
                 setUser(user);
                 localStorage.setItem('user', JSON.stringify(user));
                 return user;
@@ -126,12 +153,12 @@ export const AuthProvider = ({ children }) => {
         try {
             const data = await authService.getCurrentUser();
             const userData = data.user || data;
-            
+
             // Preserve token
             if (user?.token) {
                 userData.token = user.token;
             }
-            
+
             setUser(userData);
             localStorage.setItem('user', JSON.stringify(userData));
             return userData;
@@ -156,7 +183,9 @@ export const AuthProvider = ({ children }) => {
     };
 
     const needsEmailVerification = () => {
-        return !isEmailVerified();
+        // Commented out to bypass email verification flow as requested
+        // return !isEmailVerified();
+        return false;
     };
 
     const needsKyc = () => {
@@ -170,12 +199,12 @@ export const AuthProvider = ({ children }) => {
             // Build query string from queryParams object
             const queryString = new URLSearchParams(queryParams).toString();
             const endpoint = `/auth/email/verify/${id}/${hash}${queryString ? `?${queryString}` : ''}`;
-            
+
             const data = await authService.verifyEmail(endpoint);
-            
+
             // After successful verification, refresh user data to update email_verified status
             await refreshUser();
-            
+
             return data;
         } catch (error) {
             console.error('Email verification failed:', error);
@@ -247,12 +276,12 @@ export const AuthProvider = ({ children }) => {
     const changePassword = async (current_password, password, password_confirmation) => {
         try {
             const data = await authService.changePassword(current_password, password, password_confirmation);
-            
+
             // After successful password change, tokens are revoked
             // Clear local state and redirect to login
             setUser(null);
             localStorage.removeItem('user');
-            
+
             return data;
         } catch (error) {
             // Handle specific error status codes

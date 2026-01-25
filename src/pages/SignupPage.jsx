@@ -148,9 +148,9 @@ const SignupPage = () => {
 
             // Get the role from the user data or use the selected role
             const userRole = userData?.role || role;
-            
+
             // Map role to dashboard route
-            let dashboardRoute = '/learner'; 
+            let dashboardRoute = '/learner';
             if (userRole === 'tutor') {
                 dashboardRoute = '/tutor';
             } else if (userRole === 'administrator' || userRole === 'admin') {
@@ -158,7 +158,7 @@ const SignupPage = () => {
             } else if (userRole === 'learner' || userRole === 'student') {
                 dashboardRoute = '/learner';
             }
-            
+
             navigate(dashboardRoute);
         } catch (err) {
             console.error(err);
@@ -400,7 +400,6 @@ const SignupPage = () => {
                             }}
                         >
                             <Tab label="Student" value="student" />
-                            <Tab label="Administrator" value="administrator" />
                             <Tab label="Tutor" value="tutor" />
                         </Tabs>
                     </Box>

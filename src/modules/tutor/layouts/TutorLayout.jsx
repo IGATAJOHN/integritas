@@ -3,11 +3,13 @@ import { Outlet } from 'react-router-dom';
 import { Box, useTheme, useMediaQuery } from '@mui/material';
 import TutorSidebar from '../components/TutorSidebar';
 import TutorNavbar from '../components/TutorNavbar';
+import { useAuth } from '../../../contexts';
 
 const SIDEBAR_WIDTH = 260;
 
 const TutorLayout = () => {
     const theme = useTheme();
+    const { user, getKycStatus } = useAuth();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -19,9 +21,10 @@ const TutorLayout = () => {
         setMobileOpen(false);
     };
 
-    const user = {
-        name: 'Tutor James',
-        initials: 'TJ',
+    const displayUser = {
+        name: user?.name || 'Tutor',
+        initials: user?.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'T',
+        avatar: user?.avatar,
     };
 
     return (
@@ -45,9 +48,10 @@ const TutorLayout = () => {
                     <TutorNavbar
                         title="Tutor Dashboard"
                         searchPlaceholder="Search courses or students..."
-                        user={user}
+                        user={displayUser}
                         notificationCount={3}
                         onDrawerToggle={handleDrawerToggle}
+                        kycStatus={getKycStatus() || 'draft'}
                     />
                 </Box>
 

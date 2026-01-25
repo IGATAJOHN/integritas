@@ -32,6 +32,10 @@ const router = createBrowserRouter([
         element: <VerifyPage />,
     },
     {
+        path: '/verify/:id/:hash',
+        element: <VerifyPage />,
+    },
+    {
         path: '/forgot-password',
         element: (
             <PublicRoute>
@@ -39,22 +43,24 @@ const router = createBrowserRouter([
             </PublicRoute>
         ),
     },
-    {
-        ...adminRoutes,
-        element: (
-            <ProtectedRoute>
-                {adminRoutes.element}
-            </ProtectedRoute>
-        ),
-    },
-    {
-        ...tutorRoutes,
-        element: (
-            <ProtectedRoute>
-                {tutorRoutes.element}
-            </ProtectedRoute>
-        ),
-    },
+    // {
+    //     ...adminRoutes,
+    //     element: (
+    //         <ProtectedRoute>
+    //             {adminRoutes.element}
+    //         </ProtectedRoute>
+    //     ),
+    // },
+    adminRoutes,
+    // {
+    //     ...tutorRoutes,
+    //     element: (
+    //         <ProtectedRoute>
+    //             {tutorRoutes.element}
+    //         </ProtectedRoute>
+    //     ),
+    // },
+     tutorRoutes,
     ...learnerRoutes.map(route => ({
         ...route,
         element: (

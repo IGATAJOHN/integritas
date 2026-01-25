@@ -9,6 +9,7 @@ import {
     ReviewerManagement,
     CourseManagement,
     CategoryManagement,
+    KycReview,
 } from './pages';
 
 const adminRoutes = {
@@ -64,6 +65,10 @@ const adminRoutes = {
         {
             path: 'settings',
             element: <AdminSettings />,
+        },
+        {
+            path: 'kycreview',
+            element: <KycReview />,
         },
     ],
 };

@@ -27,10 +27,21 @@ const DashboardNavbar = ({
     notificationCount = 0,
     showSearch = true,
     onDrawerToggle = () => { },
+    kycStatus = 'approved', // draft, pending, approved, rejected
 }) => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const [searchQuery, setSearchQuery] = useState('');
+
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'approved': return '#10B981'; // Green
+            case 'pending':
+            case 'submitted': return '#F59E0B'; // Yellow/Amber
+            case 'rejected': return '#EF4444'; // Red
+            default: return '#9CA3AF'; // Gray (Draft/None)
+        }
+    };
 
     return (
         <Box
@@ -100,7 +111,45 @@ const DashboardNavbar = ({
                 )}
             </Stack>
 
-            <Stack direction="row" alignItems="center" spacing={1}>
+            <Stack direction="row" alignItems="center" spacing={2}>
+                {/* KYC Status Indicator Pill */}
+                {!isMobile && (
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1.5,
+                            bgcolor: 'rgba(255, 255, 255, 0.03)',
+                            px: 1.5,
+                            py: 0.75,
+                            borderRadius: '50px',
+                            border: '1px solid #1F2937',
+                            mr: 1
+                        }}
+                    >
+                        <Box
+                            sx={{
+                                width: 8,
+                                height: 8,
+                                borderRadius: '50%',
+                                bgcolor: getStatusColor(kycStatus),
+                                boxShadow: `0 0 8px ${getStatusColor(kycStatus)}`
+                            }}
+                        />
+                        <Typography
+                            sx={{
+                                color: '#9CA3AF',
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px'
+                            }}
+                        >
+                            {kycStatus === 'submitted' ? 'Pending Verification' : kycStatus}
+                        </Typography>
+                    </Box>
+                )}
+
                 <IconButton
                     sx={{
                         color: '#6B7280',
@@ -111,16 +160,17 @@ const DashboardNavbar = ({
                         <NotificationsOutlined sx={{ fontSize: 24 }} />
                     </Badge>
                 </IconButton>
+
                 <Avatar
                     src={user.avatar}
                     sx={{
                         width: 40,
                         height: 40,
                         bgcolor: '#1152D4',
-                        ml: 1,
                         cursor: 'pointer',
                         fontSize: '0.9rem',
                         fontWeight: 600,
+                        ml: 1
                     }}
                 >
                     {user.initials}

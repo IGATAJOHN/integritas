@@ -17,7 +17,7 @@ export const useThemeMode = () => {
 // Theme configurations
 const getDesignTokens = (mode) => ({
     palette: {
-        mode,
+        mode, 
         ...(mode === 'dark'
             ? {
                 // Dark mode colors

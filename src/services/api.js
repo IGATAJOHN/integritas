@@ -1,8 +1,9 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
     (import.meta.env.DEV ? '/api' : 'http://localhost:3001/api');
 
 const defaultHeaders = {
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
 };
 
 const getAuthToken = () => {
@@ -39,7 +40,7 @@ const apiRequest = async (endpoint, options = {}) => {
         if (!response.ok) {
             let error;
             let errorMessage = 'An error occurred';
-            
+
             if (isJson) {
                 try {
                     error = await response.json();
@@ -52,7 +53,7 @@ const apiRequest = async (endpoint, options = {}) => {
                 console.error('Non-JSON error response:', text.substring(0, 200));
                 errorMessage = `Server error (${response.status}): ${response.statusText}`;
             }
-            
+
             const apiError = new Error(errorMessage);
             apiError.status = response.status;
             apiError.data = error;
@@ -111,9 +112,9 @@ export const authService = {
     resendEmail: () => apiService.post('/auth/email/resend'),
     forgotPassword: (email) => apiService.post('/auth/password/forgot', { email }),
     verifyPasswordOtp: (email, otp) => apiService.post('/auth/password/verify-otp', { email, otp }),
-    resetPassword: (email, otp, password, password_confirmation) => 
+    resetPassword: (email, otp, password, password_confirmation) =>
         apiService.post('/auth/password/reset', { email, otp, password, password_confirmation }),
-    changePassword: (current_password, password, password_confirmation) => 
+    changePassword: (current_password, password, password_confirmation) =>
         apiService.post('/auth/password/change', { current_password, password, password_confirmation }),
 };
 
