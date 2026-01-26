@@ -38,6 +38,7 @@ const TutorSidebar = ({
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const [openSubmenu, setOpenSubmenu] = React.useState('');
+    const { logout } = useAuth();
 
     const navItems = [
         { path: '/tutor', label: 'Dashboard', icon: <DashboardOutlined sx={{ fontSize: 22 }} /> },

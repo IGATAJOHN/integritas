@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Box,
@@ -39,17 +39,17 @@ import {
     InfoOutlined as InfoIcon,
     BadgeOutlined as NameIcon,
 } from '@mui/icons-material';
+import { adminListKyc, adminGetKycById, adminApproveKyc, adminRejectKyc } from "../services/kyc";
+
 
 const KycReview = () => {
     const navigate = useNavigate();
 
-    // View State: 'list' | 'detail'
     const [view, setView] = useState('list');
     const [selectedTutor, setSelectedTutor] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [error, setError] = useState('');
 
-    // Design tokens (keeps the UI consistent)
     const ui = {
         pageBg: '#0B1220',
         cardBg: '#111A2C',
@@ -62,94 +62,37 @@ const KycReview = () => {
         primary: '#3B82F6',
     };
 
-    // Mock Data
-    const [submissions, setSubmissions] = useState([
-        {
-            id: 1,
-            name: 'John Doe',
-            email: 'john.doe@example.com',
-            status: 'submitted',
-            submitted_at: '2024-01-20 10:30 AM',
-            reviewed_at: null,
-            review_note: '',
-            details: {
-                phone: '+1 234 567 8900',
-                country: 'United States',
-                state: 'California',
-                city: 'Los Angeles',
-                address: '123 Tech Lane, Silicon Valley',
-                bio: 'Experienced software engineer with over 10 years in the industry. Passionate about teaching web development and cloud architecture.',
-                highest_education: "Master's in Computer Science",
-                skills: ['React', 'Node.js', 'Python', 'AWS', 'Docker'],
-            },
-            documents: [
-                { id: 1, name: 'National_ID_Front.jpg', type: 'Identity' },
-                { id: 2, name: 'National_ID_Back.jpg', type: 'Identity' },
-                { id: 3, name: 'MSc_Degree_Certificate.pdf', type: 'Education' },
-            ],
-        },
-        {
-            id: 2,
-            name: 'Jane Smith',
-            email: 'jane.smith@example.com',
-            status: 'approved',
-            submitted_at: '2024-01-18 02:15 PM',
-            reviewed_at: '2024-01-19 11:00 AM',
-            review_note: 'All documents verified.',
-            details: {
-                phone: '+44 20 7946 0958',
-                country: 'United Kingdom',
-                state: 'London',
-                city: 'London',
-                address: '45 Baker Street',
-                bio: 'Data scientist specializing in machine learning and data visualization modeling.',
-                highest_education: 'PhD in Statistics',
-                skills: ['Python', 'R', 'TensorFlow', 'SQL'],
-            },
-            documents: [
-                { id: 4, name: 'Passport.pdf', type: 'Identity' },
-                { id: 5, name: 'PhD_Certificate.pdf', type: 'Education' },
-            ],
-        },
-        {
-            id: 3,
-            name: 'Robert Brown',
-            email: 'robert.b@example.com',
-            status: 'rejected',
-            submitted_at: '2024-01-21 09:00 AM',
-            reviewed_at: '2024-01-21 04:30 PM',
-            review_note: 'Identity document is blurry. Please re-upload.',
-            details: {
-                phone: '+1 555 123 4567',
-                country: 'Canada',
-                state: 'Ontario',
-                city: 'Toronto',
-                address: '789 Maple Ave',
-                bio: 'Creative designer with a focus on UI/UX and brand development.',
-                highest_education: "Bachelor's in Design",
-                skills: ['Figma', 'Adobe XD', 'Illustrator'],
-            },
-            documents: [{ id: 6, name: 'Canadian_ID.jpg', type: 'Identity' }],
-        },
-    ]);
+    const [submissions, setSubmissions] = useState([]);
+    const [loadingList, setLoadingList] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [page, setPage] = useState(1);
+    const filteredSubmissions = submissions;
 
-    const filteredSubmissions = useMemo(() => {
-        const t = searchTerm.trim().toLowerCase();
-        if (!t) return submissions;
-        return submissions.filter(
-            (s) =>
-                s.name.toLowerCase().includes(t) ||
-                s.email.toLowerCase().includes(t) ||
-                s.status.toLowerCase().includes(t)
-        );
-    }, [submissions, searchTerm]);
+    useEffect(() => {
+    const fetchList = async () => {
+        try {
+        setLoadingList(true);
+        setError("");
 
-    const stats = useMemo(() => {
-        const submitted = submissions.filter((s) => s.status === 'submitted').length;
-        const approved = submissions.filter((s) => s.status === 'approved').length;
-        const rejected = submissions.filter((s) => s.status === 'rejected').length;
-        return { submitted, approved, rejected };
-    }, [submissions]);
+        const res = await adminListKyc({
+            status: "submitted",
+            role: "tutor",
+            q: searchTerm,
+            page,
+        });
+
+        setSubmissions(res?.data || []);
+        } catch (e) {
+        console.error(e);
+        setError("Failed to load KYC submissions.");
+        setSubmissions([]);
+        } finally {
+        setLoadingList(false);
+        }
+    };
+
+    fetchList();
+    }, [searchTerm, page]);
 
     const getStatusConfig = (status) => {
         switch (status) {
@@ -176,11 +119,33 @@ const KycReview = () => {
         }
     };
 
-    const handleViewDetail = (submission) => {
-        setSelectedTutor({ ...submission });
-        setError('');
-        setView('detail');
+    const handleViewDetail = async (row) => {
+        try {
+            setError("");
+            setLoading(true);
+
+            const detail = await adminGetKycById(row.id);
+
+            setSelectedTutor({
+                id: detail.id,
+                status: detail.status,
+                submitted_at: detail.submitted_at,
+                reviewed_at: detail.reviewed_at,
+                review_note: detail.review_note || "",
+                user: detail.user,
+                data: detail.data,
+                documents: detail.documents || [],
+            });
+
+            setView("detail");
+        } catch (e) {
+            console.error(e);
+            setError("Failed to load KYC details.");
+        } finally {
+            setLoading(false);
+        }
     };
+
 
     const handleBackToList = () => {
         setView('list');
@@ -188,27 +153,51 @@ const KycReview = () => {
         setError('');
     };
 
-    const handleAction = (status) => {
-        if (status === 'rejected' && !selectedTutor.review_note?.trim()) {
-            setError('Please provide a review note for rejection.');
+    const handleAction = async (newStatus) => {
+        try {
+            setError("");
+            setLoading(true);
+
+            if (newStatus === "rejected" && !selectedTutor.review_note?.trim()) {
+            setError("Please provide a review note for rejection.");
             return;
+            }
+
+            if (newStatus === "approved") {
+            await adminApproveKyc(selectedTutor.id, selectedTutor.review_note || "Approved.");
+            } else {
+            await adminRejectKyc(selectedTutor.id, selectedTutor.review_note);
+            }
+
+            const refreshed = await adminGetKycById(selectedTutor.id);
+            setSelectedTutor({
+                id: refreshed.id,
+                status: refreshed.status,
+                submitted_at: refreshed.submitted_at,
+                reviewed_at: refreshed.reviewed_at,
+                review_note: refreshed.review_note || "",
+                user: refreshed.user,
+                data: refreshed.data,
+                documents: refreshed.documents || [],
+            });
+
+            const res = await adminListKyc({ status: "submitted", role: "tutor", q: searchTerm, page });
+            setSubmissions(res?.data || []);
+        } catch (e) {
+            console.error(e);
+            setError("Action failed. Check token/permissions and KYC status.");
+        } finally {
+            setLoading(false);
         }
-
-        const updatedAt = new Date().toLocaleString();
-        const updatedTutor = { ...selectedTutor, status, reviewed_at: updatedAt };
-
-        setSubmissions((prev) =>
-            prev.map((s) => (s.id === selectedTutor.id ? { ...updatedTutor } : s))
-        );
-        setSelectedTutor(updatedTutor);
-        setError('');
     };
 
-    // --- Detail View Render ---
+
     if (view === 'detail' && selectedTutor) {
         const isSubmitted = selectedTutor.status === 'submitted';
         const isApproved = selectedTutor.status === 'approved';
         const status = getStatusConfig(selectedTutor.status);
+        const kycUser = selectedTutor.user || {};
+        const kycData = selectedTutor.data || {};
 
         return (
             <Box
@@ -314,13 +303,13 @@ const KycReview = () => {
                                         sx={{ color: ui.text, fontWeight: 900, lineHeight: 1.2 }}
                                         noWrap
                                     >
-                                        {selectedTutor.name}
+                                        {kycUser.name || '—'}
                                     </Typography>
 
                                     <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.5 }}>
                                         <EmailIcon sx={{ color: ui.dim, fontSize: 16 }} />
                                         <Typography variant="body2" sx={{ color: ui.muted }} noWrap>
-                                            {selectedTutor.email}
+                                            {kycUser.email || '—'}
                                         </Typography>
 
                                         {selectedTutor.reviewed_at && (
@@ -361,12 +350,12 @@ const KycReview = () => {
 
                             <Grid container spacing={2}>
                                 {[
-                                    { label: 'Phone Number', value: selectedTutor.details.phone, icon: <PhoneIcon /> },
-                                    { label: 'Country', value: selectedTutor.details.country, icon: <WorldIcon /> },
-                                    { label: 'State / Province', value: selectedTutor.details.state, icon: <LocationIcon /> },
-                                    { label: 'City', value: selectedTutor.details.city, icon: <LocationIcon /> },
-                                    { label: 'Residential Address', value: selectedTutor.details.address, icon: <AddressIcon />, fullWidth: true },
-                                    { label: 'Highest Education', value: selectedTutor.details.highest_education, icon: <EducationIcon />, fullWidth: true },
+                                    { label: 'Phone Number', value: kycData.phone, icon: <PhoneIcon /> },
+                                    { label: 'Country', value: kycData.country, icon: <WorldIcon /> },
+                                    { label: 'State / Province', value: kycData.state, icon: <LocationIcon /> },
+                                    { label: 'City', value: kycData.city, icon: <LocationIcon /> },
+                                    { label: 'Residential Address', value: kycData.address, icon: <AddressIcon />, fullWidth: true },
+                                    { label: 'Highest Education', value: kycData.highest_education, icon: <EducationIcon />, fullWidth: true },
                                 ].map((item, idx) => (
                                     <Grid item xs={12} sm={item.fullWidth ? 12 : 6} key={idx}>
                                         <Box
@@ -428,7 +417,7 @@ const KycReview = () => {
                                         </Typography>
 
                                         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ gap: 1 }}>
-                                            {selectedTutor.details.skills.map((skill) => (
+                                            {(kycData.skills || []).map((skill) => (
                                                 <Chip
                                                     key={skill}
                                                     label={skill}
@@ -469,7 +458,7 @@ const KycReview = () => {
                                             Professional Bio
                                         </Typography>
                                         <Typography variant="body2" sx={{ color: ui.muted, lineHeight: 1.8 }}>
-                                            {selectedTutor.details.bio}
+                                            {kycData.bio}
                                         </Typography>
                                     </Box>
                                 </Grid>
@@ -748,30 +737,12 @@ const KycReview = () => {
                 {/* Stats chips */}
                 <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ gap: 1 }}>
                     <Chip
-                        label={`Submitted: ${stats.submitted}`}
+                        label={`Submitted: ${submissions.length}`}
                         sx={{
-                            bgcolor: 'rgba(245,158,11,0.12)',
-                            color: '#F59E0B',
-                            border: `1px solid ${ui.border}`,
-                            fontWeight: 900,
-                        }}
-                    />
-                    <Chip
-                        label={`Approved: ${stats.approved}`}
-                        sx={{
-                            bgcolor: 'rgba(16,185,129,0.12)',
-                            color: '#10B981',
-                            border: `1px solid ${ui.border}`,
-                            fontWeight: 900,
-                        }}
-                    />
-                    <Chip
-                        label={`Rejected: ${stats.rejected}`}
-                        sx={{
-                            bgcolor: 'rgba(239,68,68,0.12)',
-                            color: '#EF4444',
-                            border: `1px solid ${ui.border}`,
-                            fontWeight: 900,
+                        bgcolor: 'rgba(245,158,11,0.12)',
+                        color: '#F59E0B',
+                        border: `1px solid ${ui.border}`,
+                        fontWeight: 900,
                         }}
                     />
                 </Stack>
@@ -836,6 +807,18 @@ const KycReview = () => {
                     overflow: 'hidden',
                 }}
             >
+                {error && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                    {error}
+                </Alert>
+                )}
+
+                {loadingList && (
+                <Alert severity="info" sx={{ mb: 2 }}>
+                    Loading submissions...
+                </Alert>
+                )}
+
                 <Table>
                     <TableHead sx={{ bgcolor: 'rgba(255,255,255,0.02)' }}>
                         <TableRow>
@@ -850,7 +833,7 @@ const KycReview = () => {
                                     py: 2,
                                 }}
                             >
-                                Tutor
+                            KYC ID
                             </TableCell>
 
                             <TableCell
@@ -864,7 +847,7 @@ const KycReview = () => {
                                     py: 2,
                                 }}
                             >
-                                Submitted
+                            Role
                             </TableCell>
 
                             <TableCell
@@ -878,7 +861,7 @@ const KycReview = () => {
                                     py: 2,
                                 }}
                             >
-                                Status
+                            Status
                             </TableCell>
 
                             <TableCell
@@ -893,7 +876,7 @@ const KycReview = () => {
                                     py: 2,
                                 }}
                             >
-                                Action
+                            Action
                             </TableCell>
                         </TableRow>
                     </TableHead>
@@ -910,74 +893,67 @@ const KycReview = () => {
                                         '&:hover': { bgcolor: 'rgba(255,255,255,0.03)' },
                                         transition: 'background-color 0.2s',
                                     }}
-                                >
-                                    {/* Tutor details (NO avatar) */}
+                                    >
+                                    {/* KYC ID */}
                                     <TableCell sx={{ borderBottom: `1px solid ${ui.border}`, py: 1.6 }}>
-                                        <Stack spacing={0.3}>
-                                            <Typography
-                                                variant="subtitle2"
-                                                sx={{ fontWeight: 900, color: ui.text, lineHeight: 1.2 }}
-                                            >
-                                                {s.name}
-                                            </Typography>
-                                            <Typography
-                                                variant="caption"
-                                                sx={{
-                                                    color: ui.muted,
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: 0.6,
-                                                }}
-                                            >
-                                                <EmailIcon sx={{ fontSize: 14, color: ui.dim }} /> {s.email}
-                                            </Typography>
+                                        <Stack spacing={0.2}>
+                                        <Typography variant="subtitle2" sx={{ fontWeight: 900, color: ui.text }}>
+                                            {String(s.id).slice(0, 8)}...
+                                        </Typography>
+                                        <Typography variant="caption" sx={{ color: ui.muted }}>
+                                            {s.id}
+                                        </Typography>
                                         </Stack>
                                     </TableCell>
 
-                                    <TableCell
-                                        sx={{
-                                            color: ui.text,
-                                            borderBottom: `1px solid ${ui.border}`,
-                                            py: 1.6,
-                                            fontWeight: 700,
-                                        }}
-                                    >
-                                        {s.submitted_at}
-                                    </TableCell>
-
+                                    {/* Role */}
                                     <TableCell sx={{ borderBottom: `1px solid ${ui.border}`, py: 1.6 }}>
                                         <Chip
-                                            icon={st.icon}
-                                            label={s.status.toUpperCase()}
-                                            size="small"
-                                            sx={{
-                                                bgcolor: st.bg,
-                                                color: st.color,
-                                                fontWeight: 900,
-                                                fontSize: '0.7rem',
-                                                height: 26,
-                                                border: `1px solid ${ui.border}`,
-                                                '& .MuiChip-icon': { color: 'inherit' },
-                                            }}
+                                        size="small"
+                                        label={(s.role || '—').toUpperCase()}
+                                        sx={{
+                                            bgcolor: 'rgba(59,130,246,0.10)',
+                                            color: ui.text,
+                                            border: `1px solid ${ui.border}`,
+                                            fontWeight: 900,
+                                            height: 26,
+                                        }}
                                         />
                                     </TableCell>
 
+                                    {/* Status */}
+                                    <TableCell sx={{ borderBottom: `1px solid ${ui.border}`, py: 1.6 }}>
+                                        <Chip
+                                        icon={st.icon}
+                                        label={(s.status || '—').toUpperCase()}
+                                        size="small"
+                                        sx={{
+                                            bgcolor: st.bg,
+                                            color: st.color,
+                                            fontWeight: 900,
+                                            fontSize: '0.7rem',
+                                            height: 26,
+                                            border: `1px solid ${ui.border}`,
+                                            '& .MuiChip-icon': { color: 'inherit' },
+                                        }}
+                                        />
+                                    </TableCell>
+
+                                    {/* Action */}
                                     <TableCell align="right" sx={{ borderBottom: `1px solid ${ui.border}`, py: 1.6 }}>
                                         <Tooltip title="Review">
-                                            <IconButton
-                                                onClick={() => handleViewDetail(s)}
-                                                sx={{
-                                                    color: ui.primary,
-                                                    bgcolor: 'rgba(59,130,246,0.10)',
-                                                    border: '1px solid rgba(59,130,246,0.18)',
-                                                    borderRadius: 2,
-                                                    '&:hover': {
-                                                        bgcolor: 'rgba(59,130,246,0.18)',
-                                                    },
-                                                }}
-                                            >
-                                                <ViewIcon fontSize="small" />
-                                            </IconButton>
+                                        <IconButton
+                                            onClick={() => handleViewDetail(s)}
+                                            sx={{
+                                            color: ui.primary,
+                                            bgcolor: 'rgba(59,130,246,0.10)',
+                                            border: '1px solid rgba(59,130,246,0.18)',
+                                            borderRadius: 2,
+                                            '&:hover': { bgcolor: 'rgba(59,130,246,0.18)' },
+                                            }}
+                                        >
+                                            <ViewIcon fontSize="small" />
+                                        </IconButton>
                                         </Tooltip>
                                     </TableCell>
                                 </TableRow>
