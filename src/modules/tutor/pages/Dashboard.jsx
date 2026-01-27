@@ -10,6 +10,7 @@ import {
     Chip,
     Alert,
     AlertTitle,
+    CircularProgress,
 } from '@mui/material';
 import { LineChart } from '@mui/x-charts/LineChart';
 import {
@@ -20,35 +21,9 @@ import {
     Group,
     RateReview,
     EmojiEvents,
-    Description,
-    Quiz,
-    Article,
 } from '@mui/icons-material';
-
-// Stats data matching Figma
-const statsData = [
-    {
-        label: 'Total Enrolled',
-        value: '1,240',
-        change: '12%',
-        changeType: 'positive',
-        icon: Group,
-    },
-    {
-        label: 'Pending Reviews',
-        value: '12',
-        sublabel: 'Needs Action',
-        sublabelColor: '#F59E0B',
-        icon: RateReview,
-    },
-    {
-        label: 'Course Completion Rate',
-        value: '78%',
-        change: '1%',
-        changeType: 'negative',
-        icon: EmojiEvents,
-    },
-];
+import { useAuth } from '../../../contexts/AuthContext';
+import { tutorCoursesService, kycService } from '../services';
 
 const pendingReviews = [
     {
@@ -77,35 +52,64 @@ const pendingReviews = [
     },
 ];
 
-const managedCourses = [
-    {
-        id: 1,
-        title: 'Introduction to Public Policy',
-        description: 'A comprehensive guide to understanding the foundations of public administration and policy...',
-        students: 345,
-        rating: 4.8,
-        status: 'active',
-    },
-    {
-        id: 2,
-        title: 'Transparency in Leadership',
-        description: 'An analysis on how maintaining ethics and standards and transparency in government organizations...',
-        students: 0,
-        rating: null,
-        status: 'draft',
-    },
-];
-
-// Chart data
-const chartData = [2500, 3200, 2800, 4500, 3800, 5200];
-
 const TutorDashboard = () => {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const chartContainerRef = useRef(null);
     const [chartWidth, setChartWidth] = useState(0);
-    const [kycStatus, setKycStatus] = useState('pending'); // Mock status: pending, submitted, approved
 
+    // State for real data
+    const [courses, setCourses] = useState([]);
+    const [kycStatus, setKycStatus] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [totalStudents, setTotalStudents] = useState(0);
+
+    // Initial Data Fetch
     useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                // Fetch Courses and KYC in parallel
+                const [coursesRes, kycRes] = await Promise.allSettled([
+                    tutorCoursesService.listCourses({ per_page: 5 }), // Get top 5 mainly
+                    kycService.getKyc()
+                ]);
+
+                // Handle Courses
+                if (coursesRes.status === 'fulfilled') {
+                    const fetchedCourses = coursesRes.value.data || [];
+                    setCourses(fetchedCourses);
+
+                    // Calculate Total Students (sum of students_count from all fetched courses)
+                    // Note: Ideally the API stats endpoint provides this global count, 
+                    // but for now we sum from the list or use a separate stats endpoint if available.
+                    // If pagination is involved, this might be partial, but sufficient for now or we need a stats endpoint.
+                    // Assuming list returns recent/relevant courses.
+                    const total = fetchedCourses.reduce((acc, curr) => acc + (curr.students_count || 0), 0);
+                    setTotalStudents(total);
+                }
+
+                // Handle KYC
+                if (kycRes.status === 'fulfilled') {
+                    // Adjust based on actual API response structure for KYC
+                    // kycService.getKyc returns response which might have data property
+                    const kycData = kycRes.value.data || kycRes.value;
+                    setKycStatus(kycData?.status || 'pending');
+                } else {
+                    // Default to pending or check user object if fetch fails
+                    setKycStatus(user?.kyc_status || 'pending');
+                }
+
+            } catch (error) {
+                console.error("Dashboard fetch error:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+
+        // Chart width observer
         const updateWidth = () => {
             if (chartContainerRef.current) {
                 setChartWidth(chartContainerRef.current.offsetWidth);
@@ -114,12 +118,47 @@ const TutorDashboard = () => {
         updateWidth();
         window.addEventListener('resize', updateWidth);
         return () => window.removeEventListener('resize', updateWidth);
-    }, []);
+    }, [user]);
+
+    // Derived stats for the cards
+    const statsData = [
+        {
+            label: 'Total Enrolled',
+            value: totalStudents.toLocaleString(),
+            change: '12%', // Mock change for now
+            changeType: 'positive',
+            icon: Group,
+        },
+        {
+            label: 'Pending Reviews',
+            value: '12', // Mock
+            sublabel: 'Needs Action',
+            sublabelColor: '#F59E0B',
+            icon: RateReview,
+        },
+        {
+            label: 'Course Completion Rate',
+            value: '78%', // Mock
+            change: '1%',
+            changeType: 'negative',
+            icon: EmojiEvents,
+        },
+    ];
+
+    const needsKycAction = !kycStatus || kycStatus === 'pending' || kycStatus === 'rejected' || kycStatus === 'draft';
+
+    if (loading) {
+        return (
+            <Box sx={{ p: 4, bgcolor: '#0C1322', minHeight: 'calc(100vh - 70px)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                <CircularProgress />
+            </Box>
+        );
+    }
 
     return (
         <Box sx={{ p: 4, bgcolor: '#0C1322', minHeight: 'calc(100vh - 70px)' }}>
             {/* KYC Alert */}
-            {kycStatus === 'pending' && (
+            {needsKycAction && (
                 <Alert
                     severity="warning"
                     sx={{
@@ -134,7 +173,10 @@ const TutorDashboard = () => {
                     onClick={() => navigate('/tutor/kyc')}
                 >
                     <AlertTitle sx={{ fontWeight: 600 }}>Action Required: Teacher Verification</AlertTitle>
-                    Please complete your KYC verification to start creating courses and accepting students. <strong>Click here to complete now.</strong>
+                    {kycStatus === 'rejected'
+                        ? "Your previous KYC submission was rejected. Please review and resubmit."
+                        : "Please complete your KYC verification to start creating courses and accepting students."}
+                    <strong> Click here to complete now.</strong>
                 </Alert>
             )}
 
@@ -148,7 +190,7 @@ const TutorDashboard = () => {
                         mb: 0.5,
                     }}
                 >
-                    Welcome back, Tutor James
+                    Welcome back, {user?.first_name ? `Tutor ${user.first_name}` : 'Tutor'}
                 </Typography>
                 <Typography sx={{ color: '#6B7280', fontSize: '0.95rem' }}>
                     Here is an overview of your courses and student performance today.
@@ -440,6 +482,7 @@ const TutorDashboard = () => {
                         variant="contained"
                         startIcon={<Add sx={{ fontSize: 16 }} />}
                         size="small"
+                        onClick={() => navigate('/tutor/create-course')}
                         sx={{
                             bgcolor: '#1152D4',
                             color: '#FFFFFF',
@@ -454,123 +497,151 @@ const TutorDashboard = () => {
                     </Button>
                 </Stack>
 
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                    {managedCourses.map((course) => (
-                        <Box key={course.id} sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 16px)', md: '1 1 calc(33.33% - 21.33px)' }, minWidth: 0 }}>
-                            <Paper
-                                sx={{
-                                    bgcolor: '#1A2230',
-                                    borderRadius: 2,
-                                    overflow: 'hidden',
-                                    border: '1px solid #374151',
-                                    height: '100%',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                }}
-                            >
-                                {/* Course Image Placeholder */}
-                                <Box
+                {courses.length === 0 ? (
+                    <Paper
+                        sx={{
+                            bgcolor: '#1A2230',
+                            p: 4,
+                            borderRadius: 2,
+                            border: '1px solid #374151',
+                            textAlign: 'center',
+                        }}
+                    >
+                        <Typography sx={{ color: '#9CA3AF', mb: 2 }}>
+                            You haven't created any courses yet.
+                        </Typography>
+                        <Button
+                            variant="outlined"
+                            onClick={() => navigate('/tutor/create-course')}
+                            sx={{ color: '#3B82F6', borderColor: '#3B82F6' }}
+                        >
+                            Create your first course
+                        </Button>
+                    </Paper>
+                ) : (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                        {courses.map((course) => (
+                            <Box key={course.id} sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 16px)', md: '1 1 calc(33.33% - 21.33px)' }, minWidth: 0 }}>
+                                <Paper
                                     sx={{
-                                        height: 120,
-                                        bgcolor: '#0C1322',
-                                        position: 'relative',
+                                        bgcolor: '#1A2230',
+                                        borderRadius: 2,
+                                        overflow: 'hidden',
+                                        border: '1px solid #374151',
+                                        height: '100%',
+                                        display: 'flex',
+                                        flexDirection: 'column',
                                     }}
                                 >
-                                    {course.status === 'draft' && (
-                                        <Chip
-                                            label="Draft"
-                                            size="small"
+                                    {/* Course Image */}
+                                    <Box
+                                        sx={{
+                                            height: 120,
+                                            bgcolor: course.image_url ? 'transparent' : '#0C1322',
+                                            position: 'relative',
+                                            backgroundImage: course.image_url ? `url(${course.image_url})` : 'none',
+                                            backgroundSize: 'cover',
+                                            backgroundPosition: 'center',
+                                        }}
+                                    >
+                                        {(course.status === 'draft' || course.status === 'inactive') && (
+                                            <Chip
+                                                label={course.status}
+                                                size="small"
+                                                sx={{
+                                                    position: 'absolute',
+                                                    top: 8,
+                                                    right: 8,
+                                                    bgcolor: '#F59E0B',
+                                                    color: '#000000',
+                                                    fontWeight: 600,
+                                                    fontSize: '0.55rem',
+                                                    height: 18,
+                                                }}
+                                            />
+                                        )}
+                                    </Box>
+
+                                    <Box sx={{ p: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                        <Typography
                                             sx={{
-                                                position: 'absolute',
-                                                top: 8,
-                                                right: 8,
-                                                bgcolor: '#F59E0B',
-                                                color: '#000000',
+                                                color: '#FFFFFF',
                                                 fontWeight: 600,
-                                                fontSize: '0.55rem',
-                                                height: 18,
+                                                fontSize: '1rem',
+                                                mb: 1,
+                                                lineHeight: 1.3,
                                             }}
-                                        />
-                                    )}
-                                </Box>
+                                        >
+                                            {course.title}
+                                        </Typography>
+                                        <Typography
+                                            sx={{
+                                                color: '#6B7280',
+                                                fontSize: '0.85rem',
+                                                mb: 2,
+                                                display: '-webkit-box',
+                                                WebkitLineClamp: 2,
+                                                WebkitBoxOrient: 'vertical',
+                                                overflow: 'hidden',
+                                                lineHeight: 1.5,
+                                            }}
+                                        >
+                                            {course.summary || course.description || 'No description available.'}
+                                        </Typography>
 
-                                <Box sx={{ p: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
-                                    <Typography
-                                        sx={{
-                                            color: '#FFFFFF',
-                                            fontWeight: 600,
-                                            fontSize: '1rem',
-                                            mb: 1,
-                                            lineHeight: 1.3,
-                                        }}
-                                    >
-                                        {course.title}
-                                    </Typography>
-                                    <Typography
-                                        sx={{
-                                            color: '#6B7280',
-                                            fontSize: '0.85rem',
-                                            mb: 2,
-                                            display: '-webkit-box',
-                                            WebkitLineClamp: 2,
-                                            WebkitBoxOrient: 'vertical',
-                                            overflow: 'hidden',
-                                            lineHeight: 1.5,
-                                        }}
-                                    >
-                                        {course.description}
-                                    </Typography>
-
-                                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2, mt: 'auto' }}>
-                                        <Stack direction="row" alignItems="center" spacing={1}>
-                                            <Group sx={{ fontSize: 16, color: '#6B7280' }} />
-                                            <Typography sx={{ color: '#9CA3AF', fontSize: '0.8rem' }}>
-                                                {course.students} Students
-                                            </Typography>
-                                        </Stack>
-                                        {course.rating && (
-                                            <Stack direction="row" alignItems="center" spacing={0.5}>
-                                                <Typography sx={{ color: '#F59E0B', fontSize: '0.8rem' }}>★</Typography>
+                                        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2, mt: 'auto' }}>
+                                            <Stack direction="row" alignItems="center" spacing={1}>
+                                                <Group sx={{ fontSize: 16, color: '#6B7280' }} />
                                                 <Typography sx={{ color: '#9CA3AF', fontSize: '0.8rem' }}>
-                                                    {course.rating}
+                                                    {course.students_count || 0} Students
                                                 </Typography>
                                             </Stack>
-                                        )}
-                                    </Stack>
+                                            {/* Rating mock for now as API might not have it normalized yet */}
+                                            {course.rating && (
+                                                <Stack direction="row" alignItems="center" spacing={0.5}>
+                                                    <Typography sx={{ color: '#F59E0B', fontSize: '0.8rem' }}>★</Typography>
+                                                    <Typography sx={{ color: '#9CA3AF', fontSize: '0.8rem' }}>
+                                                        {course.rating}
+                                                    </Typography>
+                                                </Stack>
+                                            )}
+                                        </Stack>
 
-                                    <Stack direction="row" spacing={0.75}>
-                                        <Button
-                                            fullWidth
-                                            variant="outlined"
-                                            size="small"
-                                            sx={{
-                                                borderColor: '#374151',
-                                                color: '#FFFFFF',
-                                                textTransform: 'none',
-                                                fontSize: '0.65rem',
-                                                py: 0.5,
-                                                '&:hover': { borderColor: '#1152D4', bgcolor: 'rgba(17, 82, 212, 0.1)' },
-                                            }}
-                                        >
-                                            {course.status === 'draft' ? 'Edit Draft' : 'Manage'}
-                                        </Button>
-                                        <IconButton
-                                            size="small"
-                                            sx={{
-                                                border: '1px solid #374151',
-                                                borderRadius: 1,
-                                                color: '#6B7280',
-                                                p: 0.5,
-                                            }}
-                                        >
-                                            <MoreHoriz sx={{ fontSize: 16 }} />
-                                        </IconButton>
-                                    </Stack>
-                                </Box>
-                            </Paper>
-                        </Box>
-                    ))}
-                </Box>
+                                        <Stack direction="row" spacing={0.75}>
+                                            <Button
+                                                fullWidth
+                                                variant="outlined"
+                                                size="small"
+                                                onClick={() => navigate(`/tutor/create-course?edit=${course.id}`)}
+                                                sx={{
+                                                    borderColor: '#374151',
+                                                    color: '#FFFFFF',
+                                                    textTransform: 'none',
+                                                    fontSize: '0.65rem',
+                                                    py: 0.5,
+                                                    '&:hover': { borderColor: '#1152D4', bgcolor: 'rgba(17, 82, 212, 0.1)' },
+                                                }}
+                                            >
+                                                {course.status === 'draft' ? 'Edit Draft' : 'Manage'}
+                                            </Button>
+                                            {/* <IconButton
+                                                size="small"
+                                                sx={{
+                                                    border: '1px solid #374151',
+                                                    borderRadius: 1,
+                                                    color: '#6B7280',
+                                                    p: 0.5,
+                                                }}
+                                            >
+                                                <MoreHoriz sx={{ fontSize: 16 }} />
+                                            </IconButton> */}
+                                        </Stack>
+                                    </Box>
+                                </Paper>
+                            </Box>
+                        ))}
+                    </Box>
+                )}
             </Box>
         </Box>
     );
