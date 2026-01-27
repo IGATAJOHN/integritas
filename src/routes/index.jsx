@@ -5,6 +5,7 @@ import { tutorRoutes } from '../modules/tutor';
 import { learnerRoutes } from '../modules/learner';
 import ProtectedRoute from '../components/ProtectedRoute';
 import PublicRoute from '../components/PublicRoute';
+import OnboardingGuard from '../components/OnboardingGuard';
 
 const router = createBrowserRouter([
     {
@@ -56,7 +57,9 @@ const router = createBrowserRouter([
         ...tutorRoutes,
         element: (
             <ProtectedRoute>
-                {tutorRoutes.element}
+                <OnboardingGuard>
+                    {tutorRoutes.element}
+                </OnboardingGuard>
             </ProtectedRoute>
         ),
     },

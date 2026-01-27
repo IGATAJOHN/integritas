@@ -106,31 +106,31 @@ export const AuthProvider = ({ children }) => {
 
             let finalUser = storedUser;
             try {
-            const current = await authService.getCurrentUser();
-            const fresh = current.user || current;
-            finalUser = { ...fresh, token };
-            finalUser.role = pickRole(finalUser) || storedUser.role;
+                const current = await authService.getCurrentUser();
+                const fresh = current.user || current;
+                finalUser = { ...fresh, token };
+                finalUser.role = pickRole(finalUser) || storedUser.role;
 
-            if (finalUser.email === "admin@test.com") finalUser.role = "admin";
+                if (finalUser.email === "admin@test.com") finalUser.role = "admin";
 
-            setUser(finalUser);
-            localStorage.setItem("user", JSON.stringify(finalUser));
+                setUser(finalUser);
+                localStorage.setItem("user", JSON.stringify(finalUser));
             } catch (err) {
-            console.warn("Failed to fetch current user after registration, using register response:", err);
+                console.warn("Failed to fetch current user after registration, using register response:", err);
             }
 
             const verified =
-            finalUser?.email_verified === true ||
-            finalUser?.emailVerified === true ||
-            !!finalUser?.email_verified_at ||
-            !!finalUser?.emailVerifiedAt;
+                finalUser?.email_verified === true ||
+                finalUser?.emailVerified === true ||
+                !!finalUser?.email_verified_at ||
+                !!finalUser?.emailVerifiedAt;
 
             if (!verified) {
-            try {
-                await authService.resendEmail();
-            } catch (emailError) {
-                console.warn("Auto-resend of verification email failed:", emailError);
-            }
+                try {
+                    await authService.resendEmail();
+                } catch (emailError) {
+                    console.warn("Auto-resend of verification email failed:", emailError);
+                }
             }
 
             return finalUser;
@@ -138,7 +138,7 @@ export const AuthProvider = ({ children }) => {
             console.error("Registration failed:", error);
             throw error;
         }
-        };
+    };
 
 
     const logout = async () => {
@@ -192,7 +192,8 @@ export const AuthProvider = ({ children }) => {
     };
 
     const getKycStatus = () => {
-        return user?.kyc_status || user?.kycStatus || null;
+        const status = user?.kyc_status || user?.kycStatus || null;
+        return status ? status.toLowerCase() : null;
     };
 
     const isKycComplete = () => {

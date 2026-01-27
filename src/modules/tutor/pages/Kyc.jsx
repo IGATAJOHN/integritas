@@ -51,7 +51,7 @@ const steps = [
 const Kyc = () => {
     const theme = useTheme();
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, updateUser } = useAuth();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
     // Form State
@@ -109,6 +109,11 @@ const Kyc = () => {
                     const existingCertificate = docs.find(d => d.type === 'certificate');
                     if (existingIdFront) setIdFrontFile(existingIdFront);
                     if (existingCertificate) setCertificateFile(existingCertificate);
+
+                    // Sync status to AuthContext to fix redirection
+                    if (data.status) {
+                        updateUser({ kyc_status: data.status });
+                    }
                 }
             } catch (err) {
                 console.error('Failed to fetch KYC:', err);
