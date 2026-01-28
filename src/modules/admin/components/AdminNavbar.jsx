@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../../contexts/AuthContext';
 import {
     Box,
     Typography,
@@ -23,11 +24,11 @@ const AdminNavbar = ({
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const [searchQuery, setSearchQuery] = useState('');
+    const { user } = useAuth();
 
-    const user = {
-        name: 'Admin User',
-        initials: 'AU',
-    };
+    // Get user display info
+    const userName = user?.name || user?.first_name || 'Admin';
+    const userInitials = userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'AD';
 
     return (
         <Box
@@ -119,7 +120,7 @@ const AdminNavbar = ({
                         fontWeight: 600,
                     }}
                 >
-                    {user.initials}
+                    {userInitials}
                 </Avatar>
             </Stack>
         </Box>

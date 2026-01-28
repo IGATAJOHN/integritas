@@ -21,6 +21,7 @@ import {
     Collapse,
     Modal,
     Alert,
+    CircularProgress,
 } from '@mui/material';
 import {
     ArrowBack,
@@ -48,20 +49,13 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { textFieldStyle, selectStyle, selectMenuProps, modalStyle } from '../../../styles/formStyles';
+import { categoryService } from '../../../services/categoryService';
 
 const steps = [
     { label: 'Step 1', sublabel: 'Basic Details', icon: DescriptionOutlined },
     { label: 'Step 2', sublabel: 'Curriculum', icon: MenuBookOutlined },
     { label: 'Step 3', sublabel: 'Media', icon: PermMediaOutlined },
     { label: 'Step 4', sublabel: 'Review', icon: RateReviewOutlined },
-];
-
-const categories = [
-    { id: 'cat1', name: 'Public Policy' },
-    { id: 'cat2', name: 'Leadership' },
-    { id: 'cat3', name: 'Ethics' },
-    { id: 'cat4', name: 'Public Administration' },
-    { id: 'cat5', name: 'Governance' },
 ];
 
 const levels = ['beginner', 'intermediate', 'advanced'];
@@ -78,6 +72,10 @@ const CreateCourse = () => {
     const [slugEdited, setSlugEdited] = useState(false);
     const [submitModalOpen, setSubmitModalOpen] = useState(false);
     const [validationErrors, setValidationErrors] = useState({});
+
+    // Categories state - fetched from API
+    const [categories, setCategories] = useState([]);
+    const [loadingCategories, setLoadingCategories] = useState(true);
 
     const [courseData, setCourseData] = useState({
         title: '',
@@ -126,6 +124,26 @@ const CreateCourse = () => {
         }, 2000);
         return () => clearTimeout(timer);
     }, [courseData]);
+
+    // Fetch categories from API on component mount
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                setLoadingCategories(true);
+                const categoriesData = await categoryService.getAllCategories();
+                // Handle both array and object response
+                const categoryList = Array.isArray(categoriesData) ? categoriesData : [];
+                setCategories(categoryList);
+            } catch (error) {
+                console.error('Error fetching categories:', error);
+                // Keep empty array on error
+                setCategories([]);
+            } finally {
+                setLoadingCategories(false);
+            }
+        };
+        fetchCategories();
+    }, []);
 
     const handleInputChange = (field, value) => {
         setCourseData(prev => ({ ...prev, [field]: value }));
@@ -831,7 +849,7 @@ const CreateCourse = () => {
                             color: '#F59E0B',
                             '& .MuiChip-icon': { color: '#F59E0B' },
                         }}
-                    /> 
+                    />
                 </Stack>
             </Stack>
 

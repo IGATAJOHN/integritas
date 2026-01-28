@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../contexts/AuthContext';
 import {
     Box,
     Typography,
@@ -26,6 +27,7 @@ import {
     ExpandLess,
     ExpandMore,
     AdminPanelSettingsOutlined,
+    LogoutOutlined,
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 260;
@@ -39,6 +41,19 @@ const AdminSidebar = ({
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const [openSubmenu, setOpenSubmenu] = React.useState('');
+    const { logout } = useAuth();
+
+    // Handle logout
+    const handleLogout = async () => {
+        try {
+            await logout();
+            navigate('/login');
+        } catch (error) {
+            console.error('Logout error:', error);
+            // Still navigate to login even if logout fails
+            navigate('/login');
+        }
+    };
 
     const navItems = [
         { path: '/admin', label: 'Dashboard', icon: <DashboardOutlined sx={{ fontSize: 22 }} /> },
@@ -212,6 +227,30 @@ const AdminSidebar = ({
                         </React.Fragment>
                     ))}
                 </List>
+            </Box>
+
+            {/* Logout Button */}
+            <Box sx={{ p: 2, borderTop: '1px solid #1F2937' }}>
+                <Button
+                    fullWidth
+                    onClick={handleLogout}
+                    startIcon={<LogoutOutlined />}
+                    sx={{
+                        justifyContent: 'flex-start',
+                        color: '#EF4444',
+                        py: 1.5,
+                        px: 2,
+                        borderRadius: 1.5,
+                        textTransform: 'none',
+                        fontSize: '0.9rem',
+                        fontWeight: 500,
+                        '&:hover': {
+                            bgcolor: 'rgba(239, 68, 68, 0.1)',
+                        },
+                    }}
+                >
+                    Logout
+                </Button>
             </Box>
         </Box>
     );

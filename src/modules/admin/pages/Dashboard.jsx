@@ -9,6 +9,7 @@ import {
     Chip,
     Avatar,
     LinearProgress,
+    CircularProgress,
 } from '@mui/material';
 import { LineChart } from '@mui/x-charts/LineChart';
 import {
@@ -25,33 +26,34 @@ import {
     DescriptionOutlined,
     ArrowForward,
 } from '@mui/icons-material';
+import { adminService } from '../services/adminService';
 
-// Stats data for admin dashboard
-const statsData = [
+// Initial stats data for admin dashboard (will be updated with live data)
+const initialStatsData = [
     {
         label: 'Total Users',
-        value: '2,847',
+        value: '0',
         change: '18%',
         changeType: 'positive',
         icon: People,
     },
     {
         label: 'Active Courses',
-        value: '45',
+        value: '0',
         change: '8%',
         changeType: 'positive',
         icon: School,
     },
     {
         label: 'Pending Verifications',
-        value: '23',
+        value: '0',
         sublabel: 'Needs Review',
         sublabelColor: '#F59E0B',
         icon: Verified,
     },
     {
         label: 'Active Tutors',
-        value: '78',
+        value: '0',
         change: '12%',
         changeType: 'positive',
         icon: PersonAdd,
@@ -117,17 +119,16 @@ const pendingActions = [
     },
 ];
 
-const activeTutors = [
-    { id: 1, name: 'Dr. Sarah Wilson', subject: 'Political Science', status: 'Online' },
-    { id: 2, name: 'Prof. James Carter', subject: 'Economics', status: 'In Session' },
-    { id: 3, name: 'Emily Davis', subject: 'Public Administration', status: 'Online' },
-    { id: 4, name: 'Michael Brown', subject: 'Law & Ethics', status: 'Offline' },
-];
-
 const AdminDashboard = () => {
     const chartContainerRef = useRef(null);
     const [chartWidth, setChartWidth] = useState(0);
 
+    // State for live data
+    const [statsData, setStatsData] = useState(initialStatsData);
+    const [activeTutors, setActiveTutors] = useState([]);
+    const [loadingTutors, setLoadingTutors] = useState(true);
+
+    // Fetch chart width on resize
     useEffect(() => {
         const updateWidth = () => {
             if (chartContainerRef.current) {
@@ -137,6 +138,47 @@ const AdminDashboard = () => {
         updateWidth();
         window.addEventListener('resize', updateWidth);
         return () => window.removeEventListener('resize', updateWidth);
+    }, []);
+
+    // Fetch live tutor data from API
+    useEffect(() => {
+        const fetchTutors = async () => {
+            try {
+                setLoadingTutors(true);
+                const response = await adminService.listTutors({ status: 'Active' });
+                const tutorList = response?.data || response || [];
+
+                // Handle array response
+                const tutors = Array.isArray(tutorList) ? tutorList : [];
+
+                // Map API data to display format
+                const formattedTutors = tutors.slice(0, 4).map((tutor, index) => ({
+                    id: tutor.id || index,
+                    name: tutor.name || `${tutor.first_name || ''} ${tutor.last_name || ''}`.trim() || 'Unknown Tutor',
+                    subject: tutor.specialization || tutor.expertise || 'General',
+                    status: tutor.status === 'Active' ? 'Online' : 'Offline',
+                }));
+
+                setActiveTutors(formattedTutors);
+
+                // Update stats with live tutor count
+                setStatsData(prev => prev.map(stat =>
+                    stat.label === 'Active Tutors'
+                        ? { ...stat, value: tutors.length.toString() }
+                        : stat
+                ));
+            } catch (error) {
+                console.error('Error fetching tutors:', error);
+                // Use fallback data on error
+                setActiveTutors([
+                    { id: 1, name: 'No tutors available', subject: '-', status: 'Offline' },
+                ]);
+            } finally {
+                setLoadingTutors(false);
+            }
+        };
+
+        fetchTutors();
     }, []);
 
     return (

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Box,
     Typography,
@@ -17,6 +17,9 @@ import {
     TextField,
     InputBase,
     Tooltip,
+    CircularProgress,
+    Alert,
+    Snackbar,
 } from '@mui/material';
 import {
     Search,
@@ -27,37 +30,64 @@ import {
     Category,
     CheckCircle,
     Block,
+    Refresh,
 } from '@mui/icons-material';
-import { textFieldStyle, modalStyle, searchBarStyle, searchInputStyle } from '../../../styles/formStyles';
-
-// Mock categories data
-const categoriesData = [
-    { id: 1, name: 'Political Science', description: 'Study of politics and government systems', coursesCount: 12, status: 'Active', createdAt: '2024-01-10' },
-    { id: 2, name: 'Economics', description: 'Economic theories and applications', coursesCount: 8, status: 'Active', createdAt: '2024-01-12' },
-    { id: 3, name: 'Public Administration', description: 'Management of public programs and institutions', coursesCount: 15, status: 'Active', createdAt: '2024-01-15' },
-    { id: 4, name: 'Law & Ethics', description: 'Legal frameworks and ethical governance', coursesCount: 6, status: 'Active', createdAt: '2024-01-20' },
-    { id: 5, name: 'Leadership', description: 'Leadership development and management skills', coursesCount: 10, status: 'Active', createdAt: '2024-02-01' },
-    { id: 6, name: 'Policy Analysis', description: 'Methods for analyzing public policies', coursesCount: 4, status: 'Inactive', createdAt: '2024-02-10' },
-    { id: 7, name: 'International Relations', description: 'Global politics and diplomacy', coursesCount: 7, status: 'Active', createdAt: '2024-02-15' },
-];
+import { textFieldStyle, modalStyle } from '../../../styles/formStyles';
+import { categoryService } from '../../../services';
 
 const CategoryManagement = () => {
-    const [categories, setCategories] = useState(categoriesData);
+    // State for categories data
+    const [categories, setCategories] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
+
+    // Loading and error states
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState(null);
+
+    // Snackbar for notifications
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+
+    // Modal state
     const [openModal, setOpenModal] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
     const [formData, setFormData] = useState({ name: '', description: '' });
 
-    // Filter categories based on search
+    /**
+     * Fetch all categories from the API
+     * GET /categories
+     */
+    const fetchCategories = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await categoryService.listCategories({ per_page: 100 });
+            // API returns { data: [...], meta: {...}, links: {...} }
+            setCategories(response.data || []);
+        } catch (err) {
+            console.error('Error fetching categories:', err);
+            setError(err.message || 'Failed to load categories');
+            setSnackbar({ open: true, message: 'Failed to load categories', severity: 'error' });
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    // Fetch categories on component mount
+    useEffect(() => {
+        fetchCategories();
+    }, [fetchCategories]);
+
+    // Filter categories based on search (client-side filtering)
     const filteredCategories = categories.filter(category =>
-        category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        category.description.toLowerCase().includes(searchTerm.toLowerCase())
+        (category.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (category.description || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const handleOpenModal = (category = null) => {
         if (category) {
             setEditingCategory(category);
-            setFormData({ name: category.name, description: category.description });
+            setFormData({ name: category.name, description: category.description || '' });
         } else {
             setEditingCategory(null);
             setFormData({ name: '', description: '' });
@@ -71,49 +101,113 @@ const CategoryManagement = () => {
         setFormData({ name: '', description: '' });
     };
 
-    const handleSaveCategory = () => {
-        if (formData.name.trim() && formData.description.trim()) {
-            if (editingCategory) {
-                // Update existing
-                setCategories(categories.map(cat =>
-                    cat.id === editingCategory.id
-                        ? { ...cat, name: formData.name, description: formData.description }
-                        : cat
-                ));
-            } else {
-                // Create new
-                const newCategory = {
-                    id: categories.length + 1,
-                    name: formData.name,
-                    description: formData.description,
-                    coursesCount: 0,
-                    status: 'Active',
-                    createdAt: new Date().toISOString().split('T')[0],
-                };
-                setCategories([...categories, newCategory]);
-            }
-            handleCloseModal();
-        }
-    };
-
-    const handleToggleStatus = (categoryId) => {
-        setCategories(categories.map(cat => {
-            if (cat.id === categoryId) {
-                return { ...cat, status: cat.status === 'Active' ? 'Inactive' : 'Active' };
-            }
-            return cat;
-        }));
-    };
-
-    const handleDeleteCategory = (categoryId) => {
-        const category = categories.find(c => c.id === categoryId);
-        if (category.coursesCount > 0) {
-            alert('Cannot delete category with existing courses. Please reassign courses first.');
+    /**
+     * Save category - Create or Update
+     * POST /categories (create) or PUT /categories/{id} (update)
+     */
+    const handleSaveCategory = async () => {
+        if (!formData.name.trim()) {
+            setSnackbar({ open: true, message: 'Category name is required', severity: 'warning' });
             return;
         }
-        setCategories(categories.filter(cat => cat.id !== categoryId));
+
+        setSaving(true);
+        try {
+            if (editingCategory) {
+                // Update existing category
+                // PUT /categories/{id}
+                await categoryService.updateCategory(editingCategory.id, formData);
+                setSnackbar({ open: true, message: 'Category updated successfully', severity: 'success' });
+            } else {
+                // Create new category
+                // POST /categories
+                await categoryService.createCategory(formData);
+                setSnackbar({ open: true, message: 'Category created successfully', severity: 'success' });
+            }
+            handleCloseModal();
+            // Refresh the list to show updated data
+            await fetchCategories();
+        } catch (err) {
+            console.error('Error saving category:', err);
+            setSnackbar({
+                open: true,
+                message: err.message || 'Failed to save category',
+                severity: 'error'
+            });
+        } finally {
+            setSaving(false);
+        }
     };
 
+    /**
+     * Toggle category status (Note: API may not support this directly)
+     * This is a placeholder - implement based on actual API support
+     */
+    const handleToggleStatus = async (categoryId) => {
+        const category = categories.find(c => c.id === categoryId);
+        if (!category) return;
+
+        try {
+            // Toggle status by updating the category
+            // PUT /categories/{id}
+            const newStatus = category.status === 'Active' ? 'Inactive' : 'Active';
+            await categoryService.updateCategory(categoryId, {
+                ...category,
+                status: newStatus
+            });
+            setSnackbar({
+                open: true,
+                message: `Category ${newStatus === 'Active' ? 'activated' : 'deactivated'}`,
+                severity: 'success'
+            });
+            await fetchCategories();
+        } catch (err) {
+            console.error('Error toggling status:', err);
+            setSnackbar({ open: true, message: 'Failed to update status', severity: 'error' });
+        }
+    };
+
+    /**
+     * Delete a category
+     * DELETE /categories/{id}
+     */
+    const handleDeleteCategory = async (categoryId) => {
+        const category = categories.find(c => c.id === categoryId);
+        if (!category) return;
+
+        // Check if category has courses (prevent deletion)
+        if (category.courses_count > 0 || category.coursesCount > 0) {
+            setSnackbar({
+                open: true,
+                message: 'Cannot delete category with existing courses. Please reassign courses first.',
+                severity: 'warning'
+            });
+            return;
+        }
+
+        // Confirm deletion
+        if (!window.confirm(`Are you sure you want to delete "${category.name}"?`)) {
+            return;
+        }
+
+        try {
+            await categoryService.deleteCategory(categoryId);
+            setSnackbar({ open: true, message: 'Category deleted successfully', severity: 'success' });
+            await fetchCategories();
+        } catch (err) {
+            console.error('Error deleting category:', err);
+            setSnackbar({
+                open: true,
+                message: err.message || 'Failed to delete category',
+                severity: 'error'
+            });
+        }
+    };
+
+    // Close snackbar handler
+    const handleCloseSnackbar = () => {
+        setSnackbar({ ...snackbar, open: false });
+    };
 
 
     return (
@@ -128,18 +222,32 @@ const CategoryManagement = () => {
                         Create and manage course categories for tutors to select.
                     </Typography>
                 </Box>
-                <Button
-                    variant="contained"
-                    startIcon={<Add />}
-                    onClick={() => handleOpenModal()}
-                    sx={{
-                        bgcolor: '#1152D4',
-                        '&:hover': { bgcolor: '#0D42AF' },
-                        boxShadow: '0 4px 14px rgba(17, 82, 212, 0.4)'
-                    }}
-                >
-                    Add Category
-                </Button>
+                <Stack direction="row" spacing={1}>
+                    <Tooltip title="Refresh">
+                        <IconButton
+                            onClick={fetchCategories}
+                            disabled={loading}
+                            sx={{
+                                color: '#9CA3AF',
+                                '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' }
+                            }}
+                        >
+                            <Refresh />
+                        </IconButton>
+                    </Tooltip>
+                    <Button
+                        variant="contained"
+                        startIcon={<Add />}
+                        onClick={() => handleOpenModal()}
+                        sx={{
+                            bgcolor: '#1152D4',
+                            '&:hover': { bgcolor: '#0D42AF' },
+                            boxShadow: '0 4px 14px rgba(17, 82, 212, 0.4)'
+                        }}
+                    >
+                        Add Category
+                    </Button>
+                </Stack>
             </Stack>
 
             {/* Search Section */}
@@ -187,7 +295,32 @@ const CategoryManagement = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {filteredCategories.map((category) => (
+                        {loading ? (
+                            <TableRow>
+                                <TableCell colSpan={5} align="center" sx={{ borderBottom: '1px solid #374151', py: 6 }}>
+                                    <CircularProgress size={40} sx={{ color: '#7C3AED' }} />
+                                    <Typography sx={{ color: '#9CA3AF', mt: 2 }}>Loading categories...</Typography>
+                                </TableCell>
+                            </TableRow>
+                        ) : error ? (
+                            <TableRow>
+                                <TableCell colSpan={5} align="center" sx={{ borderBottom: '1px solid #374151', py: 4 }}>
+                                    <Alert severity="error" sx={{ bgcolor: 'transparent', justifyContent: 'center' }}>
+                                        {error}
+                                    </Alert>
+                                    <Button onClick={fetchCategories} sx={{ mt: 2, color: '#7C3AED' }}>Try Again</Button>
+                                </TableCell>
+                            </TableRow>
+                        ) : filteredCategories.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={5} align="center" sx={{ borderBottom: '1px solid #374151', py: 6 }}>
+                                    <Category sx={{ fontSize: 48, color: '#374151', mb: 2 }} />
+                                    <Typography sx={{ color: '#9CA3AF' }}>
+                                        {searchTerm ? 'No categories match your search' : 'No categories yet. Click "Add Category" to create one.'}
+                                    </Typography>
+                                </TableCell>
+                            </TableRow>
+                        ) : filteredCategories.map((category) => (
                             <TableRow key={category.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                                 <TableCell sx={{ color: '#fff', borderBottom: '1px solid #374151' }}>
                                     <Stack direction="row" alignItems="center" spacing={2}>
@@ -349,7 +482,7 @@ const CategoryManagement = () => {
                                 variant="contained"
                                 fullWidth
                                 onClick={handleSaveCategory}
-                                disabled={!formData.name.trim() || !formData.description.trim()}
+                                disabled={!formData.name.trim() || saving}
                                 sx={{
                                     bgcolor: '#7C3AED',
                                     py: 1.5,
@@ -361,12 +494,32 @@ const CategoryManagement = () => {
                                     '&:disabled': { bgcolor: '#1F2937', color: '#6B7280', boxShadow: 'none' }
                                 }}
                             >
-                                {editingCategory ? 'Update Category' : 'Create Category'}
+                                {saving ? (
+                                    <CircularProgress size={20} sx={{ color: '#fff' }} />
+                                ) : (
+                                    editingCategory ? 'Update Category' : 'Create Category'
+                                )}
                             </Button>
                         </Stack>
                     </Box>
                 </Box>
             </Modal>
+
+            {/* Snackbar for notifications */}
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={4000}
+                onClose={handleCloseSnackbar}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            >
+                <Alert
+                    onClose={handleCloseSnackbar}
+                    severity={snackbar.severity}
+                    sx={{ width: '100%' }}
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 };
