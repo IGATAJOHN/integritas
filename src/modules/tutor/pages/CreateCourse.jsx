@@ -22,6 +22,7 @@ import {
     Modal,
     Alert,
     CircularProgress,
+    Snackbar,
 } from '@mui/material';
 import {
     ArrowBack,
@@ -50,6 +51,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { textFieldStyle, selectStyle, selectMenuProps, modalStyle } from '../../../styles/formStyles';
 import { categoryService } from '../../../services/categoryService';
+import { tutorCoursesService, tutorModuleService, tutorLessonService } from '../services';
 
 const steps = [
     { label: 'Step 1', sublabel: 'Basic Details', icon: DescriptionOutlined },
@@ -72,6 +74,10 @@ const CreateCourse = () => {
     const [slugEdited, setSlugEdited] = useState(false);
     const [submitModalOpen, setSubmitModalOpen] = useState(false);
     const [validationErrors, setValidationErrors] = useState({});
+
+    // Submission state
+    const [submitting, setSubmitting] = useState(false);
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
     // Categories state - fetched from API
     const [categories, setCategories] = useState([]);
@@ -269,17 +275,104 @@ const CreateCourse = () => {
         }));
     };
 
-    const handleSubmit = (asDraft = true) => {
+    /**
+     * Handle course submission - creates course, modules, and lessons via API
+     * @param {boolean} asDraft - If true, saves as draft; if false, submits for approval
+     */
+    const handleSubmit = async (asDraft = true) => {
+        // Validate if submitting for approval
         if (!asDraft) {
             if (!validateStep(3)) return;
-            setCourseData(prev => ({
-                ...prev,
-                status: 'pending_approval',
-                is_editable: false,
-            }));
         }
+
+        setSubmitting(true);
         setSubmitModalOpen(false);
-        navigate('/tutor/courses');
+
+        try {
+            // Step 1: Create the course
+            const coursePayload = {
+                title: courseData.title,
+                slug: courseData.slug,
+                summary: courseData.summary,
+                description: courseData.description,
+                level: courseData.level,
+                language: courseData.language,
+                duration_minutes: courseData.duration_minutes || 0,
+                category_id: courseData.category_id,
+                status: asDraft ? 'draft' : 'pending_approval',
+            };
+
+            console.log('Creating course with payload:', coursePayload);
+            const createdCourse = await tutorCoursesService.createCourseJson(coursePayload);
+            const courseId = createdCourse?.id || createdCourse?.data?.id;
+
+            if (!courseId) {
+                throw new Error('Course was created but no ID was returned');
+            }
+
+            console.log('Course created with ID:', courseId);
+
+            // Step 2: Create modules for the course
+            for (let i = 0; i < modules.length; i++) {
+                const module = modules[i];
+                const modulePayload = {
+                    title: module.title,
+                    description: module.description || '',
+                    position: i + 1,
+                };
+
+                console.log('Creating module:', modulePayload);
+                const createdModule = await tutorModuleService.createModule(courseId, modulePayload);
+                const moduleId = createdModule?.id || createdModule?.data?.id;
+
+                if (!moduleId) {
+                    console.warn('Module created but no ID returned, skipping lessons for this module');
+                    continue;
+                }
+
+                console.log('Module created with ID:', moduleId);
+
+                // Step 3: Create lessons for each module
+                const lessons = module.lessons || [];
+                for (let j = 0; j < lessons.length; j++) {
+                    const lesson = lessons[j];
+                    const lessonPayload = {
+                        title: lesson.title,
+                        type: lesson.type || 'text',
+                        content: lesson.content || '',
+                        duration: lesson.duration || 0,
+                        position: j + 1,
+                    };
+
+                    console.log('Creating lesson:', lessonPayload);
+                    await tutorLessonService.createLesson(moduleId, lessonPayload);
+                }
+            }
+
+            // Success!
+            setSnackbar({
+                open: true,
+                message: asDraft
+                    ? 'Course saved as draft successfully!'
+                    : 'Course submitted for approval successfully!',
+                severity: 'success'
+            });
+
+            // Navigate to courses list after a short delay
+            setTimeout(() => {
+                navigate('/tutor/courses');
+            }, 1500);
+
+        } catch (error) {
+            console.error('Error creating course:', error);
+            setSnackbar({
+                open: true,
+                message: error.message || 'Failed to create course. Please try again.',
+                severity: 'error'
+            });
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     const getLessonTypeIcon = (type) => {
@@ -1255,6 +1348,49 @@ const CreateCourse = () => {
                     </Box>
                 </Box>
             </Modal>
+
+            {/* Loading Overlay during submission */}
+            {submitting && (
+                <Box
+                    sx={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        bgcolor: 'rgba(0, 0, 0, 0.7)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 9999,
+                    }}
+                >
+                    <CircularProgress size={60} sx={{ color: '#1152D4', mb: 2 }} />
+                    <Typography sx={{ color: '#fff', fontSize: '1.1rem' }}>
+                        Creating your course...
+                    </Typography>
+                    <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mt: 1 }}>
+                        Please wait while we set up your course, modules, and lessons.
+                    </Typography>
+                </Box>
+            )}
+
+            {/* Snackbar for feedback */}
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={6000}
+                onClose={() => setSnackbar({ ...snackbar, open: false })}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            >
+                <Alert
+                    onClose={() => setSnackbar({ ...snackbar, open: false })}
+                    severity={snackbar.severity}
+                    sx={{ width: '100%' }}
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 };

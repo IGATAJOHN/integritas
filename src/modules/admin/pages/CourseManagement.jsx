@@ -54,6 +54,11 @@ const CourseManagement = () => {
             setLoading(true);
             try {
                 const response = await adminCoursesService.listCourses({ q: searchTerm });
+                console.log('Courses API response:', response);
+                if (response.data?.[0]) {
+                    console.log('First course object keys:', Object.keys(response.data[0]));
+                    console.log('First course full data:', response.data[0]);
+                }
                 setCourses(response.data || []);
             } catch (error) {
                 console.error("Failed to fetch courses:", error);
@@ -259,12 +264,24 @@ const CourseManagement = () => {
                                         </TableCell>
                                         <TableCell sx={{ borderBottom: '1px solid #374151' }}>
                                             <Stack direction="row" alignItems="center" spacing={1.5}>
-                                                <Avatar sx={{ width: 32, height: 32, bgcolor: '#7C3AED', fontSize: '0.8rem' }} src={course.tutor?.avatar_url}>
-                                                    {course.tutor?.first_name ? course.tutor.first_name[0] : '?'}
-                                                </Avatar>
-                                                <Typography variant="body2" sx={{ color: '#E5E7EB' }}>
-                                                    {course.tutor ? `${course.tutor.first_name} ${course.tutor.last_name}` : 'Unknown'}
-                                                </Typography>
+                                                {/* Check tutor, user, or creator (from with_audit) */}
+                                                {(() => {
+                                                    const tutorData = course.tutor || course.user || course.creator || course.created_by;
+                                                    const tutorName = tutorData
+                                                        ? `${tutorData.first_name || tutorData.name?.split(' ')[0] || ''} ${tutorData.last_name || tutorData.name?.split(' ').slice(1).join(' ') || ''}`.trim()
+                                                        : null;
+                                                    const tutorInitial = tutorData?.first_name?.[0] || tutorData?.name?.[0] || '?';
+                                                    return (
+                                                        <>
+                                                            <Avatar sx={{ width: 32, height: 32, bgcolor: '#7C3AED', fontSize: '0.8rem' }} src={tutorData?.avatar_url || tutorData?.profile_photo_url}>
+                                                                {tutorInitial}
+                                                            </Avatar>
+                                                            <Typography variant="body2" sx={{ color: '#E5E7EB' }}>
+                                                                {tutorName || 'Unknown'}
+                                                            </Typography>
+                                                        </>
+                                                    );
+                                                })()}
                                             </Stack>
                                         </TableCell>
                                         <TableCell sx={{ borderBottom: '1px solid #374151' }}>
@@ -361,7 +378,11 @@ const CourseManagement = () => {
                                     {selectedCourse?.title}
                                 </Typography>
                                 <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                                    by {selectedCourse?.tutor?.first_name} {selectedCourse?.tutor?.last_name}
+                                    by {(() => {
+                                        const tutor = selectedCourse?.tutor || selectedCourse?.user || selectedCourse?.creator || selectedCourse?.created_by;
+                                        if (!tutor) return 'Unknown';
+                                        return `${tutor.first_name || tutor.name?.split(' ')[0] || ''} ${tutor.last_name || tutor.name?.split(' ').slice(1).join(' ') || ''}`.trim() || 'Unknown';
+                                    })()}
                                 </Typography>
                             </Box>
                         </Stack>

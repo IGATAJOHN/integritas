@@ -28,6 +28,7 @@ export const adminCoursesService = {
         level,
         language,
         with_categories = 1,
+        with_tutor = 1,
         with_audit = 1
     } = {}) => {
         const params = new URLSearchParams();
@@ -38,6 +39,7 @@ export const adminCoursesService = {
         if (level) params.append('level', level);
         if (language) params.append('language', language);
         if (with_categories) params.append('with_categories', with_categories);
+        if (with_tutor) params.append('with_tutor', with_tutor);
         if (with_audit) params.append('with_audit', with_audit);
 
         const res = await apiService.get(`/lms/courses?${params.toString()}`);
