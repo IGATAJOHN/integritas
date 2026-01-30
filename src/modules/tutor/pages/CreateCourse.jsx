@@ -1093,7 +1093,7 @@ const CreateCourse = () => {
                             variant="contained"
                             sx={{ bgcolor: '#10B981', '&:hover': { bgcolor: '#059669' } }}
                         >
-                            Submit for Approval
+                            Submit Course
                         </Button>
                     )}
                 </Stack>
