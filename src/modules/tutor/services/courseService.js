@@ -180,6 +180,25 @@ export const tutorCoursesService = {
         return unwrapCourse(res);
     },
 
+    /**
+     * Reject a course and record rejection reason
+     * POST /lms/courses/{courseId}/reject
+     * 
+     * Rejects a course and records the reason in meta.review.
+     * This action:
+     * - Clears approvals (approved_at = null, approved_by = null)
+     * - Forces course back to draft status
+     * - Sets published_at = null
+     * 
+     * @param {string|number} courseId - The course ID to reject
+     * @param {string} reason - The rejection reason (e.g., "Needs better intro video")
+     * @returns {Promise<Object>} - Updated course data
+     */
+    rejectCourse: async (courseId, reason) => {
+        const res = await apiService.post(`/lms/courses/${courseId}/reject`, { reason });
+        return unwrapCourse(res);
+    },
+
     // K) DELETE COURSE MEDIA
     deleteCourseMedia: async (courseId, mediaType) => {
         const res = await apiService.delete(`/lms/courses/${courseId}/media/${mediaType}`);

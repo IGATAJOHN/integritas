@@ -210,25 +210,39 @@ export const tutorLessonService = {
 
     /**
      * Publish a lesson (make it visible to learners)
-     * POST /lms/lessons/{id}/publish
+     * POST /lms/modules/{moduleId}/lessons/{lessonId}/publish
      * 
+     * Marks a lesson as published within a specific module.
+     * 
+     * Auth & Permission:
+     * - Auth: Required
+     * - Permission: lms.lessons.publish
+     * 
+     * @param {string|number} moduleId - The module ID
      * @param {string|number} lessonId - The lesson ID
      * @returns {Promise<Object>} - Updated lesson data
      */
-    publishLesson: async (lessonId) => {
-        const res = await apiService.post(`/lms/lessons/${lessonId}/publish`);
+    publishLesson: async (moduleId, lessonId) => {
+        const res = await apiService.post(`/lms/modules/${moduleId}/lessons/${lessonId}/publish`);
         return unwrapLesson(res);
     },
 
     /**
      * Unpublish a lesson (hide from learners)
-     * POST /lms/lessons/{id}/unpublish
+     * POST /lms/modules/{moduleId}/lessons/{lessonId}/unpublish
      * 
+     * Marks a lesson as unpublished within a specific module.
+     * 
+     * Auth & Permission:
+     * - Auth: Required
+     * - Permission: lms.lessons.publish
+     * 
+     * @param {string|number} moduleId - The module ID
      * @param {string|number} lessonId - The lesson ID
      * @returns {Promise<Object>} - Updated lesson data
      */
-    unpublishLesson: async (lessonId) => {
-        const res = await apiService.post(`/lms/lessons/${lessonId}/unpublish`);
+    unpublishLesson: async (moduleId, lessonId) => {
+        const res = await apiService.post(`/lms/modules/${moduleId}/lessons/${lessonId}/unpublish`);
         return unwrapLesson(res);
     },
 };
