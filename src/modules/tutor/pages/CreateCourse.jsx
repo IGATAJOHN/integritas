@@ -91,11 +91,14 @@ const CreateCourse = () => {
         level: 'beginner',
         language: 'en',
         duration_minutes: 0,
-        thumbnail_url: '',
+        thumbnail_url: '', // For preview display only
         category_id: '',
         status: 'draft',
         is_editable: true,
     });
+
+    // Thumbnail file state - stores the actual File object for server upload
+    const [thumbnailFile, setThumbnailFile] = useState(null);
 
     // Modules state
     const [modules, setModules] = useState([]);
@@ -290,20 +293,53 @@ const CreateCourse = () => {
 
         try {
             // Step 1: Create the course
-            const coursePayload = {
-                title: courseData.title,
-                slug: courseData.slug,
-                summary: courseData.summary,
-                description: courseData.description,
-                level: courseData.level,
-                language: courseData.language,
-                duration_minutes: courseData.duration_minutes || 0,
-                category_id: courseData.category_id,
-                status: asDraft ? 'draft' : 'pending_approval',
-            };
+            // API Note: slug is auto-generated from title, status is not needed on create
+            // API uses category_ids (array) not category_id
+            let createdCourse;
 
-            console.log('Creating course with payload:', coursePayload);
-            const createdCourse = await tutorCoursesService.createCourseJson(coursePayload);
+            if (thumbnailFile) {
+                // Create FormData for multipart upload with thumbnail
+                const formData = new FormData();
+                formData.append('title', courseData.title);
+                formData.append('summary', courseData.summary);
+                // Note: description may be optional based on API
+                if (courseData.description) {
+                    formData.append('description', courseData.description);
+                }
+                formData.append('level', courseData.level);
+                formData.append('language', courseData.language);
+                formData.append('duration_minutes', courseData.duration_minutes || 0);
+                // API expects category_ids as array - for FormData we need to append each
+                if (courseData.category_id) {
+                    formData.append('category_ids[]', courseData.category_id);
+                }
+                // Append the actual thumbnail file
+                formData.append('thumbnail', thumbnailFile);
+
+                console.log('Creating course with thumbnail (multipart)');
+                createdCourse = await tutorCoursesService.createCourseMultipart(formData);
+            } else {
+                // No thumbnail, use regular JSON payload
+                // Following the exact API structure from documentation
+                const coursePayload = {
+                    title: courseData.title,
+                    summary: courseData.summary,
+                    level: courseData.level,
+                    language: courseData.language,
+                    duration_minutes: courseData.duration_minutes || 0,
+                    // API expects category_ids as an array
+                    category_ids: courseData.category_id ? [courseData.category_id] : [],
+                };
+
+                // Add optional description if provided
+                if (courseData.description) {
+                    coursePayload.description = courseData.description;
+                }
+
+                console.log('Creating course with payload:', coursePayload);
+                createdCourse = await tutorCoursesService.createCourseJson(coursePayload);
+            }
+
             const courseId = createdCourse?.id || createdCourse?.data?.id;
 
             if (!courseId) {
@@ -313,12 +349,15 @@ const CreateCourse = () => {
             console.log('Course created with ID:', courseId);
 
             // Step 2: Create modules for the course
+            // API Note: position is auto-assigned to next available, use 'summary' not 'description'
             for (let i = 0; i < modules.length; i++) {
                 const module = modules[i];
                 const modulePayload = {
                     title: module.title,
-                    description: module.description || '',
-                    position: i + 1,
+                    // API uses 'summary' field, not 'description'
+                    summary: module.description || '',
+                    // Optional meta field for additional info
+                    // meta: { icon: 'book' }
                 };
 
                 console.log('Creating module:', modulePayload);
@@ -560,6 +599,9 @@ const CreateCourse = () => {
                             onChange={(e) => {
                                 const file = e.target.files[0];
                                 if (file) {
+                                    // Store the actual File object for server upload
+                                    setThumbnailFile(file);
+                                    // Also create a preview URL for display
                                     const reader = new FileReader();
                                     reader.onloadend = () => {
                                         handleInputChange('thumbnail_url', reader.result);
@@ -612,7 +654,11 @@ const CreateCourse = () => {
                         {courseData.thumbnail_url && (
                             <Button
                                 size="small"
-                                onClick={() => handleInputChange('thumbnail_url', '')}
+                                onClick={() => {
+                                    // Clear both the preview and the file object
+                                    handleInputChange('thumbnail_url', '');
+                                    setThumbnailFile(null);
+                                }}
                                 sx={{ mt: 1, color: '#EF4444', fontSize: '0.75rem' }}
                             >
                                 Remove Image
