@@ -11,29 +11,49 @@ import {
     Chip,
     InputBase,
     Tooltip,
-    LinearProgress,
     CircularProgress,
+    Snackbar,
+    Alert,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
 } from '@mui/material';
 import {
     Search,
     Add,
     Edit,
     Visibility,
+    Delete,
     People,
     School,
     CheckCircle,
     Schedule,
     Block,
-    MoreVert,
 } from '@mui/icons-material';
 
+/**
+ * My Courses Page - Lists all courses created by the tutor
+ * 
+ * Features:
+ * - Search courses with debounced API calls
+ * - View course details
+ * - Edit course
+ * - Delete course with confirmation dialog
+ */
 const MyCourses = () => {
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
-
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    // Delete dialog state
+    const [deleteDialog, setDeleteDialog] = useState({ open: false, course: null });
+    const [deleting, setDeleting] = useState(false);
+
+    // Snackbar state
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
     // Debounced search effect
     useEffect(() => {
@@ -58,8 +78,54 @@ const MyCourses = () => {
         return () => clearTimeout(timer);
     }, [searchTerm]);
 
+    /**
+     * Opens the delete confirmation dialog
+     * @param {Object} course - The course to delete
+     */
+    const handleDeleteClick = (course) => {
+        setDeleteDialog({ open: true, course });
+    };
+
+    /**
+     * Closes the delete confirmation dialog
+     */
+    const handleDeleteCancel = () => {
+        setDeleteDialog({ open: false, course: null });
+    };
+
+    /**
+     * Confirms and executes the course deletion
+     * The backend should cascade delete modules and lessons
+     */
+    const handleDeleteConfirm = async () => {
+        if (!deleteDialog.course) return;
+
+        setDeleting(true);
+        try {
+            await tutorCoursesService.deleteCourse(deleteDialog.course.id);
+
+            // Remove the course from local state
+            setCourses(courses.filter(c => c.id !== deleteDialog.course.id));
+
+            setSnackbar({
+                open: true,
+                message: 'Course deleted successfully!',
+                severity: 'success'
+            });
+        } catch (err) {
+            console.error('Failed to delete course:', err);
+            setSnackbar({
+                open: true,
+                message: err.message || 'Failed to delete course. Please try again.',
+                severity: 'error'
+            });
+        } finally {
+            setDeleting(false);
+            setDeleteDialog({ open: false, course: null });
+        }
+    };
+
     const getStatusConfig = (status) => {
-        // Normalize status to match UI expectation (API might return lowercase)
         const normalizedStatus = status ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase() : 'Draft';
 
         switch (normalizedStatus) {
@@ -147,7 +213,6 @@ const MyCourses = () => {
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
                     {courses.map((course) => {
                         const statusConfig = getStatusConfig(course.status);
-                        // Map API fields to UI expected fields
                         const displayStatus = course.status ? course.status.charAt(0).toUpperCase() + course.status.slice(1).toLowerCase() : 'Draft';
                         return (
                             <Box
@@ -188,8 +253,8 @@ const MyCourses = () => {
                                                     overflow: 'hidden',
                                                 }}
                                             >
-                                                {course.image_url ? (
-                                                    <img src={course.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                {course.thumbnail_url ? (
+                                                    <img src={course.thumbnail_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                 ) : (
                                                     <School sx={{ color: '#fff', fontSize: 22 }} />
                                                 )}
@@ -250,7 +315,6 @@ const MyCourses = () => {
                                             </Stack>
                                         </Stack>
 
-                                        {/* Progress bar removed as not standard in listing unless enrolled */}
                                         <Typography sx={{ color: '#6B7280', fontSize: '0.75rem' }}>
                                             Last updated: {course.updated_at ? new Date(course.updated_at).toLocaleDateString() : '-'}
                                         </Typography>
@@ -284,14 +348,16 @@ const MyCourses = () => {
                                                 </IconButton>
                                             </Tooltip>
                                             <Box sx={{ flex: 1 }} />
-                                            <Tooltip title="More Options">
+                                            <Tooltip title="Delete Course">
                                                 <IconButton
+                                                    onClick={() => handleDeleteClick(course)}
                                                     sx={{
-                                                        color: '#9CA3AF',
-                                                        '&:hover': { bgcolor: 'rgba(156, 163, 175, 0.1)' }
+                                                        color: '#EF4444',
+                                                        bgcolor: 'rgba(239, 68, 68, 0.1)',
+                                                        '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.2)' }
                                                     }}
                                                 >
-                                                    <MoreVert fontSize="small" />
+                                                    <Delete fontSize="small" />
                                                 </IconButton>
                                             </Tooltip>
                                         </Stack>
@@ -328,9 +394,70 @@ const MyCourses = () => {
                     )}
                 </Paper>
             )}
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog
+                open={deleteDialog.open}
+                onClose={handleDeleteCancel}
+                PaperProps={{
+                    sx: {
+                        bgcolor: '#1A2230',
+                        border: '1px solid #374151',
+                        borderRadius: 2,
+                        minWidth: 400,
+                    }
+                }}
+            >
+                <DialogTitle sx={{ color: '#fff', borderBottom: '1px solid #374151' }}>
+                    Delete Course
+                </DialogTitle>
+                <DialogContent sx={{ py: 3 }}>
+                    <Typography sx={{ color: '#9CA3AF', mb: 2 }}>
+                        Are you sure you want to delete <strong style={{ color: '#fff' }}>{deleteDialog.course?.title}</strong>?
+                    </Typography>
+                    <Typography sx={{ color: '#EF4444', fontSize: '0.85rem' }}>
+                        ⚠️ This action cannot be undone. All modules and lessons in this course will also be deleted.
+                    </Typography>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid #374151' }}>
+                    <Button
+                        onClick={handleDeleteCancel}
+                        sx={{ color: '#9CA3AF', '&:hover': { bgcolor: 'rgba(156, 163, 175, 0.1)' } }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={handleDeleteConfirm}
+                        disabled={deleting}
+                        variant="contained"
+                        sx={{
+                            bgcolor: '#EF4444',
+                            '&:hover': { bgcolor: '#DC2626' },
+                            '&:disabled': { bgcolor: '#374151' }
+                        }}
+                    >
+                        {deleting ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : 'Delete Course'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Snackbar for notifications */}
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={4000}
+                onClose={() => setSnackbar({ ...snackbar, open: false })}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >
+                <Alert
+                    onClose={() => setSnackbar({ ...snackbar, open: false })}
+                    severity={snackbar.severity}
+                    sx={{ width: '100%' }}
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 };
 
 export default MyCourses;
-

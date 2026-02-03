@@ -261,6 +261,7 @@ const CourseDashboard = () => {
                 <Stack direction="row" spacing={2}>
                     <Button
                         variant="outlined"
+                        onClick={() => window.open(`/courses/${courseId}/preview`, '_blank')}
                         sx={{
                             borderColor: '#374151',
                             color: '#fff',
@@ -322,6 +323,7 @@ const CourseDashboard = () => {
                             <Button
                                 startIcon={<Add />}
                                 variant="contained"
+                                onClick={() => navigate(`/tutor/create-course?edit=${courseId}`)}
                                 sx={{ bgcolor: '#1152D4', textTransform: 'none', '&:hover': { bgcolor: '#0D42AF' } }}
                             >
                                 Add Module
@@ -409,6 +411,7 @@ const CourseDashboard = () => {
                                                 <Button
                                                     fullWidth
                                                     startIcon={<Add />}
+                                                    onClick={() => navigate(`/tutor/create-course?edit=${courseId}`)}
                                                     sx={{
                                                         mt: 1,
                                                         color: '#3B82F6',
@@ -430,7 +433,12 @@ const CourseDashboard = () => {
                                 <Typography sx={{ color: '#9CA3AF', mb: 2 }}>
                                     No modules created yet.
                                 </Typography>
-                                <Button variant="outlined" startIcon={<Add />} sx={{ borderColor: '#374151', color: '#9CA3AF' }}>
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<Add />}
+                                    onClick={() => navigate(`/tutor/create-course?edit=${courseId}`)}
+                                    sx={{ borderColor: '#374151', color: '#9CA3AF' }}
+                                >
                                     Create First Module
                                 </Button>
                             </Paper>
