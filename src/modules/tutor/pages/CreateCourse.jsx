@@ -377,7 +377,7 @@ const CreateCourse = () => {
                     const lesson = lessons[j];
                     const lessonPayload = {
                         title: lesson.title,
-                        type: lesson.type || 'reading',
+                        type: lesson.type || 'text',
                         content: lesson.content || '',
                         duration: lesson.duration || 0,
                         position: j + 1,
@@ -417,7 +417,9 @@ const CreateCourse = () => {
     const getLessonTypeIcon = (type) => {
         switch (type) {
             case 'video': return <PlayCircleOutline sx={{ fontSize: 18 }} />;
+            case 'text':
             case 'reading': return <ArticleOutlined sx={{ fontSize: 18 }} />;
+            case 'document':
             case 'file': return <AttachFile sx={{ fontSize: 18 }} />;
             default: return null;
         }
@@ -1220,8 +1222,8 @@ const CreateCourse = () => {
                                     MenuProps={selectMenuProps}
                                 >
                                     <MenuItem value="video">Video</MenuItem>
-                                    <MenuItem value="reading">Text/Article</MenuItem>
-                                    <MenuItem value="file">File Attachment</MenuItem>
+                                    <MenuItem value="text">Text/Article</MenuItem>
+                                    <MenuItem value="document">File Attachment</MenuItem>
                                 </Select>
                             </Box>
 
@@ -1279,7 +1281,7 @@ const CreateCourse = () => {
                                 </Box>
                             )}
 
-                            {newLesson.type === 'reading' && (
+                            {newLesson.type === 'text' && (
                                 <Box>
                                     <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1 }}>Article Content</Typography>
                                     <TextField
@@ -1294,7 +1296,7 @@ const CreateCourse = () => {
                                 </Box>
                             )}
 
-                            {newLesson.type === 'file' && (
+                            {newLesson.type === 'document' && (
                                 <Box>
                                     <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1 }}>Upload File</Typography>
                                     <input
