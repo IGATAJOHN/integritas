@@ -54,7 +54,7 @@ const pendingReviews = [
 
 const TutorDashboard = () => {
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, isKycComplete } = useAuth();
     const chartContainerRef = useRef(null);
     const [chartWidth, setChartWidth] = useState(0);
 
@@ -145,7 +145,7 @@ const TutorDashboard = () => {
         },
     ];
 
-    const needsKycAction = !kycStatus || kycStatus === 'pending' || kycStatus === 'rejected' || kycStatus === 'draft';
+    const needsKycAction = !isKycComplete() && (!kycStatus || kycStatus === 'pending' || kycStatus === 'rejected' || kycStatus === 'draft');
 
     if (loading) {
         return (
