@@ -53,6 +53,19 @@ export const adminCoursesService = {
         return unwrapCourse(res);
     },
 
+    // D-1) GET COURSE MODULES
+    getCourseModules: async (courseId) => {
+        const res = await apiService.get(`/lms/courses/${courseId}/modules?with_lessons=1`);
+        // If response is a list object (data, meta), return data array
+        return res.data || res || [];
+    },
+
+    // A-1) APPROVE COURSE (Admin specific)
+    approveCourse: async (courseId) => {
+        const res = await apiService.post(`/lms/courses/${courseId}/approve`);
+        return unwrapCourse(res);
+    },
+
     // L) REJECT COURSE (Admin specific)
     rejectCourse: async (courseId, reason) => {
         const res = await apiService.post(`/lms/courses/${courseId}/reject`, { reason });

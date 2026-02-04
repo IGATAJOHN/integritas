@@ -21,6 +21,12 @@ import {
     Snackbar,
     Modal,
     TextField,
+    FormControlLabel,
+    Checkbox,
+    Select,
+    MenuItem,
+    FormControl,
+    InputLabel,
 } from '@mui/material';
 import {
     Search,
@@ -33,6 +39,7 @@ import {
     Add,
     Close,
     PersonAdd,
+    Edit,
 } from '@mui/icons-material';
 import { reviewerService } from '../services/reviewerService';
 import { textFieldStyle, modalStyle } from '../../../styles/formStyles';
@@ -62,7 +69,17 @@ const ReviewerManagement = () => {
 
     // Modal state
     const [openModal, setOpenModal] = useState(false);
-    const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+    const [formData, setFormData] = useState({
+        first_name: '',
+        last_name: '',
+        email: '',
+        phone: '',
+        specialization: '',
+        max_assignments: '',
+        can_publish: false,
+        status: 'Active',
+    });
+    const [editingReviewer, setEditingReviewer] = useState(null);
 
     // Snackbar for notifications
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
@@ -106,7 +123,36 @@ const ReviewerManagement = () => {
      * Open modal for creating reviewer
      */
     const handleOpenModal = () => {
-        setFormData({ name: '', email: '', password: '' });
+        setFormData({
+            first_name: '',
+            last_name: '',
+            email: '',
+            phone: '',
+            specialization: '',
+            max_assignments: '',
+            can_publish: false,
+            status: 'Active',
+        });
+        setEditingReviewer(null);
+        setOpenModal(true);
+    };
+
+    const handleOpenEditModal = (reviewer) => {
+        const name = reviewer.first_name && reviewer.last_name
+            ? `${reviewer.first_name} ${reviewer.last_name}`
+            : (reviewer.user?.name || reviewer.name || '');
+
+        setFormData({
+            first_name: reviewer.first_name || reviewer.user?.name?.split(' ')?.[0] || '',
+            last_name: reviewer.last_name || reviewer.user?.name?.split(' ')?.slice(1).join(' ') || '',
+            email: reviewer.user?.email || reviewer.email || '',
+            phone: reviewer.phone || '',
+            specialization: reviewer.specialization || '',
+            max_assignments: reviewer.max_assignments ?? reviewer.tasks_count ?? '',
+            can_publish: Boolean(reviewer.can_publish),
+            status: reviewer.status || 'Active',
+        });
+        setEditingReviewer(reviewer);
         setOpenModal(true);
     };
 
@@ -115,37 +161,84 @@ const ReviewerManagement = () => {
      */
     const handleCloseModal = () => {
         setOpenModal(false);
-        setFormData({ name: '', email: '', password: '' });
+        setFormData({
+            first_name: '',
+            last_name: '',
+            email: '',
+            phone: '',
+            specialization: '',
+            max_assignments: '',
+            can_publish: false,
+            status: 'Active',
+        });
     };
 
     /**
      * Create new reviewer
      */
     const handleCreateReviewer = async () => {
-        if (!formData.name.trim() || !formData.email.trim()) {
-            setSnackbar({ open: true, message: 'Name and email are required', severity: 'error' });
+            const safe = (v) => String(v ?? '').trim();
+            if (!safe(formData.first_name) || !safe(formData.last_name) || !safe(formData.email) || !safe(formData.phone) || !safe(formData.specialization) || !safe(formData.max_assignments)) {
+                setSnackbar({ open: true, message: 'All fields are required', severity: 'error' });
             return;
         }
 
         setSaving(true);
         try {
-            // Split name into first and last
-            const nameParts = formData.name.trim().split(' ');
-            const firstName = nameParts[0] || '';
-            const lastName = nameParts.slice(1).join(' ') || '';
-
-            await reviewerService.createReviewer({
-                first_name: firstName,
-                last_name: lastName,
+            // Build payload according to API spec (all fields required)
+            const payload = {
                 email: formData.email,
-                password: formData.password || undefined,
-            });
+                first_name: formData.first_name,
+                last_name: formData.last_name,
+                phone: formData.phone,
+                specialization: formData.specialization,
+                max_assignments: Number(formData.max_assignments),
+                can_publish: Boolean(formData.can_publish),
+                status: formData.status || 'Active',
+            };
+
+            await reviewerService.createReviewer(payload);
             setSnackbar({ open: true, message: 'Reviewer created successfully', severity: 'success' });
             handleCloseModal();
             await fetchReviewers();
         } catch (err) {
             console.error('Error creating reviewer:', err);
             setSnackbar({ open: true, message: err.message || 'Failed to create reviewer', severity: 'error' });
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleUpdateReviewer = async () => {
+        if (!editingReviewer) return;
+
+        // Validate required fields
+        const safe = (v) => String(v ?? '').trim();
+        if (!safe(formData.first_name) || !safe(formData.last_name) || !safe(formData.email) || !safe(formData.phone) || !safe(formData.specialization) || !safe(formData.max_assignments)) {
+            setSnackbar({ open: true, message: 'All fields are required', severity: 'error' });
+            return;
+        }
+
+        setSaving(true);
+        try {
+            const payload = {
+                first_name: formData.first_name,
+                last_name: formData.last_name,
+                phone: formData.phone,
+                specialization: formData.specialization,
+                max_assignments: Number(formData.max_assignments),
+                can_publish: Boolean(formData.can_publish),
+                status: formData.status || undefined,
+            };
+
+            await reviewerService.updateReviewer(editingReviewer.id, payload);
+            setSnackbar({ open: true, message: 'Reviewer updated successfully', severity: 'success' });
+            handleCloseModal();
+            setEditingReviewer(null);
+            await fetchReviewers();
+        } catch (err) {
+            console.error('Error updating reviewer:', err);
+            setSnackbar({ open: true, message: err.message || 'Failed to update reviewer', severity: 'error' });
         } finally {
             setSaving(false);
         }
@@ -230,9 +323,9 @@ const ReviewerManagement = () => {
                         startIcon={<Add />}
                         onClick={handleOpenModal}
                         sx={{
-                            bgcolor: '#F59E0B',
-                            '&:hover': { bgcolor: '#D97706' },
-                            boxShadow: '0 4px 14px rgba(245, 158, 11, 0.4)'
+                            bgcolor: '#1152D4',
+                            '&:hover': { bgcolor: '#0D42AF' },
+                            boxShadow: '0 4px 14px rgba(17, 82, 212, 0.4)'
                         }}
                     >
                         Add Reviewer
@@ -395,6 +488,19 @@ const ReviewerManagement = () => {
                                                     <Visibility fontSize="small" />
                                                 </IconButton>
                                             </Tooltip>
+                                            <Tooltip title="Edit Reviewer">
+                                                <IconButton
+                                                    onClick={() => handleOpenEditModal(user)}
+                                                    disabled={isActionLoading}
+                                                    sx={{
+                                                        color: '#F59E0B',
+                                                        bgcolor: 'rgba(245, 158, 11, 0.08)',
+                                                        '&:hover': { bgcolor: 'rgba(245, 158, 11, 0.14)' }
+                                                    }}
+                                                >
+                                                    <Edit fontSize="small" />
+                                                </IconButton>
+                                            </Tooltip>
                                             <Tooltip title="Delete Reviewer">
                                                 <IconButton
                                                     onClick={() => handleDeleteReviewer(user)}
@@ -426,7 +532,7 @@ const ReviewerManagement = () => {
                 <Box sx={modalStyle}>
                     {/* Modal Header */}
                     <Box sx={{
-                        background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+                        background: '#195fcfff',
                         p: 3,
                         display: 'flex',
                         alignItems: 'center',
@@ -446,18 +552,32 @@ const ReviewerManagement = () => {
                     {/* Modal Body */}
                     <Box sx={{ p: 3 }}>
                         <Stack spacing={2.5}>
-                            <Box>
-                                <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#E5E7EB', mb: 0.75 }}>
-                                    Full Name
-                                </Typography>
-                                <TextField
-                                    fullWidth
-                                    placeholder="e.g. John Reviewer"
-                                    value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    sx={textFieldStyle}
-                                />
-                            </Box>
+                            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                                <Box sx={{ flex: 1 }}>
+                                    <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#E5E7EB', mb: 0.75 }}>
+                                        First Name
+                                    </Typography>
+                                    <TextField
+                                        fullWidth
+                                        placeholder="First name"
+                                        value={formData.first_name}
+                                        onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                                        sx={textFieldStyle}
+                                    />
+                                </Box>
+                                <Box sx={{ flex: 1 }}>
+                                    <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#E5E7EB', mb: 0.75 }}>
+                                        Last Name
+                                    </Typography>
+                                    <TextField
+                                        fullWidth
+                                        placeholder="Last name"
+                                        value={formData.last_name}
+                                        onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                                        sx={textFieldStyle}
+                                    />
+                                </Box>
+                            </Stack>
 
                             <Box>
                                 <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#E5E7EB', mb: 0.75 }}>
@@ -472,40 +592,103 @@ const ReviewerManagement = () => {
                                 />
                             </Box>
 
+                            {/* password removed — backend auto-generates when needed */}
+
                             <Box>
                                 <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#E5E7EB', mb: 0.75 }}>
-                                    Password (Optional)
+                                    Phone
                                 </Typography>
                                 <TextField
                                     fullWidth
-                                    type="password"
-                                    placeholder="Leave empty to auto-generate"
-                                    value={formData.password}
-                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                    type='number'
+                                    placeholder="e.g. 08022223333"
+                                    value={formData.phone}
+                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                                     sx={textFieldStyle}
                                 />
                             </Box>
 
+                            <Box>
+                                <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#E5E7EB', mb: 0.75 }}>
+                                    Specialization
+                                </Typography>
+                                <TextField
+                                    fullWidth
+                                    placeholder="e.g. Tutor Videos"
+                                    value={formData.specialization}
+                                    onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
+                                    sx={textFieldStyle}
+                                />
+                            </Box>
+
+                            <Box>
+                                <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#E5E7EB', mb: 0.75 }}>
+                                    Max Assignments
+                                </Typography>
+                                <TextField
+                                    fullWidth
+                                    type="number"
+                                    placeholder="e.g. 10"
+                                    value={formData.max_assignments}
+                                    onChange={(e) => setFormData({ ...formData, max_assignments: e.target.value })}
+                                    sx={textFieldStyle}
+                                />
+                            </Box>
+
+                            <Stack direction="row" alignItems="center" spacing={2} sx={{ mt: 0.5 }}>
+                                <FormControl sx={{ minWidth: 140 }}>
+                                    <InputLabel sx={{ color: '#9CA3AF' }}>Status</InputLabel>
+                                    <Select
+                                        value={formData.status}
+                                        label="Status"
+                                        onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                                        sx={{ color: '#fff', '& .MuiSelect-icon': { color: '#9CA3AF' } }}
+                                    >
+                                        <MenuItem value="Active">Active</MenuItem>
+                                        <MenuItem value="Inactive">Inactive</MenuItem>
+                                    </Select>
+                                </FormControl>
+
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={Boolean(formData.can_publish)}
+                                            onChange={(e) => setFormData({ ...formData, can_publish: e.target.checked })}
+                                            sx={{ color: '#195fcfff' }}
+                                        />
+                                    }
+                                    label={<Typography sx={{ color: '#E5E7EB' }}>Can Publish</Typography>}
+                                />
+                            </Stack>
+
                             <Button
                                 variant="contained"
                                 fullWidth
-                                onClick={handleCreateReviewer}
-                                disabled={!formData.name.trim() || !formData.email.trim() || saving}
+                                onClick={editingReviewer ? handleUpdateReviewer : handleCreateReviewer}
+                                disabled={
+                                    (String(formData.first_name ?? '').trim() === '') ||
+                                    (String(formData.last_name ?? '').trim() === '') ||
+                                    (String(formData.email ?? '').trim() === '') ||
+                                    (String(formData.phone ?? '').trim() === '') ||
+                                    (String(formData.specialization ?? '').trim() === '') ||
+                                    (String(formData.max_assignments ?? '').trim() === '') ||
+                                    saving
+                                }
                                 sx={{
-                                    bgcolor: '#F59E0B',
+                                    bgcolor: '#195fcfff',
                                     py: 1.5,
                                     borderRadius: 1.5,
                                     fontWeight: 600,
                                     fontSize: '0.875rem',
-                                    boxShadow: '0 4px 14px rgba(245, 158, 11, 0.4)',
-                                    '&:hover': { bgcolor: '#D97706' },
+                                    boxShadow: '0 4px 14px rgba(25, 95, 207, 0.4)',
+                                    '&:hover': { bgcolor: '#195fcfff' },
                                     '&:disabled': { bgcolor: '#1F2937', color: '#6B7280', boxShadow: 'none' }
                                 }}
                             >
                                 {saving ? (
                                     <CircularProgress size={20} sx={{ color: '#fff' }} />
                                 ) : (
-                                    'Create Reviewer'
+                                    editingReviewer ? 'Update Reviewer' : 'Create Reviewer'
                                 )}
                             </Button>
                         </Stack>

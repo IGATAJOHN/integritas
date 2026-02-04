@@ -8,3 +8,4 @@ export { default as CourseManagement } from './CourseManagement';
 export { default as CategoryManagement } from './CategoryManagement';
 export { default as AdminSettings } from './Settings';
 export { default as KycReview } from './KycReview';
+export { default as AdminCourseDetail } from './AdminCourseDetail';

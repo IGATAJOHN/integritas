@@ -10,6 +10,7 @@ import {
     CourseManagement,
     CategoryManagement,
     KycReview,
+    AdminCourseDetail,
 } from './pages';
 
 const adminRoutes = {
@@ -55,6 +56,10 @@ const adminRoutes = {
                 {
                     path: 'courses',
                     element: <CourseManagement />,
+                },
+                {
+                    path: 'courses/:courseId',
+                    element: <AdminCourseDetail />,
                 },
                 {
                     path: 'lessons',

@@ -19,6 +19,11 @@ import {
     Divider,
     Tabs,
     Tab,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    TextField,
     Snackbar,
     Alert,
 } from '@mui/material';
@@ -45,6 +50,7 @@ import {
 } from '@mui/icons-material';
 import { tutorCoursesService } from '../services/courseService';
 import { tutorModuleService } from '../services/moduleService';
+import { tutorLessonService } from '../services/lessonService';
 
 /**
  * Returns the appropriate icon for a lesson type
@@ -79,6 +85,14 @@ const CourseDashboard = () => {
     const [activeTab, setActiveTab] = useState(0);
     const [actionLoading, setActionLoading] = useState(false);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+    // Module / Lesson modal state
+    const [moduleModalOpen, setModuleModalOpen] = useState(false);
+    const [moduleTitle, setModuleTitle] = useState('');
+    const [moduleDescription, setModuleDescription] = useState('');
+    const [lessonModalOpen, setLessonModalOpen] = useState(false);
+    const [lessonTitle, setLessonTitle] = useState('');
+    const [lessonContent, setLessonContent] = useState('');
+    const [selectedModuleForLesson, setSelectedModuleForLesson] = useState(null);
 
     /**
      * Fetches course details and modules from the API
@@ -196,6 +210,63 @@ const CourseDashboard = () => {
         }
     };
 
+    /**
+     * Create a module inline via modal
+     */
+    const handleCreateModule = async () => {
+        if (!String(moduleTitle).trim()) {
+            setSnackbar({ open: true, message: 'Module title is required', severity: 'error' });
+            return;
+        }
+        try {
+            setActionLoading(true);
+            const payload = { title: moduleTitle, description: moduleDescription, position: modules.length };
+            const created = await tutorModuleService.createModule(courseId, payload);
+            // Append to modules list
+            setModules(prev => [...prev, created]);
+            setModuleModalOpen(false);
+            setModuleTitle('');
+            setModuleDescription('');
+            setSnackbar({ open: true, message: 'Module created', severity: 'success' });
+        } catch (err) {
+            console.error('Error creating module:', err);
+            setSnackbar({ open: true, message: err.message || 'Failed to create module', severity: 'error' });
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    /**
+     * Create a lesson inline via modal
+     */
+    const handleCreateLesson = async () => {
+        if (!selectedModuleForLesson) return;
+        if (!String(lessonTitle).trim()) {
+            setSnackbar({ open: true, message: 'Lesson title is required', severity: 'error' });
+            return;
+        }
+        try {
+            setActionLoading(true);
+            // find module to determine position
+            const mod = modules.find(m => m.id === selectedModuleForLesson) || { lessons: [] };
+            const position = (mod.lessons?.length || 0);
+            const payload = { title: lessonTitle, content: lessonContent, position };
+            const created = await tutorLessonService.createLesson(selectedModuleForLesson, payload);
+            // Insert lesson into module locally
+            setModules(prev => prev.map(m => m.id === selectedModuleForLesson ? { ...m, lessons: [...(m.lessons || []), created] } : m));
+            setLessonModalOpen(false);
+            setSelectedModuleForLesson(null);
+            setLessonTitle('');
+            setLessonContent('');
+            setSnackbar({ open: true, message: 'Lesson created', severity: 'success' });
+        } catch (err) {
+            console.error('Error creating lesson:', err);
+            setSnackbar({ open: true, message: err.message || 'Failed to create lesson', severity: 'error' });
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
     // Loading state
     if (loading) {
         return (
@@ -216,7 +287,7 @@ const CourseDashboard = () => {
     }
 
     // Derived state
-    const published = course.status === 'published' || course.is_published;
+    const published = course.status === 'published' || course.status === 'active' || course.is_published;
     const totalLessons = modules.reduce((acc, mod) => acc + (mod.lessons?.length || 0), 0);
 
     return (
@@ -274,18 +345,40 @@ const CourseDashboard = () => {
                     <Button
                         variant="contained"
                         onClick={published ? handleUnpublish : handlePublish}
-                        disabled={actionLoading}
+                        disabled={actionLoading || course.status === 'pending'}
                         sx={{
-                            bgcolor: published ? '#F59E0B' : '#1152D4',
+                            bgcolor: published ? '#F59E0B' : (course.status === 'pending' ? '#4B5563' : '#1152D4'),
                             textTransform: 'none',
                             fontWeight: 600,
-                            '&:hover': { bgcolor: published ? '#D97706' : '#0D42AF' }
+                            '&:hover': { bgcolor: published ? '#D97706' : (course.status === 'pending' ? '#4B5563' : '#0D42AF') }
                         }}
                     >
-                        {actionLoading ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : published ? 'Unpublish' : 'Publish Course'}
+                        {actionLoading ? <CircularProgress size={20} sx={{ color: '#fff' }} /> :
+                            published ? 'Unpublish' :
+                                (course.status === 'pending' ? 'Under Review' : 'Publish Course')
+                        }
                     </Button>
                 </Stack>
             </Box>
+
+            {/* Rejection Alert */}
+            {course.status === 'draft' && course.meta && course.meta.review && course.meta.review.reason && (
+                <Box sx={{ p: 4, pb: 0 }}>
+                    <Alert
+                        severity="error"
+                        variant="filled" // High visibility
+                        sx={{
+                            bgcolor: 'rgba(239, 68, 68, 0.1)',
+                            color: '#EF4444',
+                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                            '& .MuiAlert-icon': { color: '#EF4444' }
+                        }}
+                    >
+                        <Typography variant="subtitle2" fontWeight="bold">Course Rejected</Typography>
+                        <Typography variant="body2">{course.meta.review.reason}</Typography>
+                    </Alert>
+                </Box>
+            )}
 
             {/* Custom Tabs */}
             <Box sx={{ px: 4, pt: 2, borderBottom: '1px solid #1F2937', bgcolor: '#0C1322' }}>
@@ -323,7 +416,7 @@ const CourseDashboard = () => {
                             <Button
                                 startIcon={<Add />}
                                 variant="contained"
-                                onClick={() => navigate(`/tutor/create-course?edit=${courseId}`)}
+                                onClick={() => setModuleModalOpen(true)}
                                 sx={{ bgcolor: '#1152D4', textTransform: 'none', '&:hover': { bgcolor: '#0D42AF' } }}
                             >
                                 Add Module
@@ -411,7 +504,7 @@ const CourseDashboard = () => {
                                                 <Button
                                                     fullWidth
                                                     startIcon={<Add />}
-                                                    onClick={() => navigate(`/tutor/create-course?edit=${courseId}`)}
+                                                    onClick={() => { setSelectedModuleForLesson(mod.id); setLessonTitle(''); setLessonContent(''); setLessonModalOpen(true); }}
                                                     sx={{
                                                         mt: 1,
                                                         color: '#3B82F6',
@@ -436,7 +529,7 @@ const CourseDashboard = () => {
                                 <Button
                                     variant="outlined"
                                     startIcon={<Add />}
-                                    onClick={() => navigate(`/tutor/create-course?edit=${courseId}`)}
+                                    onClick={() => setModuleModalOpen(true)}
                                     sx={{ borderColor: '#374151', color: '#9CA3AF' }}
                                 >
                                     Create First Module
@@ -664,6 +757,65 @@ const CourseDashboard = () => {
             </Box>
 
             {/* Snackbar for notifications */}
+            {/* Create Module Dialog */}
+            <Dialog open={moduleModalOpen} onClose={() => setModuleModalOpen(false)} fullWidth maxWidth="sm">
+                <DialogTitle>Create Module</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        label="Module Title"
+                        type="text"
+                        fullWidth
+                        value={moduleTitle}
+                        onChange={e => setModuleTitle(e.target.value)}
+                    />
+                    <TextField
+                        margin="dense"
+                        label="Description"
+                        type="text"
+                        fullWidth
+                        multiline
+                        rows={3}
+                        value={moduleDescription}
+                        onChange={e => setModuleDescription(e.target.value)}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setModuleModalOpen(false)}>Cancel</Button>
+                    <Button onClick={handleCreateModule} disabled={actionLoading}>Create</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Create Lesson Dialog */}
+            <Dialog open={lessonModalOpen} onClose={() => setLessonModalOpen(false)} fullWidth maxWidth="sm">
+                <DialogTitle>Add Lesson</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        label="Lesson Title"
+                        type="text"
+                        fullWidth
+                        value={lessonTitle}
+                        onChange={e => setLessonTitle(e.target.value)}
+                    />
+                    <TextField
+                        margin="dense"
+                        label="Content / Description"
+                        type="text"
+                        fullWidth
+                        multiline
+                        rows={4}
+                        value={lessonContent}
+                        onChange={e => setLessonContent(e.target.value)}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setLessonModalOpen(false)}>Cancel</Button>
+                    <Button onClick={handleCreateLesson} disabled={actionLoading}>Create</Button>
+                </DialogActions>
+            </Dialog>
             <Snackbar
                 open={snackbar.open}
                 autoHideDuration={4000}

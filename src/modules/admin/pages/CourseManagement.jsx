@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { adminCoursesService } from '../services';
 import { CircularProgress } from '@mui/material';
 import {
@@ -22,6 +23,8 @@ import {
     Tooltip,
     Collapse,
     Divider,
+    Snackbar,
+    Alert,
 } from '@mui/material';
 import {
     Search,
@@ -40,13 +43,10 @@ import {
 
 
 const CourseManagement = () => {
+    const navigate = useNavigate();
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [selectedCourse, setSelectedCourse] = useState(null);
-    const [openViewModal, setOpenViewModal] = useState(false);
-    const [expandedModules, setExpandedModules] = useState({});
-    const [modalLoading, setModalLoading] = useState(false);
 
     // Fetch courses with debounce
     useEffect(() => {
@@ -74,84 +74,8 @@ const CourseManagement = () => {
         return () => clearTimeout(timer);
     }, [searchTerm]);
 
-    const handleViewCourse = async (course) => {
-        setOpenViewModal(true);
-        setModalLoading(true);
-        setSelectedCourse(course); // Show partial data immediately
-        try {
-            const fullCourse = await adminCoursesService.getCourseDetail(course.id);
-            setSelectedCourse(fullCourse);
-        } catch (error) {
-            console.error("Failed to fetch course details:", error);
-        } finally {
-            setModalLoading(false);
-        }
-        setExpandedModules({});
-    };
-
-    const handleCloseViewModal = () => {
-        setOpenViewModal(false);
-        setSelectedCourse(null);
-    };
-
-    const handleToggleStatus = async (courseId, currentStatus) => {
-        try {
-            const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-            await adminCoursesService.updateCourse(courseId, { status: newStatus });
-
-            // Update local state
-            setCourses(courses.map(course => {
-                if (course.id === courseId) {
-                    return { ...course, status: newStatus };
-                }
-                return course;
-            }));
-
-            // If selected course is open, update it too
-            if (selectedCourse && selectedCourse.id === courseId) {
-                setSelectedCourse({ ...selectedCourse, status: newStatus });
-            }
-        } catch (error) {
-            console.error("Failed to update status:", error);
-        }
-    };
-
-    const toggleModule = (moduleId) => {
-        setExpandedModules(prev => ({
-            ...prev,
-            [moduleId]: !prev[moduleId]
-        }));
-    };
-
-    const getLessonIcon = (type) => {
-        switch (type) {
-            case 'video':
-                return <PlayCircleOutline sx={{ fontSize: 18, color: '#3B82F6' }} />;
-            case 'reading':
-                return <ArticleOutlined sx={{ fontSize: 18, color: '#10B981' }} />;
-            case 'quiz':
-                return <QuizOutlined sx={{ fontSize: 18, color: '#F59E0B' }} />;
-            default:
-                return <ArticleOutlined sx={{ fontSize: 18, color: '#9CA3AF' }} />;
-        }
-    };
-
-    // Modal styling
-    const modalStyle = {
-        position: 'absolute',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        width: { xs: '95%', sm: 700, md: 800 },
-        maxHeight: '90vh',
-        bgcolor: '#1A2230',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        borderRadius: 4,
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05)',
-        overflow: 'hidden',
-        outline: 'none',
-        display: 'flex',
-        flexDirection: 'column',
+    const handleViewCourse = (course) => {
+        navigate(`/admin/content/courses/${course.id}`);
     };
 
     return (
@@ -230,6 +154,34 @@ const CourseManagement = () => {
                             courses.map((course) => {
                                 const isActive = course.status === 'active' || course.status === 'published';
                                 const statusLabel = course.status ? course.status.charAt(0).toUpperCase() + course.status.slice(1) : 'Unknown';
+                                // Determine a friendly category label from multiple possible response shapes
+                                const categoryLabel = course.category?.name
+                                    || course.category?.title
+                                    || course.category_name
+                                    || (course.categories && course.categories[0]?.name)
+                                    || 'Uncategorized';
+
+                                // Resolve tutor data and friendly display name
+                                const tutorData = course.tutor || course.user || course.creator || course.created_by;
+                                const tutorName = (() => {
+                                    if (!tutorData) return null;
+                                    if (typeof tutorData === 'string') {
+                                        const s = String(tutorData).trim();
+                                        return s || null;
+                                    }
+                                    const first = String(tutorData.first_name || tutorData.firstName || '').trim();
+                                    const last = String(tutorData.last_name || tutorData.lastName || '').trim();
+                                    if (first || last) return `${first} ${last}`.trim();
+                                    const name = String(
+                                        tutorData.name || tutorData.full_name || tutorData.fullName || tutorData.display_name || tutorData.displayName || tutorData.username || tutorData.email || ''
+                                    ).trim();
+                                    return name || null;
+                                })();
+                                const tutorInitial = (() => {
+                                    if (!tutorData) return '?';
+                                    if (typeof tutorData === 'string') return (tutorData[0] || '?');
+                                    return (tutorData.first_name?.[0] || tutorData.firstName?.[0] || tutorData.name?.[0] || tutorData.username?.[0] || '?');
+                                })();
                                 return (
                                     <TableRow key={course.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                                         <TableCell sx={{ color: '#fff', borderBottom: '1px solid #374151' }}>
@@ -265,23 +217,14 @@ const CourseManagement = () => {
                                         <TableCell sx={{ borderBottom: '1px solid #374151' }}>
                                             <Stack direction="row" alignItems="center" spacing={1.5}>
                                                 {/* Check tutor, user, or creator (from with_audit) */}
-                                                {(() => {
-                                                    const tutorData = course.tutor || course.user || course.creator || course.created_by;
-                                                    const tutorName = tutorData
-                                                        ? `${tutorData.first_name || tutorData.name?.split(' ')[0] || ''} ${tutorData.last_name || tutorData.name?.split(' ').slice(1).join(' ') || ''}`.trim()
-                                                        : null;
-                                                    const tutorInitial = tutorData?.first_name?.[0] || tutorData?.name?.[0] || '?';
-                                                    return (
-                                                        <>
-                                                            <Avatar sx={{ width: 32, height: 32, bgcolor: '#7C3AED', fontSize: '0.8rem' }} src={tutorData?.avatar_url || tutorData?.profile_photo_url}>
-                                                                {tutorInitial}
-                                                            </Avatar>
-                                                            <Typography variant="body2" sx={{ color: '#E5E7EB' }}>
-                                                                {tutorName || 'Unknown'}
-                                                            </Typography>
-                                                        </>
-                                                    );
-                                                })()}
+                                                <>
+                                                    <Avatar sx={{ width: 32, height: 32, bgcolor: '#7C3AED', fontSize: '0.8rem' }} src={tutorData?.avatar_url || tutorData?.profile_photo_url}>
+                                                        {tutorInitial}
+                                                    </Avatar>
+                                                    <Typography variant="body2" sx={{ color: '#E5E7EB' }}>
+                                                        {tutorName || 'Unknown'}
+                                                    </Typography>
+                                                </>
                                             </Stack>
                                         </TableCell>
                                         <TableCell sx={{ borderBottom: '1px solid #374151' }}>
@@ -296,7 +239,7 @@ const CourseManagement = () => {
                                         </TableCell>
                                         <TableCell sx={{ borderBottom: '1px solid #374151' }}>
                                             <Chip
-                                                label={course.category?.name || 'Uncategorized'}
+                                                label={categoryLabel}
                                                 size="small"
                                                 sx={{
                                                     bgcolor: '#374151',
@@ -322,34 +265,21 @@ const CourseManagement = () => {
                                             />
                                         </TableCell>
                                         <TableCell align="right" sx={{ borderBottom: '1px solid #374151' }}>
-                                            <Stack direction="row" spacing={1} justifyContent="flex-end">
-                                                <Tooltip title="View Course Details">
-                                                    <IconButton
-                                                        onClick={() => handleViewCourse(course)}
-                                                        sx={{
-                                                            color: '#3B82F6',
-                                                            bgcolor: 'rgba(59, 130, 246, 0.1)',
-                                                            '&:hover': { bgcolor: 'rgba(59, 130, 246, 0.2)' }
-                                                        }}
-                                                    >
-                                                        <Info fontSize="small" />
-                                                    </IconButton>
-                                                </Tooltip>
-                                                <Tooltip title={isActive ? 'Deactivate Course' : 'Activate Course'}>
-                                                    <IconButton
-                                                        onClick={() => handleToggleStatus(course.id, course.status)}
-                                                        sx={{
-                                                            color: isActive ? '#EF4444' : '#10B981',
-                                                            bgcolor: isActive ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
-                                                            '&:hover': {
-                                                                bgcolor: isActive ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)'
-                                                            }
-                                                        }}
-                                                    >
-                                                        {isActive ? <Block fontSize="small" /> : <CheckCircle fontSize="small" />}
-                                                    </IconButton>
-                                                </Tooltip>
-                                            </Stack>
+                                            <Button
+                                                variant="contained"
+                                                size="small"
+                                                onClick={() => handleViewCourse(course)}
+                                                startIcon={<Info fontSize="small" />}
+                                                sx={{
+                                                    bgcolor: '#1E293B',
+                                                    color: '#3B82F6',
+                                                    textTransform: 'none',
+                                                    boxShadow: 'none',
+                                                    '&:hover': { bgcolor: '#334155' }
+                                                }}
+                                            >
+                                                View Details
+                                            </Button>
                                         </TableCell>
                                     </TableRow>
                                 );
@@ -359,161 +289,6 @@ const CourseManagement = () => {
                 </Table>
             </TableContainer>
 
-            {/* Course View Modal */}
-            <Modal open={openViewModal} onClose={handleCloseViewModal}>
-                <Box sx={modalStyle}>
-                    {/* Modal Header */}
-                    <Box sx={{
-                        background: 'linear-gradient(135deg, #1152D4 0%, #0D42AF 100%)',
-                        p: 3,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        flexShrink: 0,
-                    }}>
-                        <Stack direction="row" alignItems="center" spacing={2}>
-                            <School sx={{ color: '#fff', fontSize: 28 }} />
-                            <Box>
-                                <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600 }}>
-                                    {selectedCourse?.title}
-                                </Typography>
-                                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                                    by {(() => {
-                                        const tutor = selectedCourse?.tutor || selectedCourse?.user || selectedCourse?.creator || selectedCourse?.created_by;
-                                        if (!tutor) return 'Unknown';
-                                        return `${tutor.first_name || tutor.name?.split(' ')[0] || ''} ${tutor.last_name || tutor.name?.split(' ').slice(1).join(' ') || ''}`.trim() || 'Unknown';
-                                    })()}
-                                </Typography>
-                            </Box>
-                        </Stack>
-                        <IconButton onClick={handleCloseViewModal} sx={{ color: '#fff', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
-                            <Close />
-                        </IconButton>
-                    </Box>
-
-                    {/* Course Stats */}
-                    <Box sx={{ p: 2, bgcolor: '#0C1322', display: 'flex', gap: 3, flexWrap: 'wrap', borderBottom: '1px solid #374151' }}>
-                        <Stack direction="row" alignItems="center" spacing={1}>
-                            <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem' }}>Students:</Typography>
-                            <Typography sx={{ color: '#fff', fontWeight: 600, fontSize: '0.85rem' }}>{selectedCourse?.students_count || 0}</Typography>
-                        </Stack>
-                        <Stack direction="row" alignItems="center" spacing={1}>
-                            <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem' }}>Modules:</Typography>
-                            <Typography sx={{ color: '#fff', fontWeight: 600, fontSize: '0.85rem' }}>{selectedCourse?.modules?.length || selectedCourse?.modules_count || 0}</Typography>
-                        </Stack>
-                        <Stack direction="row" alignItems="center" spacing={1}>
-                            <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem' }}>Lessons:</Typography>
-                            <Typography sx={{ color: '#fff', fontWeight: 600, fontSize: '0.85rem' }}>
-                                {selectedCourse?.modules?.reduce((acc, m) => acc + (m.lessons?.length || 0), 0) || selectedCourse?.lessons_count || 0}
-                            </Typography>
-                        </Stack>
-                        <Stack direction="row" alignItems="center" spacing={1}>
-                            <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem' }}>Status:</Typography>
-                            <Chip
-                                label={selectedCourse?.status || 'Unknown'}
-                                size="small"
-                                sx={{
-                                    height: 20,
-                                    fontSize: '0.7rem',
-                                    bgcolor: (selectedCourse?.status === 'active' || selectedCourse?.status === 'published') ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                                    color: (selectedCourse?.status === 'active' || selectedCourse?.status === 'published') ? '#10B981' : '#EF4444',
-                                }}
-                            />
-                        </Stack>
-                    </Box>
-
-                    {/* Modal Body - Modules and Lessons */}
-                    <Box sx={{
-                        p: 3,
-                        overflowY: 'auto',
-                        flex: 1,
-                        '&::-webkit-scrollbar': { width: '8px' },
-                        '&::-webkit-scrollbar-track': { background: '#0C1322', borderRadius: '4px' },
-                        '&::-webkit-scrollbar-thumb': { background: '#374151', borderRadius: '4px', '&:hover': { background: '#4B5563' } }
-                    }}>
-                        {modalLoading ? (
-                            <Box sx={{ display: 'flex', justifyItems: 'center', alignItems: 'center', pt: 5 }}>
-                                <CircularProgress size={30} sx={{ mx: 'auto' }} />
-                            </Box>
-                        ) : (
-                            <>
-                                <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 2, fontWeight: 600 }}>
-                                    COURSE CONTENT
-                                </Typography>
-
-                                <Stack spacing={1.5}>
-                                    {selectedCourse?.modules?.map((module) => (
-                                        <Paper
-                                            key={module.id}
-                                            sx={{
-                                                bgcolor: '#0C1322',
-                                                border: '1px solid #374151',
-                                                borderRadius: 2,
-                                                overflow: 'hidden',
-                                            }}
-                                        >
-                                            {/* Module Header */}
-                                            <Box
-                                                onClick={() => toggleModule(module.id)}
-                                                sx={{
-                                                    p: 2,
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'space-between',
-                                                    cursor: 'pointer',
-                                                    '&:hover': { bgcolor: 'rgba(255,255,255,0.02)' }
-                                                }}
-                                            >
-                                                <Box>
-                                                    <Typography sx={{ color: '#fff', fontWeight: 600, fontSize: '0.9rem' }}>
-                                                        {module.title}
-                                                    </Typography>
-                                                    <Typography sx={{ color: '#6B7280', fontSize: '0.75rem' }}>
-                                                        {module.lessons?.length || 0} lessons
-                                                    </Typography>
-                                                </Box>
-                                                <IconButton size="small" sx={{ color: '#9CA3AF' }}>
-                                                    {expandedModules[module.id] ? <ExpandLess /> : <ExpandMore />}
-                                                </IconButton>
-                                            </Box>
-
-                                            {/* Module Lessons */}
-                                            <Collapse in={expandedModules[module.id]}>
-                                                <Divider sx={{ borderColor: '#374151' }} />
-                                                <Stack sx={{ p: 1.5 }} spacing={0.5}>
-                                                    {module.lessons?.map((lesson) => (
-                                                        <Box
-                                                            key={lesson.id}
-                                                            sx={{
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                justifyContent: 'space-between',
-                                                                p: 1.5,
-                                                                borderRadius: 1,
-                                                                bgcolor: '#1A2230',
-                                                            }}
-                                                        >
-                                                            <Stack direction="row" alignItems="center" spacing={1.5}>
-                                                                {getLessonIcon(lesson.type)}
-                                                                <Typography sx={{ color: '#E5E7EB', fontSize: '0.85rem' }}>
-                                                                    {lesson.title}
-                                                                </Typography>
-                                                            </Stack>
-                                                            <Typography sx={{ color: '#6B7280', fontSize: '0.75rem' }}>
-                                                                {lesson.duration || (lesson.questions ? `${lesson.questions} questions` : '')}
-                                                            </Typography>
-                                                        </Box>
-                                                    ))}
-                                                </Stack>
-                                            </Collapse>
-                                        </Paper>
-                                    ))}
-                                </Stack>
-                            </>
-                        )}
-                    </Box>
-                </Box>
-            </Modal>
         </Box>
     );
 };
