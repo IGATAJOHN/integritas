@@ -36,13 +36,21 @@ const unwrapLesson = (res) => {
  * Normalizes a list response to { data, meta, links }.
  */
 const unwrapList = (res) => {
-    if (!res) return { data: [], meta: {}, links: {} };
-    return {
-        data: res.data || [],
-        meta: res.meta || {},
-        links: res.links || {}
-    };
+  if (!res) return { data: [], meta: {}, links: {} };
+
+  if (Array.isArray(res)) return { data: res, meta: {}, links: {} };
+
+  const root = res.data ?? res;
+
+  if (Array.isArray(root)) return { data: root, meta: {}, links: {} };
+
+  return {
+    data: root.data ?? root.results ?? [],
+    meta: root.meta ?? {},
+    links: root.links ?? {},
+  };
 };
+
 
 /**
  * For actions that might return a lesson or just { success: true }.

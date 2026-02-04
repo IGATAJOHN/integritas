@@ -117,11 +117,11 @@ export const tutorQuestionService = {
      * POST /lms/lessons/{id}/questions/reorder
      * 
      * @param {string|number} lessonId - The lesson ID
-     * @param {Array<{id: number, position: number}>} order - Array of question IDs with new positions
+     * @param {Array<{id: string, position: number}>} items - Array of question IDs with new positions
      * @returns {Promise<{success: boolean}>}
      */
-    reorderQuestions: async (lessonId, order) => {
-        const res = await apiService.post(`/lms/lessons/${lessonId}/questions/reorder`, { order });
+    reorderQuestions: async (lessonId, items) => {
+        const res = await apiService.post(`/lms/lessons/${lessonId}/questions/reorder`, { items });
         return okOrQuestion(res);
     },
 };

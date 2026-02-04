@@ -16,6 +16,7 @@ import {
     ListItem,
     ListItemText,
     ListItemIcon,
+    ListItemButton,
     Divider,
     Tabs,
     Tab,
@@ -24,8 +25,11 @@ import {
     DialogContent,
     DialogActions,
     TextField,
+    Select,
+    MenuItem,
     Snackbar,
     Alert,
+    Modal,
 } from '@mui/material';
 import {
     ArrowBack,
@@ -33,6 +37,7 @@ import {
     Edit,
     Delete,
     ExpandMore,
+    DragIndicator,
     PlayCircleOutline,
     ArticleOutlined,
     AttachFile,
@@ -47,10 +52,14 @@ import {
     Description,
     Publish,
     Archive,
+    Close,
+    CloudUpload,
 } from '@mui/icons-material';
 import { tutorCoursesService } from '../services/courseService';
 import { tutorModuleService } from '../services/moduleService';
 import { tutorLessonService } from '../services/lessonService';
+import { tutorQuestionService } from '../services/questionService';
+import { modalStyle, textFieldStyle, selectStyle, selectMenuProps } from '../../../styles/formStyles';
 
 /**
  * Returns the appropriate icon for a lesson type
@@ -67,12 +76,7 @@ const getLessonIcon = (type) => {
     }
 };
 
-/**
- * Course Dashboard - Displays course details, curriculum (modules/lessons), and settings
- * 
- * Fetches course data from API and displays it in a tabbed interface.
- * If modules are not included in the course response, fetches them separately.
- */
+
 const CourseDashboard = () => {
     const { courseId } = useParams();
     const navigate = useNavigate();
@@ -90,35 +94,60 @@ const CourseDashboard = () => {
     const [moduleTitle, setModuleTitle] = useState('');
     const [moduleDescription, setModuleDescription] = useState('');
     const [lessonModalOpen, setLessonModalOpen] = useState(false);
-    const [lessonTitle, setLessonTitle] = useState('');
+    const [lessonTitle, setLessonTitle] = useState('');    
+    const [lessonType, setLessonType] = useState('video');
+    const [lessonDuration, setLessonDuration] = useState(0);
     const [lessonContent, setLessonContent] = useState('');
+    const [lessonFileName, setLessonFileName] = useState('');
+    const [lessonFile, setLessonFile] = useState(null);
     const [selectedModuleForLesson, setSelectedModuleForLesson] = useState(null);
-
-    /**
-     * Fetches course details and modules from the API
-     */
+    
+    // Question management state
+    const [selectedLessonForQuestions, setSelectedLessonForQuestions] = useState(null);
+    const [selectedModuleForQuestions, setSelectedModuleForQuestions] = useState(null);
+    const [lessonQuestions, setLessonQuestions] = useState([]);
+    const [questionModalOpen, setQuestionModalOpen] = useState(false);
+    const [questionText, setQuestionText] = useState('');
+    const [questionType, setQuestionType] = useState('multiple_choice');
+    const [questionOptions, setQuestionOptions] = useState(['', '', '']);
+    const [correctAnswerIndex, setCorrectAnswerIndex] = useState(0);
+    const [questionExplanation, setQuestionExplanation] = useState('');
+    const [questionPoints, setQuestionPoints] = useState(1);
+    const [editingQuestionId, setEditingQuestionId] = useState(null);
+    const [questionsLoading, setQuestionsLoading] = useState(false);
+    const [draggedQuestion, setDraggedQuestion] = useState(null);
+     
     useEffect(() => {
         const fetchCourseData = async () => {
             try {
                 setLoading(true);
                 setError(null);
 
-                // Fetch course details
                 const courseData = await tutorCoursesService.getCourseDetail(courseId);
                 setCourse(courseData);
 
-                // If course has modules in response, use them
-                if (courseData.modules && courseData.modules.length > 0) {
-                    setModules(courseData.modules);
-                } else {
-                    // Otherwise, fetch modules separately
-                    try {
-                        const modulesResponse = await tutorModuleService.listModules(courseId);
-                        setModules(modulesResponse.data || []);
+                try {
+                    const modulesResponse = await tutorModuleService.listModules(courseId);
+                    const rawModules = modulesResponse?.data ?? modulesResponse ?? [];
+
+                    const modulesWithLessons = await Promise.all(
+                        rawModules.map(async (m) => {
+                        try {
+                            const lessonsResp = await tutorLessonService.listLessons(m.id);
+                            const lessons = lessonsResp?.data ?? [];
+                            return { ...m, lessons };
+                        } catch (e) {
+                           console.warn(`Failed to load lessons for module ${m.id}`, e);
+                            setSnackbar({ open: true, message: "Failed to load lessons (check login/token)", severity: "error" });
+                            return { ...m, lessons: [] };
+                        }
+                        })
+                    );
+
+                    setModules(modulesWithLessons);
                     } catch (modErr) {
-                        console.warn('Could not fetch modules separately:', modErr);
-                        setModules([]);
-                    }
+                    console.warn('Could not fetch modules:', modErr);
+                    setModules([]);
                 }
             } catch (err) {
                 console.error("Error fetching course:", err);
@@ -137,8 +166,68 @@ const CourseDashboard = () => {
         navigate('/tutor/courses');
     };
 
+    /**
+     * Publish a lesson
+     */
+    const handlePublishLesson = async (moduleId, lessonId) => {
+        try {
+            setActionLoading(true);
+            const updated = await tutorLessonService.publishLesson(moduleId, lessonId);
+            setModules(prev => prev.map(m => m.id === moduleId ? { ...m, lessons: (m.lessons || []).map(l => l.id === lessonId ? updated : l) } : m));
+            setSnackbar({ open: true, message: 'Lesson published', severity: 'success' });
+        } catch (err) {
+            console.error('Error publishing lesson:', err);
+            const message = err?.data?.message || err.message || 'Failed to publish lesson';
+            setSnackbar({ open: true, message, severity: 'error' });
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    /**
+     * Unpublish a lesson
+     */
+    const handleUnpublishLesson = async (moduleId, lessonId) => {
+        try {
+            setActionLoading(true);
+            const updated = await tutorLessonService.unpublishLesson(moduleId, lessonId);
+            setModules(prev => prev.map(m => m.id === moduleId ? { ...m, lessons: (m.lessons || []).map(l => l.id === lessonId ? updated : l) } : m));
+            setSnackbar({ open: true, message: 'Lesson unpublished', severity: 'success' });
+        } catch (err) {
+            console.error('Error unpublishing lesson:', err);
+            const message = err?.data?.message || err.message || 'Failed to unpublish lesson';
+            setSnackbar({ open: true, message, severity: 'error' });
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
     const handleLessonNavigate = (moduleId, lessonId) => {
         navigate(`/tutor/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}`);
+    };
+
+    // Helper: poll for module lessons until created lesson appears (handles eventual consistency)
+    const refreshModuleLessonsWithRetry = async (moduleId, createdId, maxAttempts = 6, delayMs = 1000) => {
+        const wait = (ms) => new Promise(res => setTimeout(res, ms));
+        for (let i = 0; i < maxAttempts; i++) {
+            try {
+                const lessonsResp = await tutorLessonService.listLessons(moduleId);
+                const lessons = lessonsResp.data;
+                console.debug(`Retry attempt ${i + 1} for module ${moduleId}:`, lessons);
+                if (createdId && lessons.find(l => l.id === createdId)) {
+                    setModules(prev => prev.map(m => m.id === moduleId ? { ...m, lessons } : m));
+                    return lessons;
+                }
+                if (i === maxAttempts - 1) {
+                    setModules(prev => prev.map(m => m.id === moduleId ? { ...m, lessons } : m));
+                    return lessons;
+                }
+            } catch (e) {
+                console.warn('Error listing lessons during retry:', e);
+            }
+            await wait(delayMs);
+        }
+        return null;
     };
 
     /**
@@ -211,6 +300,44 @@ const CourseDashboard = () => {
     };
 
     /**
+     * Publish a module
+     */
+    const handlePublishModule = async (moduleId) => {
+        try {
+            setActionLoading(true);
+            const updated = await tutorModuleService.publishModule(courseId, moduleId);
+            // Preserve existing lessons array when replacing with updated module
+            setModules(prev => prev.map(m => (m.id === moduleId ? { ...updated, lessons: m.lessons || updated.lessons || [] } : m)));
+            setSnackbar({ open: true, message: 'Module published', severity: 'success' });
+        } catch (err) {
+            console.error('Error publishing module:', err);
+            const message = err?.data?.message || err.message || 'Failed to publish module';
+            setSnackbar({ open: true, message, severity: 'error' });
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    /**
+     * Unpublish a module
+     */
+    const handleUnpublishModule = async (moduleId) => {
+        try {
+            setActionLoading(true);
+            const updated = await tutorModuleService.unpublishModule(courseId, moduleId);
+            // Preserve existing lessons array when replacing with updated module
+            setModules(prev => prev.map(m => (m.id === moduleId ? { ...updated, lessons: m.lessons || updated.lessons || [] } : m)));
+            setSnackbar({ open: true, message: 'Module unpublished', severity: 'success' });
+        } catch (err) {
+            console.error('Error unpublishing module:', err);
+            const message = err?.data?.message || err.message || 'Failed to unpublish module';
+            setSnackbar({ open: true, message, severity: 'error' });
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    /**
      * Create a module inline via modal
      */
     const handleCreateModule = async () => {
@@ -220,17 +347,30 @@ const CourseDashboard = () => {
         }
         try {
             setActionLoading(true);
-            const payload = { title: moduleTitle, description: moduleDescription, position: modules.length };
+            const payload = { title: moduleTitle.trim(), description: moduleDescription, position: (modules.length || 0) + 1 };
             const created = await tutorModuleService.createModule(courseId, payload);
-            // Append to modules list
-            setModules(prev => [...prev, created]);
+            // Append to modules list (ensure lessons array exists)
+            setModules(prev => [...prev, { ...created, lessons: created.lessons || [] }]);
             setModuleModalOpen(false);
             setModuleTitle('');
             setModuleDescription('');
             setSnackbar({ open: true, message: 'Module created', severity: 'success' });
         } catch (err) {
             console.error('Error creating module:', err);
-            setSnackbar({ open: true, message: err.message || 'Failed to create module', severity: 'error' });
+            // Try to show validation errors returned by API
+            const apiData = err?.data || err?.response || null;
+            let message = err.message || 'Failed to create module';
+            if (apiData) {
+                if (apiData.message) message = apiData.message;
+                if (apiData.errors) {
+                    // join first-level error messages
+                    try {
+                        const errs = Object.values(apiData.errors).flat().slice(0, 3);
+                        if (errs.length) message = errs.join(' ');
+                    } catch (e) {}
+                }
+            }
+            setSnackbar({ open: true, message, severity: 'error' });
         } finally {
             setActionLoading(false);
         }
@@ -241,23 +381,131 @@ const CourseDashboard = () => {
      */
     const handleCreateLesson = async () => {
         if (!selectedModuleForLesson) return;
-        if (!String(lessonTitle).trim()) {
-            setSnackbar({ open: true, message: 'Lesson title is required', severity: 'error' });
+        const trimmedTitle = String(lessonTitle).trim();
+        if (!trimmedTitle) {
+        setSnackbar({ open: true, message: 'Lesson title is required', severity: 'error' });
+        return;
+        }
+
+        if (!lessonType) {
+        setSnackbar({ open: true, message: 'Please select a lesson type', severity: 'error' });
+        return;
+        }
+
+        // Type-specific validation
+        if (lessonType === 'text') {
+        if (!String(lessonContent).trim()) {
+            setSnackbar({ open: true, message: 'Please provide article content', severity: 'error' });
             return;
         }
+        }
+
+        if (lessonType === 'video') {
+        const hasUrl = /^https?:\/\//.test(String(lessonContent).trim());
+        const hasFile = !!lessonFile;
+        if (!hasUrl && !hasFile) {
+            setSnackbar({ open: true, message: 'Upload a video file or paste a video URL', severity: 'error' });
+            return;
+        }
+        }
+
+        if (lessonType === 'document') {
+            if (!lessonFile) {
+                setSnackbar({ open: true, message: 'Please upload a file', severity: 'error' });
+                return;
+            }
+        }
+
         try {
             setActionLoading(true);
             // find module to determine position
             const mod = modules.find(m => m.id === selectedModuleForLesson) || { lessons: [] };
             const position = (mod.lessons?.length || 0);
-            const payload = { title: lessonTitle, content: lessonContent, position };
+            // Map UI lesson types to API types and payload shape
+            const mapType = (t) => {
+                if (t === 'text' || t === 'reading') return 'article';
+                if (t === 'document') return 'document';
+                if (t === 'quiz') return 'quiz';
+                return t || 'article';
+            };
+
+            const apiType = mapType(lessonType);
+
+            const payload = { title: trimmedTitle, type: apiType, position: position + 1 };
+
+            // Duration field expected as `duration_minutes`
+            if (lessonDuration) payload.duration_minutes = parseInt(lessonDuration) || 0;
+
+            // Content fields per type
+            if (apiType === 'article') {
+                payload.content = lessonContent.trim();
+            } else if (apiType === 'video') {
+                // If user supplied a URL, use it; otherwise, if a file was selected we set a placeholder filename
+                if (/^https?:\/\//.test(lessonContent.trim())) {
+                    payload.video_url = lessonContent.trim();
+                } else if (lessonFileName) {
+                    // File upload not implemented here; include filename as summary placeholder
+                    payload.video_url = null;
+                    payload.summary = lessonFileName;
+                }
+            } else if (apiType === 'quiz') {
+                // For quiz, allow settings (e.g., pass_percent) if provided in content as JSON
+                try {
+                    const parsed = JSON.parse(lessonContent);
+                    if (parsed && typeof parsed === 'object') payload.settings = parsed;
+                } catch (e) {
+                    // ignore parse error
+                }
+            } else if (apiType === 'document') {
+                if (lessonFileName) {
+                    payload.resource_url = null;
+                    payload.summary = lessonFileName;
+                } else {
+                    payload.content = lessonContent.trim();
+                }
+            }
+
             const created = await tutorLessonService.createLesson(selectedModuleForLesson, payload);
-            // Insert lesson into module locally
-            setModules(prev => prev.map(m => m.id === selectedModuleForLesson ? { ...m, lessons: [...(m.lessons || []), created] } : m));
+            console.debug('Lesson create response:', created);
+
+            // After creation (and optional upload), refresh the module from server so we reflect persisted state.
+            try {
+                if (lessonFile && (apiType === 'video' || apiType === 'document')) {
+                    const formData = new FormData();
+                    formData.append('file', lessonFile);
+                    const uploadRes = await tutorLessonService.uploadLessonMedia(created.id, formData);
+                    console.debug('Lesson upload response:', uploadRes);
+                }
+
+                // Use retry helper to ensure the created lesson appears for the module (handles eventual consistency)
+                try {
+                    await refreshModuleLessonsWithRetry(selectedModuleForLesson, created.id, 6, 1000);
+
+                    // Also refresh module list metadata and merge lessons we have for the created module
+                    try {
+                        
+                    } catch (metaErr) {
+                        console.warn('Could not refresh modules metadata after retry:', metaErr);
+                    }
+                } catch (retryErr) {
+                    console.warn('Retry refresh failed, falling back to local insert:', retryErr);
+                    setModules(prev => prev.map(m => m.id === selectedModuleForLesson ? { ...m, lessons: [...(m.lessons || []), created] } : m));
+                }
+            } catch (uploadErr) {
+                console.error('Error uploading lesson media or refreshing module:', uploadErr);
+                setSnackbar({ open: true, message: uploadErr?.data?.message || uploadErr.message || 'Failed to upload media', severity: 'error' });
+                // still insert the created lesson without media as a fallback
+                setModules(prev => prev.map(m => m.id === selectedModuleForLesson ? { ...m, lessons: [...(m.lessons || []), created] } : m));
+            }
+
             setLessonModalOpen(false);
             setSelectedModuleForLesson(null);
             setLessonTitle('');
+            setLessonType('video');
+            setLessonDuration(0);
             setLessonContent('');
+            setLessonFileName('');
+            setLessonFile(null);
             setSnackbar({ open: true, message: 'Lesson created', severity: 'success' });
         } catch (err) {
             console.error('Error creating lesson:', err);
@@ -265,6 +513,198 @@ const CourseDashboard = () => {
         } finally {
             setActionLoading(false);
         }
+    };
+
+    /**
+     * Open question management for a lesson
+     */
+    const handleOpenQuestionsModal = async (moduleId, lessonId) => {
+        try {
+            setQuestionsLoading(true);
+            setSelectedModuleForQuestions(moduleId);
+            setSelectedLessonForQuestions(lessonId);
+            
+            // Fetch existing questions for the lesson
+            const response = await tutorQuestionService.listQuestions(lessonId);
+            setLessonQuestions(response.data || []);
+            
+            // Reset form for new question
+            resetQuestionForm();
+            setQuestionModalOpen(true);
+        } catch (err) {
+            console.error('Error loading questions:', err);
+            setSnackbar({ open: true, message: 'Failed to load questions', severity: 'error' });
+        } finally {
+            setQuestionsLoading(false);
+        }
+    };
+
+    /**
+     * Reset question form to initial state
+     */
+    const resetQuestionForm = () => {
+        setQuestionText('');
+        setQuestionType('multiple_choice');
+        setQuestionOptions(['', '', '']);
+        setCorrectAnswerIndex(0);
+        setQuestionExplanation('');
+        setQuestionPoints(1);
+        setEditingQuestionId(null);
+    };
+
+    /**
+     * Create or update a question
+     */
+    const handleSaveQuestion = async () => {
+        const trimmedQuestion = String(questionText).trim();
+        if (!trimmedQuestion) {
+            setSnackbar({ open: true, message: 'Question text is required', severity: 'error' });
+            return;
+        }
+
+        if (questionType === 'multiple_choice' || questionType === 'true_false') {
+            const validOptions = questionOptions.filter(opt => String(opt).trim());
+            if (validOptions.length < 2) {
+                setSnackbar({ open: true, message: 'At least 2 answer options are required', severity: 'error' });
+                return;
+            }
+        }
+
+        try {
+            setActionLoading(true);
+            const payload = {
+                question: trimmedQuestion,
+                type: questionType,
+                points: questionPoints,
+            };
+
+            if ((questionType === 'multiple_choice' || questionType === 'true_false') && questionOptions.length > 0) {
+                payload.options = questionOptions.filter(opt => String(opt).trim());
+                payload.correct_answer = correctAnswerIndex;
+            }
+
+            if (questionExplanation.trim()) {
+                payload.explanation = questionExplanation.trim();
+            }
+
+            // Set position if creating new question
+            if (!editingQuestionId) {
+                payload.position = lessonQuestions.length + 1;
+            }
+
+            let saved;
+            if (editingQuestionId) {
+                saved = await tutorQuestionService.updateQuestion(editingQuestionId, payload);
+                setLessonQuestions(prev => prev.map(q => q.id === editingQuestionId ? saved : q));
+                setSnackbar({ open: true, message: 'Question updated', severity: 'success' });
+            } else {
+                saved = await tutorQuestionService.createQuestion(selectedLessonForQuestions, payload);
+                setLessonQuestions(prev => [...prev, saved]);
+                setSnackbar({ open: true, message: 'Question added', severity: 'success' });
+            }
+
+            resetQuestionForm();
+        } catch (err) {
+            console.error('Error saving question:', err);
+            setSnackbar({ open: true, message: err?.data?.message || err.message || 'Failed to save question', severity: 'error' });
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    /**
+     * Edit an existing question
+     */
+    const handleEditQuestion = (question) => {
+        setQuestionText(question.question || '');
+        setQuestionType(question.type || 'multiple_choice');
+        setQuestionOptions(question.options || ['', '', '']);
+        setCorrectAnswerIndex(question.correct_answer || 0);
+        setQuestionExplanation(question.explanation || '');
+        setQuestionPoints(question.points || 1);
+        setEditingQuestionId(question.id);
+    };
+
+    /**
+     * Delete a question
+     */
+    const handleDeleteQuestion = async (questionId) => {
+        if (!window.confirm('Are you sure you want to delete this question?')) return;
+
+        try {
+            setActionLoading(true);
+            await tutorQuestionService.deleteQuestion(questionId);
+            setLessonQuestions(prev => prev.filter(q => q.id !== questionId));
+            setSnackbar({ open: true, message: 'Question deleted', severity: 'success' });
+        } catch (err) {
+            console.error('Error deleting question:', err);
+            setSnackbar({ open: true, message: err?.data?.message || err.message || 'Failed to delete question', severity: 'error' });
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    /**
+     * Reorder questions within a lesson
+     */
+    const handleReorderQuestions = async (orderedQuestions) => {
+        try {
+            setActionLoading(true);
+            const items = orderedQuestions.map((q, index) => ({
+                id: q.id,
+                position: index + 1
+            }));
+            
+            await tutorQuestionService.reorderQuestions(selectedLessonForQuestions, items);
+            setLessonQuestions(orderedQuestions);
+            setSnackbar({ open: true, message: 'Questions reordered', severity: 'success' });
+        } catch (err) {
+            console.error('Error reordering questions:', err);
+            setSnackbar({ open: true, message: err?.data?.message || err.message || 'Failed to reorder questions', severity: 'error' });
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    /**
+     * Handle drag start for a question
+     */
+    const handleDragStart = (e, questionId) => {
+        setDraggedQuestion(questionId);
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
+    /**
+     * Handle drag over a question
+     */
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+    };
+
+    /**
+     * Handle drop to reorder questions
+     */
+    const handleDrop = async (e, targetQuestionId) => {
+        e.preventDefault();
+        
+        if (draggedQuestion === targetQuestionId) {
+            setDraggedQuestion(null);
+            return;
+        }
+
+        const draggedIdx = lessonQuestions.findIndex(q => q.id === draggedQuestion);
+        const targetIdx = lessonQuestions.findIndex(q => q.id === targetQuestionId);
+
+        if (draggedIdx > -1 && targetIdx > -1) {
+            const newQuestions = [...lessonQuestions];
+            const [draggedItem] = newQuestions.splice(draggedIdx, 1);
+            newQuestions.splice(targetIdx, 0, draggedItem);
+
+            await handleReorderQuestions(newQuestions);
+        }
+
+        setDraggedQuestion(null);
     };
 
     // Loading state
@@ -451,6 +891,13 @@ const CourseDashboard = () => {
                                                         sx={{ bgcolor: 'rgba(255,255,255,0.05)', color: '#9CA3AF', height: 20, fontSize: '0.7rem' }}
                                                     />
                                                     <Box sx={{ flex: 1 }} />
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={(e) => { e.stopPropagation(); mod.is_published ? handleUnpublishModule(mod.id) : handlePublishModule(mod.id); }}
+                                                        sx={{ color: mod.is_published ? '#10B981' : '#6B7280' }}
+                                                    >
+                                                        <Publish fontSize="small" />
+                                                    </IconButton>
                                                     <IconButton size="small" onClick={(e) => e.stopPropagation()} sx={{ color: '#6B7280' }}>
                                                         <Edit fontSize="small" />
                                                     </IconButton>
@@ -464,36 +911,53 @@ const CourseDashboard = () => {
                                                 )}
                                                 <List disablePadding>
                                                     {mod.lessons && mod.lessons.length > 0 ? mod.lessons.map((lesson, lIndex) => (
-                                                        <ListItem
-                                                            key={lesson.id}
-                                                            button
-                                                            onClick={() => handleLessonNavigate(mod.id, lesson.id)}
-                                                            sx={{
-                                                                bgcolor: '#0F172A',
-                                                                mb: 1,
-                                                                borderRadius: 1,
-                                                                border: '1px solid transparent',
-                                                                '&:hover': {
-                                                                    bgcolor: '#1E293B',
-                                                                    borderColor: 'rgba(59, 130, 246, 0.3)'
-                                                                }
-                                                            }}
-                                                        >
-                                                            <ListItemIcon sx={{ minWidth: 40, color: '#3B82F6' }}>
-                                                                {getLessonIcon(lesson.type)}
-                                                            </ListItemIcon>
-                                                            <ListItemText
-                                                                primary={lesson.title}
-                                                                secondary={
-                                                                    <Typography variant="caption" sx={{ color: '#6B7280', display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                                        {lesson.type || 'Lesson'} • {lesson.duration || lesson.duration_minutes || 0} min
-                                                                    </Typography>
-                                                                }
-                                                                primaryTypographyProps={{ color: '#fff', fontSize: '0.9rem', fontWeight: 500 }}
-                                                            />
-                                                            <IconButton size="small" sx={{ color: '#6B7280' }}>
-                                                                <Edit fontSize="small" />
-                                                            </IconButton>
+                                                        <ListItem key={lesson.id} disablePadding sx={{ mb: 1 }}>
+                                                            <ListItemButton
+                                                                onClick={() => handleLessonNavigate(mod.id, lesson.id)}
+                                                                sx={{
+                                                                    bgcolor: '#0F172A',
+                                                                    borderRadius: 1,
+                                                                    border: '1px solid transparent',
+                                                                    '&:hover': {
+                                                                        bgcolor: '#1E293B',
+                                                                        borderColor: 'rgba(59, 130, 246, 0.3)'
+                                                                    },
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    px: 1
+                                                                }}
+                                                            >
+                                                                <ListItemIcon sx={{ minWidth: 40, color: '#3B82F6' }}>
+                                                                    {getLessonIcon(lesson.type)}
+                                                                </ListItemIcon>
+                                                                <ListItemText
+                                                                    primary={lesson.title}
+                                                                    secondary={
+                                                                        <Typography variant="caption" sx={{ color: '#6B7280', display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                                            {lesson.type || 'Lesson'} • {lesson.duration || lesson.duration_minutes || 0} min
+                                                                        </Typography>
+                                                                    }
+                                                                    primaryTypographyProps={{ color: '#fff', fontSize: '0.9rem', fontWeight: 500 }}
+                                                                />
+                                                                <IconButton
+                                                                    size="small"
+                                                                    onClick={(e) => { e.stopPropagation(); lesson.is_published ? handleUnpublishLesson(mod.id, lesson.id) : handlePublishLesson(mod.id, lesson.id); }}
+                                                                    sx={{ color: lesson.is_published ? '#10B981' : '#6B7280', mr: 1 }}
+                                                                >
+                                                                    <Publish fontSize="small" />
+                                                                </IconButton>
+                                                                <IconButton 
+                                                                    size="small" 
+                                                                    onClick={(e) => { e.stopPropagation(); handleOpenQuestionsModal(mod.id, lesson.id); }}
+                                                                    sx={{ color: '#3B82F6', mr: 1 }}
+                                                                    title="Manage questions"
+                                                                >
+                                                                    <School fontSize="small" />
+                                                                </IconButton>
+                                                                <IconButton size="small" sx={{ color: '#6B7280' }}>
+                                                                    <Edit fontSize="small" />
+                                                                </IconButton>
+                                                            </ListItemButton>
                                                         </ListItem>
                                                     )) : (
                                                         <Typography sx={{ color: '#6B7280', textAlign: 'center', py: 2 }}>
@@ -757,65 +1221,504 @@ const CourseDashboard = () => {
             </Box>
 
             {/* Snackbar for notifications */}
-            {/* Create Module Dialog */}
-            <Dialog open={moduleModalOpen} onClose={() => setModuleModalOpen(false)} fullWidth maxWidth="sm">
-                <DialogTitle>Create Module</DialogTitle>
-                <DialogContent>
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        label="Module Title"
-                        type="text"
-                        fullWidth
-                        value={moduleTitle}
-                        onChange={e => setModuleTitle(e.target.value)}
-                    />
-                    <TextField
-                        margin="dense"
-                        label="Description"
-                        type="text"
-                        fullWidth
-                        multiline
-                        rows={3}
-                        value={moduleDescription}
-                        onChange={e => setModuleDescription(e.target.value)}
-                    />
+            {/* Module Modal */}
+            <Modal open={moduleModalOpen} onClose={() => setModuleModalOpen(false)}>
+                <Box sx={modalStyle}>
+                    <Box sx={{ background: 'linear-gradient(135deg, #1152D4 0%, #0D42AF 100%)', p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography sx={{ color: '#fff', fontWeight: 600 }}>{moduleTitle ? 'Edit Module' : 'Add Module'}</Typography>
+                        <IconButton onClick={() => setModuleModalOpen(false)} sx={{ color: '#fff' }}><Close /></IconButton>
+                    </Box>
+                    <Box sx={{ p: 3 }}>
+                        <Stack spacing={2}>
+                            <Box>
+                                <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1 }}>Module Title</Typography>
+                                <TextField
+                                    fullWidth
+                                    placeholder="e.g. Introduction to the Course"
+                                    value={moduleTitle}
+                                    onChange={(e) => setModuleTitle(e.target.value)}
+                                    sx={textFieldStyle}
+                                />
+                            </Box>
+                            <Box>
+                                <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1 }}>Description (optional)</Typography>
+                                <TextField
+                                    fullWidth
+                                    multiline
+                                    rows={3}
+                                    placeholder="Brief description of what this module covers"
+                                    value={moduleDescription}
+                                    onChange={(e) => setModuleDescription(e.target.value)}
+                                    sx={textFieldStyle}
+                                />
+                            </Box>
+                        </Stack>
+                        <Stack direction="row" justifyContent="flex-end" spacing={2} sx={{ mt: 3 }}>
+                            <Button onClick={() => setModuleModalOpen(false)} sx={{ color: '#9CA3AF' }}>Cancel</Button>
+                            <Button
+                                variant="contained"
+                                onClick={handleCreateModule}
+                                sx={{ bgcolor: '#1152D4' }}
+                                disabled={actionLoading}
+                            >
+                                Create
+                            </Button>
+                        </Stack>
+                    </Box>
+                </Box>
+            </Modal>
+
+            {/* Lesson Modal */}
+            <Modal open={lessonModalOpen} onClose={() => setLessonModalOpen(false)}>
+                <Box sx={modalStyle}>
+                    <Box sx={{ background: 'linear-gradient(135deg, #1152D4 0%, #0D42AF 100%)', p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography sx={{ color: '#fff', fontWeight: 600 }}>Add Lesson</Typography>
+                        <IconButton onClick={() => setLessonModalOpen(false)} sx={{ color: '#fff' }}><Close /></IconButton>
+                    </Box>
+                    <Box sx={{ p: 3 }}>
+                        <Stack spacing={2}>
+                            <Box>
+                                <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1 }}>Lesson Title</Typography>
+                                <TextField
+                                    fullWidth
+                                    placeholder="e.g. Welcome Video"
+                                    value={lessonTitle}
+                                    onChange={(e) => setLessonTitle(e.target.value)}
+                                    sx={textFieldStyle}
+                                />
+                            </Box>
+                            <Box>
+                                <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1 }}>Lesson Type</Typography>
+                                <Select
+                                    fullWidth
+                                    value={lessonType}
+                                    onChange={(e) => setLessonType(e.target.value)}
+                                    sx={selectStyle}
+                                    MenuProps={selectMenuProps}
+                                >
+                                    <MenuItem value="video">Video</MenuItem>
+                                    <MenuItem value="text">Text/Article</MenuItem>
+                                    <MenuItem value="document">File Attachment</MenuItem>
+                                </Select>
+                            </Box>
+
+                            {/* Content based on type */}
+                            {lessonType === 'video' && (
+                                <Box>
+                                    <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1 }}>Upload Video</Typography>
+                                    <input
+                                        type="file"
+                                        accept="video/*"
+                                        style={{ display: 'none' }}
+                                        id="lesson-video-upload"
+                                            onChange={(e) => {
+                                                const file = e.target.files[0];
+                                                if (file) {
+                                                    setLessonFile(file);
+                                                    setLessonFileName(file.name);
+                                                    setLessonContent('');
+                                                }
+                                            }}
+                                    />
+                                    <label htmlFor="lesson-video-upload">
+                                        <Box
+                                            sx={{
+                                                bgcolor: '#1E293B',
+                                                border: (lessonFile || lessonFileName) ? '2px solid #10B981' : '2px dashed #374151',
+                                                borderRadius: 2,
+                                                p: 3,
+                                                textAlign: 'center',
+                                                cursor: 'pointer',
+                                                '&:hover': { borderColor: '#1152D4' },
+                                            }}
+                                        >
+                                            {(lessonFile || lessonFileName) ? (
+                                                <Stack alignItems="center" spacing={1}>
+                                                    <PlayCircleOutline sx={{ fontSize: 36, color: '#10B981' }} />
+                                                    <Typography sx={{ color: '#fff', fontSize: '0.85rem' }}>
+                                                        {lessonFileName}
+                                                    </Typography>
+                                                    <Typography sx={{ color: '#6B7280', fontSize: '0.75rem' }}>
+                                                        Click to change
+                                                    </Typography>
+                                                </Stack>
+                                            ) : (
+                                                <Stack alignItems="center" spacing={1}>
+                                                    <CloudUpload sx={{ fontSize: 36, color: '#6B7280' }} />
+                                                    <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem' }}>
+                                                        Click to upload video
+                                                    </Typography>
+                                                    <Typography sx={{ color: '#6B7280', fontSize: '0.7rem' }}>
+                                                        MP4, WebM, MOV (max. 500MB)
+                                                    </Typography>
+                                                </Stack>
+                                            )}
+                                        </Box>
+                                    </label>
+                                </Box>
+                            )}
+
+                            {lessonType === 'text' && (
+                                <Box>
+                                    <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1 }}>Article Content</Typography>
+                                    <TextField
+                                        fullWidth
+                                        multiline
+                                        rows={6}
+                                        placeholder="Write your lesson content here..."
+                                        value={lessonContent}
+                                        onChange={(e) => setLessonContent(e.target.value)}
+                                        sx={textFieldStyle}
+                                    />
+                                </Box>
+                            )}
+
+                            {lessonType === 'document' && (
+                                <Box>
+                                    <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1 }}>Upload File</Typography>
+                                    <input
+                                        type="file"
+                                        accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip"
+                                        style={{ display: 'none' }}
+                                        id="lesson-file-upload"
+                                        onChange={(e) => {
+                                            const file = e.target.files[0];
+                                            if (file) {
+                                                setLessonFile(file);
+                                                setLessonFileName(file.name);
+                                                setLessonContent('');
+                                            }
+                                        }}
+                                    />
+                                    <label htmlFor="lesson-file-upload">
+                                        <Box
+                                            sx={{
+                                                bgcolor: '#1E293B',
+                                                border: (lessonFile || lessonFileName) ? '2px solid #10B981' : '2px dashed #374151',
+                                                borderRadius: 2,
+                                                p: 3,
+                                                textAlign: 'center',
+                                                cursor: 'pointer',
+                                                '&:hover': { borderColor: '#1152D4' },
+                                            }}
+                                        >
+                                            {(lessonFile || lessonFileName) ? (
+                                                <Stack alignItems="center" spacing={1}>
+                                                    <AttachFile sx={{ fontSize: 36, color: '#10B981' }} />
+                                                    <Typography sx={{ color: '#fff', fontSize: '0.85rem' }}>
+                                                        {lessonFileName}
+                                                    </Typography>
+                                                    <Typography sx={{ color: '#6B7280', fontSize: '0.75rem' }}>
+                                                        Click to change
+                                                    </Typography>
+                                                </Stack>
+                                            ) : (
+                                                <Stack alignItems="center" spacing={1}>
+                                                    <CloudUpload sx={{ fontSize: 36, color: '#6B7280' }} />
+                                                    <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem' }}>
+                                                        Click to upload file
+                                                    </Typography>
+                                                    <Typography sx={{ color: '#6B7280', fontSize: '0.7rem' }}>
+                                                        PDF, DOC, PPT, XLS, ZIP
+                                                    </Typography>
+                                                </Stack>
+                                            )}
+                                        </Box>
+                                    </label>
+                                </Box>
+                            )}
+
+                            <Box>
+                                <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1 }}>Duration (minutes)</Typography>
+                                <TextField
+                                    fullWidth
+                                    type="number"
+                                    value={lessonDuration}
+                                    onChange={(e) => setLessonDuration(parseInt(e.target.value) || 0)}
+                                    sx={textFieldStyle}
+                                />
+                            </Box>
+                        </Stack>
+                        <Stack direction="row" justifyContent="flex-end" spacing={2} sx={{ mt: 3 }}>
+                            <Button onClick={() => setLessonModalOpen(false)} sx={{ color: '#9CA3AF' }}>Cancel</Button>
+                            <Button variant="contained" onClick={handleCreateLesson} disabled={actionLoading} sx={{ bgcolor: '#1152D4' }}>
+                                Add Lesson
+                            </Button>
+                        </Stack>
+                    </Box>
+                </Box>
+            </Modal>
+            {/* Questions Management Modal */}
+            <Dialog 
+                open={questionModalOpen} 
+                onClose={() => setQuestionModalOpen(false)}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle sx={{ bgcolor: '#1A2230', color: '#fff', fontWeight: 600 }}>
+                    {editingQuestionId ? 'Edit Question' : 'Add Question'}
+                </DialogTitle>
+                <DialogContent sx={{ bgcolor: '#0C1322', color: '#fff', pt: 3 }}>
+                    <Stack spacing={2}>
+                        {/* Question Text */}
+                        <TextField
+                            fullWidth
+                            multiline
+                            rows={2}
+                            label="Question Text"
+                            value={questionText}
+                            onChange={(e) => setQuestionText(e.target.value)}
+                            placeholder="Enter the question text"
+                            sx={{
+                                '& .MuiInputBase-input': { color: '#fff', fontSize: '0.9rem' },
+                                '& .MuiInputLabel-root': { color: '#9CA3AF' },
+                                '& .MuiOutlinedInput-root': {
+                                    bgcolor: '#1A2230',
+                                    borderColor: '#374151',
+                                    '&:hover': { borderColor: '#4B5563' }
+                                }
+                            }}
+                        />
+
+                        {/* Question Type */}
+                        <Select
+                            value={questionType}
+                            onChange={(e) => {
+                                setQuestionType(e.target.value);
+                                if (e.target.value === 'true_false') {
+                                    setQuestionOptions(['True', 'False']);
+                                } else {
+                                    setQuestionOptions(['', '', '']);
+                                }
+                                setCorrectAnswerIndex(0);
+                            }}
+                            sx={{
+                                bgcolor: '#1A2230',
+                                color: '#fff',
+                                borderColor: '#374151',
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#374151' },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#4B5563' }
+                            }}
+                        >
+                            <MenuItem value="multiple_choice">Multiple Choice</MenuItem>
+                            <MenuItem value="true_false">True/False</MenuItem>
+                            <MenuItem value="short_answer">Short Answer</MenuItem>
+                            <MenuItem value="essay">Essay</MenuItem>
+                        </Select>
+
+                        {/* Answer Options (for multiple choice and true/false) */}
+                        {(questionType === 'multiple_choice' || questionType === 'true_false') && (
+                            <>
+                                <Typography sx={{ color: '#9CA3AF', fontSize: '0.9rem', fontWeight: 500 }}>Answer Options</Typography>
+                                <Stack spacing={1}>
+                                    {questionOptions.map((option, idx) => (
+                                        <Stack key={idx} direction="row" spacing={1} alignItems="center">
+                                            <TextField
+                                                fullWidth
+                                                value={option}
+                                                onChange={(e) => {
+                                                    const newOptions = [...questionOptions];
+                                                    newOptions[idx] = e.target.value;
+                                                    setQuestionOptions(newOptions);
+                                                }}
+                                                placeholder={`Option ${idx + 1}`}
+                                                size="small"
+                                                sx={{
+                                                    '& .MuiInputBase-input': { color: '#fff', fontSize: '0.85rem' },
+                                                    '& .MuiOutlinedInput-root': {
+                                                        bgcolor: '#1A2230',
+                                                        borderColor: '#374151',
+                                                        '&:hover': { borderColor: '#4B5563' }
+                                                    }
+                                                }}
+                                            />
+                                            <Select
+                                                value={correctAnswerIndex === idx ? 'correct' : 'wrong'}
+                                                onChange={(e) => {
+                                                    if (e.target.value === 'correct') {
+                                                        setCorrectAnswerIndex(idx);
+                                                    }
+                                                }}
+                                                size="small"
+                                                sx={{
+                                                    width: 100,
+                                                    bgcolor: '#1A2230',
+                                                    color: '#fff',
+                                                    borderColor: '#374151',
+                                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#374151' },
+                                                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#4B5563' }
+                                                }}
+                                            >
+                                                <MenuItem value="correct">Correct</MenuItem>
+                                                <MenuItem value="wrong">Wrong</MenuItem>
+                                            </Select>
+                                            {questionType === 'multiple_choice' && idx >= 2 && (
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={() => setQuestionOptions(questionOptions.filter((_, i) => i !== idx))}
+                                                    sx={{ color: '#EF4444' }}
+                                                >
+                                                    <Delete fontSize="small" />
+                                                </IconButton>
+                                            )}
+                                        </Stack>
+                                    ))}
+                                </Stack>
+                                {questionType === 'multiple_choice' && (
+                                    <Button
+                                        size="small"
+                                        startIcon={<Add />}
+                                        onClick={() => setQuestionOptions([...questionOptions, ''])}
+                                        sx={{ color: '#3B82F6', justifyContent: 'flex-start', textTransform: 'none' }}
+                                    >
+                                        Add Option
+                                    </Button>
+                                )}
+                            </>
+                        )}
+
+                        {/* Points */}
+                        <TextField
+                            fullWidth
+                            type="number"
+                            label="Points"
+                            value={questionPoints}
+                            onChange={(e) => setQuestionPoints(parseInt(e.target.value) || 1)}
+                            inputProps={{ min: 1 }}
+                            sx={{
+                                '& .MuiInputBase-input': { color: '#fff', fontSize: '0.9rem' },
+                                '& .MuiInputLabel-root': { color: '#9CA3AF' },
+                                '& .MuiOutlinedInput-root': {
+                                    bgcolor: '#1A2230',
+                                    borderColor: '#374151',
+                                    '&:hover': { borderColor: '#4B5563' }
+                                }
+                            }}
+                        />
+
+                        {/* Explanation */}
+                        <TextField
+                            fullWidth
+                            multiline
+                            rows={2}
+                            label="Explanation (Optional)"
+                            value={questionExplanation}
+                            onChange={(e) => setQuestionExplanation(e.target.value)}
+                            placeholder="Provide an explanation for the correct answer"
+                            sx={{
+                                '& .MuiInputBase-input': { color: '#fff', fontSize: '0.9rem' },
+                                '& .MuiInputLabel-root': { color: '#9CA3AF' },
+                                '& .MuiOutlinedInput-root': {
+                                    bgcolor: '#1A2230',
+                                    borderColor: '#374151',
+                                    '&:hover': { borderColor: '#4B5563' }
+                                }
+                            }}
+                        />
+                    </Stack>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setModuleModalOpen(false)}>Cancel</Button>
-                    <Button onClick={handleCreateModule} disabled={actionLoading}>Create</Button>
+                <DialogActions sx={{ bgcolor: '#1A2230', p: 2 }}>
+                    <Button onClick={() => { setQuestionModalOpen(false); resetQuestionForm(); }} sx={{ color: '#9CA3AF' }}>Cancel</Button>
+                    <Button 
+                        variant="contained" 
+                        onClick={handleSaveQuestion}
+                        disabled={actionLoading}
+                        sx={{ bgcolor: '#1152D4', '&:hover': { bgcolor: '#0D3BA8' } }}
+                    >
+                        {editingQuestionId ? 'Update Question' : 'Add Question'}
+                    </Button>
                 </DialogActions>
             </Dialog>
 
-            {/* Create Lesson Dialog */}
-            <Dialog open={lessonModalOpen} onClose={() => setLessonModalOpen(false)} fullWidth maxWidth="sm">
-                <DialogTitle>Add Lesson</DialogTitle>
-                <DialogContent>
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        label="Lesson Title"
-                        type="text"
-                        fullWidth
-                        value={lessonTitle}
-                        onChange={e => setLessonTitle(e.target.value)}
-                    />
-                    <TextField
-                        margin="dense"
-                        label="Content / Description"
-                        type="text"
-                        fullWidth
-                        multiline
-                        rows={4}
-                        value={lessonContent}
-                        onChange={e => setLessonContent(e.target.value)}
-                    />
+            {/* Questions List Modal (displayed when not in edit mode) */}
+            <Dialog 
+                open={questionModalOpen && !editingQuestionId && lessonQuestions.length > 0} 
+                onClose={() => setQuestionModalOpen(false)}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle sx={{ bgcolor: '#1A2230', color: '#fff', fontWeight: 600 }}>
+                    Questions ({lessonQuestions.length}) - Drag to reorder
+                </DialogTitle>
+                <DialogContent sx={{ bgcolor: '#0C1322', color: '#fff', pt: 2 }}>
+                    <Stack spacing={2}>
+                        {lessonQuestions.map((q, idx) => (
+                            <Paper 
+                                key={q.id}
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, q.id)}
+                                onDragOver={handleDragOver}
+                                onDrop={(e) => handleDrop(e, q.id)}
+                                sx={{
+                                    bgcolor: draggedQuestion === q.id ? '#2D3748' : '#1A2230',
+                                    p: 2,
+                                    borderRadius: 1,
+                                    border: '1px solid #374151',
+                                    cursor: 'move',
+                                    opacity: draggedQuestion === q.id ? 0.6 : 1,
+                                    transition: 'all 0.2s',
+                                    '&:hover': {
+                                        borderColor: '#4B5563',
+                                        bgcolor: draggedQuestion === q.id ? '#2D3748' : '#1F2937'
+                                    }
+                                }}
+                            >
+                                <Stack direction="row" spacing={1} alignItems="flex-start">
+                                    <DragIndicator sx={{ color: '#4B5563', mt: 0.5, flex: 'none' }} />
+                                    <Typography sx={{ color: '#9CA3AF', fontWeight: 500, flex: 'none' }}>
+                                        {idx + 1}.
+                                    </Typography>
+                                    <Stack spacing={1} sx={{ flex: 1 }}>
+                                        <Typography sx={{ color: '#fff', fontSize: '0.9rem' }}>
+                                            {q.question}
+                                        </Typography>
+                                        <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
+                                            <Chip 
+                                                label={`${q.type || 'question'}`}
+                                                size="small"
+                                                sx={{ bgcolor: 'rgba(59, 130, 246, 0.2)', color: '#3B82F6', height: 24, fontSize: '0.75rem' }}
+                                            />
+                                            <Chip 
+                                                label={`${q.points || 1} pts`}
+                                                size="small"
+                                                sx={{ bgcolor: 'rgba(16, 185, 129, 0.2)', color: '#10B981', height: 24, fontSize: '0.75rem' }}
+                                            />
+                                        </Stack>
+                                    </Stack>
+                                    <Stack direction="row" spacing={0.5}>
+                                        <IconButton 
+                                            size="small"
+                                            onClick={() => handleEditQuestion(q)}
+                                            sx={{ color: '#3B82F6' }}
+                                        >
+                                            <Edit fontSize="small" />
+                                        </IconButton>
+                                        <IconButton 
+                                            size="small"
+                                            onClick={() => handleDeleteQuestion(q.id)}
+                                            sx={{ color: '#EF4444' }}
+                                        >
+                                            <Delete fontSize="small" />
+                                        </IconButton>
+                                    </Stack>
+                                </Stack>
+                            </Paper>
+                        ))}
+                    </Stack>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setLessonModalOpen(false)}>Cancel</Button>
-                    <Button onClick={handleCreateLesson} disabled={actionLoading}>Create</Button>
+                <DialogActions sx={{ bgcolor: '#1A2230', p: 2 }}>
+                    <Button 
+                        variant="contained"
+                        startIcon={<Add />}
+                        onClick={() => resetQuestionForm()}
+                        sx={{ bgcolor: '#1152D4', '&:hover': { bgcolor: '#0D3BA8' }, textTransform: 'none' }}
+                    >
+                        Add Question
+                    </Button>
+                    <Button onClick={() => setQuestionModalOpen(false)} sx={{ color: '#9CA3AF' }}>Done</Button>
                 </DialogActions>
             </Dialog>
+
             <Snackbar
                 open={snackbar.open}
                 autoHideDuration={4000}
