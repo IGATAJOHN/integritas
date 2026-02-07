@@ -10,7 +10,7 @@ const SIDEBAR_WIDTH = 260;
 
 const TutorLayout = () => {
     const theme = useTheme();
-    const { user, getKycStatus } = useAuth();
+    const { user, getKycStatus, updateUser } = useAuth();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const [mobileOpen, setMobileOpen] = useState(false);
     const [kycStatus, setKycStatus] = useState(getKycStatus() || 'draft');
@@ -22,6 +22,8 @@ const TutorLayout = () => {
                 const data = await kycService.getKyc();
                 if (data?.status) {
                     setKycStatus(data.status);
+                    // Sync with global auth context to prevent stale data redirects
+                    updateUser({ kyc_status: data.status });
                 }
             } catch (err) {
                 console.warn('Failed to fetch KYC status:', err);

@@ -4,7 +4,7 @@ import { useAuth } from '../contexts';
 import { Box, CircularProgress } from '@mui/material';
 
 const OnboardingGuard = ({ children }) => {
-    const { user, loading, needsEmailVerification, needsKyc, getKycStatus } = useAuth();
+    const { user, loading, needsEmailVerification, needsKyc, getKycStatus, isKycComplete } = useAuth();
     const location = useLocation();
 
     // Show loading while checking
@@ -33,19 +33,15 @@ const OnboardingGuard = ({ children }) => {
     }
     const isTutorRoute = location.pathname.startsWith('/tutor');
     const isKycPage = location.pathname === '/tutor/kyc';
-    // If on KYC page but doesn't need it (already approved/completed), redirect to dashboard
+    // If on KYC page but the status is already complete (approved), redirect to dashboard
     if (isTutorRoute && isKycPage) {
-        const kycStatus = getKycStatus();
-        if (kycStatus === 'approved' || kycStatus === 'completed') {
+        if (isKycComplete()) {
             return <Navigate to="/tutor" replace />;
         }
     }
 
     if (isTutorRoute && !isKycPage && needsKyc()) {
-        const kycStatus = getKycStatus();
-        if (kycStatus !== 'approved' && kycStatus !== 'completed') {
-            return <Navigate to="/tutor/kyc" replace />;
-        }
+        return <Navigate to="/tutor/kyc" replace />;
     }
 
     return children;

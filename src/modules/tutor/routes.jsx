@@ -1,5 +1,5 @@
 import TutorLayout from './layouts/TutorLayout';
-import { TutorDashboard, MyCourses, Students, CreateCourse, Kyc, CourseEditor, CourseDashboard } from './pages';
+import { TutorDashboard, MyCourses, Students, CreateCourse, Kyc, CourseEditor, CourseDashboard, AddQuestion } from './pages';
 
 const tutorRoutes = {
     path: '/tutor',
@@ -32,6 +32,10 @@ const tutorRoutes = {
         {
             path: 'kyc',
             element: <Kyc />,
+        },
+        {
+            path: 'courses/:courseId/modules/:moduleId/lessons/:lessonId/questions',
+            element: <AddQuestion />,
         },
     ],
 };

@@ -4,10 +4,13 @@ import { authService } from '../services/api';
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
+    const [user, setUser] = useState(() => {
+        const storedUser = localStorage.getItem('user');
+        return storedUser ? JSON.parse(storedUser) : null;
+    });
     const [loading, setLoading] = useState(true);
 
-    // Initialize auth by calling /auth/me to get fresh user data with roles and onboarding status
+    // Refresh user data with /auth/me to get the latest status
     useEffect(() => {
         const initializeAuth = async () => {
             const storedUser = localStorage.getItem('user');

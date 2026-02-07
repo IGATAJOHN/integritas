@@ -23,13 +23,19 @@ const unwrapQuestion = (res) => {
  * Normalizes a list response to { data, meta, links }.
  */
 const unwrapList = (res) => {
-    if (!res) return { data: [], meta: {}, links: {} };
-    return {
-        data: res.data || [],
-        meta: res.meta || {},
-        links: res.links || {}
-    };
+  if (!res) return { data: [], meta: {}, links: {} };
+
+  const root = res.data ?? res;
+
+  if (Array.isArray(root)) return { data: root, meta: {}, links: {} };
+
+  return {
+    data: root.data ?? root.results ?? [],
+    meta: root.meta ?? {},
+    links: root.links ?? {},
+  };
 };
+
 
 /**
  * For actions that might return a question or just { success: true }.
@@ -71,9 +77,30 @@ export const tutorQuestionService = {
      * @returns {Promise<Object>} - Created question data
      */
     createQuestion: async (lessonId, payload) => {
-        const res = await apiService.post(`/lms/lessons/${lessonId}/questions`, payload);
-        return unwrapQuestion(res);
+    const prompt = String(payload.prompt ?? payload.question ?? "").trim();
+
+    // Normalize correct_answer to array (API requires array)
+    const rawCA = payload.correct_answer ?? payload.correctAnswer ?? payload.answer ?? null;
+
+    const correct_answer =
+        rawCA == null ? [] :
+        Array.isArray(rawCA) ? rawCA :
+        [rawCA];
+
+    const body = {
+        prompt,
+        type: payload.type ?? "multiple_choice",
+        options: payload.options ?? [],
+        correct_answer,
+        explanation: payload.explanation ?? null,
+        points: payload.points ?? 1,
+        position: payload.position ?? null,
+    };
+
+    const res = await apiService.post(`/lms/lessons/${lessonId}/questions`, body);
+    return unwrapQuestion(res);
     },
+
 
     /**
      * Get question details by ID
