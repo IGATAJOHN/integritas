@@ -11,6 +11,7 @@ import {
     CategoryManagement,
     KycReview,
     AdminCourseDetail,
+    CertificatePriceChanges,
 } from './pages';
 
 const adminRoutes = {
@@ -64,6 +65,10 @@ const adminRoutes = {
                 {
                     path: 'lessons',
                     element: <CategoryManagement />,
+                },
+                {
+                    path: 'price-changes',
+                    element: <CertificatePriceChanges />,
                 },
             ],
         },

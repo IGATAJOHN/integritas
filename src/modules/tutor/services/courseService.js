@@ -2,7 +2,6 @@ import { apiService } from "../../../services/api";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
-// --- Shared Helpers ---
 
 const getAuthToken = () => {
     const user = localStorage.getItem('user');
@@ -13,20 +12,13 @@ const getAuthToken = () => {
     return null;
 };
 
-// --- Response Normalization Helpers ---
 
-/**
- * Normalizes a course object from various response shapes.
- * Handles { data: { ... } } or top-level object.
- */
 const unwrapCourse = (res) => {
     if (!res) return null;
     return res.data ? res.data : res;
 };
 
-/**
- * Normalizes a list response to { data, meta, links }.
- */
+
 const unwrapList = (res) => {
     if (!res) return { data: [], meta: {}, links: {} };
     return {
@@ -36,19 +28,14 @@ const unwrapList = (res) => {
     };
 };
 
-/**
- * For actions that might return a course or just { success: true }.
- */
+
 const okOrCourse = (res) => {
     if (!res) return { success: true };
     if (res.data || res.id) return unwrapCourse(res);
     return { success: true };
 };
 
-/**
- * Helper to handle multipart/form-data requests manually
- * to avoid apiService stringifying the body.
- */
+
 const requestMultipart = async (endpoint, method, formData) => {
     const token = getAuthToken();
     const headers = {
@@ -81,17 +68,14 @@ const requestMultipart = async (endpoint, method, formData) => {
         throw error;
     }
 
-    // Some endpoints might return 204 No Content
     if (response.status === 204) return null;
 
     return response.json();
 };
 
 
-// --- Exports ---
 
 export const tutorCoursesService = {
-    // A) LIST COURSES
     listCourses: async ({
         page,
         per_page = 20,
@@ -208,7 +192,22 @@ export const tutorCoursesService = {
     // M) DELETE COURSE
     deleteCourse: async (courseId) => {
         const res = await apiService.delete(`/lms/courses/${courseId}`);
-        // Response may be empty or message object
         return { success: true, ...res };
+    },
+
+    // N) REQUEST CERTIFICATE PRICE CHANGE
+    requestPriceChange: async (courseId, payload) => {
+        const res = await apiService.post(`/lms/courses/${courseId}/certificate-price-change`, payload);
+        return unwrapCourse(res);
+    },
+
+    // O) LIST CERTIFICATE PRICE CHANGES
+    listPriceChanges: async ({ status = 'pending', page, per_page = 20 } = {}) => {
+        const params = new URLSearchParams();
+        if (status) params.append('status', status);
+        if (page) params.append('page', page);
+        if (per_page) params.append('per_page', per_page);
+        const res = await apiService.get(`/lms/certificate-price-changes?${params.toString()}`);
+        return res;
     },
 };

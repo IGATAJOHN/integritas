@@ -87,4 +87,24 @@ export const adminCoursesService = {
         const res = await apiService.delete(`/lms/courses/${courseId}`);
         return { success: true, ...res };
     },
+
+    // N) CERTIFICATE PRICE CHANGES
+    listPriceChanges: async ({ status = 'pending', page, per_page = 20 } = {}) => {
+        const params = new URLSearchParams();
+        if (status) params.append('status', status);
+        if (page) params.append('page', page);
+        if (per_page) params.append('per_page', per_page);
+        const res = await apiService.get(`/lms/certificate-price-changes?${params.toString()}`);
+        return res; // Usually contains current_page, data, etc.
+    },
+
+    approvePriceChange: async (changeId) => {
+        const res = await apiService.post(`/lms/certificate-price-changes/${changeId}/approve`);
+        return res;
+    },
+
+    rejectPriceChange: async (changeId, rejection_reason) => {
+        const res = await apiService.post(`/lms/certificate-price-changes/${changeId}/reject`, { rejection_reason });
+        return res;
+    },
 };

@@ -48,8 +48,11 @@ import {
     Archive,
     Close,
     CloudUpload,
+    Payments,
+    History,
 } from '@mui/icons-material';
 import { tutorCoursesService } from '../services/courseService';
+import { formatCurrency } from '../../../utils';
 import { tutorModuleService } from '../services/moduleService';
 import { tutorLessonService } from '../services/lessonService';
 import { tutorQuestionService } from '../services/questionService';
@@ -68,7 +71,6 @@ const getLessonIcon = (type) => {
         default: return <ArticleOutlined />;
     }
 };
-
 
 const CourseDashboard = () => {
     const { courseId } = useParams();
@@ -95,7 +97,14 @@ const CourseDashboard = () => {
     const [lessonFile, setLessonFile] = useState(null);
     const [selectedModuleForLesson, setSelectedModuleForLesson] = useState(null);
 
-
+    // Price change state
+    const [priceChangeModalOpen, setPriceChangeModalOpen] = useState(false);
+    const [hasPendingPriceChange, setHasPendingPriceChange] = useState(false);
+    const [priceChangeData, setPriceChangeData] = useState({
+        new_amount: '',
+        new_currency: 'USD',
+        reason: ''
+    });
 
     useEffect(() => {
         const fetchCourseData = async () => {
@@ -129,6 +138,14 @@ const CourseDashboard = () => {
                     console.warn('Could not fetch modules:', modErr);
                     setModules([]);
                 }
+
+                try {
+                    const changesResp = await tutorCoursesService.listPriceChanges({ status: 'pending' });
+                    const pendingForThisCourse = (changesResp?.data || changesResp || []).find(r => r.course_id === courseId);
+                    setHasPendingPriceChange(!!pendingForThisCourse);
+                } catch (e) {
+                    console.warn('Could not fetch price changes:', e);
+                }
             } catch (err) {
                 console.error("Error fetching course:", err);
                 setError("Failed to load course details.");
@@ -144,6 +161,30 @@ const CourseDashboard = () => {
 
     const handleBack = () => {
         navigate('/tutor/courses');
+    };
+
+    const handleRequestPriceChange = async () => {
+        if (!priceChangeData.new_amount || !priceChangeData.reason) {
+            setSnackbar({ open: true, message: 'Please fill in all fields', severity: 'warning' });
+            return;
+        }
+
+        try {
+            setActionLoading(true);
+            await tutorCoursesService.requestPriceChange(courseId, {
+                new_amount: parseFloat(priceChangeData.new_amount),
+                new_currency: priceChangeData.new_currency,
+                reason: priceChangeData.reason
+            });
+            setSnackbar({ open: true, message: 'Price change requested successfully. Awaiting admin approval.', severity: 'success' });
+            setPriceChangeModalOpen(false);
+            setPriceChangeData({ new_amount: '', new_currency: 'USD', reason: '' });
+        } catch (err) {
+            console.error('Failed to request price change:', err);
+            setSnackbar({ open: true, message: err.message || 'Failed to request price change', severity: 'error' });
+        } finally {
+            setActionLoading(false);
+        }
     };
 
     /**
@@ -186,7 +227,6 @@ const CourseDashboard = () => {
         navigate(`/tutor/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}`);
     };
 
-    // Helper: poll for module lessons until created lesson appears (handles eventual consistency)
     const refreshModuleLessonsWithRetry = async (moduleId, createdId, maxAttempts = 6, delayMs = 1000) => {
         const wait = (ms) => new Promise(res => setTimeout(res, ms));
         for (let i = 0; i < maxAttempts; i++) {
@@ -875,6 +915,17 @@ const CourseDashboard = () => {
                                         </Stack>
                                         <Typography sx={{ color: '#fff' }}>{course.duration_minutes || 0} minutes</Typography>
                                     </Box>
+                                    <Box sx={{ minWidth: 150 }}>
+                                        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.5 }}>
+                                            <Payments sx={{ fontSize: 16, color: '#6B7280' }} />
+                                            <Typography sx={{ color: '#6B7280', fontSize: '0.75rem' }}>Price</Typography>
+                                        </Stack>
+                                        <Typography sx={{ color: '#fff', fontWeight: 600 }}>
+                                            {course.price > 0
+                                                ? formatCurrency(course.price, course.currency)
+                                                : 'Free'}
+                                        </Typography>
+                                    </Box>
                                 </Box>
                             </Paper>
 
@@ -984,6 +1035,39 @@ const CourseDashboard = () => {
                                         }}
                                     >
                                         {course.status === 'archived' ? 'Archived' : 'Archive'}
+                                    </Button>
+                                </Stack>
+                            </Paper>
+
+
+                            {/* Certificate Price Change */}
+                            <Paper sx={{ bgcolor: '#1A2230', p: 3, borderRadius: 2, border: '1px solid #1F2937' }}>
+                                <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 2 }}>Certificate Pricing</Typography>
+                                <Stack direction="row" alignItems="center" justifyContent="space-between">
+                                    <Box>
+                                        <Typography sx={{ color: '#fff', fontWeight: 500 }}>Request Price Change</Typography>
+                                        <Typography sx={{ color: '#6B7280', fontSize: '0.85rem' }}>
+                                            Request a change for the certificate issuance price. This requires admin approval.
+                                        </Typography>
+                                        {hasPendingPriceChange && (
+                                            <Typography sx={{ color: '#3B82F6', fontSize: '0.85rem', mt: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                <History sx={{ fontSize: 16 }} /> Price change request pending approval
+                                            </Typography>
+                                        )}
+                                    </Box>
+                                    <Button
+                                        variant="outlined"
+                                        startIcon={<Payments />}
+                                        onClick={() => setPriceChangeModalOpen(true)}
+                                        disabled={actionLoading}
+                                        sx={{
+                                            borderColor: '#3B82F6',
+                                            color: '#3B82F6',
+                                            textTransform: 'none',
+                                            '&:hover': { borderColor: '#2563EB', bgcolor: 'rgba(59, 130, 246, 0.1)' }
+                                        }}
+                                    >
+                                        Request Change
                                     </Button>
                                 </Stack>
                             </Paper>
@@ -1263,6 +1347,82 @@ const CourseDashboard = () => {
                     {snackbar.message}
                 </Alert>
             </Snackbar>
+            {/* Price Change Modal */}
+            <Modal open={priceChangeModalOpen} onClose={() => !actionLoading && setPriceChangeModalOpen(false)}>
+                <Box sx={modalStyle}>
+                    <Box sx={{ background: '#2563EB', p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography sx={{ color: '#fff', fontWeight: 600 }}>Request Price Change</Typography>
+                        <IconButton onClick={() => setPriceChangeModalOpen(false)} sx={{ color: '#fff' }} disabled={actionLoading}><Close /></IconButton>
+                    </Box>
+                    <Box sx={{ p: 3 }}>
+                        <Stack spacing={3}>
+                            <Alert severity="info" sx={{ bgcolor: 'rgba(59, 130, 246, 0.1)', color: '#3B82F6', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                                Current certificate price: {course ? formatCurrency(course.price, course.currency) : '...'}
+                            </Alert>
+
+                            <Box sx={{ display: 'flex', gap: 2 }}>
+                                <Box sx={{ flex: 1 }}>
+                                    <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1 }}>New Amount</Typography>
+                                    <TextField
+                                        fullWidth
+                                        type="number"
+                                        placeholder="0.00"
+                                        value={priceChangeData.new_amount}
+                                        onChange={(e) => setPriceChangeData(prev => ({ ...prev, new_amount: e.target.value }))}
+                                        sx={textFieldStyle}
+                                    />
+                                </Box>
+                                <Box sx={{ flex: 1 }}>
+                                    <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1 }}>Currency</Typography>
+                                    <Select
+                                        fullWidth
+                                        value={priceChangeData.new_currency}
+                                        onChange={(e) => setPriceChangeData(prev => ({ ...prev, new_currency: e.target.value }))}
+                                        sx={selectStyle}
+                                        MenuProps={selectMenuProps}
+                                    >
+                                        <MenuItem value="USD">USD ($)</MenuItem>
+                                        <MenuItem value="NGN">NGN (₦)</MenuItem>
+                                        <MenuItem value="GBP">GBP (£)</MenuItem>
+                                        <MenuItem value="EUR">EUR (€)</MenuItem>
+                                    </Select>
+                                </Box>
+                            </Box>
+
+                            <Box>
+                                <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1 }}>Reason for Change</Typography>
+                                <TextField
+                                    fullWidth
+                                    multiline
+                                    rows={3}
+                                    placeholder="Explain why you are requesting this price change..."
+                                    value={priceChangeData.reason}
+                                    onChange={(e) => setPriceChangeData(prev => ({ ...prev, reason: e.target.value }))}
+                                    sx={textFieldStyle}
+                                />
+                            </Box>
+                        </Stack>
+
+                        <Stack direction="row" justifyContent="flex-end" spacing={2} sx={{ mt: 4 }}>
+                            <Button
+                                onClick={() => setPriceChangeModalOpen(false)}
+                                sx={{ color: '#9CA3AF' }}
+                                disabled={actionLoading}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                variant="contained"
+                                onClick={handleRequestPriceChange}
+                                sx={{ bgcolor: '#3B82F6', '&:hover': { bgcolor: '#2563EB' } }}
+                                disabled={actionLoading}
+                            >
+                                {actionLoading ? <CircularProgress size={24} sx={{ color: '#fff' }} /> : 'Submit Request'}
+                            </Button>
+                        </Stack>
+                    </Box>
+                </Box>
+            </Modal>
         </Box>
     );
 };

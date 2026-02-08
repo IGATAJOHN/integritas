@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminCoursesService } from '../services';
 import { CircularProgress } from '@mui/material';
+import { formatCurrency } from '../../../utils';
 import {
     Box,
     Typography,
@@ -133,6 +134,7 @@ const CourseManagement = () => {
                             <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }}>Tutor</TableCell>
                             <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }}>Students</TableCell>
                             <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }}>Category</TableCell>
+                            <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }}>Price</TableCell>
                             <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }}>Status</TableCell>
                             <TableCell align="right" sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }}>Actions</TableCell>
                         </TableRow>
@@ -248,6 +250,13 @@ const CourseManagement = () => {
                                                     borderRadius: 1,
                                                 }}
                                             />
+                                        </TableCell>
+                                        <TableCell sx={{ borderBottom: '1px solid #374151' }}>
+                                            <Typography variant="body2" sx={{ color: '#fff', fontWeight: 600 }}>
+                                                {course.price > 0
+                                                    ? formatCurrency(course.price, course.currency)
+                                                    : 'Free'}
+                                            </Typography>
                                         </TableCell>
                                         <TableCell sx={{ borderBottom: '1px solid #374151' }}>
                                             <Chip

@@ -56,7 +56,7 @@ const TutorSidebar = ({
     ];
 
     const isActive = (path) => {
-        if (path === '/tutor') {
+        if (path === '/tutor') { 
             return location.pathname === '/tutor';
         }
         return location.pathname.startsWith(path);

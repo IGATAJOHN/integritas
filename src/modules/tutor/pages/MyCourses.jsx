@@ -30,7 +30,9 @@ import {
     CheckCircle,
     Schedule,
     Block,
+    Payments,
 } from '@mui/icons-material';
+import { formatCurrency } from '../../../utils';
 
 /**
  * My Courses Page - Lists all courses created by the tutor
@@ -311,6 +313,14 @@ const MyCourses = () => {
                                                 </Typography>
                                                 <Typography sx={{ color: '#6B7280', fontSize: '0.75rem' }}>
                                                     lessons
+                                                </Typography>
+                                            </Stack>
+                                            <Stack direction="row" alignItems="center" spacing={0.75}>
+                                                <Payments sx={{ color: '#F59E0B', fontSize: 18 }} />
+                                                <Typography sx={{ color: '#fff', fontWeight: 600, fontSize: '0.85rem' }}>
+                                                    {course.price > 0
+                                                        ? formatCurrency(course.price, course.currency)
+                                                        : 'Free'}
                                                 </Typography>
                                             </Stack>
                                         </Stack>

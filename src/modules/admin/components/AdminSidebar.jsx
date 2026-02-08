@@ -73,6 +73,7 @@ const AdminSidebar = ({
             children: [
                 { path: '/admin/content/courses', label: 'Courses' },
                 { path: '/admin/content/lessons', label: 'Categories' },
+                { path: '/admin/content/price-changes', label: 'Price Changes' },
             ]
         },
         { path: '/admin/kycreview', label: 'KYC Review', icon: <VerifiedUserOutlined sx={{ fontSize: 22 }} /> },

@@ -30,6 +30,7 @@ import {
     QuizOutlined,
     Close,
 } from '@mui/icons-material';
+import { formatCurrency } from '../../../utils';
 
 const AdminCourseDetail = () => {
     const { courseId } = useParams();
@@ -365,7 +366,9 @@ const AdminCourseDetail = () => {
                             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                 <Typography sx={{ color: '#D1D5DB' }}>Price</Typography>
                                 <Typography sx={{ color: '#fff', fontWeight: 600 }}>
-                                    {course.price > 0 ? `$${course.price}` : 'Free'}
+                                    {course.price > 0
+                                        ? formatCurrency(course.price, course.currency)
+                                        : 'Free'}
                                 </Typography>
                             </Box>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>

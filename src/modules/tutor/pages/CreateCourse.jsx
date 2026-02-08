@@ -50,6 +50,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { textFieldStyle, selectStyle, selectMenuProps, modalStyle } from '../../../styles/formStyles';
+import { formatCurrency } from '../../../utils';
 import { categoryService } from '../../../services/categoryService';
 import { tutorCoursesService, tutorModuleService, tutorLessonService } from '../services';
 
@@ -90,6 +91,8 @@ const CreateCourse = () => {
         description: '',
         level: 'beginner',
         language: 'en',
+        price: 0,
+        currency: 'USD',
         duration_minutes: 0,
         thumbnail_url: '', // For preview display only
         category_id: '',
@@ -308,6 +311,8 @@ const CreateCourse = () => {
                 }
                 formData.append('level', courseData.level);
                 formData.append('language', courseData.language);
+                formData.append('price', courseData.price || 0);
+                formData.append('currency', courseData.currency || 'USD');
                 formData.append('duration_minutes', courseData.duration_minutes || 0);
                 // API expects category_ids as array - for FormData we need to append each
                 if (courseData.category_id) {
@@ -326,6 +331,8 @@ const CreateCourse = () => {
                     summary: courseData.summary,
                     level: courseData.level,
                     language: courseData.language,
+                    price: courseData.price || 0,
+                    currency: courseData.currency || 'USD',
                     duration_minutes: courseData.duration_minutes || 0,
                     // API expects category_ids as an array
                     category_ids: courseData.category_id ? [courseData.category_id] : [],
@@ -483,6 +490,42 @@ const CreateCourse = () => {
                                         {level}
                                     </MenuItem>
                                 ))}
+                            </Select>
+                        </Box>
+                    </Box>
+
+                    {/* Price & Currency Row */}
+                    <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                        <Box sx={{ flex: '1 1 45%', minWidth: 200 }}>
+                            <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1, fontWeight: 500 }}>
+                                Price
+                            </Typography>
+                            <TextField
+                                fullWidth
+                                type="number"
+                                placeholder="0.00"
+                                value={courseData.price}
+                                onChange={(e) => handleInputChange('price', parseFloat(e.target.value) || 0)}
+                                sx={textFieldStyle}
+                                InputProps={{
+                                    startAdornment: <Typography sx={{ color: '#6B7280', mr: 1 }}>{courseData.currency}</Typography>,
+                                }}
+                            />
+                        </Box>
+                        <Box sx={{ flex: '1 1 45%', minWidth: 200 }}>
+                            <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1, fontWeight: 500 }}>
+                                Currency
+                            </Typography>
+                            <Select
+                                fullWidth
+                                value={courseData.currency}
+                                onChange={(e) => handleInputChange('currency', e.target.value)}
+                                sx={selectStyle}
+                            >
+                                <MenuItem value="USD">USD ($)</MenuItem>
+                                <MenuItem value="NGN">NGN (₦)</MenuItem>
+                                <MenuItem value="GBP">GBP (£)</MenuItem>
+                                <MenuItem value="EUR">EUR (€)</MenuItem>
                             </Select>
                         </Box>
                     </Box>
@@ -923,6 +966,14 @@ const CreateCourse = () => {
                             <Box sx={{ display: 'flex', gap: 2 }}>
                                 <Typography sx={{ color: '#6B7280', width: 120 }}>Summary:</Typography>
                                 <Typography sx={{ color: '#fff' }}>{courseData.summary || '-'}</Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', gap: 2 }}>
+                                <Typography sx={{ color: '#6B7280', width: 120 }}>Price:</Typography>
+                                <Typography sx={{ color: '#fff', fontWeight: 600 }}>
+                                    {courseData.price > 0
+                                        ? formatCurrency(courseData.price, courseData.currency)
+                                        : 'Free'}
+                                </Typography>
                             </Box>
                         </Stack>
                     </Paper>
