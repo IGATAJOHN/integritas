@@ -29,6 +29,7 @@ import {
     ArticleOutlined,
     QuizOutlined,
     Close,
+    History,
 } from '@mui/icons-material';
 import { formatCurrency } from '../../../utils';
 
@@ -44,31 +45,41 @@ const AdminCourseDetail = () => {
     // Rejection Modal State
     const [openRejectModal, setOpenRejectModal] = useState(false);
     const [rejectionReason, setRejectionReason] = useState('');
+    const [pendingPriceChange, setPendingPriceChange] = useState(null);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-    useEffect(() => {
-        const fetchCourse = async () => {
-            setLoading(true);
-            try {
-                const data = await adminCoursesService.getCourseDetail(courseId);
-                // Fetch modules if missing
-                if (!data.modules || data.modules.length === 0) {
-                    try {
-                        const modules = await adminCoursesService.getCourseModules(courseId);
-                        data.modules = modules;
-                    } catch (err) {
-                        console.warn('Failed to fetch modules', err);
-                    }
+    const fetchCourse = async () => {
+        setLoading(true);
+        try {
+            const data = await adminCoursesService.getCourseDetail(courseId);
+            // Fetch modules if missing
+            if (!data.modules || data.modules.length === 0) {
+                try {
+                    const modules = await adminCoursesService.getCourseModules(courseId);
+                    data.modules = modules;
+                } catch (err) {
+                    console.warn('Failed to fetch modules', err);
                 }
-                setCourse(data);
-            } catch (error) {
-                console.error("Failed to fetch course:", error);
-                setSnackbar({ open: true, message: 'Failed to load course details', severity: 'error' });
-            } finally {
-                setLoading(false);
             }
-        };
+            setCourse(data);
 
+            // Fetch pending price changes
+            try {
+                const changesResp = await adminCoursesService.listPriceChanges({ status: 'pending' });
+                const pending = (changesResp?.data || changesResp || []).find(r => r.course_id === courseId);
+                setPendingPriceChange(pending || null);
+            } catch (e) {
+                console.warn('Failed to fetch pending price changes', e);
+            }
+        } catch (error) {
+            console.error("Failed to fetch course:", error);
+            setSnackbar({ open: true, message: 'Failed to load course details', severity: 'error' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
         if (courseId) {
             fetchCourse();
         }
@@ -238,6 +249,37 @@ const AdminCourseDetail = () => {
                 </Stack>
             </Stack>
 
+            {/* Pending Price Change Alert */}
+            {pendingPriceChange && (
+                <Alert
+                    severity="info"
+                    icon={<History />}
+                    sx={{
+                        mb: 4,
+                        bgcolor: 'rgba(59, 130, 246, 0.1)',
+                        color: '#3B82F6',
+                        border: '1px solid rgba(59, 130, 246, 0.2)',
+                        '& .MuiAlert-icon': { color: '#3B82F6' }
+                    }}
+                    action={
+                        <Button
+                            color="inherit"
+                            size="small"
+                            onClick={() => navigate('/admin/content/price-changes')}
+                        >
+                            View Request
+                        </Button>
+                    }
+                >
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        Certificate Price Change Pending: {formatCurrency(pendingPriceChange.new_amount, pendingPriceChange.new_currency)}
+                    </Typography>
+                    <Typography variant="caption">
+                        Current price: {formatCurrency(pendingPriceChange.old_amount, pendingPriceChange.old_currency)}
+                    </Typography>
+                </Alert>
+            )}
+
             <Stack direction={{ xs: 'column', lg: 'row' }} spacing={4}>
                 {/* Left Column: Content */}
                 <Box sx={{ flex: 1 }}>
@@ -363,13 +405,23 @@ const AdminCourseDetail = () => {
                                 <Typography sx={{ color: '#fff', fontWeight: 600, textTransform: 'uppercase' }}>{course.language || '-'}</Typography>
                             </Box>
                             <Divider sx={{ borderColor: '#374151' }} />
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                 <Typography sx={{ color: '#D1D5DB' }}>Price</Typography>
-                                <Typography sx={{ color: '#fff', fontWeight: 600 }}>
-                                    {course.price > 0
-                                        ? formatCurrency(course.price, course.currency)
-                                        : 'Free'}
-                                </Typography>
+                                <Box sx={{ textAlign: 'right' }}>
+                                    <Typography sx={{ color: '#fff', fontWeight: 600 }}>
+                                        {course.price > 0
+                                            ? formatCurrency(course.price, course.currency)
+                                            : 'Free'}
+                                    </Typography>
+                                    {pendingPriceChange && (
+                                        <Stack direction="row" alignItems="center" justifyContent="flex-end" spacing={0.5} sx={{ color: '#3B82F6', mt: 0.5 }}>
+                                            <History sx={{ fontSize: 12 }} />
+                                            <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                                                {formatCurrency(pendingPriceChange.new_amount, pendingPriceChange.new_currency)}
+                                            </Typography>
+                                        </Stack>
+                                    )}
+                                </Box>
                             </Box>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                 <Typography sx={{ color: '#D1D5DB' }}>Category</Typography>

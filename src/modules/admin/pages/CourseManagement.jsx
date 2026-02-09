@@ -40,6 +40,7 @@ import {
     PlayCircleOutline,
     ArticleOutlined,
     QuizOutlined,
+    History,
 } from '@mui/icons-material';
 
 
@@ -48,21 +49,28 @@ const CourseManagement = () => {
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [pendingChanges, setPendingChanges] = useState({}); // Map of courseId -> change
 
     // Fetch courses with debounce
     useEffect(() => {
         const fetchCourses = async () => {
             setLoading(true);
             try {
-                const response = await adminCoursesService.listCourses({ q: searchTerm });
-                console.log('Courses API response:', response);
-                if (response.data?.[0]) {
-                    console.log('First course object keys:', Object.keys(response.data[0]));
-                    console.log('First course full data:', response.data[0]);
-                }
-                setCourses(response.data || []);
+                const [coursesResp, changesResp] = await Promise.all([
+                    adminCoursesService.listCourses({ q: searchTerm }),
+                    adminCoursesService.listPriceChanges({ status: 'pending' })
+                ]);
+
+                setCourses(coursesResp.data || []);
+
+                // Construct a map of courseId to pending change
+                const changesMap = {};
+                (changesResp?.data || changesResp || []).forEach(change => {
+                    changesMap[change.course_id] = change;
+                });
+                setPendingChanges(changesMap);
             } catch (error) {
-                console.error("Failed to fetch courses:", error);
+                console.error("Failed to fetch data:", error);
             } finally {
                 setLoading(false);
             }
@@ -257,6 +265,16 @@ const CourseManagement = () => {
                                                     ? formatCurrency(course.price, course.currency)
                                                     : 'Free'}
                                             </Typography>
+                                            {pendingChanges[course.id] && (
+                                                <Tooltip title={`Pending Change: ${formatCurrency(pendingChanges[course.id].new_amount, pendingChanges[course.id].new_currency)}`}>
+                                                    <Stack direction="row" alignItems="center" spacing={0.5} sx={{ color: '#3B82F6', mt: 0.5 }}>
+                                                        <History sx={{ fontSize: 12 }} />
+                                                        <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                                                            {formatCurrency(pendingChanges[course.id].new_amount, pendingChanges[course.id].new_currency)}
+                                                        </Typography>
+                                                    </Stack>
+                                                </Tooltip>
+                                            )}
                                         </TableCell>
                                         <TableCell sx={{ borderBottom: '1px solid #374151' }}>
                                             <Chip

@@ -99,7 +99,7 @@ const CourseDashboard = () => {
 
     // Price change state
     const [priceChangeModalOpen, setPriceChangeModalOpen] = useState(false);
-    const [hasPendingPriceChange, setHasPendingPriceChange] = useState(false);
+    const [pendingPriceChange, setPendingPriceChange] = useState(null);
     const [priceChangeData, setPriceChangeData] = useState({
         new_amount: '',
         new_currency: 'USD',
@@ -141,8 +141,8 @@ const CourseDashboard = () => {
 
                 try {
                     const changesResp = await tutorCoursesService.listPriceChanges({ status: 'pending' });
-                    const pendingForThisCourse = (changesResp?.data || changesResp || []).find(r => r.course_id === courseId);
-                    setHasPendingPriceChange(!!pendingForThisCourse);
+                    const pending = (changesResp?.data || changesResp || []).find(r => r.course_id === courseId);
+                    setPendingPriceChange(pending || null);
                 } catch (e) {
                     console.warn('Could not fetch price changes:', e);
                 }
@@ -925,6 +925,14 @@ const CourseDashboard = () => {
                                                 ? formatCurrency(course.price, course.currency)
                                                 : 'Free'}
                                         </Typography>
+                                        {pendingPriceChange && (
+                                            <Stack direction="row" alignItems="center" spacing={0.5} sx={{ color: '#3B82F6', mt: 0.5 }}>
+                                                <History sx={{ fontSize: 12 }} />
+                                                <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                                                    {formatCurrency(pendingPriceChange.new_amount, pendingPriceChange.new_currency)}
+                                                </Typography>
+                                            </Stack>
+                                        )}
                                     </Box>
                                 </Box>
                             </Paper>
@@ -1049,25 +1057,28 @@ const CourseDashboard = () => {
                                         <Typography sx={{ color: '#6B7280', fontSize: '0.85rem' }}>
                                             Request a change for the certificate issuance price. This requires admin approval.
                                         </Typography>
-                                        {hasPendingPriceChange && (
+                                        {pendingPriceChange && (
                                             <Typography sx={{ color: '#3B82F6', fontSize: '0.85rem', mt: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                <History sx={{ fontSize: 16 }} /> Price change request pending approval
+                                                <History sx={{ fontSize: 16 }} /> Pending Approval: {formatCurrency(pendingPriceChange.new_amount, pendingPriceChange.new_currency)}
                                             </Typography>
                                         )}
                                     </Box>
                                     <Button
                                         variant="outlined"
-                                        startIcon={<Payments />}
+                                        startIcon={pendingPriceChange ? <History /> : <Payments />}
                                         onClick={() => setPriceChangeModalOpen(true)}
-                                        disabled={actionLoading}
+                                        disabled={actionLoading || !!pendingPriceChange}
                                         sx={{
-                                            borderColor: '#3B82F6',
-                                            color: '#3B82F6',
+                                            borderColor: pendingPriceChange ? '#9CA3AF' : '#3B82F6',
+                                            color: pendingPriceChange ? '#9CA3AF' : '#3B82F6',
                                             textTransform: 'none',
-                                            '&:hover': { borderColor: '#2563EB', bgcolor: 'rgba(59, 130, 246, 0.1)' }
+                                            '&:hover': {
+                                                borderColor: pendingPriceChange ? '#9CA3AF' : '#2563EB',
+                                                bgcolor: pendingPriceChange ? 'transparent' : 'rgba(59, 130, 246, 0.1)'
+                                            }
                                         }}
                                     >
-                                        Request Change
+                                        {pendingPriceChange ? 'Pending Approval' : 'Request Change'}
                                     </Button>
                                 </Stack>
                             </Paper>

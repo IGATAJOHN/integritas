@@ -51,7 +51,7 @@ const CertificatePriceChanges = () => {
         try {
             setLoading(true);
             const status = statusMap[activeTab];
-            const response = await adminCoursesService.listPriceChanges({ status });
+            const response = await adminCoursesService.listPriceChanges({ status, with_course: 1 });
             // The API response might have different structures, resolve to data array
             setRequests((response?.data || response) ?? []);
         } catch (err) {
@@ -141,7 +141,7 @@ const CertificatePriceChanges = () => {
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151' }}>Course ID</TableCell>
+                            <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151' }}>Course Name</TableCell>
                             <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151' }}>Old Price</TableCell>
                             <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151' }}>New Price</TableCell>
                             <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151' }}>Reason</TableCell>
@@ -166,7 +166,9 @@ const CertificatePriceChanges = () => {
                             requests.map((req) => (
                                 <TableRow key={req.id}>
                                     <TableCell sx={{ color: '#fff', borderBottom: '1px solid #374151' }}>
-                                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{req.course_id}</Typography>
+                                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                            {req.course?.title || req.course_title || `ID: ${req.course_id}`}
+                                        </Typography>
                                     </TableCell>
                                     <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151' }}>
                                         {formatCurrency(req.old_amount, req.old_currency)}
@@ -230,6 +232,9 @@ const CertificatePriceChanges = () => {
                         <IconButton onClick={() => setRejectModalOpen(false)} sx={{ color: '#fff' }} disabled={actionLoading}><Close /></IconButton>
                     </Box>
                     <Box sx={{ p: 3 }}>
+                        <Typography sx={{ color: '#fff', fontWeight: 600, mb: 1 }}>
+                            Course: {selectedRequest?.course?.title || selectedRequest?.course_title || `ID: ${selectedRequest?.course_id}`}
+                        </Typography>
                         <Typography sx={{ color: '#E5E7EB', mb: 2 }}>Provide a reason for rejecting this request.</Typography>
                         <TextField
                             fullWidth

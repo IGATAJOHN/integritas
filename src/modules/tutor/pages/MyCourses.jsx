@@ -31,6 +31,7 @@ import {
     Schedule,
     Block,
     Payments,
+    History,
 } from '@mui/icons-material';
 import { formatCurrency } from '../../../utils';
 
@@ -49,6 +50,7 @@ const MyCourses = () => {
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [pendingChanges, setPendingChanges] = useState({}); // Map of courseId -> change
 
     // Delete dialog state
     const [deleteDialog, setDeleteDialog] = useState({ open: false, course: null });
@@ -63,11 +65,22 @@ const MyCourses = () => {
             setLoading(true);
             setError(null);
             try {
-                const response = await tutorCoursesService.listCourses({ q: searchTerm });
-                setCourses(response.data || []);
+                const [coursesResp, changesResp] = await Promise.all([
+                    tutorCoursesService.listCourses({ q: searchTerm }),
+                    tutorCoursesService.listPriceChanges({ status: 'pending' })
+                ]);
+
+                setCourses(coursesResp.data || []);
+
+                // Construct a map of courseId to pending change
+                const changesMap = {};
+                (changesResp?.data || changesResp || []).forEach(change => {
+                    changesMap[change.course_id] = change;
+                });
+                setPendingChanges(changesMap);
             } catch (err) {
-                console.error('Failed to fetch courses:', err);
-                setError('Failed to load courses. Please try again.');
+                console.error('Failed to fetch data:', err);
+                setError('Failed to load data. Please try again.');
             } finally {
                 setLoading(false);
             }
@@ -317,11 +330,23 @@ const MyCourses = () => {
                                             </Stack>
                                             <Stack direction="row" alignItems="center" spacing={0.75}>
                                                 <Payments sx={{ color: '#F59E0B', fontSize: 18 }} />
-                                                <Typography sx={{ color: '#fff', fontWeight: 600, fontSize: '0.85rem' }}>
-                                                    {course.price > 0
-                                                        ? formatCurrency(course.price, course.currency)
-                                                        : 'Free'}
-                                                </Typography>
+                                                <Box>
+                                                    <Typography sx={{ color: '#fff', fontWeight: 600, fontSize: '0.85rem' }}>
+                                                        {course.price > 0
+                                                            ? formatCurrency(course.price, course.currency)
+                                                            : 'Free'}
+                                                    </Typography>
+                                                    {pendingChanges[course.id] && (
+                                                        <Tooltip title={`Pending Change: ${formatCurrency(pendingChanges[course.id].new_amount, pendingChanges[course.id].new_currency)}`}>
+                                                            <Stack direction="row" alignItems="center" spacing={0.5} sx={{ color: '#3B82F6' }}>
+                                                                <History sx={{ fontSize: 12 }} />
+                                                                <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                                                                    {formatCurrency(pendingChanges[course.id].new_amount, pendingChanges[course.id].new_currency)}
+                                                                </Typography>
+                                                            </Stack>
+                                                        </Tooltip>
+                                                    )}
+                                                </Box>
                                             </Stack>
                                         </Stack>
 
