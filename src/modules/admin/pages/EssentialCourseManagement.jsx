@@ -117,16 +117,134 @@ const getCategoryOptionLabel = (category) =>
     category?.name || category?.title || category?.slug || category?.id || 'Unknown category';
 
 const getCourseTutors = (course) => {
-    if (Array.isArray(course?.tutors)) return course.tutors;
-    if (Array.isArray(course?.users)) return course.users;
-    if (Array.isArray(course?.data?.tutors)) return course.data.tutors;
-    return [];
+    const candidates = [
+        course?.tutors,
+        course?.users,
+        course?.course_tutors,
+        course?.courseTutors,
+        course?.tutor_users,
+        course?.tutorUsers,
+        course?.tutor_assignments,
+        course?.tutorAssignments,
+        course?.data?.tutors,
+        course?.data?.users,
+        course?.data?.course_tutors,
+        course?.data?.courseTutors,
+        course?.data?.tutor_users,
+        course?.data?.tutorUsers,
+        course?.data?.tutor_assignments,
+        course?.data?.tutorAssignments,
+    ];
+
+    return candidates.find((value) => Array.isArray(value)) || [];
 };
 
 const getCourseCategories = (course) => {
     if (Array.isArray(course?.categories)) return course.categories;
     if (Array.isArray(course?.data?.categories)) return course.data.categories;
     return [];
+};
+
+const normalizeTutorEntity = (item, tutorOptions = []) => {
+    if (item === null || item === undefined) return null;
+
+    if (typeof item === 'string' || typeof item === 'number') {
+        const id = String(item).trim();
+        if (!id) return null;
+        const fallbackTutor = tutorOptions.find((tutor) => String(tutor?.id) === id);
+        if (fallbackTutor) {
+            return {
+                id,
+                name: getTutorOptionLabel(fallbackTutor),
+                email: fallbackTutor?.email || fallbackTutor?.user?.email || '',
+            };
+        }
+        return { id, name: id };
+    }
+
+    const nestedTutor = (item.tutor && typeof item.tutor === 'object')
+        ? item.tutor
+        : (item.user && typeof item.user === 'object')
+            ? item.user
+            : null;
+
+    const source = nestedTutor || item;
+    const rawId = source?.id || item?.tutor_id || item?.user_id || item?.pivot?.tutor_id || item?.pivot?.user_id;
+    if (!rawId) return null;
+
+    const id = String(rawId).trim();
+    if (!id) return null;
+
+    const name = source?.name || source?.full_name || source?.email || id;
+    const email = source?.email || item?.email || '';
+
+    return { ...source, id, name, email };
+};
+
+const getCourseTutorIds = (course) => {
+    const idSources = [
+        course?.tutor_ids,
+        course?.tutorIds,
+        course?.data?.tutor_ids,
+        course?.data?.tutorIds,
+    ];
+
+    const idsFromDirectFields = idSources.flatMap((value) => {
+        if (Array.isArray(value)) return value;
+        if (typeof value === 'string') return parseCommaList(value);
+        return [];
+    });
+
+    const tutors = getCourseTutors(course);
+    const idsFromTutorArray = tutors.map((tutor) => {
+        if (typeof tutor === 'string' || typeof tutor === 'number') return tutor;
+        return tutor?.id || tutor?.tutor_id || tutor?.user_id || tutor?.pivot?.tutor_id || null;
+    });
+
+    return [...idsFromDirectFields, ...idsFromTutorArray]
+        .map((id) => String(id || '').trim())
+        .filter(Boolean);
+};
+
+const dedupeTutorsById = (tutors = []) => {
+    const seen = new Set();
+    return tutors.filter((tutor) => {
+        const id = String(tutor?.id || '').trim();
+        if (!id || seen.has(id)) return false;
+        seen.add(id);
+        return true;
+    });
+};
+
+const resolveCourseTutors = (course, { fallbackCourse = null, tutorOptions = [] } = {}) => {
+    const rawTutors = [...getCourseTutors(course), ...getCourseTutors(fallbackCourse)];
+    const normalizedTutors = dedupeTutorsById(
+        rawTutors
+            .map((item) => normalizeTutorEntity(item, tutorOptions))
+            .filter(Boolean)
+    );
+
+    if (normalizedTutors.length > 0) return normalizedTutors;
+
+    const tutorIds = [...getCourseTutorIds(course), ...getCourseTutorIds(fallbackCourse)]
+        .map((id) => String(id || '').trim())
+        .filter(Boolean);
+
+    if (tutorIds.length === 0) return [];
+
+    return dedupeTutorsById(
+        tutorIds.map((id) => {
+            const fallbackTutor = tutorOptions.find((tutor) => String(tutor?.id) === id);
+            if (fallbackTutor) {
+                return {
+                    id,
+                    name: getTutorOptionLabel(fallbackTutor),
+                    email: fallbackTutor?.email || fallbackTutor?.user?.email || '',
+                };
+            }
+            return { id, name: id, email: '' };
+        })
+    );
 };
 
 const hasAnyFile = (formData) =>
@@ -229,7 +347,7 @@ const EssentialCourseManagement = () => {
 
     const courseRows = useMemo(() => {
         return courses.map((course) => {
-            const tutors = getCourseTutors(course);
+            const tutors = resolveCourseTutors(course, { tutorOptions });
             const categories = getCourseCategories(course);
 
             return {
@@ -241,9 +359,12 @@ const EssentialCourseManagement = () => {
                 _categoryCount: categories.length,
             };
         });
-    }, [courses]);
+    }, [courses, tutorOptions]);
 
-    const loadCourseDetail = useCallback(async (courseId, { openModal = false } = {}) => {
+    const loadCourseDetail = useCallback(async (
+        courseId,
+        { openModal = false, fallbackCourse = null } = {}
+    ) => {
         setDetailLoading(true);
         try {
             const detail = await optionAdminService.getEssentialCourseById(courseId, {
@@ -252,15 +373,15 @@ const EssentialCourseManagement = () => {
                 with_audit: 1,
             });
 
-            const tutors = getCourseTutors(detail);
+            const tutors = resolveCourseTutors(detail, { fallbackCourse, tutorOptions });
             setSelectedTutorIds(tutors.map((tutor) => tutor.id).filter(Boolean));
-            setSelectedCourse(detail);
+            setSelectedCourse(tutors.length > 0 ? { ...detail, tutors } : detail);
 
             if (openModal) {
                 setOpenDetailModal(true);
             }
 
-            return detail;
+            return tutors.length > 0 ? { ...detail, tutors } : detail;
         } catch (err) {
             console.error('Failed to load course detail:', err);
             openSnackbar(err.message || 'Failed to load course detail.', 'error');
@@ -268,10 +389,10 @@ const EssentialCourseManagement = () => {
         } finally {
             setDetailLoading(false);
         }
-    }, []);
+    }, [tutorOptions]);
 
     const mapCourseToForm = (course) => {
-        const tutors = getCourseTutors(course);
+        const tutors = resolveCourseTutors(course, { tutorOptions });
         const categories = getCourseCategories(course);
 
         return {
@@ -306,7 +427,7 @@ const EssentialCourseManagement = () => {
         setOpenFormModal(true);
     };
 
-    const openEditModal = async (courseId) => {
+    const openEditModal = async (courseId, fallbackCourse = null) => {
         setActionLoading(courseId);
         try {
             const detail = await optionAdminService.getEssentialCourseById(courseId, {
@@ -315,8 +436,11 @@ const EssentialCourseManagement = () => {
                 with_audit: 1,
             });
 
-            setEditingCourse(detail);
-            setFormData(mapCourseToForm(detail));
+            const tutors = resolveCourseTutors(detail, { fallbackCourse, tutorOptions });
+            const normalizedDetail = tutors.length > 0 ? { ...detail, tutors } : detail;
+
+            setEditingCourse(normalizedDetail);
+            setFormData(mapCourseToForm(normalizedDetail));
             setActiveStep(0);
             setStepErrors({});
             setOpenFormModal(true);
@@ -419,7 +543,7 @@ const EssentialCourseManagement = () => {
         try {
             await optionAdminService.addTutorsToCourse(selectedCourse.id, selectedTutorIds);
             openSnackbar('Tutors added successfully.');
-            await loadCourseDetail(selectedCourse.id);
+            await loadCourseDetail(selectedCourse.id, { fallbackCourse: selectedCourse });
             await listCourses({ q: searchTerm, status: statusFilter });
         } catch (err) {
             console.error('Failed to add tutors:', err);
@@ -439,7 +563,7 @@ const EssentialCourseManagement = () => {
         try {
             await optionAdminService.syncCourseTutors(selectedCourse.id, selectedTutorIds);
             openSnackbar('Course tutors updated successfully.');
-            await loadCourseDetail(selectedCourse.id);
+            await loadCourseDetail(selectedCourse.id, { fallbackCourse: selectedCourse });
             await listCourses({ q: searchTerm, status: statusFilter });
         } catch (err) {
             console.error('Failed to sync tutors:', err);
@@ -457,7 +581,7 @@ const EssentialCourseManagement = () => {
         try {
             await optionAdminService.removeTutorFromCourse(selectedCourse.id, tutorId);
             openSnackbar('Tutor removed from course.');
-            await loadCourseDetail(selectedCourse.id);
+            await loadCourseDetail(selectedCourse.id, { fallbackCourse: selectedCourse });
             await listCourses({ q: searchTerm, status: statusFilter });
         } catch (err) {
             console.error('Failed to remove tutor from course:', err);
@@ -467,7 +591,10 @@ const EssentialCourseManagement = () => {
         }
     };
 
-    const selectedCourseTutors = useMemo(() => getCourseTutors(selectedCourse), [selectedCourse]);
+    const selectedCourseTutors = useMemo(
+        () => resolveCourseTutors(selectedCourse, { tutorOptions }),
+        [selectedCourse, tutorOptions]
+    );
     const selectedCourseCategories = useMemo(() => getCourseCategories(selectedCourse), [selectedCourse]);
     const selectedTutorCount = normalizeIdList(formData.tutor_ids).length;
     const selectedCategoryCount = normalizeIdList(formData.category_ids).length;
@@ -1048,7 +1175,10 @@ const EssentialCourseManagement = () => {
                                             <Stack direction="row" spacing={1} justifyContent="flex-end">
                                                 <Tooltip title="View Details">
                                                     <IconButton
-                                                        onClick={() => loadCourseDetail(course.id, { openModal: true })}
+                                                        onClick={() => loadCourseDetail(course.id, {
+                                                            openModal: true,
+                                                            fallbackCourse: course,
+                                                        })}
                                                         sx={{ color: '#3B82F6' }}
                                                     >
                                                         <Visibility fontSize="small" />
@@ -1057,7 +1187,7 @@ const EssentialCourseManagement = () => {
 
                                                 <Tooltip title="Edit Course">
                                                     <IconButton
-                                                        onClick={() => openEditModal(course.id)}
+                                                        onClick={() => openEditModal(course.id, course)}
                                                         disabled={actionLoading === course.id}
                                                         sx={{ color: '#F59E0B' }}
                                                     >
