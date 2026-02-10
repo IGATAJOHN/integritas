@@ -147,7 +147,7 @@ const CourseManagement = () => {
                                 <TableCell colSpan={6} align="center" sx={{ py: 8, color: '#9CA3AF' }}>
                                     No courses found.
                                 </TableCell>
-                            </T    ableRow>
+                            </TableRow>
                         ) : (
                             courses.map((course) => {
                                 const isActive = course.status === 'active' || course.status === 'published';
