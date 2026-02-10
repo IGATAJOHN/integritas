@@ -108,4 +108,94 @@ export const adminCoursesService = {
         const res = await apiService.post(`/lms/certificate-price-changes/${changeId}/reject`, { rejection_reason });
         return res;
     },
+
+    // ============ MODULE MANAGEMENT ============
+
+    /**
+     * Create a new module for a course
+     * POST /lms/courses/{courseId}/modules
+     */
+    createModule: async (courseId, payload) => {
+        const res = await apiService.post(`/lms/courses/${courseId}/modules`, payload);
+        return unwrapCourse(res);
+    },
+
+    /**
+     * Update a module
+     * PUT /lms/modules/{moduleId}
+     */
+    updateModule: async (moduleId, payload) => {
+        const res = await apiService.put(`/lms/modules/${moduleId}`, payload);
+        return unwrapCourse(res);
+    },
+
+    /**
+     * Delete a module
+     * DELETE /lms/modules/{moduleId}
+     */
+    deleteModule: async (moduleId) => {
+        const res = await apiService.delete(`/lms/modules/${moduleId}`);
+        return { success: true, ...res };
+    },
+
+    // ============ LESSON MANAGEMENT ============
+
+    listLessons: async (moduleId) => {
+        const res = await apiService.get(`/lms/modules/${moduleId}/lessons`);
+        return unwrapList(res);
+    },
+
+    createLesson: async (moduleId, payload) => {
+        const res = await apiService.post(`/lms/modules/${moduleId}/lessons`, payload);
+        return unwrapCourse(res);
+    },
+
+    deleteLesson: async (lessonId) => {
+        const res = await apiService.delete(`/lms/lessons/${lessonId}`);
+        return { success: true, ...res };
+    },
+
+    publishLesson: async (moduleId, lessonId) => {
+        const res = await apiService.post(`/lms/modules/${moduleId}/lessons/${lessonId}/publish`);
+        return unwrapCourse(res);
+    },
+
+    unpublishLesson: async (moduleId, lessonId) => {
+        const res = await apiService.post(`/lms/modules/${moduleId}/lessons/${lessonId}/unpublish`);
+        return unwrapCourse(res);
+    },
+
+    uploadLessonMedia: async (lessonId, formData) => {
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+        const user = localStorage.getItem('user');
+        const token = user ? JSON.parse(user).token : null;
+        const headers = { 'Accept': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const response = await fetch(`${API_BASE_URL}/lms/lessons/${lessonId}/media`, {
+            method: 'POST',
+            headers,
+            body: formData,
+        });
+
+        if (!response.ok) {
+            let msg = 'Upload failed';
+            try { const d = await response.json(); msg = d.message || msg; } catch (e) { }
+            throw new Error(msg);
+        }
+        if (response.status === 204) return null;
+        return response.json();
+    },
+
+    // ============ MODULE PUBLISH ============
+
+    publishModule: async (courseId, moduleId) => {
+        const res = await apiService.post(`/lms/courses/${courseId}/modules/${moduleId}/publish`);
+        return unwrapCourse(res);
+    },
+
+    unpublishModule: async (courseId, moduleId) => {
+        const res = await apiService.post(`/lms/courses/${courseId}/modules/${moduleId}/unpublish`);
+        return unwrapCourse(res);
+    },
 };

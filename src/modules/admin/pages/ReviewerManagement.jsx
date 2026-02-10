@@ -177,9 +177,9 @@ const ReviewerManagement = () => {
      * Create new reviewer
      */
     const handleCreateReviewer = async () => {
-            const safe = (v) => String(v ?? '').trim();
-            if (!safe(formData.first_name) || !safe(formData.last_name) || !safe(formData.email) || !safe(formData.phone) || !safe(formData.specialization) || !safe(formData.max_assignments)) {
-                setSnackbar({ open: true, message: 'All fields are required', severity: 'error' });
+        const safe = (v) => String(v ?? '').trim();
+        if (!safe(formData.first_name) || !safe(formData.last_name) || !safe(formData.email) || !safe(formData.phone) || !safe(formData.specialization) || !safe(formData.max_assignments)) {
+            setSnackbar({ open: true, message: 'All fields are required', severity: 'error' });
             return;
         }
 

@@ -4,6 +4,13 @@ import { adminCoursesService } from '../services';
 import { CircularProgress } from '@mui/material';
 import { formatCurrency } from '../../../utils';
 import {
+    searchBarStyle,
+    searchInputStyle,
+    tableHeaderCellStyle,
+    tableBodyCellStyle,
+    paperStyle,
+} from '../../../styles/formStyles';
+import {
     Box,
     Typography,
     Paper,
@@ -102,49 +109,30 @@ const CourseManagement = () => {
             </Stack>
 
             {/* Search Section */}
-            <Paper sx={{ p: 2, mb: 4, bgcolor: '#1A2230', borderRadius: 2, border: '1px solid #374151' }}>
-                <Box sx={{
-                    bgcolor: "#1F2937",
-                    borderRadius: 1,
-                    px: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    width: '100%',
-                    maxWidth: 400,
-                    height: '40px'
-                }}>
+            <Paper sx={{ ...paperStyle, p: 2, mb: 4 }}>
+                <Box sx={{ ...searchBarStyle, maxWidth: 400 }}>
                     <Search sx={{ color: "#9CA3AF", fontSize: 20 }} />
                     <InputBase
                         placeholder="Search courses, tutors, categories..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        sx={{
-                            color: "#FFFFFF",
-                            fontSize: '0.9rem',
-                            width: '100%',
-                            '& input': {
-                                border: 'none',
-                                outline: 'none',
-                                '&::placeholder': { color: '#6B7280' }
-                            }
-                        }}
+                        sx={searchInputStyle}
                     />
                 </Box>
             </Paper>
 
             {/* Courses Table */}
-            <TableContainer component={Paper} sx={{ bgcolor: '#1A2230', borderRadius: 2, border: '1px solid #374151' }}>
+            <TableContainer component={Paper} sx={paperStyle}>
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }}>Course</TableCell>
-                            <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }}>Tutor</TableCell>
-                            <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }}>Students</TableCell>
-                            <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }}>Category</TableCell>
-                            <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }}>Price</TableCell>
-                            <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }}>Status</TableCell>
-                            <TableCell align="right" sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }}>Actions</TableCell>
+                            <TableCell sx={tableHeaderCellStyle}>Course</TableCell>
+                            <TableCell sx={tableHeaderCellStyle}>Tutor</TableCell>
+                            <TableCell sx={tableHeaderCellStyle}>Students</TableCell>
+                            <TableCell sx={tableHeaderCellStyle}>Category</TableCell>
+                            <TableCell sx={tableHeaderCellStyle}>Price</TableCell>
+                            <TableCell sx={tableHeaderCellStyle}>Status</TableCell>
+                            <TableCell align="right" sx={tableHeaderCellStyle}>Actions</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -159,7 +147,7 @@ const CourseManagement = () => {
                                 <TableCell colSpan={6} align="center" sx={{ py: 8, color: '#9CA3AF' }}>
                                     No courses found.
                                 </TableCell>
-                            </TableRow>
+                            </T    ableRow>
                         ) : (
                             courses.map((course) => {
                                 const isActive = course.status === 'active' || course.status === 'published';
@@ -193,8 +181,8 @@ const CourseManagement = () => {
                                     return (tutorData.first_name?.[0] || tutorData.firstName?.[0] || tutorData.name?.[0] || tutorData.username?.[0] || '?');
                                 })();
                                 return (
-                                    <TableRow key={course.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                                        <TableCell sx={{ color: '#fff', borderBottom: '1px solid #374151' }}>
+                                    <TableRow key={course.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                                        <TableCell sx={{ ...tableBodyCellStyle, color: '#fff' }}>
                                             <Stack direction="row" alignItems="center" spacing={2}>
                                                 <Box
                                                     sx={{
@@ -224,7 +212,7 @@ const CourseManagement = () => {
                                                 </Box>
                                             </Stack>
                                         </TableCell>
-                                        <TableCell sx={{ borderBottom: '1px solid #374151' }}>
+                                        <TableCell sx={tableBodyCellStyle}>
                                             <Stack direction="row" alignItems="center" spacing={1.5}>
                                                 {/* Check tutor, user, or creator (from with_audit) */}
                                                 <>
@@ -237,7 +225,7 @@ const CourseManagement = () => {
                                                 </>
                                             </Stack>
                                         </TableCell>
-                                        <TableCell sx={{ borderBottom: '1px solid #374151' }}>
+                                        <TableCell sx={tableBodyCellStyle}>
                                             <Stack direction="row" alignItems="center" spacing={1}>
                                                 <Typography variant="body2" sx={{ color: '#fff', fontWeight: 600 }}>
                                                     {course.students_count || 0}
@@ -247,7 +235,7 @@ const CourseManagement = () => {
                                                 </Typography>
                                             </Stack>
                                         </TableCell>
-                                        <TableCell sx={{ borderBottom: '1px solid #374151' }}>
+                                        <TableCell sx={tableBodyCellStyle}>
                                             <Chip
                                                 label={categoryLabel}
                                                 size="small"
@@ -259,7 +247,7 @@ const CourseManagement = () => {
                                                 }}
                                             />
                                         </TableCell>
-                                        <TableCell sx={{ borderBottom: '1px solid #374151' }}>
+                                        <TableCell sx={tableBodyCellStyle}>
                                             <Typography variant="body2" sx={{ color: '#fff', fontWeight: 600 }}>
                                                 {course.price > 0
                                                     ? formatCurrency(course.price, course.currency)
@@ -276,7 +264,7 @@ const CourseManagement = () => {
                                                 </Tooltip>
                                             )}
                                         </TableCell>
-                                        <TableCell sx={{ borderBottom: '1px solid #374151' }}>
+                                        <TableCell sx={tableBodyCellStyle}>
                                             <Chip
                                                 icon={isActive ? <CheckCircle sx={{ fontSize: 14 }} /> : <Block sx={{ fontSize: 14 }} />}
                                                 label={statusLabel}
@@ -291,7 +279,7 @@ const CourseManagement = () => {
                                                 }}
                                             />
                                         </TableCell>
-                                        <TableCell align="right" sx={{ borderBottom: '1px solid #374151' }}>
+                                        <TableCell align="right" sx={tableBodyCellStyle}>
                                             <Button
                                                 variant="contained"
                                                 size="small"

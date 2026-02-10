@@ -1,507 +1,718 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { adminCoursesService } from '../services';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
-    Box,
-    Typography,
-    Paper,
-    Button,
-    Stack,
-    IconButton,
-    Chip,
-    Avatar,
-    CircularProgress,
-    Divider,
-    Collapse,
-    TextField,
-    Modal,
-    Snackbar,
-    Alert
+    Box, Typography, Stack, Button, IconButton, Paper,
+    Tabs, Tab, Accordion, AccordionSummary, AccordionDetails,
+    List, ListItem, ListItemButton, ListItemIcon, ListItemText,
+    TextField, Modal, Chip, Alert, Snackbar, CircularProgress,
+    FormControl, InputLabel, Select, MenuItem, Switch, Breadcrumbs
 } from '@mui/material';
 import {
-    ArrowBack,
-    School,
-    CheckCircle,
-    Block,
-    ExpandMore,
-    ExpandLess,
-    PlayCircleOutline,
-    ArticleOutlined,
-    QuizOutlined,
-    Close,
-    History,
+    ArrowBack, Add, Edit, Delete, ExpandMore, Publish,
+    School, Language, Timer, Payments, History, CheckCircle,
+    Cancel, PlayCircleOutline, Description, AttachFile, Close,
+    CloudUpload, VideoLibrary
 } from '@mui/icons-material';
-import { formatCurrency } from '../../../utils';
+import { adminCoursesService } from '../services/courseService';
+import {
+
+    textFieldStyle,
+    selectStyle,
+    selectMenuProps,
+    primaryButtonStyle,
+    paperStyle,
+    modalStyle
+} from '../../../styles/formStyles';
 
 const AdminCourseDetail = () => {
     const { courseId } = useParams();
     const navigate = useNavigate();
 
+    // Data State
     const [course, setCourse] = useState(null);
+    const [modules, setModules] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [expandedModules, setExpandedModules] = useState({});
     const [actionLoading, setActionLoading] = useState(false);
+    const [activeTab, setActiveTab] = useState(0);
 
-    // Rejection Modal State
-    const [openRejectModal, setOpenRejectModal] = useState(false);
+    // Module Modal State
+    const [moduleModalOpen, setModuleModalOpen] = useState(false);
+    const [moduleTitle, setModuleTitle] = useState('');
+    const [moduleDescription, setModuleDescription] = useState('');
+    const [editingModuleId, setEditingModuleId] = useState(null);
+
+    // Lesson Modal State
+    const [lessonModalOpen, setLessonModalOpen] = useState(false);
+    const [selectedModuleForLesson, setSelectedModuleForLesson] = useState(null);
+    const [lessonTitle, setLessonTitle] = useState('');
+    const [lessonType, setLessonType] = useState('video');
+    const [lessonContent, setLessonContent] = useState('');
+    const [lessonDuration, setLessonDuration] = useState(0);
+    const [lessonFile, setLessonFile] = useState(null);
+    const [lessonFileName, setLessonFileName] = useState('');
+
+    // Reject Modal State
+    const [rejectModalOpen, setRejectModalOpen] = useState(false);
     const [rejectionReason, setRejectionReason] = useState('');
-    const [pendingPriceChange, setPendingPriceChange] = useState(null);
+
+    // Snackbar
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-    const fetchCourse = async () => {
-        setLoading(true);
-        try {
-            const data = await adminCoursesService.getCourseDetail(courseId);
-            // Fetch modules if missing
-            if (!data.modules || data.modules.length === 0) {
-                try {
-                    const modules = await adminCoursesService.getCourseModules(courseId);
-                    data.modules = modules;
-                } catch (err) {
-                    console.warn('Failed to fetch modules', err);
-                }
-            }
-            setCourse(data);
+    useEffect(() => {
+        fetchCourseData();
+    }, [courseId]);
 
-            // Fetch pending price changes
-            try {
-                const changesResp = await adminCoursesService.listPriceChanges({ status: 'pending' });
-                const pending = (changesResp?.data || changesResp || []).find(r => r.course_id === courseId);
-                setPendingPriceChange(pending || null);
-            } catch (e) {
-                console.warn('Failed to fetch pending price changes', e);
+    const fetchCourseData = async () => {
+        try {
+            setLoading(true);
+            const courseData = await adminCoursesService.getCourseDetail(courseId);
+            setCourse(courseData);
+
+            // Fetch modules details
+            const modulesData = await adminCoursesService.getCourseModules(courseId);
+
+            // Fetch lessons for each module in parallel to populate the accordion
+            if (modulesData && modulesData.length > 0) {
+                const modulesWithLessons = await Promise.all(modulesData.map(async (mod) => {
+                    try {
+                        const lessonsRes = await adminCoursesService.listLessons(mod.id);
+                        return { ...mod, lessons: lessonsRes.data || [] };
+                    } catch (e) {
+                        return { ...mod, lessons: [] };
+                    }
+                }));
+                setModules(modulesWithLessons);
+            } else {
+                setModules([]);
             }
         } catch (error) {
-            console.error("Failed to fetch course:", error);
-            setSnackbar({ open: true, message: 'Failed to load course details', severity: 'error' });
+            console.error('Error fetching course data:', error);
+            showSnackbar('Failed to load course data', 'error');
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => {
-        if (courseId) {
-            fetchCourse();
-        }
-    }, [courseId]);
-
-    const handleBack = () => {
-        navigate('/admin/content/courses');
+    const showSnackbar = (message, severity = 'success') => {
+        setSnackbar({ open: true, message, severity });
     };
 
-    const toggleModule = (moduleId) => {
-        setExpandedModules(prev => ({
-            ...prev,
-            [moduleId]: !prev[moduleId]
-        }));
-    };
+    // --- Module Handlers ---
 
-    const handleApprove = async () => {
-        if (!course) return;
-        setActionLoading(true);
+    const handleCreateModule = async () => {
+        if (!moduleTitle.trim()) return;
         try {
-            const updated = await adminCoursesService.approveCourse(course.id);
-            // Update local state
-            const newStatus = (updated && updated.status) ? updated.status : 'published';
-            setCourse(prev => ({ ...prev, status: newStatus, is_published: true }));
-            setSnackbar({ open: true, message: 'Course approved successfully!', severity: 'success' });
+            setActionLoading(true);
+            const payload = { title: moduleTitle, description: moduleDescription };
+
+            if (editingModuleId) {
+                await adminCoursesService.updateModule(editingModuleId, payload);
+                showSnackbar('Module updated successfully');
+            } else {
+                await adminCoursesService.createModule(courseId, payload);
+                showSnackbar('Module created successfully');
+            }
+
+            setModuleModalOpen(false);
+            setModuleTitle('');
+            setModuleDescription('');
+            setEditingModuleId(null);
+            fetchCourseData();
         } catch (error) {
-            console.error("Failed to approve:", error);
-            setSnackbar({ open: true, message: 'Failed to approve course', severity: 'error' });
+            showSnackbar('Failed to save module', 'error');
         } finally {
             setActionLoading(false);
         }
     };
 
-    const handleReject = async () => {
-        if (!course || !rejectionReason.trim()) return;
-        setActionLoading(true);
+    const handleDeleteModule = async (moduleId) => {
+        if (!window.confirm('Are you sure? All lessons in this module will be deleted.')) return;
         try {
-            const updated = await adminCoursesService.rejectCourse(course.id, rejectionReason);
-            const newStatus = (updated && updated.status) ? updated.status : 'draft';
-            setCourse(prev => ({ ...prev, status: newStatus, is_published: false, meta: updated?.meta || prev.meta }));
-            setOpenRejectModal(false);
-            setRejectionReason('');
-            setSnackbar({ open: true, message: 'Course rejected', severity: 'info' });
+            setActionLoading(true);
+            await adminCoursesService.deleteModule(moduleId);
+            showSnackbar('Module deleted');
+            fetchCourseData();
         } catch (error) {
-            console.error("Failed to reject:", error);
-            setSnackbar({ open: true, message: 'Failed to reject course', severity: 'error' });
+            showSnackbar('Failed to delete module', 'error');
         } finally {
             setActionLoading(false);
         }
     };
+
+    const handlePublishModule = async (moduleId, currentStatus) => {
+        try {
+            // Optimistic update
+            const updatedModules = modules.map(m =>
+                m.id === moduleId ? { ...m, is_published: !currentStatus } : m
+            );
+            setModules(updatedModules);
+
+            if (currentStatus) {
+                await adminCoursesService.unpublishModule(courseId, moduleId);
+                showSnackbar('Module unpublished');
+            } else {
+                await adminCoursesService.publishModule(courseId, moduleId);
+                showSnackbar('Module published');
+            }
+            fetchCourseData();
+        } catch (error) {
+            showSnackbar('Failed to update module status', 'error');
+            fetchCourseData(); // Revert
+        }
+    };
+
+    // --- Lesson Handlers ---
+
+    const openAddLessonModal = (moduleId) => {
+        setSelectedModuleForLesson(moduleId);
+        setLessonTitle('');
+        setLessonType('video');
+        setLessonContent('');
+        setLessonDuration(0);
+        setLessonFile(null);
+        setLessonFileName('');
+        setLessonModalOpen(true);
+    };
+
+    const handleCreateLesson = async () => {
+        if (!lessonTitle.trim()) {
+            showSnackbar('Lesson title is required', 'error');
+            return;
+        }
+
+        try {
+            setActionLoading(true);
+
+            const payload = {
+                title: lessonTitle,
+                type: lessonType,
+                content: lessonContent,
+                duration: lessonDuration,
+                position: 0
+            };
+
+            const newLesson = await adminCoursesService.createLesson(selectedModuleForLesson, payload);
+
+            if ((lessonType === 'video' || lessonType === 'document') && lessonFile) {
+                const formData = new FormData();
+                formData.append('file', lessonFile);
+                await adminCoursesService.uploadLessonMedia(newLesson.id, formData);
+            }
+
+            showSnackbar('Lesson created successfully');
+            setLessonModalOpen(false);
+            fetchCourseData();
+        } catch (error) {
+            console.error('Create lesson error:', error);
+            showSnackbar(error.message || 'Failed to create lesson', 'error');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleDeleteLesson = async (lessonId) => {
+        if (!window.confirm('Delete this lesson?')) return;
+        try {
+            setActionLoading(true);
+            await adminCoursesService.deleteLesson(lessonId);
+            showSnackbar('Lesson deleted');
+            fetchCourseData();
+        } catch (error) {
+            showSnackbar('Failed to delete lesson', 'error');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handlePublishLesson = async (moduleId, lessonId, currentStatus) => {
+        try {
+            if (currentStatus) {
+                await adminCoursesService.unpublishLesson(moduleId, lessonId);
+                showSnackbar('Lesson unpublished');
+            } else {
+                await adminCoursesService.publishLesson(moduleId, lessonId);
+                showSnackbar('Lesson published');
+            }
+            fetchCourseData();
+        } catch (error) {
+            showSnackbar('Failed to update lesson status', 'error');
+        }
+    };
+
+    // --- Course Actions ---
+
+    const handlePublishCourse = async () => {
+        try {
+            setActionLoading(true);
+            if (course.published_at) {
+                await adminCoursesService.unpublishCourse(courseId);
+                showSnackbar('Course unpublished');
+            } else {
+                await adminCoursesService.publishCourse(courseId);
+                showSnackbar('Course published');
+            }
+            fetchCourseData();
+        } catch (error) {
+            showSnackbar('Failed to update course status', 'error');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleApproveCourse = async () => {
+        if (!window.confirm('Approve this course? It will be marked as reviewed.')) return;
+        try {
+            setActionLoading(true);
+            await adminCoursesService.updateCourse(courseId, { status: 'published' });
+            showSnackbar('Course approved');
+            fetchCourseData();
+        } catch (error) {
+            showSnackbar('Failed to approve course', 'error');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleRejectCourse = async () => {
+        if (!rejectionReason.trim()) {
+            showSnackbar('Please provide a reason', 'error');
+            return;
+        }
+        try {
+            setActionLoading(true);
+            await adminCoursesService.updateCourse(courseId, { status: 'rejected', rejection_reason: rejectionReason });
+            showSnackbar('Course rejected');
+            setRejectModalOpen(false);
+            fetchCourseData();
+        } catch (error) {
+            showSnackbar('Failed to reject course', 'error');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleDeleteCourse = async () => {
+        if (!window.confirm('CRITICAL: Delete this course permanently? This cannot be undone.')) return;
+        try {
+            setActionLoading(true);
+            await adminCoursesService.deleteCourse(courseId);
+            navigate('/admin/content/courses');
+        } catch (error) {
+            showSnackbar('Failed to delete course', 'error');
+            setActionLoading(false);
+        }
+    };
+
+    // --- Render Helpers ---
 
     const getLessonIcon = (type) => {
         switch (type) {
-            case 'video': return <PlayCircleOutline sx={{ fontSize: 18, color: '#3B82F6' }} />;
-            case 'reading': return <ArticleOutlined sx={{ fontSize: 18, color: '#10B981' }} />;
-            case 'quiz': return <QuizOutlined sx={{ fontSize: 18, color: '#F59E0B' }} />;
-            default: return <ArticleOutlined sx={{ fontSize: 18, color: '#9CA3AF' }} />;
+            case 'video': return <PlayCircleOutline />;
+            case 'document': return <Description />;
+            case 'text': return <Language />;
+            case 'quiz': return <School />;
+            default: return <VideoLibrary />;
         }
     };
 
-    // Modal styling
-    const modalStyle = {
-        position: 'absolute',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        width: { xs: '95%', sm: 500 },
-        bgcolor: '#1A2230',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        borderRadius: 4,
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-        p: 0,
-        outline: 'none',
+    const formatCurrency = (amount, currency) => {
+        return new Intl.NumberFormat('en-NG', { style: 'currency', currency: currency || 'NGN' }).format(amount);
     };
 
     if (loading) {
         return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', bgcolor: '#0C1322' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', bgcolor: '#0F1729' }}>
                 <CircularProgress />
             </Box>
         );
     }
 
-    if (!course) {
-        return (
-            <Box sx={{ p: 4, bgcolor: '#0C1322', minHeight: '100vh', color: '#fff' }}>
-                <Typography>Course not found.</Typography>
-                <Button onClick={handleBack}>Back</Button>
-            </Box>
-        );
-    }
-
-    const isPublished = course.status === 'published' || course.status === 'active';
-    const isDraft = course.status === 'draft';
-    // Determine a friendly category label from multiple possible response shapes
-    const categoryLabel = course.category?.name
-        || course.category?.title
-        || course.category_name
-        || (course.categories && course.categories[0]?.name)
-        || '-';
-
-    // Determine a friendly tutor name from multiple possible response shapes
-    const tutorObj = course.tutor || course.user || course.creator || course.created_by;
-    const tutorName = (() => {
-        if (!tutorObj) return null;
-        if (typeof tutorObj === 'string') {
-            const s = String(tutorObj).trim();
-            return s || null;
-        }
-        const first = String(tutorObj.first_name || tutorObj.firstName || '').trim();
-        const last = String(tutorObj.last_name || tutorObj.lastName || '').trim();
-        if (first || last) return `${first} ${last}`.trim();
-        const name = String(
-            tutorObj.name || tutorObj.full_name || tutorObj.fullName || tutorObj.display_name || tutorObj.displayName || tutorObj.username || tutorObj.email || ''
-        ).trim();
-        return name || null;
-    })();
+    if (!course) return null;
 
     return (
-        <Box sx={{ p: { xs: 2, md: 4 }, bgcolor: '#0C1322', minHeight: '100vh', width: '100%' }}>
+        <Box sx={{ p: { xs: 2, md: 4 }, bgcolor: '#0F1729', minHeight: '100vh', color: '#fff' }}>
             {/* Header */}
             <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 4 }}>
-                <IconButton onClick={handleBack} sx={{ color: '#9CA3AF' }}>
+                <IconButton onClick={() => navigate('/admin/content/courses')} sx={{ color: '#9CA3AF' }}>
                     <ArrowBack />
                 </IconButton>
-                <Box>
-                    <Typography variant="h4" sx={{ color: '#fff', fontWeight: 700 }}>
+                <Box sx={{ flexGrow: 1 }}>
+                    <Breadcrumbs separator="›" sx={{ color: '#6B7280', fontSize: '0.85rem', mb: 0.5 }}>
+                        <Link to="/admin/content/courses" style={{ color: '#6B7280', textDecoration: 'none' }}>Courses</Link>
+                        <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem' }}>Details</Typography>
+                    </Breadcrumbs>
+                    <Typography variant="h5" sx={{ fontWeight: 600, color: '#fff' }}>
                         {course.title}
                     </Typography>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                        <Typography variant="body2" sx={{ color: '#9CA3AF' }}>
-                            by {tutorName || 'Unknown Tutor'}
-                        </Typography>
-                        <Chip
-                            label={course.status || 'unknown'}
-                            size="small"
-                            sx={{
-                                textTransform: 'capitalize',
-                                height: 20,
-                                fontSize: '0.7rem',
-                                bgcolor: isPublished ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                                color: isPublished ? '#10B981' : '#EF4444',
-                            }}
-                        />
-                    </Stack>
                 </Box>
-                <Box sx={{ flex: 1 }} />
                 <Stack direction="row" spacing={2}>
-                    <Button
-                        variant="contained"
-                        color="success"
-                        startIcon={<CheckCircle />}
-                        onClick={handleApprove}
-                        disabled={actionLoading || isPublished}
-                    >
-                        Approve
-                    </Button>
-                    <Button
-                        variant="contained"
-                        color="error"
-                        startIcon={<Block />}
-                        onClick={() => setOpenRejectModal(true)}
-                        disabled={actionLoading || isDraft}
-                    >
-                        Reject
-                    </Button>
+                    <Chip
+                        label={course.status}
+                        color={course.status === 'published' ? 'success' : course.status === 'rejected' ? 'error' : 'warning'}
+                        sx={{ fontWeight: 600, borderRadius: 1 }}
+                    />
                 </Stack>
             </Stack>
 
-            {/* Pending Price Change Alert */}
-            {pendingPriceChange && (
-                <Alert
-                    severity="info"
-                    icon={<History />}
-                    sx={{
-                        mb: 4,
-                        bgcolor: 'rgba(59, 130, 246, 0.1)',
-                        color: '#3B82F6',
-                        border: '1px solid rgba(59, 130, 246, 0.2)',
-                        '& .MuiAlert-icon': { color: '#3B82F6' }
-                    }}
-                    action={
-                        <Button
-                            color="inherit"
-                            size="small"
-                            onClick={() => navigate('/admin/content/price-changes')}
-                        >
-                            View Request
-                        </Button>
-                    }
-                >
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        Certificate Price Change Pending: {formatCurrency(pendingPriceChange.new_amount, pendingPriceChange.new_currency)}
-                    </Typography>
-                    <Typography variant="caption">
-                        Current price: {formatCurrency(pendingPriceChange.old_amount, pendingPriceChange.old_currency)}
-                    </Typography>
-                </Alert>
-            )}
+            {/* Tabs */}
+            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+                <Tabs value={activeTab} onChange={(e, v) => setActiveTab(v)} textColor="primary" indicatorColor="primary">
+                    <Tab label="Curriculum" sx={{ textTransform: 'none', color: '#9CA3AF' }} />
+                    <Tab label="Details" sx={{ textTransform: 'none', color: '#9CA3AF' }} />
+                    <Tab label="Settings" sx={{ textTransform: 'none', color: '#9CA3AF' }} />
+                </Tabs>
+            </Box>
 
-            <Stack direction={{ xs: 'column', lg: 'row' }} spacing={4}>
-                {/* Left Column: Content */}
-                <Box sx={{ flex: 1 }}>
-                    {/* About Section */}
-                    <Box sx={{ mb: 4 }}>
-                        <Typography variant="h6" sx={{ color: '#fff', mb: 2, fontWeight: 600 }}>About This Course</Typography>
-                        <Typography
-                            component="div"
-                            sx={{ color: '#D1D5DB', lineHeight: 1.6, mb: 3, '& p': { m: 0, mb: 1 } }}
-                            dangerouslySetInnerHTML={{ __html: course.description || 'No description provided.' }}
-                        />
-
-                        {course.what_you_will_learn && (
-                            <Box sx={{ mb: 3, p: 3, bgcolor: '#1A2230', borderRadius: 2, border: '1px solid #374151' }}>
-                                <Typography variant="subtitle1" sx={{ color: '#fff', mb: 2, fontWeight: 600 }}>What you'll learn</Typography>
-                                <ul style={{ margin: 0, paddingLeft: 20, color: '#D1D5DB' }}>
-                                    {Array.isArray(course.what_you_will_learn)
-                                        ? course.what_you_will_learn.map((item, i) => <li key={i}>{item}</li>)
-                                        : course.what_you_will_learn.split('\n').map((item, i) => <li key={i}>{item}</li>)
-                                    }
-                                </ul>
-                            </Box>
-                        )}
-
-                        {course.requirements && (
-                            <Box sx={{ mb: 3 }}>
-                                <Typography variant="subtitle1" sx={{ color: '#fff', mb: 1, fontWeight: 600 }}>Requirements</Typography>
-                                <Typography sx={{ color: '#D1D5DB' }}>{course.requirements}</Typography>
-                            </Box>
-                        )}
-                    </Box>
-                    <Typography variant="h6" sx={{ color: '#fff', mb: 2, fontWeight: 600 }}>Course Content</Typography>
-                    <Stack spacing={2}>
-                        {course.modules?.map((module, index) => (
-                            <Paper
-                                key={module.id}
-                                sx={{
-                                    bgcolor: '#1A2230',
-                                    border: '1px solid #374151',
-                                    borderRadius: 2,
-                                    overflow: 'hidden',
-                                }}
-                            >
-                                <Box
-                                    onClick={() => toggleModule(module.id)}
-                                    sx={{
-                                        p: 2,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'space-between',
-                                        cursor: 'pointer',
-                                        '&:hover': { bgcolor: 'rgba(255,255,255,0.02)' }
-                                    }}
-                                >
-                                    <Box>
-                                        <Typography sx={{ color: '#fff', fontWeight: 600 }}>
-                                            {module.title}
-                                        </Typography>
-                                        <Typography sx={{ color: '#6B7280', fontSize: '0.8rem' }}>
-                                            {module.lessons?.length || 0} lessons
-                                        </Typography>
-                                    </Box>
-                                    <IconButton size="small" sx={{ color: '#9CA3AF' }}>
-                                        {expandedModules[module.id] ? <ExpandLess /> : <ExpandMore />}
-                                    </IconButton>
-                                </Box>
-                                <Collapse in={expandedModules[module.id]}>
-                                    <Divider sx={{ borderColor: '#374151' }} />
-                                    <Stack sx={{ p: 0 }}>
-                                        {module.lessons?.map((lesson) => (
-                                            <Box
-                                                key={lesson.id}
-                                                sx={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'space-between',
-                                                    p: 2,
-                                                    borderBottom: '1px solid #374151',
-                                                    '&:last-child': { borderBottom: 'none' },
-                                                    bgcolor: '#111827'
-                                                }}
-                                            >
-                                                <Stack direction="row" alignItems="center" spacing={2}>
-                                                    {getLessonIcon(lesson.type)}
-                                                    <Typography sx={{ color: '#E5E7EB', fontSize: '0.9rem' }}>
-                                                        {lesson.title}
-                                                    </Typography>
-                                                </Stack>
-                                                <Typography sx={{ color: '#6B7280', fontSize: '0.8rem' }}>
-                                                    {lesson.duration || (lesson.questions ? `${lesson.questions} Qs` : '')}
-                                                </Typography>
-                                            </Box>
-                                        ))}
-                                    </Stack>
-                                </Collapse>
-                            </Paper>
-                        ))}
-                    </Stack>
-                </Box>
-
-                {/* Right Column: Stats & Details */}
-                <Box sx={{ width: { xs: '100%', lg: 350 } }}>
-                    <Typography variant="h6" sx={{ color: '#fff', mb: 2, fontWeight: 600 }}>Details</Typography>
-
-                    <Paper sx={{ p: 3, bgcolor: '#1A2230', borderRadius: 2, border: '1px solid #374151', mb: 3 }}>
-                        <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 2 }}>Overview</Typography>
-                        <Stack spacing={2}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Typography sx={{ color: '#D1D5DB' }}>Students</Typography>
-                                <Typography sx={{ color: '#fff', fontWeight: 600 }}>{course.students_count || 0}</Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Typography sx={{ color: '#D1D5DB' }}>Reviews</Typography>
-                                <Typography sx={{ color: '#fff', fontWeight: 600 }}>{course.reviews_count || 0}</Typography>
-                            </Box>
-                            <Divider sx={{ borderColor: '#374151' }} />
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Typography sx={{ color: '#D1D5DB' }}>Level</Typography>
-                                <Typography sx={{ color: '#fff', fontWeight: 600, textTransform: 'capitalize' }}>{course.level || '-'}</Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Typography sx={{ color: '#D1D5DB' }}>Language</Typography>
-                                <Typography sx={{ color: '#fff', fontWeight: 600, textTransform: 'uppercase' }}>{course.language || '-'}</Typography>
-                            </Box>
-                            <Divider sx={{ borderColor: '#374151' }} />
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                <Typography sx={{ color: '#D1D5DB' }}>Price</Typography>
-                                <Box sx={{ textAlign: 'right' }}>
-                                    <Typography sx={{ color: '#fff', fontWeight: 600 }}>
-                                        {course.price > 0
-                                            ? formatCurrency(course.price, course.currency)
-                                            : 'Free'}
-                                    </Typography>
-                                    {pendingPriceChange && (
-                                        <Stack direction="row" alignItems="center" justifyContent="flex-end" spacing={0.5} sx={{ color: '#3B82F6', mt: 0.5 }}>
-                                            <History sx={{ fontSize: 12 }} />
-                                            <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                                                {formatCurrency(pendingPriceChange.new_amount, pendingPriceChange.new_currency)}
-                                            </Typography>
-                                        </Stack>
-                                    )}
-                                </Box>
-                            </Box>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Typography sx={{ color: '#D1D5DB' }}>Category</Typography>
-                                <Typography sx={{ color: '#fff', fontWeight: 600 }}>{categoryLabel}</Typography>
-                            </Box>
-                            <Divider sx={{ borderColor: '#374151' }} />
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Typography sx={{ color: '#D1D5DB' }}>Created</Typography>
-                                <Typography sx={{ color: '#fff', fontSize: '0.9rem' }}>
-                                    {course.created_at ? new Date(course.created_at).toLocaleDateString() : '-'}
-                                </Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Typography sx={{ color: '#D1D5DB' }}>Updated</Typography>
-                                <Typography sx={{ color: '#fff', fontSize: '0.9rem' }}>
-                                    {course.updated_at ? new Date(course.updated_at).toLocaleDateString() : '-'}
-                                </Typography>
-                            </Box>
-                        </Stack>
-                    </Paper>
-
-                    {course.thumbnail_url && (
-                        <Paper sx={{ p: 2, bgcolor: '#1A2230', borderRadius: 2, border: '1px solid #374151' }}>
-                            <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1 }}>Thumbnail</Typography>
-                            <Box
-                                component="img"
-                                src={course.thumbnail_url}
-                                sx={{ width: '100%', borderRadius: 1 }}
-                            />
-                        </Paper>
-                    )}
-                </Box>
-            </Stack>
-
-            {/* Rejection Modal */}
-            <Modal open={openRejectModal} onClose={() => setOpenRejectModal(false)}>
-                <Box sx={modalStyle}>
-                    <Box sx={{ p: 3, borderBottom: '1px solid #374151' }}>
-                        <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600 }}>Reject Course</Typography>
-                    </Box>
-                    <Box sx={{ p: 3 }}>
-                        <Typography sx={{ color: '#9CA3AF', mb: 2 }}>
-                            Enter rejection reason:
-                        </Typography>
-                        <TextField
-                            fullWidth
-                            multiline
-                            rows={4}
-                            placeholder="Reason..."
-                            value={rejectionReason}
-                            onChange={(e) => setRejectionReason(e.target.value)}
-                            sx={{
-                                bgcolor: '#111827',
-                                borderRadius: 1,
-                                border: '1px solid #374151',
-                                '& .MuiOutlinedInput-root': { color: '#fff', '& fieldset': { border: 'none' } }
-                            }}
-                        />
-                    </Box>
-                    <Box sx={{ p: 3, borderTop: '1px solid #374151', display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                        <Button onClick={() => setOpenRejectModal(false)} sx={{ color: '#9CA3AF' }}>Cancel</Button>
+            {/* TAB 0: CURRICULUM */}
+            {activeTab === 0 && (
+                <Box>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>Course Content</Typography>
                         <Button
                             variant="contained"
-                            color="error"
-                            onClick={handleReject}
-                            disabled={!rejectionReason.trim() || actionLoading}
+                            startIcon={<Add />}
+                            onClick={() => { setEditingModuleId(null); setModuleTitle(''); setModuleDescription(''); setModuleModalOpen(true); }}
+                            sx={primaryButtonStyle}
                         >
-                            {actionLoading ? 'Rejecting...' : 'Reject Course'}
+                            Add Module
                         </Button>
+                    </Stack>
+
+                    {modules.length === 0 ? (
+                        <Paper sx={{ p: 6, textAlign: 'center', bgcolor: '#1A2230', border: '1px dashed #374151', borderRadius: 2 }}>
+                            <School sx={{ fontSize: 60, color: '#374151', mb: 2 }} />
+                            <Typography sx={{ color: '#9CA3AF', mb: 2 }}>No modules yet.</Typography>
+                        </Paper>
+                    ) : (
+                        <Stack spacing={2}>
+                            {modules.map((mod) => (
+                                <Paper key={mod.id} sx={{ bgcolor: '#1A2230', overflow: 'hidden', border: '1px solid #374151', borderRadius: 2 }}>
+                                    <Accordion disableGutters sx={{ bgcolor: 'transparent', boxShadow: 'none', '&:before': { display: 'none' } }}>
+                                        <AccordionSummary expandIcon={<ExpandMore sx={{ color: '#9CA3AF' }} />}>
+                                            <Stack direction="row" alignItems="center" sx={{ width: '100%', mr: 2 }}>
+                                                <Box sx={{ flexGrow: 1 }}>
+                                                    <Typography sx={{ color: '#fff', fontWeight: 600 }}>
+                                                        {mod.title}
+                                                    </Typography>
+                                                    {mod.description && (
+                                                        <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem' }}>
+                                                            {mod.description}
+                                                        </Typography>
+                                                    )}
+                                                </Box>
+                                                <Stack direction="row" alignItems="center" spacing={1} onClick={e => e.stopPropagation()}>
+                                                    <Switch
+                                                        size="small"
+                                                        checked={!!mod.is_published}
+                                                        onChange={() => handlePublishModule(mod.id, mod.is_published)}
+                                                        color="success"
+                                                    />
+                                                    <IconButton size="small" sx={{ color: '#3B82F6' }} onClick={() => { setEditingModuleId(mod.id); setModuleTitle(mod.title); setModuleDescription(mod.description || ''); setModuleModalOpen(true); }}>
+                                                        <Edit fontSize="small" />
+                                                    </IconButton>
+                                                    <IconButton size="small" sx={{ color: '#EF4444' }} onClick={() => handleDeleteModule(mod.id)}>
+                                                        <Delete fontSize="small" />
+                                                    </IconButton>
+                                                </Stack>
+                                            </Stack>
+                                        </AccordionSummary>
+                                        <AccordionDetails sx={{ bgcolor: '#111827', borderTop: '1px solid #374151', p: 0 }}>
+                                            <List>
+                                                {mod.lessons && mod.lessons.map((lesson) => (
+                                                    <ListItem key={lesson.id} disablePadding secondaryAction={
+                                                        <Stack direction="row" alignItems="center" spacing={1}>
+                                                            <Switch
+                                                                size="small"
+                                                                checked={!!lesson.published_at}
+                                                                onChange={() => handlePublishLesson(mod.id, lesson.id, !!lesson.published_at)}
+                                                                color="success"
+                                                            />
+                                                            <IconButton size="small" sx={{ color: '#EF4444' }} onClick={() => handleDeleteLesson(lesson.id)}>
+                                                                <Delete fontSize="small" />
+                                                            </IconButton>
+                                                        </Stack>
+                                                    }>
+                                                        <ListItemButton>
+                                                            <ListItemIcon sx={{ color: '#9CA3AF', minWidth: 40 }}>
+                                                                {getLessonIcon(lesson.type)}
+                                                            </ListItemIcon>
+                                                            <ListItemText
+                                                                primary={<Typography sx={{ color: '#E5E7EB', fontSize: '0.9rem' }}>{lesson.title}</Typography>}
+                                                                secondary={
+                                                                    <Typography sx={{ color: '#6B7280', fontSize: '0.8rem' }}>
+                                                                        {lesson.type} • {lesson.duration || 0}m
+                                                                    </Typography>
+                                                                }
+                                                            />
+                                                        </ListItemButton>
+                                                    </ListItem>
+                                                ))}
+                                                {(!mod.lessons || mod.lessons.length === 0) && (
+                                                    <ListItem>
+                                                        <Typography sx={{ color: '#6B7280', fontSize: '0.85rem', p: 1, width: '100%', textAlign: 'center' }}>
+                                                            No lessons yet
+                                                        </Typography>
+                                                    </ListItem>
+                                                )}
+                                                <ListItem>
+                                                    <Button
+                                                        fullWidth
+                                                        startIcon={<Add />}
+                                                        onClick={() => openAddLessonModal(mod.id)}
+                                                        sx={{ color: '#3B82F6', bgcolor: 'rgba(59, 130, 246, 0.05)', '&:hover': { bgcolor: 'rgba(59, 130, 246, 0.1)' } }}
+                                                    >
+                                                        Add Lesson
+                                                    </Button>
+                                                </ListItem>
+                                            </List>
+                                        </AccordionDetails>
+                                    </Accordion>
+                                </Paper>
+                            ))}
+                        </Stack>
+                    )}
+                </Box>
+            )}
+
+            {/* TAB 1: DETAILS */}
+            {activeTab === 1 && (
+                <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>Course Details</Typography>
+                    <Stack spacing={3}>
+                        {course.thumbnail_url && (
+                            <Paper sx={{ ...paperStyle, padding: 2 }}>
+                                <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1 }}>Thumbnail</Typography>
+                                <Box component="img" src={course.thumbnail_url} sx={{ width: '100%', maxWidth: 400, borderRadius: 1 }} />
+                            </Paper>
+                        )}
+                        <Paper sx={{ ...paperStyle, padding: 3 }}>
+                            <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 2 }}>Basic Info</Typography>
+                            <Stack spacing={2}>
+                                <Box>
+                                    <Typography sx={{ color: '#6B7280', fontSize: '0.75rem' }}>Title</Typography>
+                                    <Typography sx={{ color: '#fff' }}>{course.title}</Typography>
+                                </Box>
+                                <Box>
+                                    <Typography sx={{ color: '#6B7280', fontSize: '0.75rem' }}>Slug</Typography>
+                                    <Typography sx={{ color: '#9CA3AF' }}>{course.slug || '-'}</Typography>
+                                </Box>
+                                <Box>
+                                    <Typography sx={{ color: '#6B7280', fontSize: '0.75rem' }}>Summary</Typography>
+                                    <Typography sx={{ color: '#9CA3AF' }}>{course.summary || '-'}</Typography>
+                                </Box>
+                                {course.description && (
+                                    <Box>
+                                        <Typography sx={{ color: '#6B7280', fontSize: '0.75rem' }}>Description</Typography>
+                                        <Typography sx={{ color: '#9CA3AF' }} dangerouslySetInnerHTML={{ __html: course.description }} />
+                                    </Box>
+                                )}
+                            </Stack>
+                        </Paper>
+                        <Paper sx={{ ...paperStyle, padding: 3 }}>
+                            <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 2 }}>Attributes</Typography>
+                            <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                                <Box>
+                                    <Stack direction="row" spacing={1} alignItems="center"><School sx={{ fontSize: 16, color: '#6B7280' }} /><Typography sx={{ color: '#6B7280', fontSize: '0.75rem' }}>Level</Typography></Stack>
+                                    <Typography sx={{ color: '#fff' }}>{course.level || '-'}</Typography>
+                                </Box>
+                                <Box>
+                                    <Stack direction="row" spacing={1} alignItems="center"><Language sx={{ fontSize: 16, color: '#6B7280' }} /><Typography sx={{ color: '#6B7280', fontSize: '0.75rem' }}>Language</Typography></Stack>
+                                    <Typography sx={{ color: '#fff' }}>{course.language || '-'}</Typography>
+                                </Box>
+                                <Box>
+                                    <Stack direction="row" spacing={1} alignItems="center"><Timer sx={{ fontSize: 16, color: '#6B7280' }} /><Typography sx={{ color: '#6B7280', fontSize: '0.75rem' }}>Duration</Typography></Stack>
+                                    <Typography sx={{ color: '#fff' }}>{course.duration_minutes || 0} min</Typography>
+                                </Box>
+                                <Box>
+                                    <Stack direction="row" spacing={1} alignItems="center"><Payments sx={{ fontSize: 16, color: '#6B7280' }} /><Typography sx={{ color: '#6B7280', fontSize: '0.75rem' }}>Price</Typography></Stack>
+                                    <Typography sx={{ color: '#fff' }}>{formatCurrency(course.price, course.currency)}</Typography>
+                                </Box>
+                            </Box>
+                        </Paper>
+                    </Stack>
+                </Box>
+            )}
+
+            {/* TAB 2: SETTINGS */}
+            {activeTab === 2 && (
+                <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>Course Settings</Typography>
+                    <Stack spacing={3}>
+                        <Paper sx={{ ...paperStyle, padding: 3 }}>
+                            <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 2 }}>Publication</Typography>
+                            <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                <Box>
+                                    <Typography sx={{ color: '#fff', fontWeight: 500 }}>{course.published_at ? 'Published' : 'Draft'}</Typography>
+                                    <Typography sx={{ color: '#6B7280', fontSize: '0.85rem' }}>{course.published_at ? 'Visible to students' : 'Hidden from students'}</Typography>
+                                </Box>
+                                <Button
+                                    variant="contained"
+                                    color={course.published_at ? "warning" : "success"}
+                                    onClick={handlePublishCourse}
+                                    startIcon={<Publish />}
+                                >
+                                    {course.published_at ? 'Unpublish' : 'Publish'}
+                                </Button>
+                            </Stack>
+                        </Paper>
+
+                        <Paper sx={{ ...paperStyle, padding: 3 }}>
+                            <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 2 }}>Approval Status</Typography>
+                            <Stack direction="row" spacing={2}>
+                                <Button variant="contained" color="success" onClick={handleApproveCourse} startIcon={<CheckCircle />}>
+                                    Approve Course
+                                </Button>
+                                <Button variant="outlined" color="error" onClick={() => setRejectModalOpen(true)} startIcon={<Cancel />}>
+                                    Reject Course
+                                </Button>
+                            </Stack>
+                        </Paper>
+
+                        <Paper sx={{ bgcolor: 'rgba(239, 68, 68, 0.05)', p: 3, borderRadius: 2, border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                            <Typography sx={{ color: '#EF4444', fontSize: '0.85rem', mb: 2 }}>Danger Zone</Typography>
+                            <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                <Box>
+                                    <Typography sx={{ color: '#fff', fontWeight: 500 }}>Delete Course</Typography>
+                                    <Typography sx={{ color: '#6B7280', fontSize: '0.85rem' }}>Irreversible action</Typography>
+                                </Box>
+                                <Button variant="outlined" color="error" onClick={handleDeleteCourse} startIcon={<Delete />}>
+                                    Delete
+                                </Button>
+                            </Stack>
+                        </Paper>
+                    </Stack>
+                </Box>
+            )}
+
+            {/* Module Modal */}
+            <Modal open={moduleModalOpen} onClose={() => setModuleModalOpen(false)}>
+                <Box sx={modalStyle}>
+                    <Typography variant="h6" sx={{ color: '#fff', mb: 2 }}>{editingModuleId ? 'Edit Module' : 'Add Module'}</Typography>
+                    <Stack spacing={2}>
+                        <TextField
+                            label="Title"
+                            fullWidth
+                            value={moduleTitle}
+                            onChange={(e) => setModuleTitle(e.target.value)}
+                            sx={textFieldStyle}
+                        />
+                        <TextField
+                            label="Description"
+                            fullWidth
+                            multiline
+                            rows={3}
+                            value={moduleDescription}
+                            onChange={(e) => setModuleDescription(e.target.value)}
+                            sx={textFieldStyle}
+                        />
+                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
+                            <Button onClick={() => setModuleModalOpen(false)} sx={{ color: '#9CA3AF' }}>Cancel</Button>
+                            <Button variant="contained" onClick={handleCreateModule} disabled={actionLoading} sx={primaryButtonStyle}>Save</Button>
+                        </Box>
+                    </Stack>
+                </Box>
+            </Modal>
+
+            {/* Lesson Modal */}
+            <Modal open={lessonModalOpen} onClose={() => setLessonModalOpen(false)}>
+                <Box sx={modalStyle}>
+                    <Typography variant="h6" sx={{ color: '#fff', mb: 2 }}>Add Lesson</Typography>
+                    <Stack spacing={2}>
+                        <TextField
+                            label="Lesson Title"
+                            fullWidth
+                            value={lessonTitle}
+                            onChange={(e) => setLessonTitle(e.target.value)}
+                            sx={textFieldStyle}
+                        />
+                        <FormControl fullWidth>
+                            <InputLabel sx={{ color: '#9CA3AF' }}>Type</InputLabel>
+                            <Select
+                                value={lessonType}
+                                onChange={(e) => setLessonType(e.target.value)}
+                                sx={selectStyle}
+                                MenuProps={selectMenuProps}
+                                label="Type"
+                            >
+                                <MenuItem value="video">Video</MenuItem>
+                                <MenuItem value="text">Text/Article</MenuItem>
+                                <MenuItem value="document">File Attachment</MenuItem>
+                            </Select>
+                        </FormControl>
+
+                        {(lessonType === 'video' || lessonType === 'document') && (
+                            <Box sx={{ border: '1px dashed #374151', p: 2, borderRadius: 1, textAlign: 'center' }}>
+                                <input
+                                    type="file"
+                                    id="lesson-file-upload"
+                                    style={{ display: 'none' }}
+                                    onChange={(e) => {
+                                        const file = e.target.files[0];
+                                        if (file) {
+                                            setLessonFile(file);
+                                            setLessonFileName(file.name);
+                                        }
+                                    }}
+                                />
+                                <label htmlFor="lesson-file-upload">
+                                    <Button component="span" startIcon={<CloudUpload />} sx={{ color: '#3B82F6' }}>
+                                        {lessonFileName || 'Upload File'}
+                                    </Button>
+                                </label>
+                            </Box>
+                        )}
+
+                        {lessonType === 'text' && (
+                            <TextField
+                                label="Content"
+                                fullWidth
+                                multiline
+                                rows={4}
+                                value={lessonContent}
+                                onChange={(e) => setLessonContent(e.target.value)}
+                                sx={textFieldStyle}
+                            />
+                        )}
+
+                        <TextField
+                            label="Duration (minutes)"
+                            type="number"
+                            fullWidth
+                            value={lessonDuration}
+                            onChange={(e) => setLessonDuration(e.target.value)}
+                            sx={textFieldStyle}
+                        />
+
+                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
+                            <Button onClick={() => setLessonModalOpen(false)} sx={{ color: '#9CA3AF' }}>Cancel</Button>
+                            <Button variant="contained" onClick={handleCreateLesson} disabled={actionLoading} sx={primaryButtonStyle}>Create</Button>
+                        </Box>
+                    </Stack>
+                </Box>
+            </Modal>
+
+            {/* Reject Modal */}
+            <Modal open={rejectModalOpen} onClose={() => setRejectModalOpen(false)}>
+                <Box sx={modalStyle}>
+                    <Typography variant="h6" sx={{ color: '#fff', mb: 2 }}>Reject Course</Typography>
+                    <TextField
+                        label="Reason for rejection"
+                        fullWidth
+                        multiline
+                        rows={3}
+                        value={rejectionReason}
+                        onChange={(e) => setRejectionReason(e.target.value)}
+                        sx={textFieldStyle}
+                    />
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
+                        <Button onClick={() => setRejectModalOpen(false)} sx={{ color: '#9CA3AF' }}>Cancel</Button>
+                        <Button variant="contained" color="error" onClick={handleRejectCourse} disabled={actionLoading}>Reject</Button>
                     </Box>
                 </Box>
             </Modal>
 
-            <Snackbar
-                open={snackbar.open}
-                autoHideDuration={4000}
-                onClose={() => setSnackbar({ ...snackbar, open: false })}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-            >
-                <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
+            <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
+                <Alert severity={snackbar.severity} sx={{ width: '100%' }} onClose={() => setSnackbar({ ...snackbar, open: false })}>
                     {snackbar.message}
                 </Alert>
             </Snackbar>

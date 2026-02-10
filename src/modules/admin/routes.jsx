@@ -62,10 +62,6 @@ const adminRoutes = {
                 },
                 {
                     path: 'courses',
-                    element: <Navigate to="/admin/content/essential-courses" replace />,
-                },
-                {
-                    path: 'legacy-courses',
                     element: <CourseManagement />,
                 },
                 {

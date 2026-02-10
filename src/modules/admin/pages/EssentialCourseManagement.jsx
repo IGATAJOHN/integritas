@@ -25,6 +25,7 @@ import {
     TextField,
     Tooltip,
     Typography,
+    Autocomplete,
 } from '@mui/material';
 import {
     Add,
@@ -1443,31 +1444,39 @@ const EssentialCourseManagement = () => {
                                         </Stack>
                                     )}
 
-                                    <FormControl fullWidth sx={{ mb: 1.5 }}>
-                                        <InputLabel sx={{ color: '#9CA3AF' }}>Select Tutors</InputLabel>
-                                        <Select
-                                            multiple
-                                            label="Select Tutors"
-                                            value={selectedTutorIds}
-                                            onChange={(event) => {
-                                                const value = event.target.value;
-                                                setSelectedTutorIds(
-                                                    typeof value === 'string' ? value.split(',') : value
-                                                );
-                                            }}
-                                            sx={selectStyle}
-                                            MenuProps={selectMenuProps}
-                                        >
-                                            {tutorOptions.map((tutor) => {
-                                                const label = tutor.name || tutor.user?.name || tutor.email || tutor.id;
-                                                return (
-                                                    <MenuItem key={tutor.id} value={tutor.id}>
-                                                        {label}
-                                                    </MenuItem>
-                                                );
-                                            })}
-                                        </Select>
-                                    </FormControl>
+                                    <Autocomplete
+                                        multiple
+                                        id="tutor-select"
+                                        options={tutorOptions}
+                                        getOptionLabel={(option) => option.name || option.user?.name || option.email || option.id || ''}
+                                        value={tutorOptions.filter(t => selectedTutorIds.includes(t.id))}
+                                        onChange={(event, newValue) => {
+                                            setSelectedTutorIds(newValue.map(t => t.id));
+                                        }}
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                label="Select Tutors"
+                                                sx={textFieldStyle}
+                                            />
+                                        )}
+                                        renderTags={(value, getTagProps) =>
+                                            value.map((option, index) => (
+                                                <Chip
+                                                    label={option.name || option.user?.name || option.email || option.id}
+                                                    {...getTagProps({ index })}
+                                                    size="small"
+                                                    sx={{ bgcolor: 'rgba(59, 130, 246, 0.2)', color: '#93C5FD' }}
+                                                />
+                                            ))
+                                        }
+                                        sx={{ mb: 1.5 }}
+                                        PaperComponent={({ children }) => (
+                                            <Paper sx={{ bgcolor: '#1F2937', color: '#fff' }}>
+                                                {children}
+                                            </Paper>
+                                        )}
+                                    />
 
                                     <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} justifyContent="flex-end">
                                         <Button
