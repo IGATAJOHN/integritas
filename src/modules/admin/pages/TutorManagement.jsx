@@ -51,6 +51,8 @@ import {
 } from '../../../styles/formStyles';
 
 const KYC_DOC_TYPES = ['id_front', 'id_back', 'certificate', 'utility_bill', 'passport'];
+const ID_TYPE_OPTIONS = ['nin', 'passport', 'driver_license', 'national_id', 'voter_card', 'bvn'];
+const EDUCATION_OPTIONS = ['secondary_school', 'diploma', 'bachelor', 'master', 'phd', 'other'];
 
 const initialTutorForm = {
     name: '',
@@ -84,6 +86,19 @@ const stringifyList = (value) => {
     if (!Array.isArray(value)) return '';
     return value.filter(Boolean).join(', ');
 };
+
+const getDropdownOptions = (baseOptions = [], currentValue = '') => {
+    const current = String(currentValue || '').trim();
+    if (!current) return baseOptions;
+    return baseOptions.includes(current) ? baseOptions : [...baseOptions, current];
+};
+
+const formatOptionLabel = (value) =>
+    String(value || '')
+        .split('_')
+        .filter(Boolean)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
 
 const getTutorName = (tutor) => {
     if (!tutor) return 'Unknown Tutor';
@@ -389,6 +404,14 @@ const TutorManagement = () => {
 
     const selectedTutorDocs = useMemo(() => getTutorDocuments(selectedTutor), [selectedTutor]);
     const selectedTutorKycData = useMemo(() => getKycData(selectedTutor), [selectedTutor]);
+    const idTypeOptions = useMemo(
+        () => getDropdownOptions(ID_TYPE_OPTIONS, formData.id_type),
+        [formData.id_type]
+    );
+    const educationOptions = useMemo(
+        () => getDropdownOptions(EDUCATION_OPTIONS, formData.highest_education),
+        [formData.highest_education]
+    );
 
     return (
         <Box sx={{ p: { xs: 2, md: 4 }, bgcolor: '#0C1322', minHeight: 'calc(100vh - 70px)', width: '100%' }}>
@@ -648,23 +671,41 @@ const TutorManagement = () => {
                                     fullWidth
                                     sx={textFieldStyle}
                                 />
-                                <TextField
-                                    label="Highest Education"
-                                    value={formData.highest_education}
-                                    onChange={(event) => setFormData((prev) => ({ ...prev, highest_education: event.target.value }))}
-                                    fullWidth
-                                    sx={textFieldStyle}
-                                />
+                                <FormControl fullWidth>
+                                    <InputLabel sx={{ color: '#9CA3AF' }}>Highest Education</InputLabel>
+                                    <Select
+                                        label="Highest Education"
+                                        value={formData.highest_education}
+                                        onChange={(event) => setFormData((prev) => ({ ...prev, highest_education: event.target.value }))}
+                                        sx={selectStyle}
+                                        MenuProps={selectMenuProps}
+                                    >
+                                        {educationOptions.map((option) => (
+                                            <MenuItem key={option} value={option}>
+                                                {formatOptionLabel(option)}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
                             </Stack>
 
                             <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-                                <TextField
-                                    label="ID Type"
-                                    value={formData.id_type}
-                                    onChange={(event) => setFormData((prev) => ({ ...prev, id_type: event.target.value }))}
-                                    fullWidth
-                                    sx={textFieldStyle}
-                                />
+                                <FormControl fullWidth>
+                                    <InputLabel sx={{ color: '#9CA3AF' }}>ID Type</InputLabel>
+                                    <Select
+                                        label="ID Type"
+                                        value={formData.id_type}
+                                        onChange={(event) => setFormData((prev) => ({ ...prev, id_type: event.target.value }))}
+                                        sx={selectStyle}
+                                        MenuProps={selectMenuProps}
+                                    >
+                                        {idTypeOptions.map((option) => (
+                                            <MenuItem key={option} value={option}>
+                                                {formatOptionLabel(option)}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
                                 <TextField
                                     label="ID Number"
                                     value={formData.id_number}
