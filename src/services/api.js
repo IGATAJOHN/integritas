@@ -15,20 +15,27 @@ const getAuthToken = () => {
     return null;
 };
 
-const createHeaders = (customHeaders = {}) => {
+const createHeaders = (customHeaders = {}, { isFormData = false } = {}) => {
     const headers = { ...defaultHeaders, ...customHeaders };
     const token = getAuthToken();
     if (token) {
         headers['Authorization'] = `Bearer ${token}`;
     }
+
+    if (isFormData) {
+        delete headers['Content-Type'];
+        delete headers['content-type'];
+    }
+
     return headers;
 };
 
 const apiRequest = async (endpoint, options = {}) => {
     const url = `${API_BASE_URL}${endpoint}`;
+    const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
     const config = {
         ...options,
-        headers: createHeaders(options.headers),
+        headers: createHeaders(options.headers, { isFormData }),
     };
 
     try {
@@ -45,7 +52,7 @@ const apiRequest = async (endpoint, options = {}) => {
                 try {
                     error = await response.json();
                     errorMessage = error.message || errorMessage;
-                } catch (parseError) {
+                } catch {
                     errorMessage = response.statusText || errorMessage;
                 }
             } else {
@@ -85,20 +92,29 @@ const apiRequest = async (endpoint, options = {}) => {
 export const apiService = {
     get: (endpoint) => apiRequest(endpoint, { method: 'GET' }),
 
-    post: (endpoint, data) => apiRequest(endpoint, {
-        method: 'POST',
-        body: JSON.stringify(data),
-    }),
+    post: (endpoint, data) => {
+        const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
+        return apiRequest(endpoint, {
+            method: 'POST',
+            body: isFormData ? data : JSON.stringify(data),
+        });
+    },
 
-    put: (endpoint, data) => apiRequest(endpoint, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-    }),
+    put: (endpoint, data) => {
+        const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
+        return apiRequest(endpoint, {
+            method: 'PUT',
+            body: isFormData ? data : JSON.stringify(data),
+        });
+    },
 
-    patch: (endpoint, data) => apiRequest(endpoint, {
-        method: 'PATCH',
-        body: JSON.stringify(data),
-    }),
+    patch: (endpoint, data) => {
+        const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
+        return apiRequest(endpoint, {
+            method: 'PATCH',
+            body: isFormData ? data : JSON.stringify(data),
+        });
+    },
 
     delete: (endpoint) => apiRequest(endpoint, { method: 'DELETE' }),
 };

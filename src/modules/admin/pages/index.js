@@ -5,6 +5,8 @@ export { default as LearnerManagement } from './LearnerManagement';
 export { default as TutorManagement } from './TutorManagement';
 export { default as ReviewerManagement } from './ReviewerManagement';
 export { default as CourseManagement } from './CourseManagement';
+export { default as EssentialCourseManagement } from './EssentialCourseManagement';
+export { default as AdminLessonsByModule } from './AdminLessonsByModule';
 export { default as CategoryManagement } from './CategoryManagement';
 export { default as AdminSettings } from './Settings';
 export { default as KycReview } from './KycReview';

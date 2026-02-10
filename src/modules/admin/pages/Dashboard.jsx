@@ -26,7 +26,7 @@ import {
     DescriptionOutlined,
     ArrowForward,
 } from '@mui/icons-material';
-import { adminService } from '../services/adminService';
+import { optionAdminService } from '../services/optionAdminService';
 
 // Initial stats data for admin dashboard (will be updated with live data)
 const initialStatsData = [
@@ -126,7 +126,6 @@ const AdminDashboard = () => {
     // State for live data
     const [statsData, setStatsData] = useState(initialStatsData);
     const [activeTutors, setActiveTutors] = useState([]);
-    const [loadingTutors, setLoadingTutors] = useState(true);
 
     // Fetch chart width on resize
     useEffect(() => {
@@ -144,8 +143,7 @@ const AdminDashboard = () => {
     useEffect(() => {
         const fetchTutors = async () => {
             try {
-                setLoadingTutors(true);
-                const response = await adminService.listTutors({ status: 'Active' });
+                const response = await optionAdminService.listTutors({ per_page: 20 });
                 const tutorList = response?.data || response || [];
 
                 // Handle array response
@@ -173,8 +171,6 @@ const AdminDashboard = () => {
                 setActiveTutors([
                     { id: 1, name: 'No tutors available', subject: '-', status: 'Offline' },
                 ]);
-            } finally {
-                setLoadingTutors(false);
             }
         };
 

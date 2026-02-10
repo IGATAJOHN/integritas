@@ -1,438 +1,956 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-    Box,
-    Typography,
-    Paper,
-    Stack,
-    IconButton,
-    Chip,
+    Alert,
     Avatar,
+    Box,
+    Button,
+    CircularProgress,
+    FormControl,
+    IconButton,
+    InputBase,
+    InputLabel,
+    MenuItem,
+    Modal,
+    Paper,
+    Select,
+    Snackbar,
+    Stack,
     Table,
     TableBody,
     TableCell,
     TableContainer,
     TableHead,
     TableRow,
-    InputBase,
+    TextField,
     Tooltip,
-    CircularProgress,
-    Alert,
-    Button,
-    Snackbar,
+    Typography,
 } from '@mui/material';
 import {
-    Search,
-    Visibility,
-    Block,
-    CheckCircle,
-    School,
-    People,
-    HourglassEmpty,
-    Refresh,
+    Add,
+    Article,
+    Close,
     Delete,
+    Edit,
+    Refresh,
+    Search,
+    UploadFile,
+    Visibility,
 } from '@mui/icons-material';
-import { userService } from '../../../services/api';
+import { optionAdminService } from '../services/optionAdminService';
+import {
+    modalStyle,
+    paperStyle,
+    primaryButtonStyle,
+    searchBarStyle,
+    searchInputStyle,
+    selectMenuProps,
+    selectStyle,
+    tableBodyCellStyle,
+    tableHeaderCellStyle,
+    textFieldStyle,
+} from '../../../styles/formStyles';
 
-/**
- * TutorManagement Component
- * 
- * Manages course instructors with the following features:
- * - List users with role 'tutor' from API (GET /users with filter)
- * - View tutor details
- * - Delete tutors (DELETE /users/{id})
- * 
- * Note: Uses the /users endpoint filtering by role since /admin/tutors doesn't exist
- */
+const KYC_DOC_TYPES = ['id_front', 'id_back', 'certificate', 'utility_bill', 'passport'];
 
-// Fallback data for when API fails or isn't available
-const FALLBACK_TUTORS = [
-    { id: 1, name: 'Dr. Sarah Wilson', email: 'sarah@example.com', status: 'Active', courses_count: 2, students_count: 45 },
-    { id: 2, name: 'Prof. James Miller', email: 'james@example.com', status: 'Pending', courses_count: 0, students_count: 0 },
-    { id: 3, name: 'Emily Davis', email: 'emily@example.com', status: 'Suspended', courses_count: 1, students_count: 12 },
-];
+const initialTutorForm = {
+    name: '',
+    email: '',
+    password: '',
+    phone: '',
+    country: '',
+    state: '',
+    city: '',
+    address: '',
+    bio: '',
+    skills: '',
+    highest_education: '',
+    id_type: '',
+    id_number: '',
+    bank_name: '',
+    account_number: '',
+    account_name: '',
+    review_note: '',
+    initial_doc_type: 'certificate',
+    initial_doc_file: null,
+};
+
+const parseCommaList = (value) =>
+    String(value || '')
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+const stringifyList = (value) => {
+    if (!Array.isArray(value)) return '';
+    return value.filter(Boolean).join(', ');
+};
+
+const getTutorName = (tutor) => {
+    if (!tutor) return 'Unknown Tutor';
+    const directName = String(tutor.name || '').trim();
+    if (directName) return directName;
+
+    const firstName = String(tutor.first_name || tutor.firstName || '').trim();
+    const lastName = String(tutor.last_name || tutor.lastName || '').trim();
+    const fullName = `${firstName} ${lastName}`.trim();
+    if (fullName) return fullName;
+
+    const userName = String(tutor.user?.name || '').trim();
+    if (userName) return userName;
+
+    return String(tutor.email || tutor.user?.email || 'Unknown Tutor');
+};
+
+const getKycData = (tutor) => tutor?.kyc?.data || tutor?.kyc_data || {};
+
+const getTutorDocuments = (tutor) => {
+    if (Array.isArray(tutor?.kycDocuments)) return tutor.kycDocuments;
+    if (Array.isArray(tutor?.kyc_documents)) return tutor.kyc_documents;
+    if (Array.isArray(tutor?.kyc?.documents)) return tutor.kyc.documents;
+    return [];
+};
+
+const getKycStatus = (tutor) =>
+    String(tutor?.kyc?.status || tutor?.kyc_status || tutor?.status || 'unknown').toLowerCase();
 
 const TutorManagement = () => {
-    // Data state
     const [tutors, setTutors] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
-
-    // Loading and error states
     const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
     const [actionLoading, setActionLoading] = useState(null);
-    const [error, setError] = useState(null);
-    const [usingFallback, setUsingFallback] = useState(false);
+    const [error, setError] = useState('');
 
-    // Snackbar for notifications
-    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+    const [openFormModal, setOpenFormModal] = useState(false);
+    const [editingTutor, setEditingTutor] = useState(null);
+    const [formData, setFormData] = useState(initialTutorForm);
 
-    /**
-     * Fetch all tutors from the API
-     * GET /users (filters users with role 'tutor')
-     * Falls back to mock data if API fails
-     */
-    const fetchTutors = useCallback(async () => {
+    const [openDetailModal, setOpenDetailModal] = useState(false);
+    const [detailLoading, setDetailLoading] = useState(false);
+    const [selectedTutor, setSelectedTutor] = useState(null);
+
+    const [openUploadModal, setOpenUploadModal] = useState(false);
+    const [uploadTutorId, setUploadTutorId] = useState('');
+    const [uploadType, setUploadType] = useState('certificate');
+    const [uploadFile, setUploadFile] = useState(null);
+
+    const [snackbar, setSnackbar] = useState({
+        open: false,
+        message: '',
+        severity: 'success',
+    });
+
+    const listTutors = useCallback(async (query = '') => {
         setLoading(true);
-        setError(null);
-        setUsingFallback(false);
-        try {
-            const response = await userService.getAll();
-            // Filter users with tutor role
-            const allUsers = response?.data || response || [];
-            const tutorUsers = Array.isArray(allUsers)
-                ? allUsers.filter(user => user.role === 'tutor' || user.role === 'instructor')
-                : [];
+        setError('');
 
-            if (tutorUsers.length > 0) {
-                setTutors(tutorUsers);
-            } else {
-                // No tutors found, use fallback
-                setTutors(FALLBACK_TUTORS);
-                setUsingFallback(true);
-            }
-        } catch (err) {
-            console.error('Error fetching tutors:', err);
-            // Use fallback data when API fails
-            setTutors(FALLBACK_TUTORS);
-            setUsingFallback(true);
-            setSnackbar({
-                open: true,
-                message: 'Using demo data - API endpoint not available',
-                severity: 'warning'
+        try {
+            const response = await optionAdminService.listTutors({
+                q: query,
+                per_page: 50,
             });
+            setTutors(response.data || []);
+        } catch (err) {
+            console.error('Failed to fetch admin tutors:', err);
+            setError(err.message || 'Failed to load tutors.');
+            setTutors([]);
         } finally {
             setLoading(false);
         }
     }, []);
 
-    // Fetch tutors on component mount
     useEffect(() => {
-        fetchTutors();
-    }, [fetchTutors]);
+        const timer = setTimeout(() => {
+            listTutors(searchTerm);
+        }, 350);
 
-    // Filter tutors based on search
-    const filteredTutors = tutors.filter(user =>
-        (user.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        (user.email?.toLowerCase() || '').includes(searchTerm.toLowerCase())
-    );
+        return () => clearTimeout(timer);
+    }, [searchTerm, listTutors]);
 
-    /**
-     * Get status configuration for display
-     */
-    const getStatusConfig = (status) => {
-        const normalizedStatus = status?.toLowerCase() || '';
-        switch (normalizedStatus) {
-            case 'active':
-            case 'approved':
-                return { color: '#10B981', bg: 'rgba(16, 185, 129, 0.15)', icon: <CheckCircle sx={{ fontSize: 14 }} />, label: 'Active' };
-            case 'suspended':
-                return { color: '#EF4444', bg: 'rgba(239, 68, 68, 0.15)', icon: <Block sx={{ fontSize: 14 }} />, label: 'Suspended' };
-            case 'pending':
-                return { color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.15)', icon: <HourglassEmpty sx={{ fontSize: 14 }} />, label: 'Pending' };
-            case 'rejected':
-                return { color: '#EF4444', bg: 'rgba(239, 68, 68, 0.15)', icon: <Block sx={{ fontSize: 14 }} />, label: 'Rejected' };
-            default:
-                return { color: '#6B7280', bg: 'rgba(107, 114, 128, 0.15)', icon: null, label: status || 'Unknown' };
+    const openSnackbar = (message, severity = 'success') => {
+        setSnackbar({ open: true, message, severity });
+    };
+
+    const closeSnackbar = () => {
+        setSnackbar((prev) => ({ ...prev, open: false }));
+    };
+
+    const mappedTutors = useMemo(() => {
+        return tutors.map((tutor) => {
+            const docs = getTutorDocuments(tutor);
+            const kycStatus = getKycStatus(tutor);
+            const kycData = getKycData(tutor);
+
+            return {
+                ...tutor,
+                _name: getTutorName(tutor),
+                _email: tutor.email || tutor.user?.email || '-',
+                _phone: tutor.phone || kycData.phone || '-',
+                _kycStatus: kycStatus,
+                _docsCount: docs.length,
+            };
+        });
+    }, [tutors]);
+
+    const loadTutorDetail = useCallback(async (tutorId, { openModal = false } = {}) => {
+        setDetailLoading(true);
+        try {
+            const detail = await optionAdminService.getTutorById(tutorId);
+            setSelectedTutor(detail);
+            if (openModal) {
+                setOpenDetailModal(true);
+            }
+            return detail;
+        } catch (err) {
+            console.error('Failed to load tutor detail:', err);
+            openSnackbar(err.message || 'Failed to load tutor detail.', 'error');
+            return null;
+        } finally {
+            setDetailLoading(false);
+        }
+    }, []);
+
+    const toFormData = (tutor) => {
+        const kycData = getKycData(tutor);
+
+        return {
+            ...initialTutorForm,
+            name: getTutorName(tutor),
+            email: String(tutor.email || tutor.user?.email || ''),
+            phone: String(tutor.phone || kycData.phone || ''),
+            country: String(kycData.country || ''),
+            state: String(kycData.state || ''),
+            city: String(kycData.city || ''),
+            address: String(kycData.address || ''),
+            bio: String(kycData.bio || ''),
+            skills: stringifyList(kycData.skills || tutor.skills || []),
+            highest_education: String(kycData.highest_education || ''),
+            id_type: String(kycData.id_type || ''),
+            id_number: String(kycData.id_number || ''),
+            bank_name: String(kycData.bank_name || ''),
+            account_number: String(kycData.account_number || ''),
+            account_name: String(kycData.account_name || ''),
+            review_note: String(kycData.review_note || ''),
+            password: '',
+            initial_doc_type: 'certificate',
+            initial_doc_file: null,
+        };
+    };
+
+    const handleOpenCreateModal = () => {
+        setEditingTutor(null);
+        setFormData(initialTutorForm);
+        setOpenFormModal(true);
+    };
+
+    const handleOpenEditModal = async (tutorId) => {
+        setActionLoading(tutorId);
+        try {
+            const detail = await optionAdminService.getTutorById(tutorId);
+            if (!detail) return;
+            setEditingTutor(detail);
+            setFormData(toFormData(detail));
+            setOpenFormModal(true);
+        } catch (err) {
+            console.error('Failed to open edit modal:', err);
+            openSnackbar(err.message || 'Unable to load tutor for editing.', 'error');
+        } finally {
+            setActionLoading(null);
         }
     };
 
-    /**
-     * Handle status toggle (mock implementation)
-     * Note: Real implementation would require backend support
-     */
-    const handleToggleStatus = async (tutor) => {
-        if (usingFallback) {
-            // Mock toggle for fallback data
-            setTutors(prev => prev.map(t => {
-                if (t.id === tutor.id) {
-                    let newStatus = t.status;
-                    if (t.status === 'Active') newStatus = 'Suspended';
-                    else if (t.status === 'Suspended') newStatus = 'Active';
-                    else if (t.status === 'Pending') newStatus = 'Active';
-                    return { ...t, status: newStatus };
-                }
-                return t;
-            }));
-            setSnackbar({ open: true, message: 'Status updated (demo mode)', severity: 'info' });
+    const handleOpenUploadModal = (tutorId) => {
+        setUploadTutorId(tutorId);
+        setUploadType('certificate');
+        setUploadFile(null);
+        setOpenUploadModal(true);
+    };
+
+    const handleSaveTutor = async () => {
+        const requiredFields = editingTutor
+            ? ['name', 'phone']
+            : [
+                'name',
+                'email',
+                'password',
+                'phone',
+                'country',
+                'state',
+                'city',
+                'address',
+                'bio',
+                'skills',
+                'highest_education',
+                'id_type',
+                'id_number',
+            ];
+
+        const missingField = requiredFields.find((field) => !String(formData[field] || '').trim());
+        if (missingField) {
+            openSnackbar('Please fill all required fields.', 'error');
             return;
         }
 
-        setActionLoading(tutor.id);
+        const payload = {
+            name: formData.name.trim(),
+            email: formData.email.trim(),
+            password: formData.password.trim(),
+            phone: formData.phone.trim(),
+            country: formData.country.trim(),
+            state: formData.state.trim(),
+            city: formData.city.trim(),
+            address: formData.address.trim(),
+            bio: formData.bio.trim(),
+            skills: parseCommaList(formData.skills),
+            highest_education: formData.highest_education.trim(),
+            id_type: formData.id_type.trim(),
+            id_number: formData.id_number.trim(),
+            bank_name: formData.bank_name.trim(),
+            account_number: formData.account_number.trim(),
+            account_name: formData.account_name.trim(),
+            review_note: formData.review_note.trim(),
+        };
+
+        if (formData.initial_doc_file) {
+            payload.docs = [{ type: formData.initial_doc_type, file: formData.initial_doc_file }];
+        }
+
+        if (editingTutor) {
+            delete payload.password;
+            if (!payload.email) delete payload.email;
+        }
+
+        setSaving(true);
         try {
-            // Try to update via API
-            await userService.update(tutor.id, {
-                status: tutor.status === 'Active' ? 'Suspended' : 'Active'
+            if (editingTutor) {
+                await optionAdminService.updateTutor(editingTutor.id, payload);
+                openSnackbar('Tutor updated successfully.');
+            } else {
+                await optionAdminService.createTutor(payload);
+                openSnackbar('Tutor created successfully.');
+            }
+
+            setOpenFormModal(false);
+            setFormData(initialTutorForm);
+            await listTutors(searchTerm);
+        } catch (err) {
+            console.error('Failed to save tutor:', err);
+            openSnackbar(err.message || 'Failed to save tutor.', 'error');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleUploadDoc = async () => {
+        if (!uploadTutorId || !uploadType || !uploadFile) {
+            openSnackbar('Please choose a document type and file.', 'error');
+            return;
+        }
+
+        setSaving(true);
+        try {
+            await optionAdminService.uploadTutorKycDoc(uploadTutorId, {
+                type: uploadType,
+                file: uploadFile,
             });
-            setSnackbar({ open: true, message: 'Status updated successfully', severity: 'success' });
-            await fetchTutors();
+
+            openSnackbar('KYC document uploaded successfully.');
+            setOpenUploadModal(false);
+
+            await listTutors(searchTerm);
+            if (selectedTutor?.id === uploadTutorId) {
+                await loadTutorDetail(uploadTutorId);
+            }
         } catch (err) {
-            console.error('Error updating tutor status:', err);
-            setSnackbar({ open: true, message: err.message || 'Failed to update status', severity: 'error' });
+            console.error('Failed to upload KYC document:', err);
+            openSnackbar(err.message || 'Failed to upload document.', 'error');
         } finally {
-            setActionLoading(null);
+            setSaving(false);
         }
     };
 
-    /**
-     * Handle delete tutor
-     */
-    const handleDeleteTutor = async (tutor) => {
-        if (!window.confirm(`Are you sure you want to delete ${tutor.name}? This action cannot be undone.`)) {
-            return;
-        }
+    const handleDeleteDoc = async (docId) => {
+        if (!selectedTutor?.id) return;
+        if (!window.confirm('Delete this KYC document?')) return;
 
-        if (usingFallback) {
-            // Mock delete for fallback data
-            setTutors(prev => prev.filter(t => t.id !== tutor.id));
-            setSnackbar({ open: true, message: 'Tutor deleted (demo mode)', severity: 'info' });
-            return;
-        }
-
-        setActionLoading(tutor.id);
+        setActionLoading(docId);
         try {
-            await userService.delete(tutor.id);
-            setSnackbar({ open: true, message: 'Tutor deleted successfully', severity: 'success' });
-            await fetchTutors();
+            await optionAdminService.deleteTutorKycDoc(selectedTutor.id, docId);
+            openSnackbar('KYC document removed successfully.');
+            await loadTutorDetail(selectedTutor.id);
+            await listTutors(searchTerm);
         } catch (err) {
-            console.error('Error deleting tutor:', err);
-            setSnackbar({ open: true, message: err.message || 'Failed to delete tutor', severity: 'error' });
+            console.error('Failed to delete KYC document:', err);
+            openSnackbar(err.message || 'Failed to delete document.', 'error');
         } finally {
             setActionLoading(null);
         }
     };
 
-    /**
-     * Close snackbar notification
-     */
-    const handleCloseSnackbar = () => {
-        setSnackbar({ ...snackbar, open: false });
-    };
+    const selectedTutorDocs = useMemo(() => getTutorDocuments(selectedTutor), [selectedTutor]);
+    const selectedTutorKycData = useMemo(() => getKycData(selectedTutor), [selectedTutor]);
 
     return (
         <Box sx={{ p: { xs: 2, md: 4 }, bgcolor: '#0C1322', minHeight: 'calc(100vh - 70px)', width: '100%' }}>
-            {/* Header Section */}
             <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={2} sx={{ mb: 4 }}>
                 <Box>
                     <Typography variant="h4" sx={{ color: '#fff', fontWeight: 700, mb: 1 }}>
                         Tutor Management
-                        {usingFallback && (
-                            <Chip
-                                label="Demo Mode"
-                                size="small"
-                                sx={{ ml: 2, bgcolor: 'rgba(245, 158, 11, 0.2)', color: '#F59E0B' }}
-                            />
-                        )}
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#9CA3AF' }}>
-                        Approve and manage course instructors.
+                        Manage tutors with full KYC profile and supporting documents.
                     </Typography>
                 </Box>
-                <Tooltip title="Refresh">
-                    <IconButton
-                        onClick={fetchTutors}
-                        disabled={loading}
-                        sx={{
-                            color: '#9CA3AF',
-                            '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' }
-                        }}
+
+                <Stack direction="row" spacing={1}>
+                    <Tooltip title="Refresh">
+                        <IconButton
+                            onClick={() => listTutors(searchTerm)}
+                            disabled={loading}
+                            sx={{ color: '#9CA3AF', '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' } }}
+                        >
+                            <Refresh />
+                        </IconButton>
+                    </Tooltip>
+
+                    <Button
+                        variant="contained"
+                        startIcon={<Add />}
+                        onClick={handleOpenCreateModal}
+                        sx={primaryButtonStyle}
                     >
-                        <Refresh />
-                    </IconButton>
-                </Tooltip>
+                        Add Tutor
+                    </Button>
+                </Stack>
             </Stack>
 
-            {/* Search Section */}
-            <Paper sx={{ p: 2, mb: 4, bgcolor: '#1A2230', borderRadius: 2, border: '1px solid #374151' }}>
-                <Box sx={{
-                    bgcolor: "#1F2937",
-                    borderRadius: 1,
-                    px: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    width: '100%',
-                    maxWidth: 400,
-                    height: '40px'
-                }}>
-                    <Search sx={{ color: "#9CA3AF", fontSize: 20 }} />
+            <Paper sx={{ ...paperStyle, p: 2, mb: 4 }}>
+                <Box sx={{ ...searchBarStyle, maxWidth: 420 }}>
+                    <Search sx={{ color: '#9CA3AF', fontSize: 20 }} />
                     <InputBase
-                        placeholder="Search tutors..."
+                        placeholder="Search tutors by name or email..."
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        sx={{
-                            color: "#FFFFFF",
-                            fontSize: '0.9rem',
-                            width: '100%',
-                            '& input': {
-                                border: 'none',
-                                outline: 'none',
-                                '&::placeholder': { color: '#6B7280' }
-                            }
-                        }}
+                        onChange={(event) => setSearchTerm(event.target.value)}
+                        sx={searchInputStyle}
                     />
                 </Box>
             </Paper>
 
-            {/* Tutors Table */}
-            <TableContainer component={Paper} sx={{ bgcolor: '#1A2230', borderRadius: 2, border: '1px solid #374151' }}>
+            <TableContainer component={Paper} sx={paperStyle}>
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }}>Tutor</TableCell>
-                            <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }}>Courses</TableCell>
-                            <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }}>Students</TableCell>
-                            <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }}>Status</TableCell>
-                            <TableCell align="right" sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }}>Actions</TableCell>
+                            <TableCell sx={tableHeaderCellStyle}>Tutor</TableCell>
+                            <TableCell sx={tableHeaderCellStyle}>Email</TableCell>
+                            <TableCell sx={tableHeaderCellStyle}>Phone</TableCell>
+                            <TableCell sx={tableHeaderCellStyle}>KYC Status</TableCell>
+                            <TableCell sx={tableHeaderCellStyle}>Documents</TableCell>
+                            <TableCell align="right" sx={tableHeaderCellStyle}>Actions</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {loading ? (
                             <TableRow>
-                                <TableCell colSpan={5} align="center" sx={{ borderBottom: '1px solid #374151', py: 6 }}>
-                                    <CircularProgress size={40} sx={{ color: '#7C3AED' }} />
-                                    <Typography sx={{ color: '#9CA3AF', mt: 2 }}>Loading tutors...</Typography>
+                                <TableCell colSpan={6} align="center" sx={{ ...tableBodyCellStyle, py: 7 }}>
+                                    <CircularProgress />
                                 </TableCell>
                             </TableRow>
                         ) : error ? (
                             <TableRow>
-                                <TableCell colSpan={5} align="center" sx={{ borderBottom: '1px solid #374151', py: 4 }}>
+                                <TableCell colSpan={6} align="center" sx={{ ...tableBodyCellStyle, py: 4 }}>
                                     <Alert severity="error" sx={{ bgcolor: 'transparent', justifyContent: 'center' }}>
                                         {error}
                                     </Alert>
-                                    <Button onClick={fetchTutors} sx={{ mt: 2, color: '#7C3AED' }}>Try Again</Button>
                                 </TableCell>
                             </TableRow>
-                        ) : filteredTutors.length === 0 ? (
+                        ) : mappedTutors.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={5} align="center" sx={{ borderBottom: '1px solid #374151', py: 6 }}>
-                                    <School sx={{ fontSize: 48, color: '#374151', mb: 2 }} />
-                                    <Typography sx={{ color: '#9CA3AF' }}>
-                                        {searchTerm ? 'No tutors match your search' : 'No tutors found'}
-                                    </Typography>
+                                <TableCell colSpan={6} align="center" sx={{ ...tableBodyCellStyle, py: 5, color: '#9CA3AF' }}>
+                                    No tutors found.
                                 </TableCell>
                             </TableRow>
-                        ) : filteredTutors.map((user) => {
-                            const statusConfig = getStatusConfig(user.status);
-                            const isActionLoading = actionLoading === user.id;
-                            return (
-                                <TableRow key={user.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                                    <TableCell sx={{ color: '#fff', borderBottom: '1px solid #374151' }}>
-                                        <Stack direction="row" alignItems="center" spacing={2}>
-                                            <Avatar sx={{ width: 40, height: 40, bgcolor: '#7C3AED', fontSize: '0.9rem' }}>
-                                                {user.name?.split(' ').map(n => n[0]).join('') || '?'}
-                                            </Avatar>
-                                            <Box>
-                                                <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#fff' }}>
-                                                    {user.name || 'Unknown'}
-                                                </Typography>
-                                                <Typography variant="caption" sx={{ color: '#6B7280' }}>
-                                                    {user.email || 'No email'}
-                                                </Typography>
-                                            </Box>
-                                        </Stack>
-                                    </TableCell>
-                                    <TableCell sx={{ borderBottom: '1px solid #374151' }}>
-                                        <Stack direction="row" alignItems="center" spacing={1}>
-                                            <School sx={{ color: '#1152D4', fontSize: 18 }} />
-                                            <Typography variant="body2" sx={{ color: '#fff', fontWeight: 600 }}>
-                                                {user.courses_count ?? user.courses ?? 0}
+                        ) : (
+                            mappedTutors.map((tutor) => {
+                                const rowLoading = actionLoading === tutor.id;
+                                const statusColor = tutor._kycStatus === 'approved' ? '#10B981' : tutor._kycStatus === 'submitted' ? '#F59E0B' : '#9CA3AF';
+
+                                return (
+                                    <TableRow key={tutor.id}>
+                                        <TableCell sx={tableBodyCellStyle}>
+                                            <Stack direction="row" alignItems="center" spacing={1.5}>
+                                                <Avatar sx={{ bgcolor: '#1152D4', width: 36, height: 36 }}>
+                                                    {(tutor._name || '?').charAt(0).toUpperCase()}
+                                                </Avatar>
+                                                <Typography sx={{ color: '#fff', fontWeight: 600 }}>{tutor._name}</Typography>
+                                            </Stack>
+                                        </TableCell>
+
+                                        <TableCell sx={{ ...tableBodyCellStyle, color: '#D1D5DB' }}>{tutor._email}</TableCell>
+                                        <TableCell sx={{ ...tableBodyCellStyle, color: '#D1D5DB' }}>{tutor._phone}</TableCell>
+                                        <TableCell sx={tableBodyCellStyle}>
+                                            <Typography sx={{ color: statusColor, textTransform: 'capitalize', fontWeight: 600 }}>
+                                                {tutor._kycStatus}
                                             </Typography>
-                                        </Stack>
-                                    </TableCell>
-                                    <TableCell sx={{ borderBottom: '1px solid #374151' }}>
-                                        <Stack direction="row" alignItems="center" spacing={1}>
-                                            <People sx={{ color: '#10B981', fontSize: 18 }} />
-                                            <Typography variant="body2" sx={{ color: '#fff', fontWeight: 600 }}>
-                                                {user.students_count ?? user.students ?? 0}
-                                            </Typography>
-                                        </Stack>
-                                    </TableCell>
-                                    <TableCell sx={{ borderBottom: '1px solid #374151' }}>
-                                        <Chip
-                                            icon={statusConfig.icon}
-                                            label={statusConfig.label}
-                                            size="small"
-                                            sx={{
-                                                bgcolor: statusConfig.bg,
-                                                color: statusConfig.color,
-                                                fontSize: '0.75rem',
-                                                '& .MuiChip-icon': {
-                                                    color: statusConfig.color,
-                                                },
-                                            }}
-                                        />
-                                    </TableCell>
-                                    <TableCell align="right" sx={{ borderBottom: '1px solid #374151' }}>
-                                        <Stack direction="row" spacing={1} justifyContent="flex-end">
-                                            <Tooltip title="View Profile">
-                                                <IconButton
-                                                    disabled={isActionLoading}
-                                                    sx={{
-                                                        color: '#3B82F6',
-                                                        bgcolor: 'rgba(59, 130, 246, 0.1)',
-                                                        '&:hover': { bgcolor: 'rgba(59, 130, 246, 0.2)' }
-                                                    }}
-                                                >
-                                                    <Visibility fontSize="small" />
-                                                </IconButton>
-                                            </Tooltip>
-                                            <Tooltip title={
-                                                statusConfig.label === 'Active' ? 'Suspend Tutor' :
-                                                    statusConfig.label === 'Pending' ? 'Approve Tutor' : 'Activate Tutor'
-                                            }>
-                                                <IconButton
-                                                    onClick={() => handleToggleStatus(user)}
-                                                    disabled={isActionLoading}
-                                                    sx={{
-                                                        color: statusConfig.label === 'Active' ? '#EF4444' : '#10B981',
-                                                        bgcolor: statusConfig.label === 'Active' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
-                                                        '&:hover': {
-                                                            bgcolor: statusConfig.label === 'Active' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)'
-                                                        }
-                                                    }}
-                                                >
-                                                    {isActionLoading ? (
-                                                        <CircularProgress size={18} sx={{ color: 'inherit' }} />
-                                                    ) : statusConfig.label === 'Active' ? (
-                                                        <Block fontSize="small" />
-                                                    ) : (
-                                                        <CheckCircle fontSize="small" />
-                                                    )}
-                                                </IconButton>
-                                            </Tooltip>
-                                            <Tooltip title="Delete Tutor">
-                                                <IconButton
-                                                    onClick={() => handleDeleteTutor(user)}
-                                                    disabled={isActionLoading}
-                                                    sx={{
-                                                        color: '#EF4444',
-                                                        bgcolor: 'rgba(239, 68, 68, 0.1)',
-                                                        '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.2)' }
-                                                    }}
-                                                >
-                                                    <Delete fontSize="small" />
-                                                </IconButton>
-                                            </Tooltip>
-                                        </Stack>
-                                    </TableCell>
-                                </TableRow>
-                            );
-                        })}
+                                        </TableCell>
+                                        <TableCell sx={{ ...tableBodyCellStyle, color: '#D1D5DB' }}>{tutor._docsCount}</TableCell>
+
+                                        <TableCell align="right" sx={tableBodyCellStyle}>
+                                            <Stack direction="row" spacing={1} justifyContent="flex-end">
+                                                <Tooltip title="View Details">
+                                                    <span>
+                                                        <IconButton
+                                                            onClick={() => loadTutorDetail(tutor.id, { openModal: true })}
+                                                            sx={{ color: '#3B82F6' }}
+                                                            disabled={rowLoading}
+                                                        >
+                                                            <Visibility fontSize="small" />
+                                                        </IconButton>
+                                                    </span>
+                                                </Tooltip>
+
+                                                <Tooltip title="Edit Tutor">
+                                                    <span>
+                                                        <IconButton
+                                                            onClick={() => handleOpenEditModal(tutor.id)}
+                                                            sx={{ color: '#F59E0B' }}
+                                                            disabled={rowLoading}
+                                                        >
+                                                            <Edit fontSize="small" />
+                                                        </IconButton>
+                                                    </span>
+                                                </Tooltip>
+
+                                                <Tooltip title="Upload KYC Doc">
+                                                    <span>
+                                                        <IconButton
+                                                            onClick={() => handleOpenUploadModal(tutor.id)}
+                                                            sx={{ color: '#10B981' }}
+                                                            disabled={rowLoading}
+                                                        >
+                                                            <UploadFile fontSize="small" />
+                                                        </IconButton>
+                                                    </span>
+                                                </Tooltip>
+                                            </Stack>
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            })
+                        )}
                     </TableBody>
                 </Table>
             </TableContainer>
 
-            {/* Snackbar for notifications */}
-            <Snackbar
-                open={snackbar.open}
-                autoHideDuration={4000}
-                onClose={handleCloseSnackbar}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            >
-                <Alert
-                    onClose={handleCloseSnackbar}
-                    severity={snackbar.severity}
-                    sx={{ width: '100%' }}
+            <Modal open={openFormModal} onClose={() => !saving && setOpenFormModal(false)}>
+                <Box
+                    sx={{
+                        ...modalStyle,
+                        width: { xs: '95%', md: 820 },
+                        maxHeight: '90vh',
+                        display: 'flex',
+                        flexDirection: 'column',
+                    }}
                 >
+                    <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ p: 2.5, borderBottom: '1px solid #374151' }}>
+                        <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '1.05rem' }}>
+                            {editingTutor ? 'Update Tutor' : 'Create Tutor'}
+                        </Typography>
+                        <IconButton onClick={() => !saving && setOpenFormModal(false)} sx={{ color: '#9CA3AF' }}>
+                            <Close />
+                        </IconButton>
+                    </Stack>
+
+                    <Box sx={{ p: 2.5, overflowY: 'auto' }}>
+                        <Stack spacing={2}>
+                            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                                <TextField
+                                    label="Name"
+                                    value={formData.name}
+                                    onChange={(event) => setFormData((prev) => ({ ...prev, name: event.target.value }))}
+                                    fullWidth
+                                    sx={textFieldStyle}
+                                />
+                                <TextField
+                                    label="Email"
+                                    value={formData.email}
+                                    onChange={(event) => setFormData((prev) => ({ ...prev, email: event.target.value }))}
+                                    fullWidth
+                                    sx={textFieldStyle}
+                                    disabled={Boolean(editingTutor)}
+                                />
+                            </Stack>
+
+                            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                                <TextField
+                                    label={editingTutor ? 'Password (optional)' : 'Password'}
+                                    type="password"
+                                    value={formData.password}
+                                    onChange={(event) => setFormData((prev) => ({ ...prev, password: event.target.value }))}
+                                    fullWidth
+                                    sx={textFieldStyle}
+                                />
+                                <TextField
+                                    label="Phone"
+                                    value={formData.phone}
+                                    onChange={(event) => setFormData((prev) => ({ ...prev, phone: event.target.value }))}
+                                    fullWidth
+                                    sx={textFieldStyle}
+                                />
+                            </Stack>
+
+                            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                                <TextField
+                                    label="Country"
+                                    value={formData.country}
+                                    onChange={(event) => setFormData((prev) => ({ ...prev, country: event.target.value }))}
+                                    fullWidth
+                                    sx={textFieldStyle}
+                                />
+                                <TextField
+                                    label="State"
+                                    value={formData.state}
+                                    onChange={(event) => setFormData((prev) => ({ ...prev, state: event.target.value }))}
+                                    fullWidth
+                                    sx={textFieldStyle}
+                                />
+                                <TextField
+                                    label="City"
+                                    value={formData.city}
+                                    onChange={(event) => setFormData((prev) => ({ ...prev, city: event.target.value }))}
+                                    fullWidth
+                                    sx={textFieldStyle}
+                                />
+                            </Stack>
+
+                            <TextField
+                                label="Address"
+                                value={formData.address}
+                                onChange={(event) => setFormData((prev) => ({ ...prev, address: event.target.value }))}
+                                fullWidth
+                                sx={textFieldStyle}
+                            />
+
+                            <TextField
+                                label="Bio"
+                                value={formData.bio}
+                                onChange={(event) => setFormData((prev) => ({ ...prev, bio: event.target.value }))}
+                                fullWidth
+                                minRows={2}
+                                multiline
+                                sx={textFieldStyle}
+                            />
+
+                            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                                <TextField
+                                    label="Skills (comma separated)"
+                                    value={formData.skills}
+                                    onChange={(event) => setFormData((prev) => ({ ...prev, skills: event.target.value }))}
+                                    fullWidth
+                                    sx={textFieldStyle}
+                                />
+                                <TextField
+                                    label="Highest Education"
+                                    value={formData.highest_education}
+                                    onChange={(event) => setFormData((prev) => ({ ...prev, highest_education: event.target.value }))}
+                                    fullWidth
+                                    sx={textFieldStyle}
+                                />
+                            </Stack>
+
+                            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                                <TextField
+                                    label="ID Type"
+                                    value={formData.id_type}
+                                    onChange={(event) => setFormData((prev) => ({ ...prev, id_type: event.target.value }))}
+                                    fullWidth
+                                    sx={textFieldStyle}
+                                />
+                                <TextField
+                                    label="ID Number"
+                                    value={formData.id_number}
+                                    onChange={(event) => setFormData((prev) => ({ ...prev, id_number: event.target.value }))}
+                                    fullWidth
+                                    sx={textFieldStyle}
+                                />
+                            </Stack>
+
+                            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                                <TextField
+                                    label="Bank Name"
+                                    value={formData.bank_name}
+                                    onChange={(event) => setFormData((prev) => ({ ...prev, bank_name: event.target.value }))}
+                                    fullWidth
+                                    sx={textFieldStyle}
+                                />
+                                <TextField
+                                    label="Account Number"
+                                    value={formData.account_number}
+                                    onChange={(event) => setFormData((prev) => ({ ...prev, account_number: event.target.value }))}
+                                    fullWidth
+                                    sx={textFieldStyle}
+                                />
+                                <TextField
+                                    label="Account Name"
+                                    value={formData.account_name}
+                                    onChange={(event) => setFormData((prev) => ({ ...prev, account_name: event.target.value }))}
+                                    fullWidth
+                                    sx={textFieldStyle}
+                                />
+                            </Stack>
+
+                            <TextField
+                                label="Review Note"
+                                value={formData.review_note}
+                                onChange={(event) => setFormData((prev) => ({ ...prev, review_note: event.target.value }))}
+                                fullWidth
+                                minRows={2}
+                                multiline
+                                sx={textFieldStyle}
+                            />
+
+                            {!editingTutor && (
+                                <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                                    <FormControl fullWidth>
+                                        <InputLabel sx={{ color: '#9CA3AF' }}>Initial Doc Type</InputLabel>
+                                        <Select
+                                            label="Initial Doc Type"
+                                            value={formData.initial_doc_type}
+                                            onChange={(event) => setFormData((prev) => ({ ...prev, initial_doc_type: event.target.value }))}
+                                            sx={selectStyle}
+                                            MenuProps={selectMenuProps}
+                                        >
+                                            {KYC_DOC_TYPES.map((docType) => (
+                                                <MenuItem key={docType} value={docType}>{docType}</MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+
+                                    <Button
+                                        component="label"
+                                        variant="outlined"
+                                        sx={{
+                                            borderColor: '#374151',
+                                            color: '#E5E7EB',
+                                            textTransform: 'none',
+                                            minHeight: 56,
+                                            '&:hover': { borderColor: '#4B5563', bgcolor: 'rgba(255,255,255,0.03)' },
+                                        }}
+                                    >
+                                        {formData.initial_doc_file ? formData.initial_doc_file.name : 'Attach Initial KYC Doc (optional)'}
+                                        <input
+                                            hidden
+                                            type="file"
+                                            onChange={(event) => {
+                                                const file = event.target.files?.[0] || null;
+                                                setFormData((prev) => ({ ...prev, initial_doc_file: file }));
+                                            }}
+                                        />
+                                    </Button>
+                                </Stack>
+                            )}
+                        </Stack>
+                    </Box>
+
+                    <Stack direction="row" justifyContent="flex-end" spacing={1.5} sx={{ p: 2.5, borderTop: '1px solid #374151' }}>
+                        <Button
+                            onClick={() => setOpenFormModal(false)}
+                            disabled={saving}
+                            sx={{ color: '#9CA3AF', textTransform: 'none' }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="contained"
+                            onClick={handleSaveTutor}
+                            disabled={saving}
+                            sx={primaryButtonStyle}
+                        >
+                            {saving ? 'Saving...' : editingTutor ? 'Update Tutor' : 'Create Tutor'}
+                        </Button>
+                    </Stack>
+                </Box>
+            </Modal>
+
+            <Modal open={openDetailModal} onClose={() => setOpenDetailModal(false)}>
+                <Box
+                    sx={{
+                        ...modalStyle,
+                        width: { xs: '95%', md: 760 },
+                        maxHeight: '90vh',
+                        display: 'flex',
+                        flexDirection: 'column',
+                    }}
+                >
+                    <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ p: 2.5, borderBottom: '1px solid #374151' }}>
+                        <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '1.05rem' }}>
+                            Tutor Details
+                        </Typography>
+                        <IconButton onClick={() => setOpenDetailModal(false)} sx={{ color: '#9CA3AF' }}>
+                            <Close />
+                        </IconButton>
+                    </Stack>
+
+                    <Box sx={{ p: 2.5, overflowY: 'auto' }}>
+                        {detailLoading ? (
+                            <Box sx={{ py: 6, display: 'flex', justifyContent: 'center' }}>
+                                <CircularProgress />
+                            </Box>
+                        ) : selectedTutor ? (
+                            <Stack spacing={2.5}>
+                                <Paper sx={{ ...paperStyle, p: 2 }}>
+                                    <Typography sx={{ color: '#fff', fontWeight: 700, mb: 1.5 }}>{getTutorName(selectedTutor)}</Typography>
+                                    <Typography sx={{ color: '#D1D5DB', fontSize: '0.9rem' }}>Email: {selectedTutor.email || selectedTutor.user?.email || '-'}</Typography>
+                                    <Typography sx={{ color: '#D1D5DB', fontSize: '0.9rem' }}>Phone: {selectedTutor.phone || selectedTutorKycData.phone || '-'}</Typography>
+                                    <Typography sx={{ color: '#D1D5DB', fontSize: '0.9rem', textTransform: 'capitalize' }}>
+                                        KYC Status: {selectedTutor.kyc?.status || selectedTutor.kyc_status || 'unknown'}
+                                    </Typography>
+                                </Paper>
+
+                                <Paper sx={{ ...paperStyle, p: 2 }}>
+                                    <Typography sx={{ color: '#fff', fontWeight: 700, mb: 1.5 }}>KYC Profile</Typography>
+                                    <Typography sx={{ color: '#D1D5DB', fontSize: '0.9rem' }}>Country: {selectedTutorKycData.country || '-'}</Typography>
+                                    <Typography sx={{ color: '#D1D5DB', fontSize: '0.9rem' }}>State: {selectedTutorKycData.state || '-'}</Typography>
+                                    <Typography sx={{ color: '#D1D5DB', fontSize: '0.9rem' }}>City: {selectedTutorKycData.city || '-'}</Typography>
+                                    <Typography sx={{ color: '#D1D5DB', fontSize: '0.9rem' }}>Address: {selectedTutorKycData.address || '-'}</Typography>
+                                    <Typography sx={{ color: '#D1D5DB', fontSize: '0.9rem' }}>Skills: {stringifyList(selectedTutorKycData.skills) || '-'}</Typography>
+                                    <Typography sx={{ color: '#D1D5DB', fontSize: '0.9rem' }}>Highest Education: {selectedTutorKycData.highest_education || '-'}</Typography>
+                                </Paper>
+
+                                <Paper sx={{ ...paperStyle, p: 2 }}>
+                                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
+                                        <Typography sx={{ color: '#fff', fontWeight: 700 }}>KYC Documents</Typography>
+                                        <Button
+                                            size="small"
+                                            startIcon={<UploadFile />}
+                                            onClick={() => {
+                                                setOpenDetailModal(false);
+                                                handleOpenUploadModal(selectedTutor.id);
+                                            }}
+                                            sx={{ color: '#10B981', textTransform: 'none' }}
+                                        >
+                                            Add Document
+                                        </Button>
+                                    </Stack>
+
+                                    {selectedTutorDocs.length === 0 ? (
+                                        <Typography sx={{ color: '#9CA3AF', fontSize: '0.9rem' }}>
+                                            No documents uploaded.
+                                        </Typography>
+                                    ) : (
+                                        <Stack spacing={1}>
+                                            {selectedTutorDocs.map((doc) => {
+                                                const docUrl = doc.url || doc.file_url || doc.path || '';
+                                                return (
+                                                    <Stack
+                                                        key={doc.id}
+                                                        direction={{ xs: 'column', md: 'row' }}
+                                                        justifyContent="space-between"
+                                                        alignItems={{ xs: 'flex-start', md: 'center' }}
+                                                        spacing={1}
+                                                        sx={{
+                                                            p: 1.25,
+                                                            borderRadius: 1,
+                                                            bgcolor: '#0F1729',
+                                                            border: '1px solid #374151',
+                                                        }}
+                                                    >
+                                                        <Stack spacing={0.25}>
+                                                            <Typography sx={{ color: '#E5E7EB', fontWeight: 600, fontSize: '0.9rem' }}>
+                                                                {doc.type || 'document'}
+                                                            </Typography>
+                                                            <Typography sx={{ color: '#9CA3AF', fontSize: '0.8rem' }}>
+                                                                ID: {doc.id}
+                                                            </Typography>
+                                                            {docUrl ? (
+                                                                <a href={docUrl} target="_blank" rel="noreferrer" style={{ color: '#60A5FA', fontSize: '0.8rem' }}>
+                                                                    View file
+                                                                </a>
+                                                            ) : null}
+                                                        </Stack>
+
+                                                        <Button
+                                                            size="small"
+                                                            color="error"
+                                                            startIcon={<Delete />}
+                                                            disabled={actionLoading === doc.id}
+                                                            onClick={() => handleDeleteDoc(doc.id)}
+                                                            sx={{ textTransform: 'none' }}
+                                                        >
+                                                            Remove
+                                                        </Button>
+                                                    </Stack>
+                                                );
+                                            })}
+                                        </Stack>
+                                    )}
+                                </Paper>
+                            </Stack>
+                        ) : (
+                            <Typography sx={{ color: '#9CA3AF' }}>No tutor selected.</Typography>
+                        )}
+                    </Box>
+                </Box>
+            </Modal>
+
+            <Modal open={openUploadModal} onClose={() => !saving && setOpenUploadModal(false)}>
+                <Box sx={{ ...modalStyle, width: { xs: '95%', md: 520 } }}>
+                    <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ p: 2.5, borderBottom: '1px solid #374151' }}>
+                        <Typography sx={{ color: '#fff', fontWeight: 700 }}>Upload KYC Document</Typography>
+                        <IconButton onClick={() => !saving && setOpenUploadModal(false)} sx={{ color: '#9CA3AF' }}>
+                            <Close />
+                        </IconButton>
+                    </Stack>
+
+                    <Stack spacing={2} sx={{ p: 2.5 }}>
+                        <FormControl fullWidth>
+                            <InputLabel sx={{ color: '#9CA3AF' }}>Document Type</InputLabel>
+                            <Select
+                                value={uploadType}
+                                label="Document Type"
+                                onChange={(event) => setUploadType(event.target.value)}
+                                sx={selectStyle}
+                                MenuProps={selectMenuProps}
+                            >
+                                {KYC_DOC_TYPES.map((type) => (
+                                    <MenuItem key={type} value={type}>{type}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+
+                        <Button
+                            component="label"
+                            variant="outlined"
+                            startIcon={<Article />}
+                            sx={{
+                                borderColor: '#374151',
+                                color: '#E5E7EB',
+                                textTransform: 'none',
+                                justifyContent: 'flex-start',
+                                '&:hover': { borderColor: '#4B5563', bgcolor: 'rgba(255,255,255,0.03)' },
+                            }}
+                        >
+                            {uploadFile ? uploadFile.name : 'Choose File'}
+                            <input
+                                hidden
+                                type="file"
+                                onChange={(event) => setUploadFile(event.target.files?.[0] || null)}
+                            />
+                        </Button>
+
+                        <Stack direction="row" justifyContent="flex-end" spacing={1.5} sx={{ pt: 1 }}>
+                            <Button onClick={() => setOpenUploadModal(false)} disabled={saving} sx={{ color: '#9CA3AF', textTransform: 'none' }}>
+                                Cancel
+                            </Button>
+                            <Button variant="contained" onClick={handleUploadDoc} disabled={saving} sx={primaryButtonStyle}>
+                                {saving ? 'Uploading...' : 'Upload'}
+                            </Button>
+                        </Stack>
+                    </Stack>
+                </Box>
+            </Modal>
+
+            <Snackbar open={snackbar.open} autoHideDuration={3500} onClose={closeSnackbar} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+                <Alert severity={snackbar.severity} onClose={closeSnackbar} variant="filled">
                     {snackbar.message}
                 </Alert>
             </Snackbar>

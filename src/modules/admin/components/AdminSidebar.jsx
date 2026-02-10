@@ -71,8 +71,9 @@ const AdminSidebar = ({
             label: 'Course Management',
             icon: <SchoolOutlined sx={{ fontSize: 22 }} />,
             children: [
-                { path: '/admin/content/courses', label: 'Courses' },
-                { path: '/admin/content/lessons', label: 'Categories' },
+                { path: '/admin/content/essential-courses', label: 'Essential Courses' },
+                { path: '/admin/content/lessons-by-admin', label: 'Lessons by Admin' },
+                { path: '/admin/content/categories', label: 'Categories' },
                 { path: '/admin/content/price-changes', label: 'Price Changes' },
             ]
         },

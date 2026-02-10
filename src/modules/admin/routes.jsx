@@ -8,6 +8,8 @@ import {
     TutorManagement,
     ReviewerManagement,
     CourseManagement,
+    EssentialCourseManagement,
+    AdminLessonsByModule,
     CategoryManagement,
     KycReview,
     AdminCourseDetail,
@@ -52,10 +54,18 @@ const adminRoutes = {
             children: [
                 {
                     index: true,
-                    element: <Navigate to="courses" replace />,
+                    element: <Navigate to="essential-courses" replace />,
+                },
+                {
+                    path: 'essential-courses',
+                    element: <EssentialCourseManagement />,
                 },
                 {
                     path: 'courses',
+                    element: <Navigate to="/admin/content/essential-courses" replace />,
+                },
+                {
+                    path: 'legacy-courses',
                     element: <CourseManagement />,
                 },
                 {
@@ -63,7 +73,15 @@ const adminRoutes = {
                     element: <AdminCourseDetail />,
                 },
                 {
+                    path: 'lessons-by-admin',
+                    element: <AdminLessonsByModule />,
+                },
+                {
                     path: 'lessons',
+                    element: <Navigate to="/admin/content/lessons-by-admin" replace />,
+                },
+                {
+                    path: 'categories',
                     element: <CategoryManagement />,
                 },
                 {
@@ -84,5 +102,4 @@ const adminRoutes = {
 };
 
 export default adminRoutes;
-
 
