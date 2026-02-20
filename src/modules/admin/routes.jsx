@@ -14,6 +14,11 @@ import {
     KycReview,
     AdminCourseDetail,
     CertificatePriceChanges,
+    OrganizationOverview,
+    OrganizationInvitations,
+    OrganizationLearningPaths,
+    OrganizationAssignments,
+    OrganizationReports,
 } from './pages';
 
 const adminRoutes = {
@@ -95,6 +100,35 @@ const adminRoutes = {
             element: <AdminSettings />,
         },
         {
+            path: 'organization',
+            children: [
+                {
+                    index: true,
+                    element: <Navigate to="overview" replace />,
+                },
+                {
+                    path: 'overview',
+                    element: <OrganizationOverview />,
+                },
+                {
+                    path: 'invitations',
+                    element: <OrganizationInvitations />,
+                },
+                {
+                    path: 'learning-paths',
+                    element: <OrganizationLearningPaths />,
+                },
+                {
+                    path: 'assignments',
+                    element: <OrganizationAssignments />,
+                },
+                {
+                    path: 'reports',
+                    element: <OrganizationReports />,
+                },
+            ],
+        },
+        {
             path: 'kycreview',
             element: <KycReview />,
         },
@@ -102,4 +136,3 @@ const adminRoutes = {
 };
 
 export default adminRoutes;
-
