@@ -1,13 +1,13 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '../contexts';
+import { Navigate, useLocation } from 'react-router-dom';
 import { Box, CircularProgress } from '@mui/material';
-import { getDashboardRoute } from '../utils';
+import { useAuth } from '../contexts';
+import { hasOrganizationAccess } from '../utils';
 
-const PublicRoute = ({ children }) => {
+const OrganizationRoute = ({ children }) => {
     const { isAuthenticated, loading, user } = useAuth();
+    const location = useLocation();
 
-    // Show loading spinner while checking authentication
     if (loading) {
         return (
             <Box
@@ -24,12 +24,19 @@ const PublicRoute = ({ children }) => {
         );
     }
 
-    // Redirect to appropriate dashboard based on user role if already authenticated
-    if (isAuthenticated && user) {
-        return <Navigate to={getDashboardRoute(user)} replace />;
+    if (!isAuthenticated) {
+        return <Navigate to="/login" state={{ from: location }} replace />;
+    }
+
+    if (location.pathname === '/org/create') {
+        return children;
+    }
+
+    if (!hasOrganizationAccess(user)) {
+        return <Navigate to="/org/create" replace />;
     }
 
     return children;
 };
 
-export default PublicRoute;
+export default OrganizationRoute;

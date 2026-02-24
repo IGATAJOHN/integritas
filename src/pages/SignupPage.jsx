@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -26,6 +26,7 @@ import {
 } from '@mui/icons-material';
 import logo from '../assets/images/GGH_logo.png';
 import icon from '../assets/images/GGH_icon.png';
+import { getDashboardRoute } from '../utils';
 
 const SignupPage = () => {
     const navigate = useNavigate();
@@ -98,20 +99,8 @@ const SignupPage = () => {
         requiredPasswordRulesPass &&
         passwordsMatch;
 
-    const showPasswordValidation =
-        touched.password || formData.password.length > 0;
-
     const showConfirmValidation =
         touched.password_confirmation || formData.password_confirmation.length > 0;
-
-    const getPrimaryRole = (u) => {
-        if (u?.role) return u.role;
-        const names = u?.roles?.map(r => r.name) || [];
-        if (names.includes("admin") || names.includes("administrator")) return "admin";
-        if (names.includes("tutor")) return "tutor";
-        if (names.includes("student") || names.includes("learner")) return "learner";
-        return null;
-    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -156,12 +145,8 @@ const SignupPage = () => {
                 user_type: role, 
             });
 
-            const userRole = getPrimaryRole(userData) || role;
-
-            let dashboardRoute = "/learner";
-            if (userRole === "tutor") dashboardRoute = "/tutor";
-            if (userRole === "admin") dashboardRoute = "/admin";
-            navigate(dashboardRoute)
+            const dashboardRoute = getDashboardRoute(userData || role);
+            navigate(dashboardRoute);
         } catch (err) {
             console.error(err);
             setError(err?.message || 'Registration failed. Please try again.');

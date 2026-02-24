@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import {
     Box,
@@ -10,9 +10,9 @@ import {
 } from '@mui/material';
 import {
     EmailOutlined,
-    ArrowForward,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts';
+import { getDashboardRoute } from '../utils';
 import icon from '../assets/images/GGH_icon.png';
 
 const VerifyPage = () => {
@@ -45,10 +45,7 @@ const VerifyPage = () => {
 
                     // Delay redirect to show success message
                     setTimeout(() => {
-                        const dashboardRoute = user?.role === 'tutor' ? '/tutor' :
-                            (user?.role === 'admin' || user?.role === 'administrator') ? '/admin' :
-                                '/learner';
-                        navigate(dashboardRoute);
+                        navigate(getDashboardRoute(user));
                     }, 3000);
                 } catch (err) {
                     console.error('Auto-verification error:', err);
@@ -60,7 +57,7 @@ const VerifyPage = () => {
         };
 
         autoVerify();
-    }, [id, hash, searchParams, verifyEmail, navigate, user?.role]);
+    }, [id, hash, searchParams, verifyEmail, navigate, user]);
 
     // Timer countdown
     useEffect(() => {
@@ -77,10 +74,6 @@ const VerifyPage = () => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
     };
 
     const handleResend = async () => {
