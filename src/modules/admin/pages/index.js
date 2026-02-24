@@ -12,3 +12,8 @@ export { default as AdminSettings } from './Settings';
 export { default as KycReview } from './KycReview';
 export { default as AdminCourseDetail } from './AdminCourseDetail';
 export { default as CertificatePriceChanges } from './CertificatePriceChanges';
+export { default as OrganizationOverview } from './OrganizationOverview';
+export { default as OrganizationInvitations } from './OrganizationInvitations';
+export { default as OrganizationLearningPaths } from './OrganizationLearningPaths';
+export { default as OrganizationAssignments } from './OrganizationAssignments';
+export { default as OrganizationReports } from './OrganizationReports';

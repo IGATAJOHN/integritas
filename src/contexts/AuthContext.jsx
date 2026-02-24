@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services/api';
+import { getPrimaryRole } from '../utils';
 
 const AuthContext = createContext(null);
 
@@ -85,14 +86,7 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const pickRole = (u) => {
-        const names = u?.roles?.map((r) => r.name) || [];
-        if (u?.role) return u.role;
-        if (names.includes("admin") || names.includes("administrator")) return "admin";
-        if (names.includes("tutor")) return "tutor";
-        if (names.includes("student") || names.includes("learner")) return "learner";
-        return null;
-    };
+    const pickRole = (u) => getPrimaryRole(u);
 
     const register = async (payload) => {
         try {

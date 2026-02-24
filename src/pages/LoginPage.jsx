@@ -13,10 +13,10 @@ import {
 import {
     Visibility,
     VisibilityOff,
-    CloudOutlined,
     LockOutlined,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts';
+import { getDashboardRoute } from '../utils';
 import logo from '../assets/images/GGH_logo.png';
 import icon from '../assets/images/GGH_icon.png';
 
@@ -64,7 +64,7 @@ const LoginPage = () => {
                 return;
             }
             
-            const dashboardRoute = getDashboardRoute(userRole);
+            const dashboardRoute = getDashboardRoute(userData || userRole);
             navigate(dashboardRoute);
         } catch (err) {
             console.error('Login error:', err);
