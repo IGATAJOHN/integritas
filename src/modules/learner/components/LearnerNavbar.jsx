@@ -44,6 +44,7 @@ const LearnerNavbar = ({ onMobileMenuToggle }) => {
         { label: 'Dashboard', path: '/learner' },
         { label: 'Explore', path: '/explore' },
         { label: 'My Learning', path: '/explore/my-learning' },
+        { label: 'Organization', path: '/learner/organization' },
         { label: 'Community', path: '/community' },
     ];
 

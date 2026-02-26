@@ -30,7 +30,7 @@ const ModernLearnerLayout = () => {
                     ModalProps={{ keepMounted: true }}
                     sx={{
                         display: { xs: 'block', md: 'none' },
-                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: 220 }
+                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: 260 }
                     }}
                 >
                     <LearnerSidebar onClose={() => setMobileOpen(false)} />

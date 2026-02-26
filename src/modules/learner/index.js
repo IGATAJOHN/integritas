@@ -1,11 +1,8 @@
-// Layouts
 export { default as LearnerLayout } from './layouts/LearnerLayout';
 export { default as ModernLearnerLayout } from './layouts/ModernLearnerLayout';
 
-// Routes
 export { learnerRoutes } from './routes';
 
-// Pages
 export {
     LearnerDashboard,
     BrowseCourses,
@@ -18,4 +15,9 @@ export {
     Explore,
     CourseDetail,
     PaymentSuccess,
+    Organization,
+    OrganizationAssignments,
+    OrganizationInvitations,
+    OrganizationLearningPaths,
+    OrganizationReports,
 } from './pages';

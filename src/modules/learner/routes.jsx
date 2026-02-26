@@ -1,4 +1,5 @@
 import ModernLearnerLayout from './layouts/ModernLearnerLayout';
+import { Navigate } from 'react-router-dom';
 import {
     Explore,
     MyLearning,
@@ -11,7 +12,13 @@ import {
     Checkout,
     PaymentSuccess,
     LearnerDashboard,
+    OrganizationOverview,
+    OrganizationInvitations,
+    OrganizationLearningPaths,
+    OrganizationAssignments,
+    OrganizationReports,
 } from './pages';
+
 
 export const learnerRoutes = [
     {
@@ -67,6 +74,34 @@ export const learnerRoutes = [
             {
                 index: true,
                 element: <LearnerDashboard />,
+            },
+            {
+                path: 'organization',
+                element: <Navigate to="overview" replace />,
+            },
+            {
+                path: 'organization/overview',
+                element: <OrganizationOverview />,
+            },
+            {
+                path: 'organization/my-assignments',
+                element: <OrganizationAssignments />,
+            },
+            {
+                path: 'organization/invitations',
+                element: <OrganizationInvitations />,
+            },
+            {
+                path: 'organization/learning-paths',
+                element: <OrganizationLearningPaths />,
+            },
+            {
+                path: 'organization/assignments',
+                element: <OrganizationAssignments />,
+            },
+            {
+                path: 'organization/reports',
+                element: <OrganizationReports />,
             },
         ],
     },
