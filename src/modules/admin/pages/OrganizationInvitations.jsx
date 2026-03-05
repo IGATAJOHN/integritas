@@ -47,7 +47,6 @@ const INVITE_STATUSES = ['pending', 'accepted', 'expired', 'revoked'];
 const INVITE_ROLES = ['admin', 'manager', 'staff'];
 
 const initialBatchForm = {
-    role: 'staff',
     expires_days: '7',
     emails_text: '',
 };
@@ -187,7 +186,7 @@ const OrganizationInvitations = () => {
         setSaving(true);
         try {
             await organizationService.batchInviteStaff(selectedOrgId, {
-                role: batchForm.role,
+                role: 'staff',
                 expires_days: Number(batchForm.expires_days || 7),
                 emails,
             });
@@ -506,7 +505,7 @@ const OrganizationInvitations = () => {
             <Modal open={openBatchModal} onClose={() => !saving && setOpenBatchModal(false)}>
                 <Box sx={{ ...modalStyle, width: { xs: '95%', md: 640 } }}>
                     <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ p: 2.5, borderBottom: '1px solid #374151' }}>
-                        <Typography sx={{ color: '#fff', fontWeight: 700 }}>Batch Invite Staff</Typography>
+                        <Typography sx={{ color: '#fff', fontWeight: 700 }}>Invite Staff</Typography>
                         <IconButton onClick={() => !saving && setOpenBatchModal(false)} sx={{ color: '#9CA3AF' }}>
                             <Close />
                         </IconButton>
@@ -514,21 +513,6 @@ const OrganizationInvitations = () => {
 
                     <Stack spacing={2} sx={{ p: 2.5 }}>
                         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-                            <FormControl fullWidth>
-                                <InputLabel sx={{ color: '#9CA3AF' }}>Role</InputLabel>
-                                <Select
-                                    label="Role"
-                                    value={batchForm.role}
-                                    onChange={(event) => setBatchForm((prev) => ({ ...prev, role: event.target.value }))}
-                                    sx={selectStyle}
-                                    MenuProps={selectMenuProps}
-                                >
-                                    {INVITE_ROLES.map((role) => (
-                                        <MenuItem key={role} value={role}>{role}</MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-
                             <TextField
                                 label="Expires In (days)"
                                 type="number"
@@ -538,6 +522,10 @@ const OrganizationInvitations = () => {
                                 fullWidth
                             />
                         </Stack>
+
+                        <Alert severity="info" sx={{ bgcolor: 'rgba(59, 130, 246, 0.15)', color: '#93C5FD' }}>
+                            Role is fixed to <strong>staff</strong> for this endpoint.
+                        </Alert>
 
                         <TextField
                             label="Emails (comma or newline separated)"
@@ -559,7 +547,7 @@ const OrganizationInvitations = () => {
                             Cancel
                         </Button>
                         <Button variant="contained" onClick={handleBatchInvite} disabled={saving} sx={primaryButtonStyle}>
-                            {saving ? 'Sending...' : 'Send Invites'}
+                            {saving ? 'Sending...' : 'Send Invitations'}
                         </Button>
                     </Stack>
                 </Box>

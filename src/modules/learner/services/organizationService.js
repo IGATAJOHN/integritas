@@ -93,6 +93,24 @@ const tryListEndpoints = async (endpoints = []) => {
     return null;
 };
 
+const isMissingRouteError = (error) => error?.status === 404 && /could not be found/i.test(String(error?.message || ''));
+
+const postWithFallback = async (endpoints = [], payload) => {
+    let lastError = null;
+
+    for (const endpoint of endpoints) {
+        try {
+            const res = await apiService.post(endpoint, payload);
+            return unwrapData(res);
+        } catch (error) {
+            lastError = error;
+            if (!isMissingRouteError(error)) throw error;
+        }
+    }
+
+    throw lastError;
+};
+
 export const organizationService = {
     // -------- Organizations --------
     createOrganizationJson: async (payload) => {
@@ -114,17 +132,36 @@ export const organizationService = {
     },
 
     // -------- Invitations --------
+    inviteOrganizationMembers: async (orgId, payload) => {
+        const res = await apiService.post(`/orgs/${orgId}/invitations`, payload);
+        return unwrapData(res);
+    },
+
     batchInviteStaff: async (orgId, payload) => {
         const res = await apiService.post(`/orgs/${orgId}/invitations`, payload);
         return unwrapData(res);
     },
 
     acceptInvitationPublic: async (payload) => {
-        const res = await apiService.post('/orgs/org-invitations/public/accept', payload);
-        return unwrapData(res);
+        return postWithFallback([
+            '/org-invitations/public/accept',
+            '/orgs/org-invitations/public/accept',
+        ], payload);
     },
 
     acceptInvitationLoggedIn: async (payload) => {
+        const res = await apiService.post('/org-invitations/accept', payload);
+        return unwrapData(res);
+    },
+
+    acceptOrganizationInvitationPublic: async (payload) => {
+        return postWithFallback([
+            '/org-invitations/public/accept',
+            '/orgs/org-invitations/public/accept',
+        ], payload);
+    },
+
+    acceptOrganizationInvitationLoggedIn: async (payload) => {
         const res = await apiService.post('/org-invitations/accept', payload);
         return unwrapData(res);
     },
@@ -151,12 +188,34 @@ export const organizationService = {
         return unwrapList(res);
     },
 
+    listOrganizationInvitations: async (orgId, params = {}) => {
+        const query = buildQueryString({
+            status: params.status,
+            role: params.role,
+            q: params.q,
+            per_page: params.per_page ?? 20,
+            page: params.page,
+        });
+        const res = await apiService.get(`/orgs/${orgId}/invitations${query}`);
+        return unwrapList(res);
+    },
+
     revokeSingleInvitation: async (orgId, invitationId, payload = {}) => {
         const res = await apiService.post(`/orgs/${orgId}/invitations/${invitationId}/revoke`, payload);
         return unwrapData(res);
     },
 
+    revokeOrganizationInvitation: async (orgId, invitationId, payload = {}) => {
+        const res = await apiService.post(`/orgs/${orgId}/invitations/${invitationId}/revoke`, payload);
+        return unwrapData(res);
+    },
+
     revokeBulkInvitations: async (orgId, payload) => {
+        const res = await apiService.post(`/orgs/${orgId}/invitations/revoke-bulk`, payload);
+        return unwrapData(res);
+    },
+
+    revokeOrganizationInvitationsBulk: async (orgId, payload) => {
         const res = await apiService.post(`/orgs/${orgId}/invitations/revoke-bulk`, payload);
         return unwrapData(res);
     },

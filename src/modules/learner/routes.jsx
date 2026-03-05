@@ -84,12 +84,16 @@ export const learnerRoutes = [
                 element: <OrganizationOverview />,
             },
             {
+                path: 'organization/invite',
+                element: <OrganizationInvitations />,
+            },
+            {
                 path: 'organization/my-assignments',
                 element: <OrganizationAssignments />,
             },
             {
                 path: 'organization/invitations',
-                element: <OrganizationInvitations />,
+                element: <Navigate to="../invite" replace />,
             },
             {
                 path: 'organization/learning-paths',

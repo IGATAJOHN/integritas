@@ -63,7 +63,7 @@ const LoginPage = () => {
                 setLoading(false);
                 return;
             }
-            
+
             const dashboardRoute = getDashboardRoute(userData || userRole);
             navigate(dashboardRoute);
         } catch (err) {

@@ -1,6 +1,9 @@
 import { useCallback, useMemo, useState } from 'react';
+import {
+    readSelectedOrganizationId,
+    writeSelectedOrganizationId,
+} from '../../../utils/organizationScopeStorage';
 
-const SELECTED_ORG_STORAGE_KEY = 'ggh_admin_selected_org_id';
 const KNOWN_ORGS_STORAGE_KEY = 'ggh_admin_known_orgs';
 
 const safeParse = (value, fallback) => {
@@ -42,24 +45,14 @@ const saveKnownOrgs = (organizations) => {
     localStorage.setItem(KNOWN_ORGS_STORAGE_KEY, JSON.stringify(organizations));
 };
 
-const readSelectedOrgId = () => {
-    if (typeof window === 'undefined') return '';
-    return String(localStorage.getItem(SELECTED_ORG_STORAGE_KEY) || '').trim();
-};
-
-const saveSelectedOrgId = (orgId) => {
-    if (typeof window === 'undefined') return;
-    localStorage.setItem(SELECTED_ORG_STORAGE_KEY, orgId);
-};
-
 export const useOrganizationScope = () => {
     const [organizations, setOrganizations] = useState(() => readKnownOrgs());
-    const [selectedOrgId, setSelectedOrgIdState] = useState(() => readSelectedOrgId());
+    const [selectedOrgId, setSelectedOrgIdState] = useState(() => readSelectedOrganizationId());
 
     const setSelectedOrgId = useCallback((orgId) => {
         const normalized = String(orgId || '').trim();
         setSelectedOrgIdState(normalized);
-        saveSelectedOrgId(normalized);
+        writeSelectedOrganizationId(normalized);
     }, []);
 
     const rememberOrganization = useCallback((organization) => {

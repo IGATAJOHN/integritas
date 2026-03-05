@@ -20,7 +20,7 @@ import {
     MenuBook as CoursesIcon,
     EmojiEvents as AchievementsIcon,
     Settings as SettingsIcon,
-    BusinessOutlined,
+    BusinessOutlined as OrganizationIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../../contexts';
 
@@ -28,7 +28,9 @@ const LearnerSidebar = ({ onClose }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const { logout } = useAuth();
-    const [openSubmenu, setOpenSubmenu] = React.useState('');
+    const [openSubmenu, setOpenSubmenu] = React.useState(
+        location.pathname.startsWith('/learner/organization') ? 'Organization' : ''
+    );
 
     const colors = {
         bg: '#0F1729',
@@ -37,8 +39,6 @@ const LearnerSidebar = ({ onClose }) => {
         activeText: '#FFFFFF',
         primary: '#1152D4',
         primaryBg: '#1152D4',
-        childActiveBg: 'rgba(17, 82, 212, 0.15)',
-        childHoverBg: 'rgba(17, 82, 212, 0.05)',
         hover: 'rgba(17, 82, 212, 0.1)',
         border: '#1F2937'
     };
@@ -47,15 +47,12 @@ const LearnerSidebar = ({ onClose }) => {
         { label: 'Dashboard', icon: <DashboardIcon />, path: '/learner' },
         { label: 'My Learning', icon: <CoursesIcon />, path: '/explore/my-learning' },
         {
-            label: 'Organizations',
-            icon: <BusinessOutlined sx={{ fontSize: 22 }} />,
+            label: 'Organization',
+            icon: <OrganizationIcon sx={{ fontSize: 22 }} />,
             children: [
-                { path: '/learner/organization/overview', label: 'Overview' },
-                { path: '/learner/organization/invitations', label: 'Invitations' },
-                { path: '/learner/organization/learning-paths', label: 'Learning Paths' },
-                { path: '/learner/organization/assignments', label: 'Assignments' },
-                { path: '/learner/organization/reports', label: 'Reports' },
-            ]
+                { label: 'Overview', path: '/learner/organization/overview' },
+                { label: 'Invite Organization', path: '/learner/organization/invite' },
+            ],
         },
         { label: 'Achievements', icon: <AchievementsIcon />, path: '/achievements' },
         { label: 'Resources', icon: <ResourcesIcon />, path: '/resources' },
@@ -84,6 +81,7 @@ const LearnerSidebar = ({ onClose }) => {
     const MenuItem = ({ item }) => {
         const active = isParentActive(item);
         const isOpen = openSubmenu === item.label;
+        const isHighlighted = item.children ? (active || isOpen) : active;
         return (
             <>
                 <ListItem disablePadding sx={{ mb: 0.5 }}>
@@ -99,16 +97,16 @@ const LearnerSidebar = ({ onClose }) => {
                             borderRadius: 2,
                             mx: 1,
                             py: 1.25,
-                            bgcolor: active || isOpen ? colors.primaryBg : 'transparent',
+                            bgcolor: isHighlighted ? colors.primaryBg : 'transparent',
                             '&:hover': {
-                                bgcolor: active || isOpen ? colors.primaryBg : colors.hover
+                                bgcolor: isHighlighted ? colors.primaryBg : colors.hover
                             }
                         }}
                     >
                         <ListItemIcon
                             sx={{
                                 minWidth: 40,
-                                color: active || isOpen ? colors.activeText : colors.textSecondary
+                                color: isHighlighted ? colors.activeText : colors.textSecondary
                             }}
                         >
                             {item.icon}
@@ -117,11 +115,15 @@ const LearnerSidebar = ({ onClose }) => {
                             primary={item.label}
                             primaryTypographyProps={{
                                 fontSize: '0.9rem',
-                                fontWeight: active || isOpen ? 600 : 400,
-                                color: active || isOpen ? colors.activeText : colors.text
+                                fontWeight: isHighlighted ? 600 : 400,
+                                color: isHighlighted ? colors.activeText : colors.text
                             }}
                         />
-                        {item.children && (isOpen ? <ExpandLess sx={{ color: colors.activeText }} /> : <ExpandMore sx={{ color: colors.text }} />)}
+                        {item.children && (
+                            isOpen
+                                ? <ExpandLess sx={{ color: colors.activeText }} />
+                                : <ExpandMore sx={{ color: colors.text }} />
+                        )}
                     </ListItemButton>
                 </ListItem>
                 {item.children && (
@@ -139,9 +141,9 @@ const LearnerSidebar = ({ onClose }) => {
                                             mx: 1,
                                             mb: 0.5,
                                             py: 1,
-                                            bgcolor: childActive ? colors.childActiveBg : 'transparent',
+                                            bgcolor: childActive ? 'rgba(17, 82, 212, 0.15)' : 'transparent',
                                             '&:hover': {
-                                                bgcolor: childActive ? colors.childActiveBg : colors.childHoverBg,
+                                                bgcolor: childActive ? 'rgba(17, 82, 212, 0.15)' : 'rgba(17, 82, 212, 0.05)',
                                             },
                                         }}
                                     >

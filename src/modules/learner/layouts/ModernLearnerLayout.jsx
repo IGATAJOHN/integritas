@@ -4,6 +4,9 @@ import { Box, Drawer, useTheme } from '@mui/material';
 import LearnerNavbar from '../components/LearnerNavbar';
 import LearnerSidebar from '../components/LearnerSidebar';
 
+const SIDEBAR_WIDTH = 260;
+const DESKTOP_NAVBAR_HEIGHT = 65;
+
 const ModernLearnerLayout = () => {
     const theme = useTheme();
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -19,7 +22,17 @@ const ModernLearnerLayout = () => {
 
             <Box sx={{ display: 'flex', flex: 1 }}>
                 {/* Desktop Sidebar */}
-                <Box sx={{ display: { xs: 'none', md: 'block' }, flexShrink: 0 }}>
+                <Box
+                    sx={{
+                        display: { xs: 'none', md: 'block' },
+                        flex: `0 0 ${SIDEBAR_WIDTH}px`,
+                        width: SIDEBAR_WIDTH,
+                        position: 'sticky',
+                        top: `${DESKTOP_NAVBAR_HEIGHT}px`,
+                        alignSelf: 'flex-start',
+                        height: `calc(100vh - ${DESKTOP_NAVBAR_HEIGHT}px)`,
+                    }}
+                >
                     <LearnerSidebar />
                 </Box>
 
@@ -30,7 +43,7 @@ const ModernLearnerLayout = () => {
                     ModalProps={{ keepMounted: true }}
                     sx={{
                         display: { xs: 'block', md: 'none' },
-                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: 260 }
+                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: SIDEBAR_WIDTH }
                     }}
                 >
                     <LearnerSidebar onClose={() => setMobileOpen(false)} />

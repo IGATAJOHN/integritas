@@ -1,18 +1,16 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
     Alert,
     Box,
-    Button,
     FormControl,
     InputLabel,
     MenuItem,
     Paper,
     Select,
     Stack,
-    TextField,
     Typography,
 } from '@mui/material';
-import { selectMenuProps, selectStyle, textFieldStyle } from '../../../styles/formStyles';
+import { selectMenuProps, selectStyle } from '../../../styles/formStyles';
 
 const OrganizationScopeToolbar = ({
     title = 'Organization Scope',
@@ -23,13 +21,6 @@ const OrganizationScopeToolbar = ({
     onChangeOrgId,
     actions = null,
 }) => {
-    const [manualOrgId, setManualOrgId] = useState(selectedOrgId || '');
-
-    const applyManualOrgId = () => {
-        if (typeof onChangeOrgId !== 'function') return;
-        onChangeOrgId(manualOrgId);
-    };
-
     return (
         <Paper sx={{ bgcolor: '#1A2230', borderRadius: 2, border: '1px solid #374151', p: 2.5, mb: 3 }}>
             <Stack spacing={2}>
@@ -57,43 +48,18 @@ const OrganizationScopeToolbar = ({
                             </MenuItem>
                             {organizations.map((organization) => (
                                 <MenuItem key={organization.id} value={organization.id}>
-                                    {organization.name} ({organization.id})
+                                    {organization.name}
                                 </MenuItem>
                             ))}
                         </Select>
                     </FormControl>
-
-                    <TextField
-                        label="Or paste Organization ID"
-                        value={manualOrgId}
-                        onChange={(event) => setManualOrgId(event.target.value)}
-                        sx={{ ...textFieldStyle, flex: 1 }}
-                        placeholder="019c6dfa-ea1c-731f-bc43-1993ebb25fb7"
-                    />
-
-                    <Button
-                        variant="contained"
-                        onClick={applyManualOrgId}
-                        sx={{
-                            bgcolor: '#1152D4',
-                            '&:hover': { bgcolor: '#0D42AF' },
-                            textTransform: 'none',
-                            minHeight: 40,
-                        }}
-                    >
-                        Apply Org ID
-                    </Button>
 
                     {actions}
                 </Stack>
 
                 {selectedOrganization ? (
                     <Alert severity="info" sx={{ bgcolor: 'rgba(59, 130, 246, 0.15)', color: '#93C5FD' }}>
-                        Active organization: <strong>{selectedOrganization.name}</strong> ({selectedOrganization.id})
-                    </Alert>
-                ) : selectedOrgId ? (
-                    <Alert severity="warning" sx={{ bgcolor: 'rgba(245, 158, 11, 0.15)', color: '#F59E0B' }}>
-                        Active organization ID: <strong>{selectedOrgId}</strong> (not in saved list yet).
+                        Active organization: <strong>{selectedOrganization.name}</strong>
                     </Alert>
                 ) : (
                     <Alert severity="warning" sx={{ bgcolor: 'rgba(245, 158, 11, 0.15)', color: '#F59E0B' }}>

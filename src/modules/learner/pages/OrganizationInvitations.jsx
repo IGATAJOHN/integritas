@@ -44,10 +44,7 @@ import {
 } from '../../../styles/formStyles';
 
 const INVITE_STATUSES = ['pending', 'accepted', 'expired', 'revoked'];
-const INVITE_ROLES = ['admin', 'manager', 'staff'];
-
 const initialBatchForm = {
-    role: 'staff',
     expires_days: '7',
     emails_text: '',
 };
@@ -63,6 +60,22 @@ const parseEmails = (value) =>
         .split(/[\n,;]/)
         .map((email) => email.trim().toLowerCase())
         .filter(Boolean);
+
+const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
+
+const getBatchEmailSummary = (value) => {
+    const parsed = parseEmails(value);
+    const unique = [...new Set(parsed)];
+    const valid = unique.filter(isValidEmail);
+    const invalid = unique.filter((email) => !isValidEmail(email));
+
+    return {
+        valid,
+        invalid,
+        duplicatesRemoved: parsed.length - unique.length,
+        totalParsed: parsed.length,
+    };
+};
 
 const formatDateTime = (value) => {
     if (!value) return '-';
@@ -86,18 +99,20 @@ const OrganizationInvitations = () => {
 
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
-    const [roleFilter, setRoleFilter] = useState('');
+    
 
     const [selectedInvitationIds, setSelectedInvitationIds] = useState([]);
     const [meta, setMeta] = useState({ total: 0 });
 
     const [openBatchModal, setOpenBatchModal] = useState(false);
     const [batchForm, setBatchForm] = useState(initialBatchForm);
+    const [batchEmailInput, setBatchEmailInput] = useState('');
 
     const [openBulkModal, setOpenBulkModal] = useState(false);
     const [bulkForm, setBulkForm] = useState(initialBulkActionForm);
 
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+    const batchSummary = useMemo(() => getBatchEmailSummary(batchForm.emails_text), [batchForm.emails_text]);
 
     const openSnackbar = (message, severity = 'success') => {
         setSnackbar({ open: true, message, severity });
@@ -119,7 +134,6 @@ const OrganizationInvitations = () => {
             const response = await organizationService.listInvitations(selectedOrgId, {
                 q: searchTerm,
                 status: statusFilter,
-                role: roleFilter,
                 per_page: 50,
             });
 
@@ -133,7 +147,7 @@ const OrganizationInvitations = () => {
         } finally {
             setLoading(false);
         }
-    }, [selectedOrgId, searchTerm, statusFilter, roleFilter]);
+    }, [selectedOrgId, searchTerm, statusFilter]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -178,21 +192,22 @@ const OrganizationInvitations = () => {
             return;
         }
 
-        const emails = parseEmails(batchForm.emails_text);
+        const emails = batchSummary.valid;
         if (emails.length === 0) {
-            openSnackbar('Add at least one email address.', 'error');
+            openSnackbar('Add at least one valid staff email address.', 'error');
             return;
         }
 
         setSaving(true);
         try {
             await organizationService.batchInviteStaff(selectedOrgId, {
-                role: batchForm.role,
+                role: 'staff',
                 expires_days: Number(batchForm.expires_days || 7),
                 emails,
             });
 
             setBatchForm(initialBatchForm);
+            setBatchEmailInput('');
             setOpenBatchModal(false);
             openSnackbar('Invitations sent successfully.');
             await fetchInvitations();
@@ -202,6 +217,28 @@ const OrganizationInvitations = () => {
         } finally {
             setSaving(false);
         }
+    };
+
+    const handleAddBatchEmail = () => {
+        const normalized = String(batchEmailInput || '').trim().toLowerCase();
+        if (!normalized) return;
+
+        const existing = new Set(parseEmails(batchForm.emails_text));
+        if (existing.has(normalized)) {
+            setBatchEmailInput('');
+            return;
+        }
+
+        setBatchForm((prev) => {
+            const next = prev.emails_text ? `${prev.emails_text}\n${normalized}` : normalized;
+            return { ...prev, emails_text: next };
+        });
+        setBatchEmailInput('');
+    };
+
+    const handleRemoveBatchEmail = (emailToRemove) => {
+        const nextEmails = parseEmails(batchForm.emails_text).filter((email) => email !== emailToRemove);
+        setBatchForm((prev) => ({ ...prev, emails_text: nextEmails.join('\n') }));
     };
 
     const handleResendSingle = async (email) => {
@@ -288,17 +325,17 @@ const OrganizationInvitations = () => {
                         Organization Invitations
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#9CA3AF' }}>
-                        Invite staff, track invitation status, and manage resend/revoke operations.
+                        Invite staff quickly, or use bulk tools for multiple invitations.
                     </Typography>
                 </Box>
 
                 <Stack direction="row" spacing={1}>
                     <Button
-                        variant="contained"
+                        variant="outlined"
                         startIcon={<Add />}
                         onClick={() => setOpenBatchModal(true)}
                         disabled={!selectedOrgId}
-                        sx={primaryButtonStyle}
+                        sx={{ borderColor: '#374151', color: '#E5E7EB', textTransform: 'none' }}
                     >
                         Invite Staff
                     </Button>
@@ -356,22 +393,6 @@ const OrganizationInvitations = () => {
                         </Select>
                     </FormControl>
 
-                    <FormControl sx={{ minWidth: 180 }}>
-                        <InputLabel sx={{ color: '#9CA3AF' }}>Role</InputLabel>
-                        <Select
-                            label="Role"
-                            value={roleFilter}
-                            onChange={(event) => setRoleFilter(event.target.value)}
-                            sx={selectStyle}
-                            MenuProps={selectMenuProps}
-                        >
-                            <MenuItem value="">All</MenuItem>
-                            {INVITE_ROLES.map((role) => (
-                                <MenuItem key={role} value={role}>{role}</MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-
                     <Typography sx={{ color: '#9CA3AF', fontSize: '0.82rem' }}>
                         Total: {meta.total || invitations.length}
                     </Typography>
@@ -391,7 +412,6 @@ const OrganizationInvitations = () => {
                                 />
                             </TableCell>
                             <TableCell sx={tableHeaderCellStyle}>Email</TableCell>
-                            <TableCell sx={tableHeaderCellStyle}>Role</TableCell>
                             <TableCell sx={tableHeaderCellStyle}>Status</TableCell>
                             <TableCell sx={tableHeaderCellStyle}>Expires</TableCell>
                             <TableCell sx={tableHeaderCellStyle}>Accepted At</TableCell>
@@ -442,9 +462,6 @@ const OrganizationInvitations = () => {
                                         </TableCell>
                                         <TableCell sx={{ ...tableBodyCellStyle, color: '#fff', fontWeight: 600 }}>
                                             {invitation.email}
-                                        </TableCell>
-                                        <TableCell sx={{ ...tableBodyCellStyle, color: '#D1D5DB', textTransform: 'capitalize' }}>
-                                            {invitation.role || '-'}
                                         </TableCell>
                                         <TableCell sx={tableBodyCellStyle}>
                                             <Chip
@@ -506,32 +523,17 @@ const OrganizationInvitations = () => {
             <Modal open={openBatchModal} onClose={() => !saving && setOpenBatchModal(false)}>
                 <Box sx={{ ...modalStyle, width: { xs: '95%', md: 640 } }}>
                     <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ p: 2.5, borderBottom: '1px solid #374151' }}>
-                        <Typography sx={{ color: '#fff', fontWeight: 700 }}>Batch Invite Staff</Typography>
+                        <Typography sx={{ color: '#fff', fontWeight: 700 }}>Invite Staff</Typography>
                         <IconButton onClick={() => !saving && setOpenBatchModal(false)} sx={{ color: '#9CA3AF' }}>
                             <Close />
                         </IconButton>
                     </Stack>
 
-                    <Stack spacing={2} sx={{ p: 2.5 }}>
-                        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-                            <FormControl fullWidth>
-                                <InputLabel sx={{ color: '#9CA3AF' }}>Role</InputLabel>
-                                <Select
-                                    label="Role"
-                                    value={batchForm.role}
-                                    onChange={(event) => setBatchForm((prev) => ({ ...prev, role: event.target.value }))}
-                                    sx={selectStyle}
-                                    MenuProps={selectMenuProps}
-                                >
-                                    {INVITE_ROLES.map((role) => (
-                                        <MenuItem key={role} value={role}>{role}</MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-
-                            <TextField
-                                label="Expires In (days)"
-                                type="number"
+                        <Stack spacing={2} sx={{ p: 2.5 }}>
+                            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                                <TextField
+                                    label="Expires In (days)"
+                                    type="number"
                                 value={batchForm.expires_days}
                                 onChange={(event) => setBatchForm((prev) => ({ ...prev, expires_days: event.target.value }))}
                                 sx={textFieldStyle}
@@ -539,18 +541,78 @@ const OrganizationInvitations = () => {
                             />
                         </Stack>
 
+                        <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
+                            <TextField
+                                label="Add Staff Email"
+                                value={batchEmailInput}
+                                onChange={(event) => setBatchEmailInput(event.target.value)}
+                                onKeyDown={(event) => {
+                                    if (event.key === 'Enter') {
+                                        event.preventDefault();
+                                        handleAddBatchEmail();
+                                    }
+                                }}
+                                placeholder="staff@company.com"
+                                sx={textFieldStyle}
+                                fullWidth
+                            />
+                            <Button
+                                variant="outlined"
+                                onClick={handleAddBatchEmail}
+                                sx={{ borderColor: '#374151', color: '#E5E7EB', textTransform: 'none', minWidth: 120 }}
+                            >
+                                Add
+                            </Button>
+                        </Stack>
+
                         <TextField
-                            label="Emails (comma or newline separated)"
+                            label="Add Multiple Emails"
                             multiline
                             rows={6}
                             value={batchForm.emails_text}
                             onChange={(event) => setBatchForm((prev) => ({ ...prev, emails_text: event.target.value }))}
                             sx={textFieldStyle}
-                            placeholder={'staff1@org.com\nstaff2@org.com'}
+                            placeholder={'staff1@org.com\nstaff2@org.com\nstaff3@org.com'}
                         />
 
+                        <Stack spacing={1}>
+                            <Typography sx={{ color: '#9CA3AF', fontSize: '0.8rem' }}>
+                                Ready to invite: {batchSummary.valid.length} valid
+                                {batchSummary.invalid.length > 0 ? ` | ${batchSummary.invalid.length} invalid` : ''}
+                                {batchSummary.duplicatesRemoved > 0 ? ` | ${batchSummary.duplicatesRemoved} duplicates removed` : ''}
+                            </Typography>
+
+                            {batchSummary.valid.length > 0 && (
+                                <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                                    {batchSummary.valid.map((email) => (
+                                        <Chip
+                                            key={email}
+                                            label={email}
+                                            onDelete={() => handleRemoveBatchEmail(email)}
+                                            size="small"
+                                            sx={{ bgcolor: 'rgba(16, 185, 129, 0.14)', color: '#6EE7B7' }}
+                                        />
+                                    ))}
+                                </Stack>
+                            )}
+
+                            {batchSummary.invalid.length > 0 && (
+                                <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                                    {batchSummary.invalid.map((email) => (
+                                        <Chip
+                                            key={email}
+                                            label={`Invalid: ${email}`}
+                                            onDelete={() => handleRemoveBatchEmail(email)}
+                                            size="small"
+                                            sx={{ bgcolor: 'rgba(239, 68, 68, 0.14)', color: '#FCA5A5' }}
+                                        />
+                                    ))}
+                                </Stack>
+                            )}
+                        </Stack>
+
                         <Alert severity="info" sx={{ bgcolor: 'rgba(59, 130, 246, 0.15)', color: '#93C5FD' }}>
-                            Emails are normalized and duplicate invites are handled server-side.
+                            Paste from Excel/CSV directly.
                         </Alert>
                     </Stack>
 
@@ -559,7 +621,7 @@ const OrganizationInvitations = () => {
                             Cancel
                         </Button>
                         <Button variant="contained" onClick={handleBatchInvite} disabled={saving} sx={primaryButtonStyle}>
-                            {saving ? 'Sending...' : 'Send Invites'}
+                            {saving ? 'Sending...' : 'Send Invitations'}
                         </Button>
                     </Stack>
                 </Box>

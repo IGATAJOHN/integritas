@@ -4,7 +4,7 @@ import { useAuth } from '../contexts';
 import { Box, CircularProgress } from '@mui/material';
 
 const OnboardingGuard = ({ children }) => {
-    const { user, loading, needsEmailVerification, needsKyc, getKycStatus, isKycComplete } = useAuth();
+    const { user, loading, needsEmailVerification, needsKyc, isKycComplete } = useAuth();
     const location = useLocation();
 
     // Show loading while checking
@@ -48,4 +48,3 @@ const OnboardingGuard = ({ children }) => {
 };
 
 export default OnboardingGuard;
-

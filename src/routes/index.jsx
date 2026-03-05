@@ -1,5 +1,5 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
-import { NotFound, LandingPage, LoginPage, SignupPage, VerifyPage, ForgotPasswordPage } from '../pages';
+import { NotFound, LandingPage, LoginPage, SignupPage, VerifyPage, ForgotPasswordPage, InviteAcceptPage } from '../pages';
 import { adminRoutes } from '../modules/admin';
 import { tutorRoutes } from '../modules/tutor';
 import { learnerRoutes } from '../modules/learner';
@@ -45,6 +45,14 @@ const router = createBrowserRouter([
                 <ForgotPasswordPage />
             </PublicRoute>
         ),
+    },
+    {
+        path: '/org-invitations/accept',
+        element: <InviteAcceptPage />,
+    },
+    {
+        path: '/org-invitations/public/accept',
+        element: <InviteAcceptPage />,
     },
     {
         ...adminRoutes,

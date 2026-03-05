@@ -3,6 +3,7 @@ import {
     Alert,
     Box,
     Button,
+    Chip,
     CircularProgress,
     IconButton,
     Modal,
@@ -109,7 +110,7 @@ const OrganizationOverview = () => {
                         Organization Management
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#9CA3AF' }}>
-                        Create organizations and manage active organization scope for invitations, paths, and assignments.
+                        Create organizations and manage your active organization context.
                     </Typography>
                 </Box>
 
@@ -148,7 +149,7 @@ const OrganizationOverview = () => {
                         <TableRow>
                             <TableCell sx={tableHeaderCellStyle}>Organization</TableCell>
                             <TableCell sx={tableHeaderCellStyle}>Email Domain</TableCell>
-                            <TableCell sx={tableHeaderCellStyle}>Slug</TableCell>
+                            <TableCell sx={tableHeaderCellStyle}>Status</TableCell>
                             <TableCell align="right" sx={tableHeaderCellStyle}>Actions</TableCell>
                         </TableRow>
                     </TableHead>
@@ -166,13 +167,20 @@ const OrganizationOverview = () => {
                                     <TableRow key={organization.id}>
                                         <TableCell sx={tableBodyCellStyle}>
                                             <Typography sx={{ color: '#fff', fontWeight: 600 }}>{organization.name}</Typography>
-                                            <Typography sx={{ color: '#9CA3AF', fontSize: '0.8rem' }}>{organization.id}</Typography>
                                         </TableCell>
                                         <TableCell sx={{ ...tableBodyCellStyle, color: '#D1D5DB' }}>
                                             {organization.email_domain || '-'}
                                         </TableCell>
-                                        <TableCell sx={{ ...tableBodyCellStyle, color: '#D1D5DB' }}>
-                                            {organization.slug || '-'}
+                                        <TableCell sx={tableBodyCellStyle}>
+                                            <Chip
+                                                size="small"
+                                                label={isActive ? 'Active' : 'Available'}
+                                                sx={{
+                                                    bgcolor: isActive ? 'rgba(17,82,212,0.2)' : 'rgba(156,163,175,0.12)',
+                                                    color: isActive ? '#93C5FD' : '#9CA3AF',
+                                                    fontWeight: 600,
+                                                }}
+                                            />
                                         </TableCell>
                                         <TableCell align="right" sx={tableBodyCellStyle}>
                                             <Stack direction="row" spacing={1} justifyContent="flex-end">
