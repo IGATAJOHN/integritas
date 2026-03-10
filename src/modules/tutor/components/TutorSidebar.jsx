@@ -99,8 +99,8 @@ const TutorSidebar = ({
                 >
                     <Box
                         component="img"
-                        src="/src/assets/images/GGH_icon.png"
-                        alt="GGH Logo"
+                        src="/src/assets/images/Integritas Hub_icon.png"
+                        alt="Integritas Hub Logo"
                         sx={{ height: 50, width: 50 }}
                     />
                     <Box>
@@ -112,7 +112,7 @@ const TutorSidebar = ({
                                 lineHeight: 1.2,
                             }}
                         >
-                            Good Governance Hub
+                            Integritas Hub
                         </Typography>
                         <Typography
                             sx={{

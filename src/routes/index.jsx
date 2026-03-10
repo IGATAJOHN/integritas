@@ -51,6 +51,10 @@ const router = createBrowserRouter([
         element: <InviteAcceptPage />,
     },
     {
+        path: '/accept-invite',
+        element: <InviteAcceptPage />,
+    },
+    {
         path: '/org-invitations/public/accept',
         element: <InviteAcceptPage />,
     },

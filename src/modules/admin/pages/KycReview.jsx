@@ -252,7 +252,7 @@ const KycReview = () => {
                                 </Stack>
 
                                 <Typography variant="caption" sx={{ color: ui.muted, fontWeight: 500 }}>
-                                    GGH • Tutor Verification • Submitted on {selectedTutor.submitted_at}
+                                    Integritas Hub • Tutor Verification • Submitted on {selectedTutor.submitted_at}
                                 </Typography>
                             </Box>
                         </Stack>
@@ -730,7 +730,7 @@ const KycReview = () => {
                         KYC Review
                     </Typography>
                     <Typography variant="body2" sx={{ color: ui.muted }}>
-                        GGH • Review and manage tutor verification submissions.
+                        Integritas Hub • Review and manage tutor verification submissions.
                     </Typography>
                 </Box>
 

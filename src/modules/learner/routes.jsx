@@ -23,26 +23,25 @@ import {
 export const learnerRoutes = [
     {
         path: '/explore',
+        element: <Explore />,
+    },
+    {
         element: <ModernLearnerLayout />,
         children: [
             {
-                index: true,
-                element: <Explore />,
-            },
-            {
-                path: 'my-learning',
+                path: '/explore/my-learning',
                 element: <MyLearning />,
             },
             {
-                path: 'courses',
+                path: '/explore/courses',
                 element: <BrowseCourses />,
             },
             {
-                path: 'enrollments',
+                path: '/explore/enrollments',
                 element: <MyEnrollments />,
             },
             {
-                path: 'progress',
+                path: '/explore/progress',
                 element: <MyProgress />,
             },
         ],

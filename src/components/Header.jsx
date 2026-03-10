@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import { LightMode, DarkMode, Menu, Close } from '@mui/icons-material';
 import { useThemeMode } from '../contexts';
-import logo from '../assets/images/GGH_logo.png';
+import logo from '../assets/images/Integritas Hub_logo.png';
 
 const Header = () => {
     const navItems = ['Courses', 'About Us', 'Partners'];
@@ -61,10 +61,10 @@ const Header = () => {
                     <Box
                         component="img"
                         src={logo}
-                        alt="GGH Logo"
+                        alt="Integritas Hub Logo"
                         sx={{ height: 32, width: 'auto' }}
                     />
-                    <span>GGH</span>
+                    <span>Integritas Hub</span>
                 </Box>
                 <IconButton
                     onClick={handleDrawerToggle}
@@ -205,14 +205,14 @@ const Header = () => {
                             <Box
                                 component="img"
                                 src={logo}
-                                alt="GGH Logo"
+                                alt="Integritas Hub Logo"
                                 sx={{ height: 36, width: 'auto' }}
                             />
                             <Box
                                 component="span"
                                 sx={{ display: { xs: 'none', sm: 'inline' } }}
                             >
-                                Good Governance Hub
+                                Integritas Hub
                             </Box>
                         </Box>
 

@@ -16,7 +16,7 @@ import {
     DownloadOutlined as Download,
     CreditCardOutlined as CreditCard
 } from '@mui/icons-material';
-import logo from '../../../assets/images/GGH_logo.png';
+import logo from '../../../assets/images/Integritas Hub_logo.png';
 
 const PaymentSuccess = () => {
     const navigate = useNavigate();
@@ -70,7 +70,7 @@ const PaymentSuccess = () => {
                     <Box
                         component="img"
                         src={logo}
-                        alt="Good Governance Hub"
+                        alt="Integritas Hub"
                         sx={{ width: 32, height: 32, objectFit: 'contain' }}
                     />
                     <Typography variant="subtitle1" sx={{
@@ -78,7 +78,7 @@ const PaymentSuccess = () => {
                         color: '#fff',
                         display: { xs: 'none', sm: 'block' }
                     }}>
-                        Good Governance Hub
+                        Integritas Hub
                     </Typography>
                 </Stack>
 
@@ -294,7 +294,7 @@ const PaymentSuccess = () => {
                 alignItems: 'center'
             }}>
                 <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>
-                    © 2024 Good Governance Hub. All rights reserved.
+                    © 2024 Integritas Hub. All rights reserved.
                 </Typography>
             </Box>
         </Box>

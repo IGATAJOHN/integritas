@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import logo from '../assets/images/GGH_logo.png';
+import logo from '../assets/images/Integritas Hub_logo.png';
 
 const MainLayout = () => {
     const location = useLocation();
@@ -17,8 +17,8 @@ const MainLayout = () => {
             <header className="main-header">
                 <div className="header-brand">
                     <Link to="/" className="brand-link" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-                        <img src={logo} alt="GGH Logo" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
-                        <h1>GGH Platform</h1>
+                        <img src={logo} alt="Integritas Hub Logo" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
+                        <h1>Integritas Hub Platform</h1>
                     </Link>
                 </div>
                 <nav className="main-nav">
@@ -42,7 +42,7 @@ const MainLayout = () => {
             </main>
 
             <footer className="main-footer">
-                <p>&copy; {new Date().getFullYear()} GGH Platform. All rights reserved.</p>
+                <p>&copy; {new Date().getFullYear()} Integritas Hub Platform. All rights reserved.</p>
             </footer>
         </div>
     );

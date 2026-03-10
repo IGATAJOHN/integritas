@@ -44,7 +44,7 @@ import {
     Notifications,
     Person
 } from '@mui/icons-material';
-import logo from '../../../assets/images/GGH_logo.png';
+import logo from '../../../assets/images/Integritas Hub_logo.png';
 
 /**
  * CourseLesson Component
@@ -157,11 +157,11 @@ const CourseLesson = () => {
                         <Box
                             component="img"
                             src={logo}
-                            alt="Good Governance Hub"
+                            alt="Integritas Hub"
                             sx={{ width: 32, height: 32, objectFit: 'contain' }}
                         />
                         <Typography variant="subtitle1" sx={{ fontWeight: 700, color: theme.palette.text.primary, whiteSpace: 'nowrap' }}>
-                            Good Governance Hub
+                            Integritas Hub
                         </Typography>
                     </Stack>
 

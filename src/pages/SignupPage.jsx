@@ -24,8 +24,8 @@ import {
     CheckCircleOutline,
     HighlightOff,
 } from '@mui/icons-material';
-import logo from '../assets/images/GGH_logo.png';
-import icon from '../assets/images/GGH_icon.png';
+import logo from '../assets/images/Integritas Hub_logo.png';
+import icon from '../assets/images/Integritas Hub_icon.png';
 import { getDashboardRoute } from '../utils';
 
 const SignupPage = () => {
@@ -283,7 +283,7 @@ const SignupPage = () => {
                     <Box
                         component="img"
                         src={logo}
-                        alt="GGH Logo"
+                        alt="Integritas Hub Logo"
                         sx={{ height: 100, width: 100, borderRadius: 2, mb: 2 }}
                     />
 
@@ -332,13 +332,13 @@ const SignupPage = () => {
                         <Box
                             component="img"
                             src={icon}
-                            alt="GGH Logo"
+                            alt="Integritas Hub Logo"
                             sx={{ height: 50, width: 50 }}
                         />
                         <Typography
                             sx={{ fontSize: '1.2rem', fontWeight: 600, color: '#FFFFFF' }}
                         >
-                            Good Governance Hub
+                            Integritas Hub
                         </Typography>
                     </Stack>
 
@@ -742,7 +742,7 @@ const SignupPage = () => {
                         pt: 2,
                     }}
                 >
-                    © 2026 Good Governance Hub. All rights reserved.
+                    © 2026 Integritas Hub. All rights reserved.
                 </Typography>
             </Box>
         </Box>

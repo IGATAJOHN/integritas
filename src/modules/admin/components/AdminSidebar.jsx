@@ -26,9 +26,7 @@ import {
     VerifiedUserOutlined,
     ExpandLess,
     ExpandMore,
-    AdminPanelSettingsOutlined,
     LogoutOutlined,
-    BusinessOutlined,
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 260;
@@ -76,17 +74,6 @@ const AdminSidebar = ({
                 { path: '/admin/content/essential-courses', label: 'Essential Courses' },
                 { path: '/admin/content/categories', label: 'Categories' },
                 { path: '/admin/content/price-changes', label: 'Price Changes' },
-            ]
-        },
-        {
-            label: 'Organizations',
-            icon: <BusinessOutlined sx={{ fontSize: 22 }} />,
-            children: [
-                { path: '/admin/organization/overview', label: 'Overview' },
-                { path: '/admin/organization/invitations', label: 'Invitations' },
-                { path: '/admin/organization/learning-paths', label: 'Learning Paths' },
-                { path: '/admin/organization/assignments', label: 'Assignments' },
-                { path: '/admin/organization/reports', label: 'Reports' },
             ]
         },
         { path: '/admin/kycreview', label: 'KYC Review', icon: <VerifiedUserOutlined sx={{ fontSize: 22 }} /> },
@@ -139,8 +126,8 @@ const AdminSidebar = ({
                 >
                     <Box
                         component="img"
-                        src="/src/assets/images/GGH_icon.png"
-                        alt="GGH Logo"
+                        src="/src/assets/images/Integritas Hub_icon.png"
+                        alt="Integritas Hub Logo"
                         sx={{ height: 50, width: 50 }}
                     />
                     <Box>
@@ -152,7 +139,7 @@ const AdminSidebar = ({
                                 lineHeight: 1.2,
                             }}
                         >
-                            Good Governance Hub
+                            Integritas Hub
                         </Typography>
                         <Typography
                             sx={{

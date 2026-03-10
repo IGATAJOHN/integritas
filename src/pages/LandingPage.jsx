@@ -121,8 +121,8 @@ const LandingPage = () => {
 
 
     const testimonial = {
-        quote: "The Good Governance Hub has transformed how our department approaches policy making. The rigorous curriculum and practical tools are unmatched in the field of public service education.",
-        name: 'CEO GGH',
+        quote: "The Integritas Hub has transformed how our department approaches policy making. The rigorous curriculum and practical tools are unmatched in the field of public service education.",
+        name: 'CEO Integritas Hub',
         title: 'Senior Policy adviser',
         avatar: '',
     };
@@ -288,7 +288,7 @@ const LandingPage = () => {
                         <Box
                             component="img"
                             src="/src/assets/images/hero-screen.png"
-                            alt="GGH Platform Dashboard"
+                            alt="Integritas Hub Platform Dashboard"
                             sx={{
                                 width: '100%',
                                 maxWidth: 550,
@@ -367,7 +367,7 @@ const LandingPage = () => {
                             color: colors.textWhite,
                         }}
                     >
-                        Why Choose Good Governance Hub?
+                        Why Choose Integritas Hub?
                     </Typography>
                     <Typography
                         sx={{

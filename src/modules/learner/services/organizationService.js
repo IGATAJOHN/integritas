@@ -93,24 +93,6 @@ const tryListEndpoints = async (endpoints = []) => {
     return null;
 };
 
-const isMissingRouteError = (error) => error?.status === 404 && /could not be found/i.test(String(error?.message || ''));
-
-const postWithFallback = async (endpoints = [], payload) => {
-    let lastError = null;
-
-    for (const endpoint of endpoints) {
-        try {
-            const res = await apiService.post(endpoint, payload);
-            return unwrapData(res);
-        } catch (error) {
-            lastError = error;
-            if (!isMissingRouteError(error)) throw error;
-        }
-    }
-
-    throw lastError;
-};
-
 export const organizationService = {
     // -------- Organizations --------
     createOrganizationJson: async (payload) => {
@@ -143,10 +125,8 @@ export const organizationService = {
     },
 
     acceptInvitationPublic: async (payload) => {
-        return postWithFallback([
-            '/org-invitations/public/accept',
-            '/orgs/org-invitations/public/accept',
-        ], payload);
+        const res = await apiService.post('/org-invitations/public/accept', payload);
+        return unwrapData(res);
     },
 
     acceptInvitationLoggedIn: async (payload) => {
@@ -155,10 +135,8 @@ export const organizationService = {
     },
 
     acceptOrganizationInvitationPublic: async (payload) => {
-        return postWithFallback([
-            '/org-invitations/public/accept',
-            '/orgs/org-invitations/public/accept',
-        ], payload);
+        const res = await apiService.post('/org-invitations/public/accept', payload);
+        return unwrapData(res);
     },
 
     acceptOrganizationInvitationLoggedIn: async (payload) => {

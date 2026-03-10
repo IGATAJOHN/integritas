@@ -23,21 +23,17 @@ const readAuthToken = () => {
     }
 };
 
-const isMissingRouteError = (error) =>
-    error?.status === 404 && /could not be found/i.test(String(error?.message || ''));
-
-const postWithFallback = async (endpoints = [], payload) => {
-    let lastError = null;
-    for (const endpoint of endpoints) {
-        try {
-            return await apiService.post(endpoint, payload);
-        } catch (error) {
-            lastError = error;
-            if (!isMissingRouteError(error)) throw error;
-        }
-    }
-    throw lastError;
+const buildAcceptEndpoint = (baseEndpoint, token) => {
+    const safeToken = encodeURIComponent(String(token || '').trim());
+    return `${baseEndpoint}?token=${safeToken}`;
 };
+
+const withTokenAliases = (payload = {}, token) => ({
+    ...payload,
+    token,
+    invitation_token: token,
+    invite_token: token,
+});
 
 const InviteAcceptPage = () => {
     const navigate = useNavigate();
@@ -68,7 +64,10 @@ const InviteAcceptPage = () => {
         setError('');
         setSuccess('');
         try {
-            await apiService.post('/org-invitations/accept', { token });
+            await apiService.post(
+                buildAcceptEndpoint('/org-invitations/accept', token),
+                withTokenAliases({}, token)
+            );
             setSuccess('Invite accepted. Redirecting to organization dashboard...');
             setTimeout(() => {
                 window.location.assign('/org');
@@ -96,14 +95,15 @@ const InviteAcceptPage = () => {
         setError('');
         setSuccess('');
         try {
-            await postWithFallback([
-                '/org-invitations/public/accept',
-                '/orgs/org-invitations/public/accept',
-            ], {
-                token,
+            const payload = {
                 name: String(formData.name || '').trim(),
                 password: formData.password,
-            });
+            };
+
+            await apiService.post(
+                buildAcceptEndpoint('/org-invitations/public/accept', token),
+                withTokenAliases(payload, token)
+            );
 
             setSuccess('Invite accepted. You can now log in with the invited email and password.');
             setTimeout(() => navigate('/login', { replace: true }), 900);

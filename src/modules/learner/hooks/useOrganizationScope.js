@@ -4,7 +4,7 @@ import {
     writeSelectedOrganizationId,
 } from '../../../utils/organizationScopeStorage';
 
-const KNOWN_ORGS_STORAGE_KEY = 'ggh_admin_known_orgs';
+const KNOWN_ORGS_STORAGE_KEY = 'Integritas Hub_admin_known_orgs';
 
 const safeParse = (value, fallback) => {
     try {

@@ -20,7 +20,7 @@ import {
     Menu as MenuIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../../contexts';
-import logo from '../../../assets/images/GGH_icon.png';
+import logo from '../../../assets/images/Integritas Hub_icon.png';
 
 const LearnerNavbar = ({ onMobileMenuToggle }) => {
     const theme = useTheme();
@@ -96,7 +96,7 @@ const LearnerNavbar = ({ onMobileMenuToggle }) => {
                     <Box
                         component="img"
                         src={logo}
-                        alt="GGH Logo"
+                        alt="Integritas Hub Logo"
                         sx={{ width: 32, height: 32, objectFit: 'contain' }}
                     />
                     <Box sx={{ display: { xs: 'none', md: 'block' } }}>
@@ -104,7 +104,7 @@ const LearnerNavbar = ({ onMobileMenuToggle }) => {
                             variant="subtitle2"
                             sx={{ fontWeight: 700, color: colors.text, lineHeight: 1.2 }}
                         >
-                            Good Governance Hub
+                            Integritas Hub
                         </Typography>
                         <Typography
                             variant="caption"

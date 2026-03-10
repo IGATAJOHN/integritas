@@ -36,7 +36,7 @@ import {
     SupportAgentOutlined as SupportAgent,
     EmailOutlined as Email
 } from '@mui/icons-material';
-import logo from '../../../assets/images/GGH_logo.png';
+import logo from '../../../assets/images/Integritas Hub_logo.png';
 
 /**
  * Checkout Component
@@ -86,7 +86,7 @@ const Checkout = () => {
                     <Box
                         component="img"
                         src={logo}
-                        alt="Good Governance Hub"
+                        alt="Integritas Hub"
                         sx={{ width: 32, height: 32, objectFit: 'contain' }}
                     />
                     <Typography variant="subtitle1" sx={{
@@ -94,7 +94,7 @@ const Checkout = () => {
                         color: '#fff',
                         display: { xs: 'none', sm: 'block' }
                     }}>
-                        Good Governance Hub
+                        Integritas Hub
                     </Typography>
                 </Stack>
 
@@ -425,7 +425,7 @@ const Checkout = () => {
                                         <InputBase
                                             readOnly
                                             fullWidth
-                                            value="Good Governance Hub"
+                                            value="Integritas Hub"
                                             startAdornment={<InputAdornment position="start"><Person sx={{ color: 'rgba(255,255,255,0.3)' }} /></InputAdornment>}
                                             sx={{
                                                 bgcolor: 'rgba(255,255,255,0.03)',
@@ -476,7 +476,7 @@ const Checkout = () => {
                                         <InputBase
                                             readOnly
                                             fullWidth
-                                            value="GGH-7832-XK9"
+                                            value="Integritas Hub-7832-XK9"
                                             startAdornment={<InputAdornment position="start"><LocalOffer sx={{ color: 'rgba(255,255,255,0.3)' }} /></InputAdornment>}
                                             sx={{
                                                 bgcolor: 'rgba(255,255,255,0.03)',
@@ -691,7 +691,7 @@ const Checkout = () => {
                 alignItems: 'center'
             }}>
                 <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)' }}>
-                    © 2024 Good Governance Hub. All rights reserved.
+                    © 2024 Integritas Hub. All rights reserved.
                 </Typography>
 
                 <Stack direction="row" spacing={4}>

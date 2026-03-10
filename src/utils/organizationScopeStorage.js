@@ -1,4 +1,4 @@
-const SELECTED_ORG_STORAGE_KEY = 'ggh_admin_selected_org_id';
+const SELECTED_ORG_STORAGE_KEY = 'Integritas Hub_admin_selected_org_id';
 
 export const readSelectedOrganizationId = () => {
     if (typeof window === 'undefined') return '';

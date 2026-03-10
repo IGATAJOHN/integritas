@@ -17,7 +17,6 @@ import {
     FormControlLabel,
     Radio,
     RadioGroup,
-    useTheme,
     alpha,
     Divider,
     Menu,
@@ -26,8 +25,6 @@ import {
 } from '@mui/material';
 import {
     Search as SearchIcon,
-    NotificationsNone as BellIcon,
-    PersonOutline as UserIcon,
     PlayArrow as PlayIcon,
     BookmarkBorder as BookmarkIcon,
     CheckCircle as CheckCircleIcon,
@@ -41,7 +38,6 @@ import {
     Close as CloseIcon
 } from '@mui/icons-material';
 import { Drawer } from '@mui/material';
-import logo from '../../../assets/images/GGH_icon.png';
 import CourseCard from '../components/CourseCard';
 
 class Course {
@@ -61,9 +57,7 @@ class Course {
 
 const Explore = () => {
     const navigate = useNavigate();
-    const theme = useTheme();
     const [activeTopic, setActiveTopic] = useState('All Topics');
-    const [searchQuery, setSearchQuery] = useState('');
     const [filters, setFilters] = useState({
         Topic: ['Public Administration'],
         Level: [],
@@ -195,7 +189,7 @@ const Explore = () => {
         warning: '#F59E0B'
     };
 
-    const FilterContent = () => (
+    const renderFilterContent = () => (
         <>
             <Box sx={{ mb: 4 }}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
@@ -362,100 +356,8 @@ const Explore = () => {
     );
 
     return (
-        <Box sx={{ bgcolor: colors.bg, color: colors.text, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-            {/* Header */}
-            <Box component="header" sx={{
-                bgcolor: colors.paper,
-                px: { xs: 2, md: '40px' },
-                py: '12px',
-                height: { xs: 'auto', md: '65px' },
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-                position: 'sticky',
-                top: 0,
-                zIndex: 100,
-                boxSizing: 'border-box',
-                gap: 2
-            }}>
-                <Stack direction="row" alignItems="center" spacing={{ xs: 2, sm: 3, md: 4 }}>
-                    <Stack direction="row" alignItems="center" spacing={1.5}>
-                        <Box component="img" src={logo} alt="GGH Logo" sx={{ width: { xs: 28, sm: 32 }, height: { xs: 28, sm: 32 }, objectFit: 'contain' }} />
-                        <Typography variant="subtitle1" sx={{ fontWeight: 700, whiteSpace: 'nowrap', fontSize: { xs: '0.9rem', sm: '1rem' } }}>Good Governance Hub</Typography>
-                    </Stack>
-
-                    <Box sx={{
-                        bgcolor: colors.card,
-                        borderRadius: 2,
-                        px: 2,
-                        display: { xs: 'none', sm: 'flex' },
-                        alignItems: 'center',
-                        gap: 1,
-                        width: '231px',
-                        height: '40px',
-                        boxSizing: 'border-box'
-                    }}>
-                        <SearchIcon sx={{ color: colors.textSecondary, fontSize: 20 }} />
-                        <InputBase
-                            placeholder="Search"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            sx={{
-                                color: colors.text,
-                                fontSize: '0.9rem',
-                                width: '100%',
-                                height: '100%',
-                                '& input': { border: 'none', padding: 0, outline: 'none', height: '100%' },
-                                '& .MuiInputBase-input:focus': { outline: 'none', boxShadow: 'none' }
-                            }}
-                        />
-                    </Box>
-                </Stack>
-
-                <Stack direction="row" alignItems="center" spacing={{ xs: 1, sm: 2 }}>
-                    <Stack direction="row" spacing={3} sx={{ display: { xs: 'none', lg: 'flex' }, mr: 2 }}>
-                        {['Explore', 'My Learning', 'Community', 'Resources'].map((link) => (
-                            <Typography
-                                key={link}
-                                component="a"
-                                href="#"
-                                sx={{
-                                    color: link === 'Explore' ? colors.text : colors.textSecondary,
-                                    textDecoration: 'none',
-                                    fontSize: '0.9rem',
-                                    fontWeight: 500,
-                                    '&:hover': { color: colors.text }
-                                }}
-                            >
-                                {link}
-                            </Typography>
-                        ))}
-                    </Stack>
-                    <Stack direction="row" spacing={{ xs: 1, sm: 2 }}>
-                        <IconButton sx={{ bgcolor: colors.card, color: colors.text, borderRadius: 2, '&:hover': { bgcolor: alpha(colors.card, 0.8) } }}>
-                            <BellIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton sx={{ bgcolor: colors.card, color: colors.text, borderRadius: 2, '&:hover': { bgcolor: alpha(colors.card, 0.8) } }}>
-                            <UserIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                            onClick={() => setIsMobileFilterOpen(true)}
-                            sx={{
-                                display: { xs: 'flex', md: 'none' },
-                                bgcolor: colors.card,
-                                color: colors.text,
-                                borderRadius: 2,
-                                '&:hover': { bgcolor: alpha(colors.card, 0.8) }
-                            }}
-                        >
-                            <FilterIcon fontSize="small" />
-                        </IconButton>
-                    </Stack>
-                </Stack>
-            </Box>
-
-            <Box sx={{ display: 'flex', flex: 1 }}>
+        <Box sx={{ bgcolor: colors.bg, color: colors.text, minHeight: '100%' }}>
+            <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
                 {/* Mobile Filter Drawer */}
                 <Drawer
                     anchor="left"
@@ -477,7 +379,7 @@ const Explore = () => {
                             <CloseIcon />
                         </IconButton>
                     </Stack>
-                    <FilterContent />
+                    {renderFilterContent()}
                 </Drawer>
 
                 {/* Desktop Sidebar */}
@@ -488,14 +390,14 @@ const Explore = () => {
                     bgcolor: colors.paper,
                     display: { xs: 'none', md: 'block' },
                     position: 'sticky',
-                    top: '65px',
+                    top: 0,
                     height: 'calc(100vh - 65px)',
                     overflowY: 'auto',
                     '&::-webkit-scrollbar': { display: 'none' },
                     scrollbarWidth: 'none',
                     msOverflowStyle: 'none'
                 }}>
-                    <FilterContent />
+                    {renderFilterContent()}
                 </Box>
 
                 {/* Content Area */}
@@ -779,6 +681,21 @@ const Explore = () => {
                                 </Typography>
                                 <SortIcon sx={{ fontSize: 18, color: colors.textSecondary }} />
                             </Box>
+                            <IconButton
+                                onClick={() => setIsMobileFilterOpen(true)}
+                                sx={{
+                                    display: { xs: 'inline-flex', md: 'none' },
+                                    bgcolor: colors.card,
+                                    color: colors.text,
+                                    borderRadius: '8px',
+                                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                                    width: '42px',
+                                    height: '42px',
+                                    '&:hover': { bgcolor: alpha(colors.card, 0.8) }
+                                }}
+                            >
+                                <FilterIcon fontSize="small" />
+                            </IconButton>
                             <Menu
                                 anchorEl={sortAnchorEl}
                                 open={Boolean(sortAnchorEl)}

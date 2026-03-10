@@ -18,7 +18,7 @@ import {
     VisibilityOff,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts';
-import icon from '../assets/images/GGH_icon.png';
+import icon from '../assets/images/Integritas Hub_icon.png';
 
 const ForgotPasswordPage = () => {
     const navigate = useNavigate();
@@ -192,7 +192,7 @@ const ForgotPasswordPage = () => {
                     <Box
                         component="img"
                         src={icon}
-                        alt="GGH Logo"
+                        alt="Integritas Hub Logo"
                         sx={{ height: 28, width: 28 }}
                     />
                     <Typography
@@ -202,7 +202,7 @@ const ForgotPasswordPage = () => {
                             color: '#FFFFFF',
                         }}
                     >
-                        Good Governance Hub
+                        Integritas Hub
                     </Typography>
                 </Stack>
                 <Stack direction="row" spacing={3}>
@@ -285,7 +285,7 @@ const ForgotPasswordPage = () => {
                         lineHeight: 1.6,
                     }}
                 >
-                    No worries. Enter the email address associated with your Good Governance Hub account, and we'll send you a 6-digit OTP to reset your password.
+                    No worries. Enter the email address associated with your Integritas Hub account, and we'll send you a 6-digit OTP to reset your password.
                 </Typography>
 
                 {/* Error Alert */}

@@ -35,7 +35,7 @@ const Footer = () => {
                     spacing={2}
                 >
                     <Typography sx={{ fontSize: '0.875rem', color: colors.textDark }}>
-                        © 2026 Good Governance Hub. All rights reserved.
+                        © 2026 Integritas Hub. All rights reserved.
                     </Typography>
                     <Stack direction="row" spacing={4}>
                         {legalLinks.map((item) => (

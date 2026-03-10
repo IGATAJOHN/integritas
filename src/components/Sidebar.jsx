@@ -10,7 +10,7 @@ import {
     Divider
 } from '@mui/material';
 import { ExitToApp as LogoutIcon } from '@mui/icons-material';
-import logo from '../assets/images/GGH_logo.png';
+import logo from '../assets/images/Integritas Hub_logo.png';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 const Sidebar = ({ items = [], title = 'Dashboard', onLogout, mobileOpen, handleDrawerToggle }) => {
@@ -24,12 +24,12 @@ const Sidebar = ({ items = [], title = 'Dashboard', onLogout, mobileOpen, handle
                 <Box
                     component="img"
                     src={logo}
-                    alt="Good Governance Hub"
+                    alt="Integritas Hub"
                     sx={{ width: 40, height: 40, objectFit: 'contain' }}
                 />
                 <Box>
                     <Typography variant="subtitle1" sx={{ fontWeight: 200, lineHeight: 1.2, whiteSpace: 'nowrap' }}>
-                        Good Governance Hub
+                        Integritas Hub
                     </Typography>
                     <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>
                         {title}

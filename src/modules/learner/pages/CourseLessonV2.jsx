@@ -36,7 +36,7 @@ import {
     Person,
     ArrowBack
 } from '@mui/icons-material';
-import logo from '../../../assets/images/GGH_logo.png';
+import logo from '../../../assets/images/Integritas Hub_logo.png';
 
 /**
  * CourseLessonV2 Component
@@ -353,7 +353,7 @@ const CourseLessonV2 = () => {
                         <Box
                             component="img"
                             src={logo}
-                            alt="Good Governance Hub"
+                            alt="Integritas Hub"
                             sx={{ width: 32, height: 32, objectFit: 'contain', mr: 1 }}
                         />
                         <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>

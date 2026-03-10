@@ -13,7 +13,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../contexts';
 import { getDashboardRoute } from '../utils';
-import icon from '../assets/images/GGH_icon.png';
+import icon from '../assets/images/Integritas Hub_icon.png';
 
 const VerifyPage = () => {
     const { id, hash } = useParams();
@@ -123,7 +123,7 @@ const VerifyPage = () => {
                     <Box
                         component="img"
                         src={icon}
-                        alt="GGH Logo"
+                        alt="Integritas Hub Logo"
                         sx={{ height: 28, width: 28 }}
                     />
                     <Typography
@@ -133,7 +133,7 @@ const VerifyPage = () => {
                             color: '#FFFFFF',
                         }}
                     >
-                        Good Governance Hub
+                        Integritas Hub
                     </Typography>
                 </Stack>
                 <Stack direction="row" spacing={3}>

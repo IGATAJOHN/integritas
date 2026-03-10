@@ -42,7 +42,7 @@ import {
     AlternateEmail as EmailIcon
 } from '@mui/icons-material';
 import { alpha } from '@mui/material/styles';
-import logo from '../../../assets/images/GGH_logo.png';
+import logo from '../../../assets/images/Integritas Hub_logo.png';
 import Footer from '../../../components/Footer';
 
 const colors = {
@@ -155,8 +155,8 @@ const CourseDetail = () => {
             }}>
                 <Stack direction="row" alignItems="center" spacing={{ xs: 2, sm: 3, md: 4 }}>
                     <Stack direction="row" alignItems="center" spacing={1.5} component={Link} to="/" sx={{ textDecoration: 'none', color: colors.text }}>
-                        <Box component="img" src={logo} alt="GGH Logo" sx={{ width: 32, height: 32, objectFit: 'contain' }} />
-                        <Typography variant="subtitle1" sx={{ fontWeight: 700, display: { xs: 'none', sm: 'block' } }}>Good Governance Hub</Typography>
+                        <Box component="img" src={logo} alt="Integritas Hub Logo" sx={{ width: 32, height: 32, objectFit: 'contain' }} />
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700, display: { xs: 'none', sm: 'block' } }}>Integritas Hub</Typography>
                     </Stack>
 
                     <Stack direction="row" spacing={3} sx={{ display: { xs: 'none', md: 'flex' } }}>
