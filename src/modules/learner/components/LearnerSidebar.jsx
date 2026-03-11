@@ -51,7 +51,11 @@ const LearnerSidebar = ({ onClose }) => {
             icon: <OrganizationIcon sx={{ fontSize: 22 }} />,
             children: [
                 { label: 'Overview', path: '/learner/organization/overview' },
-                { label: 'Invite Organization', path: '/learner/organization/invite' },
+                { label: 'Invitations', path: '/learner/organization/invite' },
+                { label: 'Learning Paths', path: '/learner/organization/learning-paths' },
+                { label: 'Assignments', path: '/learner/organization/assignments' },
+                { label: 'My Assignments', path: '/learner/organization/my-assignments' },
+                { label: 'Reports', path: '/learner/organization/reports' },
             ],
         },
         { label: 'Achievements', icon: <AchievementsIcon />, path: '/achievements' },

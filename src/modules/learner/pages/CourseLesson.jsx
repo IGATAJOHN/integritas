@@ -44,7 +44,7 @@ import {
     Notifications,
     Person
 } from '@mui/icons-material';
-import logo from '../../../assets/images/Integritas Hub_logo.png';
+import logo from '../../../assets/images/GGH_logo.png';
 
 /**
  * CourseLesson Component

@@ -17,8 +17,8 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../contexts';
 import { getDashboardRoute } from '../utils';
-import logo from '../assets/images/Integritas Hub_logo.png';
-import icon from '../assets/images/Integritas Hub_icon.png';
+import logo from '../assets/images/GGH_logo.png';
+import icon from '../assets/images/GGH_icon.png';
 
 const LoginPage = () => {
     const navigate = useNavigate();

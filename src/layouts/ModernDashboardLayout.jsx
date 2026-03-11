@@ -26,7 +26,7 @@ import {
     Person as PersonIcon
 } from '@mui/icons-material';
 import { useAuth } from '../contexts';
-import logo from '../assets/images/Integritas Hub_logo.png';
+import logo from '../assets/images/GGH_logo.png';
 import Sidebar from '../components/Sidebar';
 
 const drawerWidth = 260;

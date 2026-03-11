@@ -18,7 +18,7 @@ import {
     VisibilityOff,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts';
-import icon from '../assets/images/Integritas Hub_icon.png';
+import icon from '../assets/images/GGH_icon.png';
 
 const ForgotPasswordPage = () => {
     const navigate = useNavigate();

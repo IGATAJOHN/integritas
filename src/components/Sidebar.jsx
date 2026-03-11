@@ -10,7 +10,7 @@ import {
     Divider
 } from '@mui/material';
 import { ExitToApp as LogoutIcon } from '@mui/icons-material';
-import logo from '../assets/images/Integritas Hub_logo.png';
+import logo from '../assets/images/GGH_logo.png';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 const Sidebar = ({ items = [], title = 'Dashboard', onLogout, mobileOpen, handleDrawerToggle }) => {

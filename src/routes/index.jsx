@@ -3,11 +3,9 @@ import { NotFound, LandingPage, LoginPage, SignupPage, VerifyPage, ForgotPasswor
 import { adminRoutes } from '../modules/admin';
 import { tutorRoutes } from '../modules/tutor';
 import { learnerRoutes } from '../modules/learner';
-import { organizationRoutes } from '../modules/organization';
 import ProtectedRoute from '../components/ProtectedRoute';
 import PublicRoute from '../components/PublicRoute';
 import OnboardingGuard from '../components/OnboardingGuard';
-import OrganizationRoute from '../components/OrganizationRoute';
 
 const router = createBrowserRouter([
     {
@@ -78,12 +76,10 @@ const router = createBrowserRouter([
         ),
     },
     {
-        ...organizationRoutes,
+        path: '/org/*',
         element: (
             <ProtectedRoute>
-                <OrganizationRoute>
-                    {organizationRoutes.element}
-                </OrganizationRoute>
+                <Navigate to="/learner/organization/overview" replace />
             </ProtectedRoute>
         ),
     },

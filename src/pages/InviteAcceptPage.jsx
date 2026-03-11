@@ -12,6 +12,8 @@ import {
 } from '@mui/material';
 import { apiService } from '../services/api';
 
+const INVITE_TOKEN_KEYS = ['token', 'invitation_token', 'invite_token'];
+
 const readAuthToken = () => {
     try {
         const raw = localStorage.getItem('user');
@@ -23,22 +25,74 @@ const readAuthToken = () => {
     }
 };
 
+const readInviteToken = (searchParams) => {
+    const rawSearch = typeof window !== 'undefined' ? String(window.location.search || '') : '';
+
+    for (const key of INVITE_TOKEN_KEYS) {
+        const match = rawSearch.match(new RegExp(`[?&]${key}=([^&#]+)`));
+        if (!match?.[1]) continue;
+        try {
+            return decodeURIComponent(match[1]).trim();
+        } catch {
+            return String(match[1]).trim();
+        }
+    }
+
+    for (const key of INVITE_TOKEN_KEYS) {
+        const value = String(searchParams.get(key) || '').trim();
+        if (value) return value;
+    }
+
+    return '';
+};
+
 const buildAcceptEndpoint = (baseEndpoint, token) => {
     const safeToken = encodeURIComponent(String(token || '').trim());
     return `${baseEndpoint}?token=${safeToken}`;
 };
 
-const withTokenAliases = (payload = {}, token) => ({
-    ...payload,
-    token,
-    invitation_token: token,
-    invite_token: token,
-});
+const withTokenAliases = (payload = {}, token) => {
+    const safeToken = String(token || '').trim();
+    const body = {
+        ...payload,
+        token: safeToken,
+        invitation_token: safeToken,
+        invite_token: safeToken,
+        invitation: safeToken,
+    };
+
+    if (/^\d+$/.test(safeToken)) {
+        body.invitation_id = safeToken;
+        body.id = safeToken;
+    }
+
+    return body;
+};
+
+const isRecoverableAcceptError = (error) => {
+    const status = Number(error?.status || 0);
+    if (status === 404 || status === 405) return true;
+    const message = String(error?.message || '').toLowerCase();
+    return message.includes('invalid invite token') || message.includes('no query results');
+};
+
+const postWithFallback = async (requests = []) => {
+    let lastError = null;
+    for (const request of requests) {
+        try {
+            return await apiService.post(request.endpoint, request.payload);
+        } catch (error) {
+            lastError = error;
+            if (!isRecoverableAcceptError(error)) throw error;
+        }
+    }
+    throw lastError;
+};
 
 const InviteAcceptPage = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-    const token = useMemo(() => String(searchParams.get('token') || '').trim(), [searchParams]);
+    const token = useMemo(() => readInviteToken(searchParams), [searchParams]);
     const isAuthenticated = !!readAuthToken();
 
     const [loading, setLoading] = useState(false);
@@ -64,13 +118,14 @@ const InviteAcceptPage = () => {
         setError('');
         setSuccess('');
         try {
-            await apiService.post(
-                buildAcceptEndpoint('/org-invitations/accept', token),
-                withTokenAliases({}, token)
-            );
-            setSuccess('Invite accepted. Redirecting to organization dashboard...');
+            const payload = withTokenAliases({}, token);
+            await postWithFallback([
+                { endpoint: '/org-invitations/public/accept', payload },
+                { endpoint: buildAcceptEndpoint('/org-invitations/public/accept', token), payload },
+            ]);
+            setSuccess('Invite accepted. Redirecting to organization workspace...');
             setTimeout(() => {
-                window.location.assign('/org');
+                window.location.assign('/learner/organization');
             }, 600);
         } catch (err) {
             console.error('Failed to accept invitation (logged in):', err);
@@ -100,10 +155,11 @@ const InviteAcceptPage = () => {
                 password: formData.password,
             };
 
-            await apiService.post(
-                buildAcceptEndpoint('/org-invitations/public/accept', token),
-                withTokenAliases(payload, token)
-            );
+            const acceptPayload = withTokenAliases(payload, token);
+            await postWithFallback([
+                { endpoint: '/org-invitations/public/accept', payload: acceptPayload },
+                { endpoint: buildAcceptEndpoint('/org-invitations/public/accept', token), payload: acceptPayload },
+            ]);
 
             setSuccess('Invite accepted. You can now log in with the invited email and password.');
             setTimeout(() => navigate('/login', { replace: true }), 900);

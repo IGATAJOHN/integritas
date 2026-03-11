@@ -2,6 +2,7 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts';
 import { Box, CircularProgress } from '@mui/material';
+import { hasOrganizationAccess } from '../utils';
 
 const OnboardingGuard = ({ children }) => {
     const { user, loading, needsEmailVerification, needsKyc, isKycComplete } = useAuth();
@@ -28,7 +29,13 @@ const OnboardingGuard = ({ children }) => {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
-    if (needsEmailVerification() && location.pathname !== '/verify') {
+    const isOrganizationRoute =
+        location.pathname.startsWith('/org') ||
+        location.pathname.startsWith('/learner/organization');
+    const shouldBypassEmailVerification =
+        isOrganizationRoute && hasOrganizationAccess(user);
+
+    if (!shouldBypassEmailVerification && needsEmailVerification() && location.pathname !== '/verify') {
         return <Navigate to="/verify" replace />;
     }
     const isTutorRoute = location.pathname.startsWith('/tutor');

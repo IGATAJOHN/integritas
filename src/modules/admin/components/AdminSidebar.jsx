@@ -126,7 +126,7 @@ const AdminSidebar = ({
                 >
                     <Box
                         component="img"
-                        src="/src/assets/images/Integritas Hub_icon.png"
+                        src="/src/assets/images/GGH_icon.png"
                         alt="Integritas Hub Logo"
                         sx={{ height: 50, width: 50 }}
                     />

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Box,
@@ -17,6 +17,20 @@ import {
 
 const CourseCard = ({ course, colors }) => {
     const navigate = useNavigate();
+    const fallbackImage = useMemo(
+        () => 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450"><rect width="100%" height="100%" fill="%23111827"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%239CA3AF" font-size="28">Course Image</text></svg>',
+        []
+    );
+
+    const safeCourseId = String(course?.id || '').trim();
+    const safeLevel = String(course?.level || 'Unspecified');
+    const safeTitle = String(course?.title || 'Untitled Course');
+    const safeDescription = String(course?.description || 'No description available.');
+    const safeInstructor = String(course?.instructor || 'Integritas Hub');
+    const safeRating = Number(course?.rating || 0).toFixed(1);
+    const safeReviews = Number(course?.reviews || 0);
+    const safeDuration = String(course?.duration || 'TBD');
+    const safeImage = String(course?.image || '').trim() || fallbackImage;
 
     const getLevelColor = (level) => {
         switch (level) {
@@ -29,7 +43,7 @@ const CourseCard = ({ course, colors }) => {
 
     return (
         <Card
-            onClick={() => navigate('/explore/course/1')}
+            onClick={() => safeCourseId && navigate(`/explore/course/${safeCourseId}`)}
             sx={{
                 bgcolor: colors.card,
                 borderRadius: '16px',
@@ -57,8 +71,11 @@ const CourseCard = ({ course, colors }) => {
             }}>
                 <CardMedia
                     component="img"
-                    image={course.image}
-                    alt={course.title}
+                    image={safeImage}
+                    alt={safeTitle}
+                    onError={(event) => {
+                        event.currentTarget.src = fallbackImage;
+                    }}
                     sx={{
                         height: '100%',
                         width: '100%',
@@ -86,9 +103,9 @@ const CourseCard = ({ course, colors }) => {
                 }}>
                     <LevelIcon sx={{
                         fontSize: 14,
-                        color: getLevelColor(course.level)
+                        color: getLevelColor(safeLevel)
                     }} />
-                    {course.level}
+                    {safeLevel}
                 </Box>
             </Box>
 
@@ -112,7 +129,7 @@ const CourseCard = ({ course, colors }) => {
                     WebkitBoxOrient: 'vertical',
                     overflow: 'hidden'
                 }}>
-                    {course.title}
+                    {safeTitle}
                 </Typography>
 
                 {/* Description */}
@@ -126,7 +143,7 @@ const CourseCard = ({ course, colors }) => {
                     WebkitBoxOrient: 'vertical',
                     overflow: 'hidden'
                 }}>
-                    {course.description}
+                    {safeDescription}
                 </Typography>
 
                 {/* Instructor/Institution */}
@@ -151,14 +168,14 @@ const CourseCard = ({ course, colors }) => {
                             textTransform: 'uppercase',
                             letterSpacing: '0.5px'
                         }}>
-                            {course.type === 'institution' ? 'Institution' : 'Instructor'}
+                            {course?.type === 'institution' ? 'Institution' : 'Instructor'}
                         </Typography>
                         <Typography variant="body2" sx={{
                             fontWeight: 600,
                             color: colors.text,
                             fontSize: '0.9rem'
                         }}>
-                            {course.instructor}
+                            {safeInstructor}
                         </Typography>
                     </Box>
                 </Stack>
@@ -177,16 +194,16 @@ const CourseCard = ({ course, colors }) => {
                     <Stack direction="row" alignItems="center" spacing={0.5}>
                         <StarIcon sx={{ color: colors.warning, fontSize: 18 }} />
                         <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text }}>
-                            {course.rating}
+                            {safeRating}
                         </Typography>
                         <Typography variant="body2" sx={{ color: colors.textSecondary }}>
-                            ({course.reviews})
+                            ({safeReviews})
                         </Typography>
                     </Stack>
                     <Stack direction="row" alignItems="center" spacing={0.5}>
                         <ClockIcon sx={{ color: colors.textSecondary, fontSize: 18 }} />
                         <Typography variant="body2" sx={{ color: colors.textSecondary }}>
-                            {course.duration}
+                            {safeDuration}
                         </Typography>
                     </Stack>
                 </Stack>

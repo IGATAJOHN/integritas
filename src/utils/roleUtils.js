@@ -110,7 +110,8 @@ export const getDashboardRoute = (userOrRole) => {
     if (typeof userOrRole === 'string') {
         const normalized = normalizeWithAlias(userOrRole);
         if (normalized === 'admin') return '/admin';
-        if (ORG_ROLE_SET.has(normalized)) return '/org';
+        if (normalized === 'organization') return '/learner/organization';
+        if (ORG_ROLE_SET.has(normalized)) return '/learner/organization';
         if (normalized === 'tutor') return '/tutor';
         if (normalized === 'learner') return '/learner';
         return '/learner';
@@ -118,7 +119,7 @@ export const getDashboardRoute = (userOrRole) => {
 
     const primaryRole = getPrimaryRole(userOrRole);
     if (primaryRole === 'admin') return '/admin';
-    if (primaryRole === 'organization') return '/org';
+    if (primaryRole === 'organization') return '/learner/organization';
     if (primaryRole === 'tutor') return '/tutor';
     return '/learner';
 };

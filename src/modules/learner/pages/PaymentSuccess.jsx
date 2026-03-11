@@ -16,7 +16,7 @@ import {
     DownloadOutlined as Download,
     CreditCardOutlined as CreditCard
 } from '@mui/icons-material';
-import logo from '../../../assets/images/Integritas Hub_logo.png';
+import logo from '../../../assets/images/GGH_logo.png';
 
 const PaymentSuccess = () => {
     const navigate = useNavigate();

@@ -20,7 +20,7 @@ import {
     Menu as MenuIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../../contexts';
-import logo from '../../../assets/images/Integritas Hub_icon.png';
+import logo from '../../../assets/images/GGH_icon.png';
 
 const LearnerNavbar = ({ onMobileMenuToggle }) => {
     const theme = useTheme();

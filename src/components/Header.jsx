@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import { LightMode, DarkMode, Menu, Close } from '@mui/icons-material';
 import { useThemeMode } from '../contexts';
-import logo from '../assets/images/Integritas Hub_logo.png';
+import logo from '../assets/images/GGH_logo.png';
 
 const Header = () => {
     const navItems = ['Courses', 'About Us', 'Partners'];

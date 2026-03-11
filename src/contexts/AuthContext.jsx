@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services/api';
-import { getPrimaryRole } from '../utils';
+import { getOrganizationRole, getPrimaryRole } from '../utils';
 
 const AuthContext = createContext(null);
 
@@ -55,14 +55,24 @@ export const AuthProvider = ({ children }) => {
         try {
             const data = await authService.login({ email, password });
             const userData = data.user || data;
-            const token = data.token;
+            const token = data.token || userData?.token || null;
 
-            if (token) {
-                userData.token = token;
-                userData.role = pickRole(userData) || userData.role;
+            const baseUser = {
+                ...userData,
+                ...(token ? { token } : {}),
+            };
+            baseUser.role = pickRole(baseUser) || baseUser.role;
+
+            // Persist token before /auth/me so Authorization header is present on first login.
+            setUser(baseUser);
+            localStorage.setItem('user', JSON.stringify(baseUser));
+
+            // If backend didn't return token, skip /auth/me refresh and use login response.
+            if (!token) {
+                return baseUser;
             }
 
-            // After login, fetch fresh user data with roles and onboarding status
+            // After login, fetch fresh user data with roles and onboarding status.
             try {
                 const currentUserData = await authService.getCurrentUser();
                 const freshUserData = currentUserData.user || currentUserData;
@@ -73,12 +83,9 @@ export const AuthProvider = ({ children }) => {
                 localStorage.setItem('user', JSON.stringify(freshUserData));
                 return freshUserData;
             } catch (error) {
-                // If /auth/me fails, use login response data
+                // If /auth/me fails, keep login response data already persisted above.
                 console.warn('Failed to fetch current user after login, using login response:', error);
-
-                setUser(userData);
-                localStorage.setItem('user', JSON.stringify(userData));
-                return userData;
+                return baseUser;
             }
         } catch (error) {
             console.error('Login failed:', error);
@@ -139,10 +146,29 @@ export const AuthProvider = ({ children }) => {
 
 
     const logout = async () => {
+        let token = String(user?.token || '').trim();
+        if (!token) {
+            try {
+                const raw = localStorage.getItem('user');
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    token = String(parsed?.token || '').trim();
+                }
+            } catch {
+                token = '';
+            }
+        }
+
         try {
-            await authService.logout();
+            // Avoid calling logout endpoint when token is already absent/expired.
+            if (token) {
+                await authService.logout();
+            }
         } catch (error) {
-            console.error('Logout API error:', error);
+            // 401 on logout means session is already invalid; clear client state silently.
+            if (error?.status !== 401) {
+                console.error('Logout API error:', error);
+            }
         } finally {
             // Always clear local state regardless of API call result
             setUser(null);
@@ -193,12 +219,16 @@ export const AuthProvider = ({ children }) => {
         return status ? status.toLowerCase() : null;
     };
 
+    const hasOrganizationInviteAccess = () => !!getOrganizationRole(user);
+
     const isKycComplete = () => {
         const status = getKycStatus();
         return status === 'approved' || status === 'completed';
     };
 
     const needsEmailVerification = () => {
+        // Invited org members (staff/manager/admin) can proceed without email verification.
+        if (hasOrganizationInviteAccess()) return false;
         return !isEmailVerified();
     };
 

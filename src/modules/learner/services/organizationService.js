@@ -65,6 +65,105 @@ const appendIfPresent = (formData, key, value) => {
     formData.append(key, value);
 };
 
+const INVITE_EMAIL_KEYS = ['email', 'user_email', 'invited_email'];
+const INVITE_TOKEN_KEYS = ['token', 'invite_token', 'invitation_token', 'accept_token'];
+
+const readFirstString = (obj, keys = []) => {
+    for (const key of keys) {
+        const value = obj?.[key];
+        if (value === undefined || value === null) continue;
+        const text = String(value).trim();
+        if (text) return text;
+    }
+    return '';
+};
+
+const extractInvitationDebugRows = (payload) => {
+    const rows = [];
+    const queue = [payload];
+    const seen = new Set();
+
+    while (queue.length > 0) {
+        const current = queue.shift();
+        if (!current || typeof current !== 'object') continue;
+        if (seen.has(current)) continue;
+        seen.add(current);
+
+        if (Array.isArray(current)) {
+            current.forEach((item) => queue.push(item));
+            continue;
+        }
+
+        const email = readFirstString(current, INVITE_EMAIL_KEYS);
+        const token = readFirstString(current, INVITE_TOKEN_KEYS);
+        const id = current?.id ?? current?.invitation_id ?? null;
+        const role = current?.role ?? current?.invited_role ?? null;
+        const status = current?.status ?? null;
+
+        if (email || token || id) {
+            rows.push({
+                email: email || null,
+                token: token || null,
+                invitation_id: id,
+                role,
+                status,
+            });
+        }
+
+        Object.values(current).forEach((value) => {
+            if (value && typeof value === 'object') queue.push(value);
+        });
+    }
+
+    const unique = new Map();
+    rows.forEach((row) => {
+        const key = `${row.email || ''}::${row.token || ''}::${row.invitation_id || ''}`;
+        if (!unique.has(key)) unique.set(key, row);
+    });
+    return Array.from(unique.values());
+};
+
+const buildAcceptInviteLink = (token) => {
+    const safeToken = String(token || '').trim();
+    if (!safeToken) return '';
+
+    const encoded = encodeURIComponent(safeToken);
+    if (typeof window !== 'undefined' && window.location?.origin) {
+        return `${window.location.origin}/accept-invite?token=${encoded}`;
+    }
+    return `/accept-invite?token=${encoded}`;
+};
+
+const logInvitationDebug = (responseData, requestPayload) => {
+    try {
+        const rows = extractInvitationDebugRows(responseData);
+
+        console.groupCollapsed('[Learner Org Invite] Invite response debug');
+        console.log('requestPayload:', requestPayload);
+        console.log('rawResponse:', responseData);
+
+        if (!rows.length) {
+            console.warn('No invitation token or invited user info was found in this response.');
+            console.groupEnd();
+            return;
+        }
+
+        const output = rows.map((row) => ({
+            invited_email: row.email,
+            token: row.token,
+            invitation_id: row.invitation_id,
+            role: row.role,
+            status: row.status,
+            accept_link: buildAcceptInviteLink(row.token),
+        }));
+
+        console.table(output);
+        console.groupEnd();
+    } catch (error) {
+        console.warn('[Learner Org Invite] Failed to log invite debug info:', error);
+    }
+};
+
 const buildQueryString = (params = {}) => {
     const searchParams = new URLSearchParams();
 
@@ -116,12 +215,16 @@ export const organizationService = {
     // -------- Invitations --------
     inviteOrganizationMembers: async (orgId, payload) => {
         const res = await apiService.post(`/orgs/${orgId}/invitations`, payload);
-        return unwrapData(res);
+        const data = unwrapData(res);
+        logInvitationDebug(data, payload);
+        return data;
     },
 
     batchInviteStaff: async (orgId, payload) => {
         const res = await apiService.post(`/orgs/${orgId}/invitations`, payload);
-        return unwrapData(res);
+        const data = unwrapData(res);
+        logInvitationDebug(data, payload);
+        return data;
     },
 
     acceptInvitationPublic: async (payload) => {
@@ -130,7 +233,7 @@ export const organizationService = {
     },
 
     acceptInvitationLoggedIn: async (payload) => {
-        const res = await apiService.post('/org-invitations/accept', payload);
+        const res = await apiService.post('/org-invitations/public/accept', payload);
         return unwrapData(res);
     },
 
@@ -140,7 +243,7 @@ export const organizationService = {
     },
 
     acceptOrganizationInvitationLoggedIn: async (payload) => {
-        const res = await apiService.post('/org-invitations/accept', payload);
+        const res = await apiService.post('/org-invitations/public/accept', payload);
         return unwrapData(res);
     },
 

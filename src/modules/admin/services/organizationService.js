@@ -78,6 +78,78 @@ const buildQueryString = (params = {}) => {
     return query ? `?${query}` : '';
 };
 
+const INVITE_TOKEN_KEYS = ['token', 'invitation_token', 'invite_token', 'accept_token', 'acceptance_token'];
+const INVITE_URL_KEYS = ['invite_url', 'accept_url', 'url', 'link'];
+const INVITE_USER_KEYS = ['email', 'name', 'role', 'id'];
+
+const collectInviteDebugEntries = (value, entries = []) => {
+    if (!value) return entries;
+
+    if (Array.isArray(value)) {
+        value.forEach((item) => collectInviteDebugEntries(item, entries));
+        return entries;
+    }
+
+    if (typeof value !== 'object') return entries;
+
+    const entry = {};
+    let hasInterestingField = false;
+
+    INVITE_USER_KEYS.forEach((key) => {
+        if (value[key] === undefined || value[key] === null || value[key] === '') return;
+        entry[key] = value[key];
+        hasInterestingField = true;
+    });
+
+    INVITE_TOKEN_KEYS.forEach((key) => {
+        const fieldValue = value[key];
+        if (typeof fieldValue !== 'string' || !fieldValue.trim()) return;
+        entry[key] = fieldValue;
+        hasInterestingField = true;
+    });
+
+    INVITE_URL_KEYS.forEach((key) => {
+        const fieldValue = value[key];
+        if (typeof fieldValue !== 'string' || !fieldValue.trim()) return;
+        entry[key] = fieldValue;
+        hasInterestingField = true;
+    });
+
+    if (hasInterestingField) {
+        entries.push(entry);
+    }
+
+    Object.values(value).forEach((child) => collectInviteDebugEntries(child, entries));
+    return entries;
+};
+
+const dedupeInviteDebugEntries = (entries = []) => {
+    const seen = new Set();
+    return entries.filter((entry) => {
+        const key = JSON.stringify(entry);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+};
+
+const logInviteDebug = ({ source, orgId, payload, response }) => {
+    const emails = Array.isArray(payload?.emails) ? payload.emails : [];
+    const entries = dedupeInviteDebugEntries(collectInviteDebugEntries(response));
+
+    console.groupCollapsed(`[Invite Debug] ${source} (org: ${orgId})`);
+    console.log('Requested emails:', emails);
+
+    if (entries.length > 0) {
+        console.table(entries);
+    } else {
+        console.warn('No invite token fields found in response. Raw response logged below.');
+    }
+
+    console.log('Raw invite response:', response);
+    console.groupEnd();
+};
+
 export const organizationService = {
     // -------- Organizations --------
     createOrganizationJson: async (payload) => {
@@ -101,7 +173,9 @@ export const organizationService = {
     // -------- Invitations --------
     batchInviteStaff: async (orgId, payload) => {
         const res = await apiService.post(`/orgs/${orgId}/invitations`, payload);
-        return unwrapData(res);
+        const data = unwrapData(res);
+        logInviteDebug({ source: 'batchInviteStaff', orgId, payload, response: data });
+        return data;
     },
 
     acceptInvitationPublic: async (payload) => {
@@ -110,7 +184,7 @@ export const organizationService = {
     },
 
     acceptInvitationLoggedIn: async (payload) => {
-        const res = await apiService.post('/org-invitations/accept', payload);
+        const res = await apiService.post('/org-invitations/public/accept', payload);
         return unwrapData(res);
     },
 

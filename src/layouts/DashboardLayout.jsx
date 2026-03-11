@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import logo from '../assets/images/Integritas Hub_logo.png';
+import logo from '../assets/images/GGH_logo.png';
 
 const DashboardLayout = ({ sidebarItems = [], title = 'Dashboard' }) => {
     const location = useLocation();

@@ -61,10 +61,24 @@ const parseEmails = (value) =>
         .map((email) => email.trim().toLowerCase())
         .filter(Boolean);
 
+const normalizeDomain = (value) =>
+    String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/^@+/, '');
+
+const completeEmailWithDomain = (value, domain) => {
+    const email = String(value || '').trim().toLowerCase();
+    if (!email) return '';
+    if (!domain) return email;
+    if (email.endsWith('@')) return `${email}${domain}`;
+    return email;
+};
+
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
 
-const getBatchEmailSummary = (value) => {
-    const parsed = parseEmails(value);
+const getBatchEmailSummary = (value, domain = '') => {
+    const parsed = parseEmails(value).map((email) => completeEmailWithDomain(email, domain));
     const unique = [...new Set(parsed)];
     const valid = unique.filter(isValidEmail);
     const invalid = unique.filter((email) => !isValidEmail(email));
@@ -112,7 +126,14 @@ const OrganizationInvitations = () => {
     const [bulkForm, setBulkForm] = useState(initialBulkActionForm);
 
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-    const batchSummary = useMemo(() => getBatchEmailSummary(batchForm.emails_text), [batchForm.emails_text]);
+    const selectedOrgDomain = useMemo(
+        () => normalizeDomain(selectedOrganization?.email_domain),
+        [selectedOrganization]
+    );
+    const batchSummary = useMemo(
+        () => getBatchEmailSummary(batchForm.emails_text, selectedOrgDomain),
+        [batchForm.emails_text, selectedOrgDomain]
+    );
 
     const openSnackbar = (message, severity = 'success') => {
         setSnackbar({ open: true, message, severity });
@@ -219,8 +240,17 @@ const OrganizationInvitations = () => {
         }
     };
 
+    const handleBatchEmailInputChange = (event) => {
+        const nextValue = String(event.target.value || '');
+        const completed = completeEmailWithDomain(nextValue, selectedOrgDomain);
+        setBatchEmailInput(completed);
+    };
+
     const handleAddBatchEmail = () => {
-        const normalized = String(batchEmailInput || '').trim().toLowerCase();
+        const raw = String(batchEmailInput || '').trim().toLowerCase();
+        if (!raw) return;
+
+        const normalized = completeEmailWithDomain(raw, selectedOrgDomain);
         if (!normalized) return;
 
         const existing = new Set(parseEmails(batchForm.emails_text));
@@ -545,14 +575,14 @@ const OrganizationInvitations = () => {
                             <TextField
                                 label="Add Staff Email"
                                 value={batchEmailInput}
-                                onChange={(event) => setBatchEmailInput(event.target.value)}
+                                onChange={handleBatchEmailInputChange}
                                 onKeyDown={(event) => {
                                     if (event.key === 'Enter') {
                                         event.preventDefault();
                                         handleAddBatchEmail();
                                     }
                                 }}
-                                placeholder="staff@company.com"
+                                placeholder={selectedOrgDomain ? `staff@` : 'staff@company.com'}
                                 sx={textFieldStyle}
                                 fullWidth
                             />
@@ -564,6 +594,12 @@ const OrganizationInvitations = () => {
                                 Add
                             </Button>
                         </Stack>
+
+                        {!!selectedOrgDomain && (
+                            <Typography sx={{ color: '#93C5FD', fontSize: '0.78rem' }}>
+                                Type `staff@` to auto-complete domain: @{selectedOrgDomain}
+                            </Typography>
+                        )}
 
                         <TextField
                             label="Add Multiple Emails"

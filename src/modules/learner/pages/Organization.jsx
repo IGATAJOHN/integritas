@@ -36,7 +36,7 @@ import {
     textFieldStyle,
 } from '../../../styles/formStyles';
 import { learnerOrganizationService } from '../services/organizationService';
-import OrganizationScopeToolbar from '../../organization/components/OrganizationScopeToolbar';
+import OrganizationScopeToolbar from '../components/OrganizationScopeToolbar';
 
 const STORAGE_KEY = 'Integritas Hub_learner_selected_org_id';
 const ASSIGNMENT_TYPES = ['course', 'learning_path'];

@@ -42,7 +42,7 @@ import {
     AlternateEmail as EmailIcon
 } from '@mui/icons-material';
 import { alpha } from '@mui/material/styles';
-import logo from '../../../assets/images/Integritas Hub_logo.png';
+import logo from '../../../assets/images/GGH_logo.png';
 import Footer from '../../../components/Footer';
 
 const colors = {
