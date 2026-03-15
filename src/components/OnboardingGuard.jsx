@@ -8,7 +8,6 @@ const OnboardingGuard = ({ children }) => {
     const { user, loading, needsEmailVerification, needsKyc, isKycComplete } = useAuth();
     const location = useLocation();
 
-    // Show loading while checking
     if (loading) {
         return (
             <Box
@@ -40,7 +39,6 @@ const OnboardingGuard = ({ children }) => {
     }
     const isTutorRoute = location.pathname.startsWith('/tutor');
     const isKycPage = location.pathname === '/tutor/kyc';
-    // If on KYC page but the status is already complete (approved), redirect to dashboard
     if (isTutorRoute && isKycPage) {
         if (isKycComplete()) {
             return <Navigate to="/tutor" replace />;

@@ -72,8 +72,40 @@ const parseCsv = (value) =>
         .map((item) => item.trim())
         .filter(Boolean);
 
+const readCourseLabel = (course = {}) =>
+    String(course?.title || course?.name || '').trim() || 'Untitled course';
+
+const readLearningPathLabel = (path = {}) =>
+    String(path?.title || path?.name || '').trim() || 'Untitled learning path';
+
+const formatUserLabel = (entry = {}) => {
+    const name = String(entry?.name || '').trim();
+    const email = String(entry?.email || '').trim();
+
+    if (name && email) return `${name} (${email})`;
+    return name || email || 'Unknown user';
+};
+
+const renderSelectedUsers = (selectedIds = [], options = []) => {
+    const labels = selectedIds
+        .map((id) => options.find((option) => String(option?.id || '') === String(id)) || {})
+        .map((entry) => formatUserLabel(entry))
+        .filter(Boolean);
+
+    if (labels.length <= 2) return labels.join(', ');
+    return `${labels.slice(0, 2).join(', ')} +${labels.length - 2} more`;
+};
+
 const getTitle = (item, fallback = '-') =>
     item?.title || item?.name || item?.course?.title || item?.learning_path?.title || fallback;
+
+const getAssignmentOrganizationName = (item) =>
+    String(
+        item?.organization?.name ||
+        item?.organization_name ||
+        item?.org?.name ||
+        ''
+    ).trim() || '-';
 
 const StatCard = ({ title, value, subtitle, icon }) => (
     <Paper sx={{ ...paperStyle, p: 2.5, minHeight: 140 }}>
@@ -123,9 +155,9 @@ const Organization = () => {
         course_id: '',
         learning_path_id: '',
         due_at: '',
-        user_ids: '',
+        user_ids: [],
     });
-    const [myFilter, setMyFilter] = useState({ type: '', status: '' });
+    const [myFilter, setMyFilter] = useState({ type: 'course', status: 'assigned' });
 
     const organizations = useMemo(() => {
         const fromUser = Array.isArray(user?.organizations) ? user.organizations : [];
@@ -149,6 +181,28 @@ const Organization = () => {
         [organizations, activeOrgId]
     );
 
+    const userOptions = useMemo(() => {
+        const unique = new Map();
+
+        (users || []).forEach((entry) => {
+            const id = String(entry?.id || '').trim();
+            if (!id) return;
+
+            const existing = unique.get(id) || {};
+            unique.set(id, {
+                ...existing,
+                ...entry,
+                id,
+                name: String(entry?.name || existing.name || '').trim(),
+                email: String(entry?.email || existing.email || '').trim(),
+            });
+        });
+
+        return Array.from(unique.values()).sort((left, right) =>
+            formatUserLabel(left).localeCompare(formatUserLabel(right))
+        );
+    }, [users]);
+
     const showToast = (message, severity = 'success') => {
         setSnackbar({ open: true, message, severity });
     };
@@ -157,7 +211,7 @@ const Organization = () => {
         setLoading(true);
         setError('');
         try {
-            const requests = [safeList(() => learnerOrganizationService.listMyAssignments({ ...myFilter, org_id: activeOrgId || undefined, per_page: 20 }))];
+            const requests = [safeList(() => learnerOrganizationService.listMyAssignments({ ...myFilter, per_page: 20 }))];
 
             if (canManage && activeOrgId) {
                 requests.push(
@@ -165,8 +219,8 @@ const Organization = () => {
                     safeList(() => learnerOrganizationService.listLearningPaths(activeOrgId, { per_page: 20 })),
                     safeList(() => learnerOrganizationService.listAssignments(activeOrgId, { per_page: 20 })),
                     safeList(() => learnerOrganizationService.getProgressReport(activeOrgId, { per_page: 20 })),
-                    safeList(() => learnerOrganizationService.listUsers({ per_page: 100 })),
-                    safeList(() => learnerOrganizationService.listCourses({ per_page: 100 }))
+                    safeList(() => learnerOrganizationService.listUsers({ per_page: 100, org_id: activeOrgId })),
+                    safeList(() => learnerOrganizationService.listCourses({ per_page: 100, org_id: activeOrgId }))
                 );
             }
 
@@ -275,8 +329,10 @@ const Organization = () => {
 
     const handleAssign = async () => {
         if (!activeOrgId) return showToast('Select an organization first.', 'error');
-        const userIds = parseCsv(assignForm.user_ids);
-        if (userIds.length === 0) return showToast('Provide user IDs.', 'error');
+        const userIds = Array.isArray(assignForm.user_ids)
+            ? assignForm.user_ids.map((value) => String(value || '').trim()).filter(Boolean)
+            : [];
+        if (userIds.length === 0) return showToast('Select at least one user.', 'error');
 
         const payload = {
             type: assignForm.type,
@@ -288,7 +344,7 @@ const Organization = () => {
 
         try {
             await learnerOrganizationService.assignToUsers(activeOrgId, payload);
-            setAssignForm((prev) => ({ ...prev, user_ids: '', due_at: '' }));
+            setAssignForm((prev) => ({ ...prev, user_ids: [], due_at: '' }));
             showToast('Assignment created.');
             await loadData();
         } catch (requestError) {
@@ -414,7 +470,7 @@ const Organization = () => {
                                 <Button variant="contained" onClick={handleCreatePath} sx={{ ...primaryButtonStyle, textTransform: 'none' }}>Create Path</Button>
                             </Stack>
                             <Typography sx={{ color: '#9CA3AF', fontSize: '0.8rem' }}>
-                                Latest paths: {(learningPaths || []).slice(0, 6).map((item) => item.title || item.id).join(', ') || 'none'}
+                                Latest paths: {(learningPaths || []).slice(0, 6).map((item) => readLearningPathLabel(item)).join(', ') || 'none'}
                             </Typography>
                         </Paper>
                     )}
@@ -435,7 +491,7 @@ const Organization = () => {
                                         <InputLabel sx={{ color: '#9CA3AF' }}>Course</InputLabel>
                                         <Select label="Course" value={assignForm.course_id} onChange={(event) => setAssignForm((prev) => ({ ...prev, course_id: event.target.value }))} sx={selectStyle} MenuProps={selectMenuProps}>
                                             {courses.map((course) => (
-                                                <MenuItem key={course.id} value={course.id}>{course.title || course.id}</MenuItem>
+                                                <MenuItem key={course.id} value={course.id}>{readCourseLabel(course)}</MenuItem>
                                             ))}
                                         </Select>
                                     </FormControl>
@@ -444,12 +500,39 @@ const Organization = () => {
                                         <InputLabel sx={{ color: '#9CA3AF' }}>Learning Path</InputLabel>
                                         <Select label="Learning Path" value={assignForm.learning_path_id} onChange={(event) => setAssignForm((prev) => ({ ...prev, learning_path_id: event.target.value }))} sx={selectStyle} MenuProps={selectMenuProps}>
                                             {learningPaths.map((path) => (
-                                                <MenuItem key={path.id} value={path.id}>{path.title || path.id}</MenuItem>
+                                                <MenuItem key={path.id} value={path.id}>{readLearningPathLabel(path)}</MenuItem>
                                             ))}
                                         </Select>
                                     </FormControl>
                                 )}
-                                <TextField label="User IDs (comma/newline)" value={assignForm.user_ids} onChange={(event) => setAssignForm((prev) => ({ ...prev, user_ids: event.target.value }))} sx={textFieldStyle} fullWidth />
+                                <FormControl fullWidth>
+                                    <InputLabel sx={{ color: '#9CA3AF' }}>Users</InputLabel>
+                                    <Select
+                                        multiple
+                                        label="Users"
+                                        value={assignForm.user_ids}
+                                        onChange={(event) => {
+                                            const value = event.target.value;
+                                            setAssignForm((prev) => ({
+                                                ...prev,
+                                                user_ids: typeof value === 'string' ? value.split(',') : value,
+                                            }));
+                                        }}
+                                        sx={selectStyle}
+                                        MenuProps={selectMenuProps}
+                                        renderValue={(selected) => renderSelectedUsers(selected, userOptions)}
+                                    >
+                                        {userOptions.length === 0 ? (
+                                            <MenuItem value="" disabled>No users found</MenuItem>
+                                        ) : (
+                                            userOptions.map((userOption) => (
+                                                <MenuItem key={userOption.id} value={userOption.id}>
+                                                    {formatUserLabel(userOption)}
+                                                </MenuItem>
+                                            ))
+                                        )}
+                                    </Select>
+                                </FormControl>
                                 <Button variant="contained" onClick={handleAssign} sx={{ ...primaryButtonStyle, textTransform: 'none' }}>Assign</Button>
                             </Stack>
                         </Paper>
@@ -481,6 +564,7 @@ const Organization = () => {
                                     <TableRow>
                                         <TableCell sx={tableHeaderCellStyle}>Type</TableCell>
                                         <TableCell sx={tableHeaderCellStyle}>Item</TableCell>
+                                        <TableCell sx={tableHeaderCellStyle}>Organization</TableCell>
                                         <TableCell sx={tableHeaderCellStyle}>Status</TableCell>
                                         <TableCell sx={tableHeaderCellStyle}>Due</TableCell>
                                     </TableRow>
@@ -488,13 +572,14 @@ const Organization = () => {
                                 <TableBody>
                                     {(myAssignments || []).length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={4} sx={{ ...tableBodyCellStyle, color: '#9CA3AF', textAlign: 'center' }}>No assignments found.</TableCell>
+                                            <TableCell colSpan={5} sx={{ ...tableBodyCellStyle, color: '#9CA3AF', textAlign: 'center' }}>No assignments found.</TableCell>
                                         </TableRow>
                                     ) : (
                                         myAssignments.map((item) => (
                                             <TableRow key={item.id}>
                                                 <TableCell sx={{ ...tableBodyCellStyle, color: '#D1D5DB', textTransform: 'capitalize' }}>{item.type || '-'}</TableCell>
                                                 <TableCell sx={{ ...tableBodyCellStyle, color: '#fff', fontWeight: 600 }}>{getTitle(item, 'Assignment')}</TableCell>
+                                                <TableCell sx={{ ...tableBodyCellStyle, color: '#D1D5DB' }}>{getAssignmentOrganizationName(item)}</TableCell>
                                                 <TableCell sx={{ ...tableBodyCellStyle, color: '#D1D5DB', textTransform: 'capitalize' }}>{item.status || '-'}</TableCell>
                                                 <TableCell sx={{ ...tableBodyCellStyle, color: '#D1D5DB' }}>{formatDateTime(item.due_at)}</TableCell>
                                             </TableRow>

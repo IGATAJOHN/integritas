@@ -76,6 +76,39 @@ const isRecoverableAcceptError = (error) => {
     return message.includes('invalid invite token') || message.includes('no query results');
 };
 
+const readInvitationOrganizationName = (payload) => {
+    const queue = [payload];
+    const visited = new Set();
+
+    while (queue.length > 0) {
+        const current = queue.shift();
+        if (!current || typeof current !== 'object') continue;
+        if (visited.has(current)) continue;
+        visited.add(current);
+
+        const directName = String(
+            current?.organization_name ||
+            current?.organizationName ||
+            current?.org_name ||
+            ''
+        ).trim();
+        if (directName) return directName;
+
+        const organizationName = String(
+            current?.organization?.name ||
+            current?.org?.name ||
+            ''
+        ).trim();
+        if (organizationName) return organizationName;
+
+        Object.values(current).forEach((value) => {
+            if (value && typeof value === 'object') queue.push(value);
+        });
+    }
+
+    return '';
+};
+
 const postWithFallback = async (requests = []) => {
     let lastError = null;
     for (const request of requests) {
@@ -119,11 +152,16 @@ const InviteAcceptPage = () => {
         setSuccess('');
         try {
             const payload = withTokenAliases({}, token);
-            await postWithFallback([
+            const response = await postWithFallback([
                 { endpoint: '/org-invitations/public/accept', payload },
                 { endpoint: buildAcceptEndpoint('/org-invitations/public/accept', token), payload },
             ]);
-            setSuccess('Invite accepted. Redirecting to organization workspace...');
+            const organizationName = readInvitationOrganizationName(response);
+            setSuccess(
+                organizationName
+                    ? `Invite accepted for ${organizationName}. Redirecting to organization workspace...`
+                    : 'Invite accepted. Redirecting to organization workspace...'
+            );
             setTimeout(() => {
                 window.location.assign('/learner/organization');
             }, 600);
@@ -156,12 +194,16 @@ const InviteAcceptPage = () => {
             };
 
             const acceptPayload = withTokenAliases(payload, token);
-            await postWithFallback([
+            const response = await postWithFallback([
                 { endpoint: '/org-invitations/public/accept', payload: acceptPayload },
                 { endpoint: buildAcceptEndpoint('/org-invitations/public/accept', token), payload: acceptPayload },
             ]);
-
-            setSuccess('Invite accepted. You can now log in with the invited email and password.');
+            const organizationName = readInvitationOrganizationName(response);
+            setSuccess(
+                organizationName
+                    ? `Invite accepted for ${organizationName}. You can now log in with the invited email and password.`
+                    : 'Invite accepted. You can now log in with the invited email and password.'
+            );
             setTimeout(() => navigate('/login', { replace: true }), 900);
         } catch (err) {
             console.error('Failed to accept invitation (public):', err);

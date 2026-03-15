@@ -39,12 +39,24 @@ const initialOrgForm = {
     logo: null,
 };
 
+const getOrganizationAccessLabel = (organization = {}) => {
+    const membershipRole = String(organization?.membership_role || '').trim().toLowerCase();
+
+    if (organization?.is_owner || membershipRole === 'owner') return 'Owner';
+    if (membershipRole === 'admin') return 'Admin';
+    if (membershipRole === 'manager') return 'Manager';
+    if (membershipRole === 'staff') return 'Invited Member';
+    if (organization?.can_manage) return 'Manager Access';
+    return 'Invited Member';
+};
+
 const OrganizationOverview = () => {
     const {
         organizations,
         selectedOrgId,
         selectedOrganization,
         setSelectedOrgId,
+        refreshOrganizations,
         rememberOrganization,
         forgetOrganization,
     } = useOrganizationScope();
@@ -100,7 +112,20 @@ const OrganizationOverview = () => {
         }
     };
 
-    const knownOrganizations = useMemo(() => organizations, [organizations]);
+    const knownOrganizations = useMemo(
+        () =>
+            [...organizations].sort((left, right) => {
+                const leftPriority = Number(Boolean(left?.is_owner || left?.can_manage));
+                const rightPriority = Number(Boolean(right?.is_owner || right?.can_manage));
+                if (leftPriority !== rightPriority) return rightPriority - leftPriority;
+                return String(left?.name || '').localeCompare(String(right?.name || ''));
+            }),
+        [organizations]
+    );
+    const invitedOrganizations = useMemo(
+        () => knownOrganizations.filter((organization) => !organization?.is_owner && !organization?.can_manage),
+        [knownOrganizations]
+    );
 
     return (
         <Box sx={{ p: { xs: 2, md: 4 }, bgcolor: '#0C1322', minHeight: 'calc(100vh - 70px)', width: '100%' }}>
@@ -127,7 +152,7 @@ const OrganizationOverview = () => {
                     </Tooltip>
 
                     <Tooltip title="Reload">
-                        <IconButton sx={{ color: '#9CA3AF' }} onClick={() => setSelectedOrgId(selectedOrgId)}>
+                        <IconButton sx={{ color: '#9CA3AF' }} onClick={refreshOrganizations}>
                             <Refresh />
                         </IconButton>
                     </Tooltip>
@@ -136,12 +161,18 @@ const OrganizationOverview = () => {
 
             <OrganizationScopeToolbar
                 title="Active Organization"
-                subtitle="All organization endpoints require an org ID. Select or paste one here."
+                subtitle="Select an organization to manage its workspace. Invited organizations appear in the picker too."
                 organizations={organizations}
                 selectedOrgId={selectedOrgId}
                 selectedOrganization={selectedOrganization}
                 onChangeOrgId={setSelectedOrgId}
             />
+
+            {invitedOrganizations.length > 0 && (
+                <Alert severity="info" sx={{ mb: 3, bgcolor: 'rgba(59, 130, 246, 0.15)', color: '#93C5FD' }}>
+                    Organizations you joined by invitation are listed here as <strong>Invited Member</strong> and can be selected from the organization picker.
+                </Alert>
+            )}
 
             <TableContainer component={Paper} sx={paperStyle}>
                 <Table>
@@ -149,6 +180,7 @@ const OrganizationOverview = () => {
                         <TableRow>
                             <TableCell sx={tableHeaderCellStyle}>Organization</TableCell>
                             <TableCell sx={tableHeaderCellStyle}>Email Domain</TableCell>
+                            <TableCell sx={tableHeaderCellStyle}>Access</TableCell>
                             <TableCell sx={tableHeaderCellStyle}>Status</TableCell>
                             <TableCell align="right" sx={tableHeaderCellStyle}>Actions</TableCell>
                         </TableRow>
@@ -156,8 +188,8 @@ const OrganizationOverview = () => {
                     <TableBody>
                         {knownOrganizations.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={4} align="center" sx={{ ...tableBodyCellStyle, py: 5, color: '#9CA3AF' }}>
-                                    No organizations saved yet. Create one or paste an org ID above.
+                                <TableCell colSpan={5} align="center" sx={{ ...tableBodyCellStyle, py: 5, color: '#9CA3AF' }}>
+                                    No organizations saved yet. Create one to get started.
                                 </TableCell>
                             </TableRow>
                         ) : (
@@ -170,6 +202,23 @@ const OrganizationOverview = () => {
                                         </TableCell>
                                         <TableCell sx={{ ...tableBodyCellStyle, color: '#D1D5DB' }}>
                                             {organization.email_domain || '-'}
+                                        </TableCell>
+                                        <TableCell sx={tableBodyCellStyle}>
+                                            <Chip
+                                                size="small"
+                                                label={getOrganizationAccessLabel(organization)}
+                                                sx={{
+                                                    bgcolor:
+                                                        organization?.is_owner || organization?.can_manage
+                                                            ? 'rgba(16,185,129,0.15)'
+                                                            : 'rgba(59,130,246,0.15)',
+                                                    color:
+                                                        organization?.is_owner || organization?.can_manage
+                                                            ? '#34D399'
+                                                            : '#93C5FD',
+                                                    fontWeight: 600,
+                                                }}
+                                            />
                                         </TableCell>
                                         <TableCell sx={tableBodyCellStyle}>
                                             <Chip
@@ -193,13 +242,15 @@ const OrganizationOverview = () => {
                                                     {isActive ? 'Active' : 'Set Active'}
                                                 </Button>
 
-                                                <IconButton
-                                                    onClick={() => forgetOrganization(organization.id)}
-                                                    sx={{ color: '#EF4444' }}
-                                                    size="small"
-                                                >
-                                                    <Delete fontSize="small" />
-                                                </IconButton>
+                                                {organization?.can_delete && (
+                                                    <IconButton
+                                                        onClick={() => forgetOrganization(organization.id)}
+                                                        sx={{ color: '#EF4444' }}
+                                                        size="small"
+                                                    >
+                                                        <Delete fontSize="small" />
+                                                    </IconButton>
+                                                )}
                                             </Stack>
                                         </TableCell>
                                     </TableRow>

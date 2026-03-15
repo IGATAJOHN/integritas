@@ -22,7 +22,7 @@ const CourseCard = ({ course, colors }) => {
         []
     );
 
-    const safeCourseId = String(course?.id || '').trim();
+    const safeCoursePathId = String(course?.id || '').trim();
     const safeLevel = String(course?.level || 'Unspecified');
     const safeTitle = String(course?.title || 'Untitled Course');
     const safeDescription = String(course?.description || 'No description available.');
@@ -43,7 +43,7 @@ const CourseCard = ({ course, colors }) => {
 
     return (
         <Card
-            onClick={() => safeCourseId && navigate(`/explore/course/${safeCourseId}`)}
+            onClick={() => safeCoursePathId && navigate(`/explore/course/${safeCoursePathId}`)}
             sx={{
                 bgcolor: colors.card,
                 borderRadius: '16px',

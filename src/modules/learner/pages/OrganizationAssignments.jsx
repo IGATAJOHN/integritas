@@ -23,6 +23,9 @@ import {
     Typography,
 } from '@mui/material';
 import { Refresh } from '@mui/icons-material';
+import { useAuth } from '../../../contexts';
+import { canManageOrganization } from '../../../utils';
+import { useLocation } from 'react-router-dom';
 import { organizationService } from '../services/organizationService';
 import { useOrganizationScope } from '../hooks/useOrganizationScope';
 import OrganizationScopeToolbar from '../components/OrganizationScopeToolbar';
@@ -39,12 +42,6 @@ import {
 const ASSIGNMENT_TYPES = ['course', 'learning_path'];
 const ASSIGNMENT_STATUSES = ['assigned', 'in_progress', 'completed', 'revoked'];
 
-const parseIdList = (value) =>
-    String(value || '')
-        .split(/[\n,;\s]/)
-        .map((item) => item.trim())
-        .filter(Boolean);
-
 const formatDate = (value) => {
     if (!value) return '-';
     const date = new Date(value);
@@ -52,13 +49,107 @@ const formatDate = (value) => {
     return date.toLocaleDateString();
 };
 
+const readCourseLabel = (course = {}) =>
+    String(course?.title || course?.name || '').trim() || 'Untitled course';
+
+const readLearningPathLabel = (path = {}) =>
+    String(path?.title || path?.name || '').trim() || 'Untitled learning path';
+
+const readAssignmentContentTitle = (assignment = {}) =>
+    assignment.type === 'course'
+        ? readCourseLabel(assignment.course)
+        : readLearningPathLabel(assignment.learning_path);
+
+const readAssignmentUserPrimary = (assignment = {}) =>
+    String(assignment.user?.name || assignment.user?.email || '').trim() || 'Unknown user';
+
+const readAssignmentUserSecondary = (assignment = {}) =>
+    String(assignment.user?.email || '').trim() || 'No email available';
+
+const readAssignmentOrganizationName = (assignment = {}) =>
+    String(
+        assignment.organization?.name ||
+        assignment.organization_name ||
+        assignment.org?.name ||
+        assignment.organization?.slug ||
+        ''
+    ).trim() || 'Organization';
+
+const normalizeStatus = (value) => String(value || '').trim().toLowerCase();
+const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
+
+const readUserId = (entry = {}) =>
+    String(
+        entry?.id ||
+        entry?.user_id ||
+        entry?.user?.id ||
+        entry?.member_id ||
+        entry?.member?.id ||
+        ''
+    ).trim();
+
+const readUserEmail = (entry = {}) =>
+    normalizeEmail(entry?.email || entry?.user?.email || entry?.member?.email || '');
+
+const normalizeUserOption = (entry = {}) => {
+    const id = readUserId(entry);
+    if (!id) return null;
+
+    return {
+        id,
+        name: String(entry?.name || entry?.user?.name || entry?.member?.name || '').trim(),
+        email: readUserEmail(entry),
+    };
+};
+
+const mergeUserOptions = (entries = []) => {
+    const unique = new Map();
+
+    entries.forEach((entry) => {
+        const normalized = normalizeUserOption(entry);
+        if (!normalized) return;
+
+        const existing = unique.get(normalized.id) || {};
+        unique.set(normalized.id, {
+            ...existing,
+            ...normalized,
+            name: normalized.name || existing.name || '',
+            email: normalized.email || existing.email || '',
+        });
+    });
+
+    return Array.from(unique.values());
+};
+
+const formatUserLabel = (entry = {}) => {
+    const name = String(entry?.name || '').trim();
+    const email = String(entry?.email || '').trim();
+
+    if (name && email) return `${name} (${email})`;
+    return name || email || 'Unknown user';
+};
+
+const renderSelectedUsers = (selectedIds = [], options = []) => {
+    const labels = selectedIds
+        .map((id) => options.find((option) => option.id === String(id)) || { id })
+        .map((entry) => formatUserLabel(entry))
+        .filter(Boolean);
+
+    if (labels.length <= 2) return labels.join(', ');
+    return `${labels.slice(0, 2).join(', ')} +${labels.length - 2} more`;
+};
+
 const OrganizationAssignments = () => {
+    const { user } = useAuth();
+    const { pathname } = useLocation();
     const {
         organizations,
         selectedOrgId,
         selectedOrganization,
         setSelectedOrgId,
     } = useOrganizationScope();
+    const isMyAssignmentsRoute = pathname.includes('/organization/my-assignments');
+    const canManageAssignments = Boolean(selectedOrganization?.can_manage ?? canManageOrganization(user));
 
     const [assignments, setAssignments] = useState([]);
     const [myAssignments, setMyAssignments] = useState([]);
@@ -73,9 +164,9 @@ const OrganizationAssignments = () => {
     const [users, setUsers] = useState([]);
     const [courses, setCourses] = useState([]);
     const [learningPaths, setLearningPaths] = useState([]);
+    const [inviteStats, setInviteStats] = useState({ pending: 0, acceptedWithoutUser: 0 });
 
     const [selectedUserIds, setSelectedUserIds] = useState([]);
-    const [manualUserIds, setManualUserIds] = useState('');
 
     const [assignForm, setAssignForm] = useState({
         type: 'course',
@@ -95,7 +186,7 @@ const OrganizationAssignments = () => {
     };
 
     const listAssignments = useCallback(async () => {
-        if (!selectedOrgId) {
+        if (!selectedOrgId || !canManageAssignments || isMyAssignmentsRoute) {
             setAssignments([]);
             return;
         }
@@ -115,12 +206,16 @@ const OrganizationAssignments = () => {
         } finally {
             setLoading(false);
         }
-    }, [selectedOrgId, typeFilter, statusFilter]);
+    }, [canManageAssignments, isMyAssignmentsRoute, selectedOrgId, typeFilter, statusFilter]);
 
-    const listMyAssignments = async () => {
+    const listMyAssignments = useCallback(async () => {
         setLoading(true);
         try {
-            const response = await organizationService.listMyAssignments({ per_page: 20 });
+            const response = await organizationService.listMyAssignments({
+                status: statusFilter || undefined,
+                type: typeFilter || undefined,
+                per_page: 20,
+            });
             setMyAssignments(response.data || []);
             openSnackbar('Loaded my assignments.');
         } catch (err) {
@@ -129,26 +224,67 @@ const OrganizationAssignments = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [statusFilter, typeFilter]);
 
     const loadOptions = useCallback(async () => {
+        if (!selectedOrgId || !canManageAssignments || isMyAssignmentsRoute) {
+            setUsers([]);
+            setCourses([]);
+            setInviteStats({ pending: 0, acceptedWithoutUser: 0 });
+            return;
+        }
+
         try {
-            const [usersResponse, coursesResponse] = await Promise.all([
-                organizationService.listUsers({ per_page: 100, org_id: selectedOrgId || undefined }),
-                organizationService.listCourses({ per_page: 100, org_id: selectedOrgId || undefined }),
+            const [usersResponse, coursesResponse, invitationsResponse] = await Promise.all([
+                organizationService.listUsers({ per_page: 100, org_id: selectedOrgId }),
+                organizationService.listCourses({ per_page: 100, org_id: selectedOrgId }),
+                organizationService
+                    .listInvitations(selectedOrgId, { per_page: 200 })
+                    .catch(() => ({ data: [] })),
             ]);
 
-            setUsers(usersResponse.data || []);
+            const invitationRows = Array.isArray(invitationsResponse?.data) ? invitationsResponse.data : [];
+            const pending = invitationRows.filter((invitation) => normalizeStatus(invitation?.status) === 'pending').length;
+
+            const acceptedInvitations = invitationRows.filter(
+                (invitation) => normalizeStatus(invitation?.status) === 'accepted'
+            );
+            const acceptedWithUserId = acceptedInvitations
+                .map((invitation) =>
+                    normalizeUserOption({
+                        id: invitation?.user_id || invitation?.user?.id || invitation?.member_id || invitation?.member?.id,
+                        name: invitation?.user?.name || invitation?.member?.name || invitation?.name,
+                        email: invitation?.user?.email || invitation?.member?.email || invitation?.email,
+                    })
+                )
+                .filter(Boolean);
+            const mergedUsers = mergeUserOptions([...(usersResponse.data || []), ...acceptedWithUserId]);
+            setUsers(mergedUsers);
             setCourses(coursesResponse.data || []);
+
+            const knownAcceptedEmails = new Set(
+                mergedUsers.map((entry) => normalizeEmail(entry?.email)).filter(Boolean)
+            );
+            const unresolvedAccepted = acceptedInvitations.filter((invitation) => {
+                const email = normalizeEmail(invitation?.email || invitation?.user?.email || invitation?.member?.email);
+                if (!email) return true;
+                return !knownAcceptedEmails.has(email);
+            }).length;
+
+            setInviteStats({
+                pending,
+                acceptedWithoutUser: unresolvedAccepted,
+            });
         } catch (err) {
             console.error('Failed to load assignment options:', err);
             setUsers([]);
             setCourses([]);
+            setInviteStats({ pending: 0, acceptedWithoutUser: 0 });
         }
-    }, [selectedOrgId]);
+    }, [canManageAssignments, isMyAssignmentsRoute, selectedOrgId]);
 
     const loadLearningPaths = useCallback(async () => {
-        if (!selectedOrgId) {
+        if (!selectedOrgId || !canManageAssignments || isMyAssignmentsRoute) {
             setLearningPaths([]);
             return;
         }
@@ -160,7 +296,7 @@ const OrganizationAssignments = () => {
             console.error('Failed to load learning paths for assignment:', err);
             setLearningPaths([]);
         }
-    }, [selectedOrgId]);
+    }, [canManageAssignments, isMyAssignmentsRoute, selectedOrgId]);
 
     useEffect(() => {
         loadOptions();
@@ -174,11 +310,25 @@ const OrganizationAssignments = () => {
         listAssignments();
     }, [listAssignments]);
 
-    const mergedUserIds = useMemo(() => {
-        const fromSelect = selectedUserIds.map((id) => String(id).trim()).filter(Boolean);
-        const fromManual = parseIdList(manualUserIds);
-        return [...new Set([...fromSelect, ...fromManual])];
-    }, [selectedUserIds, manualUserIds]);
+    useEffect(() => {
+        if (!isMyAssignmentsRoute && canManageAssignments) return;
+        void listMyAssignments();
+    }, [canManageAssignments, isMyAssignmentsRoute, listMyAssignments]);
+
+    useEffect(() => {
+        const allowedIds = new Set((users || []).map((user) => String(user?.id || '').trim()).filter(Boolean));
+        setSelectedUserIds((prev) => prev.filter((id) => allowedIds.has(String(id || '').trim())));
+    }, [users]);
+
+    const mergedUserIds = useMemo(
+        () => [...new Set(selectedUserIds.map((id) => String(id).trim()).filter(Boolean))],
+        [selectedUserIds]
+    );
+
+    const userOptions = useMemo(
+        () => mergeUserOptions(users).sort((left, right) => formatUserLabel(left).localeCompare(formatUserLabel(right))),
+        [users]
+    );
 
     const handleAssign = async () => {
         if (!selectedOrgId) {
@@ -218,7 +368,6 @@ const OrganizationAssignments = () => {
             await organizationService.assignToUsers(selectedOrgId, payload);
             openSnackbar('Assignment created successfully.');
             setSelectedUserIds([]);
-            setManualUserIds('');
             setAssignForm((prev) => ({ ...prev, due_at: '' }));
             await listAssignments();
         } catch (err) {
@@ -252,10 +401,12 @@ const OrganizationAssignments = () => {
             <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={2} sx={{ mb: 4 }}>
                 <Box>
                     <Typography variant="h4" sx={{ color: '#fff', fontWeight: 700, mb: 1 }}>
-                        Organization Assignments
+                        {isMyAssignmentsRoute ? 'My Assignments' : 'Organization Assignments'}
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#9CA3AF' }}>
-                        Assign courses or learning paths to users and monitor assignment status.
+                        {isMyAssignmentsRoute
+                            ? 'View assignments for your account.'
+                            : 'Assign courses or learning paths to users and monitor assignment status.'}
                     </Typography>
                 </Box>
 
@@ -263,7 +414,7 @@ const OrganizationAssignments = () => {
                     <Button variant="outlined" onClick={listMyAssignments} sx={{ borderColor: '#374151', color: '#E5E7EB' }}>
                         Load My Assignments
                     </Button>
-                    <IconButton onClick={listAssignments} sx={{ color: '#9CA3AF' }}>
+                    <IconButton onClick={canManageAssignments && !isMyAssignmentsRoute ? listAssignments : listMyAssignments} sx={{ color: '#9CA3AF' }}>
                         <Refresh />
                     </IconButton>
                 </Stack>
@@ -276,7 +427,15 @@ const OrganizationAssignments = () => {
                 onChangeOrgId={setSelectedOrgId}
             />
 
-            <Paper sx={{ ...paperStyle, p: 2.5, mb: 3 }}>
+            {!canManageAssignments && !isMyAssignmentsRoute && (
+                <Alert severity="info" sx={{ mb: 3, bgcolor: 'rgba(59, 130, 246, 0.15)', color: '#93C5FD' }}>
+                    Organization assignment management requires an org admin or manager role. You can still load and view your own assignments below.
+                </Alert>
+            )}
+
+            {canManageAssignments && !isMyAssignmentsRoute && (
+                <>
+                    <Paper sx={{ ...paperStyle, p: 2.5, mb: 3 }}>
                 <Typography sx={{ color: '#fff', fontWeight: 700, mb: 1.5 }}>Create Assignment</Typography>
 
                 <Stack spacing={2}>
@@ -318,7 +477,7 @@ const OrganizationAssignments = () => {
                                     ) : (
                                         courses.map((course) => (
                                             <MenuItem key={course.id} value={course.id}>
-                                                {course.title || course.name || course.id}
+                                                {readCourseLabel(course)}
                                             </MenuItem>
                                         ))
                                     )}
@@ -339,7 +498,7 @@ const OrganizationAssignments = () => {
                                     ) : (
                                         learningPaths.map((path) => (
                                             <MenuItem key={path.id} value={path.id}>
-                                                {path.title || path.id}
+                                                {readLearningPathLabel(path)}
                                             </MenuItem>
                                         ))
                                     )}
@@ -370,29 +529,30 @@ const OrganizationAssignments = () => {
                             }}
                             sx={selectStyle}
                             MenuProps={selectMenuProps}
-                            renderValue={(selected) => `${selected.length} users selected`}
+                            renderValue={(selected) => renderSelectedUsers(selected, userOptions)}
                         >
-                            {users.length === 0 ? (
+                            {userOptions.length === 0 ? (
                                 <MenuItem value="" disabled>No users found</MenuItem>
                             ) : (
-                                users.map((user) => (
+                                userOptions.map((user) => (
                                     <MenuItem key={user.id} value={user.id}>
-                                        {user.name || user.user?.name || user.email || user.id}
+                                        {formatUserLabel(user)}
                                     </MenuItem>
                                 ))
                             )}
                         </Select>
                     </FormControl>
 
-                    <TextField
-                        label="Or paste User IDs (comma/newline separated)"
-                        value={manualUserIds}
-                        onChange={(event) => setManualUserIds(event.target.value)}
-                        multiline
-                        rows={3}
-                        sx={textFieldStyle}
-                        fullWidth
-                    />
+                    {(inviteStats.pending > 0 || inviteStats.acceptedWithoutUser > 0) && (
+                        <Alert severity="info" sx={{ bgcolor: 'rgba(59, 130, 246, 0.15)', color: '#93C5FD' }}>
+                            {inviteStats.pending > 0
+                                ? `${inviteStats.pending} invited user(s) are still pending and cannot be assigned yet. `
+                                : ''}
+                            {inviteStats.acceptedWithoutUser > 0
+                                ? `${inviteStats.acceptedWithoutUser} accepted invite(s) have no linked user record in the API response, so they cannot be added to this selector.`
+                                : ''}
+                        </Alert>
+                    )}
 
                     <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', md: 'center' }} spacing={1}>
                         <Typography sx={{ color: '#9CA3AF', fontSize: '0.82rem' }}>
@@ -406,7 +566,7 @@ const OrganizationAssignments = () => {
                 </Stack>
             </Paper>
 
-            <Paper sx={{ ...paperStyle, p: 2, mb: 2 }}>
+                    <Paper sx={{ ...paperStyle, p: 2, mb: 2 }}>
                 <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
                     <FormControl sx={{ minWidth: 200 }}>
                         <InputLabel sx={{ color: '#9CA3AF' }}>Type Filter</InputLabel>
@@ -442,7 +602,7 @@ const OrganizationAssignments = () => {
                 </Stack>
             </Paper>
 
-            <TableContainer component={Paper} sx={paperStyle}>
+                    <TableContainer component={Paper} sx={paperStyle}>
                 <Table>
                     <TableHead>
                         <TableRow>
@@ -478,19 +638,17 @@ const OrganizationAssignments = () => {
                                 <TableRow key={assignment.id}>
                                     <TableCell sx={tableBodyCellStyle}>
                                         <Typography sx={{ color: '#fff', fontWeight: 600 }}>
-                                            {assignment.user?.name || assignment.user?.email || assignment.user_id}
+                                            {readAssignmentUserPrimary(assignment)}
                                         </Typography>
                                         <Typography sx={{ color: '#9CA3AF', fontSize: '0.8rem' }}>
-                                            {assignment.user?.email || assignment.user_id}
+                                            {readAssignmentUserSecondary(assignment)}
                                         </Typography>
                                     </TableCell>
                                     <TableCell sx={{ ...tableBodyCellStyle, color: '#D1D5DB', textTransform: 'capitalize' }}>
                                         {assignment.type}
                                     </TableCell>
                                     <TableCell sx={{ ...tableBodyCellStyle, color: '#D1D5DB' }}>
-                                        {assignment.type === 'course'
-                                            ? assignment.course?.title || assignment.course_id || '-'
-                                            : assignment.learning_path?.title || assignment.learning_path_id || '-'}
+                                        {readAssignmentContentTitle(assignment)}
                                     </TableCell>
                                     <TableCell sx={{ ...tableBodyCellStyle, color: '#D1D5DB' }}>
                                         {formatDate(assignment.due_at)}
@@ -530,7 +688,9 @@ const OrganizationAssignments = () => {
                         )}
                     </TableBody>
                 </Table>
-            </TableContainer>
+                    </TableContainer>
+                </>
+            )}
 
             {myAssignments.length > 0 && (
                 <Paper sx={{ ...paperStyle, p: 2, mt: 3 }}>
@@ -543,14 +703,22 @@ const OrganizationAssignments = () => {
                                 justifyContent="space-between"
                                 sx={{ p: 1.25, borderRadius: 1, bgcolor: '#0F1729', border: '1px solid #374151' }}
                             >
-                                <Typography sx={{ color: '#E5E7EB' }}>
-                                    {assignment.type === 'course'
-                                        ? assignment.course?.title || assignment.course_id
-                                        : assignment.learning_path?.title || assignment.learning_path_id}
-                                </Typography>
-                                <Typography sx={{ color: '#9CA3AF', fontSize: '0.82rem' }}>
-                                    Status: {assignment.status || '-'}
-                                </Typography>
+                                <Box>
+                                    <Typography sx={{ color: '#E5E7EB', fontWeight: 600 }}>
+                                        {readAssignmentContentTitle(assignment)}
+                                    </Typography>
+                                    <Typography sx={{ color: '#9CA3AF', fontSize: '0.82rem' }}>
+                                        Organization: {readAssignmentOrganizationName(assignment)}
+                                    </Typography>
+                                </Box>
+                                <Stack spacing={0.5} alignItems={{ xs: 'flex-start', md: 'flex-end' }}>
+                                    <Typography sx={{ color: '#9CA3AF', fontSize: '0.82rem' }}>
+                                        Status: {assignment.status || '-'}
+                                    </Typography>
+                                    <Typography sx={{ color: '#9CA3AF', fontSize: '0.82rem' }}>
+                                        Due: {formatDate(assignment.due_at)}
+                                    </Typography>
+                                </Stack>
                             </Stack>
                         ))}
                     </Stack>

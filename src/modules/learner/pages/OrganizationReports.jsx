@@ -38,6 +38,12 @@ const formatDate = (value) => {
     return date.toLocaleDateString();
 };
 
+const readCourseLabel = (course = {}) =>
+    String(course?.title || course?.name || '').trim() || 'Untitled course';
+
+const readUserLabel = (user = {}) =>
+    String(user?.name || user?.email || '').trim() || 'Unknown user';
+
 const OrganizationReports = () => {
     const {
         organizations,
@@ -151,7 +157,7 @@ const OrganizationReports = () => {
                             <MenuItem value="">All Courses</MenuItem>
                             {courses.map((course) => (
                                 <MenuItem key={course.id} value={course.id}>
-                                    {course.title || course.name || course.id}
+                                    {readCourseLabel(course)}
                                 </MenuItem>
                             ))}
                         </Select>
@@ -169,7 +175,7 @@ const OrganizationReports = () => {
                             <MenuItem value="">All Users</MenuItem>
                             {users.map((user) => (
                                 <MenuItem key={user.id} value={user.id}>
-                                    {user.name || user.email || user.id}
+                                    {readUserLabel(user)}
                                 </MenuItem>
                             ))}
                         </Select>
@@ -213,11 +219,11 @@ const OrganizationReports = () => {
                                 <TableRow key={row.id}>
                                     <TableCell sx={tableBodyCellStyle}>
                                         <Typography sx={{ color: '#fff', fontWeight: 600 }}>
-                                            {row.user?.name || row.user?.email || row.user_id}
+                                            {readUserLabel(row.user)}
                                         </Typography>
                                     </TableCell>
                                     <TableCell sx={{ ...tableBodyCellStyle, color: '#D1D5DB' }}>
-                                        {courses.find((course) => course.id === row.course_id)?.title || row.course_id || '-'}
+                                        {readCourseLabel(courses.find((course) => course.id === row.course_id) || row.course)}
                                     </TableCell>
                                     <TableCell sx={{ ...tableBodyCellStyle, color: '#D1D5DB', textTransform: 'capitalize' }}>
                                         {row.status || '-'}

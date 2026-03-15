@@ -7,6 +7,12 @@ import ProtectedRoute from '../components/ProtectedRoute';
 import PublicRoute from '../components/PublicRoute';
 import OnboardingGuard from '../components/OnboardingGuard';
 
+const PUBLIC_LEARNER_PATHS = [
+    '/explore',
+    '/explore/courses',
+    '/explore/course/:courseId'
+];
+
 const router = createBrowserRouter([
     {
         path: '/',
@@ -84,14 +90,24 @@ const router = createBrowserRouter([
         ),
     },
     //  tutorRoutes,
-    ...learnerRoutes.map(route => ({
-        ...route,
-        element: (
-            <ProtectedRoute>
-                {route.element}
-            </ProtectedRoute>
-        ),
-    })),
+    ...learnerRoutes.map(route => {
+        const isPublic = PUBLIC_LEARNER_PATHS.includes(route.path);
+        
+        // If it's a layout route (no path) or not in the whitelist, protect it
+        if (!route.path || !isPublic) {
+            return {
+                ...route,
+                element: (
+                    <ProtectedRoute>
+                        {route.element}
+                    </ProtectedRoute>
+                ),
+            };
+        }
+        
+        // Return public route as is
+        return route;
+    }),
     {
         path: '*',
         element: <NotFound />,

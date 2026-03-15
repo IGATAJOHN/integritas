@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
     Box,
@@ -41,9 +41,12 @@ import {
     Language as WorldIcon,
     AlternateEmail as EmailIcon
 } from '@mui/icons-material';
+import { useAuth } from '../../../contexts';
+import { useLocation } from 'react-router-dom';
 import { alpha } from '@mui/material/styles';
 import logo from '../../../assets/images/GGH_logo.png';
 import Footer from '../../../components/Footer';
+import { courseCatalogService } from '../services';
 
 const colors = {
     bg: '#0B0F19',
@@ -60,75 +63,180 @@ const colors = {
     error: '#EF4444'
 };
 
-// Sample course data
-const courseData = {
-    id: 1,
-    title: 'Ethics in Public Administration',
-    description: 'Master the principles of transparency, accountability, and ethical decision-making in modern government sectors. Designed for civil servants and policy makers.',
-    price: 499,
-    originalPrice: 650,
-    discount: 23,
-    offerEndsIn: 2,
-    level: 'Intermediate',
-    duration: '12 Weeks',
-    certificate: 'Yes, Official',
-    startDate: 'Nov 15, 2023',
-    rating: 4.8,
-    reviewCount: 1240,
-    image: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&q=80',
-    tags: [
-        { label: 'VERIFIED COURSE', icon: VerifiedIcon, iconColor: '#3B82F6', bgColor: '#374151' },
-        { label: 'GOVERNANCE', icon: GovernanceIcon, iconColor: '#9CA3AF', bgColor: '#374151' },
-        { label: 'ETHICS', icon: EthicsIcon, iconColor: '#9CA3AF', bgColor: '#374151' }
-    ],
-    learningObjectives: [
-        'Navigate complex ethical dilemmas in public office scenarios.',
-        'Implement anti-corruption frameworks within your organization.',
-        'Develop transparent budgeting and procurement strategies.',
-        'Understand the legal responsibilities of public servants.',
-        'Foster a culture of accountability and whistle-blower protection.',
-        'Analyze case studies of successful governance reforms globally.'
-    ],
-    modules: [
-        { id: 1, title: 'Module 1: Foundations of Governance', lessons: 3, duration: '4h 45m' },
-        { id: 2, title: 'Module 2: Compliance Frameworks', lessons: 4, duration: '2h 30m' },
-        { id: 3, title: 'Module 3: Leadership & Decision Making', lessons: 5, duration: '3h 15m' }
-    ],
-    instructor: {
-        name: 'Dr. Elena Vance',
-        title: 'SENIOR POLICY ADVISOR',
-        avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80',
-        bio: 'Dr. Vance has over 15 years of experience advising federal agencies on transparency protocols. She served as the lead architect for the 2018 Open Data Initiative and currently lectures at the School of Global Governance.',
-        credentials: 'PhD Public Policy',
-        students: '15K',
-        courses: 12
-    },
-    reviews: [
-        {
-            id: 1,
-            user: 'Marcus Jenkins',
-            avatar: 'MJ',
-            rating: 5,
-            date: '2 weeks ago',
-            comment: 'Incredible insight into the mechanics of policy making. Dr. Vance explains complex topics with clarity. The module on Anti-corruption frameworks was particularly relevant to my work in local council.'
-        }
-    ],
-    ratingBreakdown: {
-        5: 80,
-        4: 12,
-        3: 5,
-        2: 2,
-        1: 1
-    },
-    trainingFor: ['Government Officials', 'Policy Makers', 'Civil Servants', 'NGO Leaders']
+const resolveTutorProfile = (course = {}) => {
+    const listFields = [
+        course?.tutors,
+        course?.users,
+        course?.course_tutors,
+        course?.courseTutors,
+        course?.tutor_users,
+        course?.tutorUsers,
+        course?.tutor_assignments,
+        course?.tutorAssignments,
+    ];
+
+    const candidates = [
+        course?.tutor,
+        course?.user,
+        course?.creator,
+        course?.created_by,
+        course?.createdBy,
+        course?.instructor,
+        course?.author,
+        ...listFields.flatMap((value) => Array.isArray(value) ? value : []),
+    ].filter(Boolean);
+
+    return candidates.find((candidate) => {
+        const source = candidate?.tutor && typeof candidate.tutor === 'object'
+            ? candidate.tutor
+            : candidate?.user && typeof candidate.user === 'object'
+                ? candidate.user
+                : candidate;
+
+        return Boolean(
+            source?.name ||
+            source?.full_name ||
+            source?.email ||
+            source?.id
+        );
+    }) || null;
+};
+
+const readTutorName = (candidate) => {
+    const source = candidate?.tutor && typeof candidate.tutor === 'object'
+        ? candidate.tutor
+        : candidate?.user && typeof candidate.user === 'object'
+            ? candidate.user
+            : candidate;
+
+    const first = String(source?.first_name || source?.firstName || '').trim();
+    const last = String(source?.last_name || source?.lastName || '').trim();
+    if (first || last) return `${first} ${last}`.trim();
+
+    return [
+        source?.name,
+        source?.full_name,
+        source?.fullName,
+        source?.display_name,
+        source?.displayName,
+        source?.username,
+        source?.email,
+    ]
+        .map((value) => String(value || '').trim())
+        .find(Boolean) || '';
+};
+
+const readTutorValue = (candidate, ...fields) => {
+    const source = candidate?.tutor && typeof candidate.tutor === 'object'
+        ? candidate.tutor
+        : candidate?.user && typeof candidate.user === 'object'
+            ? candidate.user
+            : candidate;
+
+    return fields
+        .map((field) => String(source?.[field] || '').trim())
+        .find(Boolean) || '';
 };
 
 const CourseDetail = () => {
     const { courseId } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
+    const { isAuthenticated } = useAuth();
     const [activeTab, setActiveTab] = useState(0);
     const [expandedModule, setExpandedModule] = useState('module-1');
     const [searchQuery, setSearchQuery] = useState('');
+
+    const [courseData, setCourseData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        let active = true;
+        const fetchCourseDetail = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const data = await courseCatalogService.getCourseById(courseId);
+                if (!active) return;
+                
+                if (data) {
+                    const raw = data.raw_data || data;
+                    const tutorProfile = resolveTutorProfile(raw);
+
+                    setCourseData({
+                        id: data.id,
+                        title: data.title || 'Untitled Course',
+                        description: data.description || 'No description available.',
+                        price: data.price ? parseFloat(data.price) : 0,
+                        originalPrice: data.price ? parseFloat(data.price) * 1.2 : 0,
+                        discount: data.price ? 20 : 0,
+                        offerEndsIn: 2,
+                        level: data.level || 'Intermediate',
+                        duration: data.duration || 'TBD',
+                        certificate: 'Yes, Official',
+                        startDate: raw.start_date || raw.published_at || 'Ongoing',
+                        rating: data.rating || 0,
+                        reviewCount: data.reviews || 0,
+                        image: data.image || raw.thumbnail_url || raw.banner_url || '',
+                        tags: raw.tags?.map(t => ({ label: t.name || t, icon: VerifiedIcon, iconColor: '#3B82F6', bgColor: '#374151' })) || [
+                            { label: 'VERIFIED COURSE', icon: VerifiedIcon, iconColor: '#3B82F6', bgColor: '#374151' }
+                        ],
+                        learningObjectives: raw.learning_objectives || [
+                            'Navigate complex ethical dilemmas in public office scenarios.',
+                            'Understand the legal responsibilities of public servants.'
+                        ],
+                        modules: raw.modules || [
+                            { id: 1, title: 'Module 1: Getting Started', lessons: 3, duration: '4h' }
+                        ],
+                        instructor: {
+                            name: readTutorName(tutorProfile) || data.instructor || 'Integritas Hub Instructor',
+                            title: readTutorValue(tutorProfile, 'headline', 'title', 'profession') || 'Expert Instructor',
+                            avatar: readTutorValue(tutorProfile, 'avatar_url', 'profile_photo_url', 'photo_url') || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80',
+                            bio: readTutorValue(tutorProfile, 'bio') || 'Experienced educator with years of industry experience.',
+                            credentials: 'Certified Professional',
+                            students: '10K+',
+                            courses:  5
+                        },
+                        reviews: [
+                            {
+                                id: 1,
+                                user: 'Example Student',
+                                avatar: 'ES',
+                                rating: data.rating || 5,
+                                date: 'Recently',
+                                comment: 'Great course, highly recommended!'
+                            }
+                        ],
+                        ratingBreakdown: {
+                            5: 80, 4: 12, 3: 5, 2: 2, 1: 1
+                        },
+                        trainingFor: ['Government Officials', 'Policy Makers', 'Civil Servants', 'NGO Leaders']
+                    });
+                } else {
+                    setError('Course not found');
+                }
+            } catch (err) {
+                if (!active) return;
+                console.error('Failed to fetch course details:', err);
+                setError(err?.status === 401
+                    ? 'Please log in to view this course.'
+                    : err?.message === 'Course not found'
+                    ? 'Course not found'
+                    : 'Failed to load course details. Please try again.');
+            } finally {
+                if (active) setLoading(false);
+            }
+        };
+
+        if (courseId) {
+            fetchCourseDetail();
+        }
+
+        return () => {
+            active = false;
+        };
+    }, [courseId]);
 
     const handleTabChange = (event, newValue) => {
         setActiveTab(newValue);
@@ -137,6 +245,8 @@ const CourseDetail = () => {
     const handleModuleChange = (panel) => (event, isExpanded) => {
         setExpandedModule(isExpanded ? panel : false);
     };
+
+    const hasCourseImage = Boolean(String(courseData?.image || '').trim());
 
     return (
         <Box sx={{ bgcolor: colors.bg, color: colors.text, minHeight: '100vh' }}>
@@ -235,6 +345,16 @@ const CourseDetail = () => {
                 py: 4,
                 pb: 8
             }}>
+                {loading ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+                        <Typography sx={{ color: colors.textSecondary }}>Loading course details...</Typography>
+                    </Box>
+                ) : error ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+                        <Typography sx={{ color: colors.error }}>{error}</Typography>
+                    </Box>
+                ) : courseData && (
+                    <>
                 {/* Breadcrumb */}
                 <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 4 }}>
                     <Typography component={Link} to="/" sx={{ color: colors.textSecondary, textDecoration: 'none', fontSize: '0.875rem', '&:hover': { color: colors.text } }}>Home</Typography>
@@ -612,38 +732,50 @@ const CourseDetail = () => {
                         }}>
                             {/* Preview Image */}
                             <Box sx={{ position: 'relative' }}>
-                                <Box
-                                    component="img"
-                                    src={courseData.image}
-                                    alt="Course Preview"
-                                    sx={{ width: '100%', height: 180, objectFit: 'cover' }}
-                                />
-                                <Box sx={{
-                                    position: 'absolute',
-                                    top: '50%',
-                                    left: '50%',
-                                    transform: 'translate(-50%, -50%)',
-                                    bgcolor: 'rgba(0,0,0,0.6)',
-                                    borderRadius: '50%',
-                                    p: 1,
-                                    cursor: 'pointer',
-                                    '&:hover': { bgcolor: 'rgba(0,0,0,0.8)' }
-                                }}>
-                                    <PlayIcon sx={{ fontSize: 28, color: colors.text }} />
-                                </Box>
-                                <Chip
-                                    label="Preview"
-                                    size="small"
-                                    sx={{
-                                        position: 'absolute',
-                                        bottom: 10,
-                                        left: 10,
-                                        bgcolor: colors.primary,
-                                        color: colors.text,
-                                        fontWeight: 600,
-                                        fontSize: '0.65rem'
-                                    }}
-                                />
+                                {hasCourseImage ? (
+                                    <>
+                                        <Box
+                                            component="img"
+                                            src={courseData.image}
+                                            alt="Course Preview"
+                                            sx={{ width: '100%', height: 180, objectFit: 'cover' }}
+                                        />
+                                        <Box sx={{
+                                            position: 'absolute',
+                                            top: '50%',
+                                            left: '50%',
+                                            transform: 'translate(-50%, -50%)',
+                                            bgcolor: 'rgba(0,0,0,0.6)',
+                                            borderRadius: '50%',
+                                            p: 1,
+                                            cursor: 'pointer',
+                                            '&:hover': { bgcolor: 'rgba(0,0,0,0.8)' }
+                                        }}>
+                                            <PlayIcon sx={{ fontSize: 28, color: colors.text }} />
+                                        </Box>
+                                        <Chip
+                                            label="Preview"
+                                            size="small"
+                                            sx={{
+                                                position: 'absolute',
+                                                bottom: 10,
+                                                left: 10,
+                                                bgcolor: colors.primary,
+                                                color: colors.text,
+                                                fontWeight: 600,
+                                                fontSize: '0.65rem'
+                                            }}
+                                        />
+                                    </>
+                                ) : (
+                                    <Box
+                                        sx={{
+                                            width: '100%',
+                                            aspectRatio: '1 / 1',
+                                            bgcolor: '#000000',
+                                        }}
+                                    />
+                                )}
                             </Box>
 
                             <CardContent sx={{ p: 2.5 }}>
@@ -668,7 +800,7 @@ const CourseDetail = () => {
                                 <Button
                                     fullWidth
                                     variant="contained"
-                                    onClick={() => navigate('/checkout')}
+                                    onClick={() => isAuthenticated ? navigate('/checkout') : navigate('/login', { state: { from: location } })}
                                     sx={{
                                         bgcolor: colors.primary,
                                         py: 1.25,
@@ -757,6 +889,8 @@ const CourseDetail = () => {
                         </Card>
                     </Box>
                 </Stack>
+                </>
+                )}
             </Box>
 
             {/* Footer */}

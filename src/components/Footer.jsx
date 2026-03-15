@@ -22,6 +22,7 @@ const Footer = () => {
     const colors = getColors(isDark);
 
     const legalLinks = ['Privacy', 'Terms', 'Support'];
+    const currentYear = new Date().getFullYear();
 
     return (
         <Box component="footer" sx={{ bgcolor: colors.bgDarker, py: 4, px: { xs: 2, md: 4, lg: 6 } }}>
@@ -35,7 +36,7 @@ const Footer = () => {
                     spacing={2}
                 >
                     <Typography sx={{ fontSize: '0.875rem', color: colors.textDark }}>
-                        © 2026 Integritas Hub. All rights reserved.
+                        © {currentYear} Integritas Hub. All rights reserved.
                     </Typography>
                     <Stack direction="row" spacing={4}>
                         {legalLinks.map((item) => (

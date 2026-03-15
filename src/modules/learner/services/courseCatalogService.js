@@ -1,7 +1,4 @@
 import { apiService } from '../../../services/api';
-import { categoryService } from '../../../services/categoryService';
-
-const RECOVERABLE_STATUS_CODES = new Set([401, 403, 404, 405]);
 
 const toTrimmedString = (value) => String(value ?? '').trim();
 
@@ -116,8 +113,17 @@ const normalizeCourse = (course = {}) => {
     );
 
     const instructorName = toTrimmedString(
-        course.instructor?.name ||
         course.tutor?.name ||
+        course.user?.name ||
+        course.creator?.name ||
+        course.created_by?.name ||
+        course.tutor?.user?.name ||
+        course.user?.full_name ||
+        course.creator?.full_name ||
+        course.created_by?.full_name ||
+        course.tutors?.[0]?.name ||
+        course.tutors?.[0]?.user?.name ||
+        course.instructor?.name ||
         course.author?.name ||
         course.organization?.name ||
         course.org?.name
@@ -179,17 +185,6 @@ const buildQuery = (params = {}) => {
     return query ? `?${query}` : '';
 };
 
-const tryGet = async (endpoints = []) => {
-    for (const endpoint of endpoints) {
-        try {
-            return await apiService.get(endpoint);
-        } catch (error) {
-            if (!RECOVERABLE_STATUS_CODES.has(error?.status)) throw error;
-        }
-    }
-    return null;
-};
-
 const mapSortToApi = (sort) => {
     const normalized = toTrimmedString(sort).toLowerCase();
     if (!normalized) return undefined;
@@ -200,99 +195,123 @@ const mapSortToApi = (sort) => {
     return 'popular';
 };
 
+const matchesCategory = (course, category) => {
+    const target = toTrimmedString(category).toLowerCase();
+    if (!target) return true;
+
+    const categoryValues = [
+        ...(course.topics || []),
+        course.topic,
+        course.raw?.category_name,
+        course.raw?.category?.name,
+        course.raw?.category?.slug,
+        ...(Array.isArray(course.raw?.categories)
+            ? course.raw.categories.flatMap((item) => [item?.name, item?.slug, item?.title])
+            : []),
+    ]
+        .map((value) => toTrimmedString(value).toLowerCase())
+        .filter(Boolean);
+
+    return categoryValues.includes(target);
+};
+
+const sortCourses = (courses = [], sort) => {
+    const normalized = mapSortToApi(sort);
+    const items = [...courses];
+
+    if (normalized === 'newest') {
+        return items.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+    }
+
+    if (normalized === 'highest_rated') {
+        return items.sort((a, b) => {
+            const ratingDiff = Number(b.rating || 0) - Number(a.rating || 0);
+            if (ratingDiff !== 0) return ratingDiff;
+            return Number(b.reviews || 0) - Number(a.reviews || 0);
+        });
+    }
+
+    if (normalized === 'price_asc') {
+        return items.sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
+    }
+
+    if (normalized === 'price_desc') {
+        return items.sort((a, b) => Number(b.price || 0) - Number(a.price || 0));
+    }
+
+    return items;
+};
+
 export const courseCatalogService = {
     listCourses: async ({
         q,
         category,
         level,
         sort = 'popular',
+        status = 'published',
+        language,
         page,
         per_page = 30,
     } = {}) => {
-        const apiSort = mapSortToApi(sort);
-
-        const publicQuery = buildQuery({
+        const query = buildQuery({
             q,
-            category,
+            status,
             level,
-            sort: apiSort,
+            language,
             page,
             per_page,
-        });
-
-        const lmsQuery = buildQuery({
-            q,
-            level,
-            page,
-            per_page,
-            status: 'published',
             with_categories: 1,
-            with_tutor: 1,
+            with_audit: 1,
         });
 
-        const fallbackQuery = buildQuery({
-            q,
-            category,
-            level,
-            sort: apiSort,
-            page,
-            per_page,
-        });
-
-        const res = await tryGet([
-            `/public/courses${publicQuery}`,
-            `/lms/courses${lmsQuery}`,
-            `/courses${fallbackQuery}`,
-        ]);
-
+        const res = await apiService.get(`/lms/courses${query}`);
         const normalized = unwrapList(res);
+        const filtered = (normalized.data || [])
+            .map((item) => normalizeCourse(item))
+            .filter((item) => item.id)
+            .filter((item) => matchesCategory(item, category));
+
         return {
-            data: (normalized.data || [])
-                .map((item) => normalizeCourse(item))
-                .filter((item) => item.id),
+            data: sortCourses(filtered, sort),
             meta: normalized.meta || {},
             links: normalized.links || {},
         };
     },
 
-    getFeaturedCourses: async ({ limit = 1 } = {}) => {
-        const query = buildQuery({ limit });
-        const featuredRes = await tryGet([
-            `/public/featured-courses${query}`,
-        ]);
-
-        if (featuredRes) {
-            const list = unwrapList(featuredRes);
-            const data = (list.data || [])
-                .map((item) => normalizeCourse(item))
-                .filter((item) => item.id);
-            if (data.length > 0) {
-                return { data, meta: list.meta || {}, links: list.links || {} };
+    getCourseById: async (id) => {
+        const identifier = encodeURIComponent(toTrimmedString(id));
+        const query = buildQuery({
+            with_categories: 1,
+            with_audit: 1
+        });
+        let res;
+        try {
+            res = await apiService.get(`/lms/courses/${identifier}${query}`);
+        } catch (error) {
+            if (error?.status === 404) {
+                const notFoundError = new Error('Course not found');
+                notFoundError.status = 404;
+                throw notFoundError;
             }
+            throw error;
         }
+        
+        const rawCourse = res.data ? res.data : res;
+        
+        // Return raw course along with normalized for CourseDetail
+        return {
+             ...rawCourse,
+             ...normalizeCourse(rawCourse),
+             raw_data: rawCourse,
+        };
+    },
 
-        return courseCatalogService.listCourses({ per_page: limit, sort: 'popular' });
+    getFeaturedCourses: async ({ limit = 1 } = {}) => {
+        return courseCatalogService.listCourses({ per_page: limit, sort: 'popular', status: 'published' });
     },
 
     listCategories: async () => {
-        try {
-            const list = await categoryService.listCategories({ per_page: 100 });
-            const categories = (list.data || [])
-                .map((item) => ({
-                    id: toTrimmedString(item?.id || item?.slug || item?.name),
-                    name: toTrimmedString(item?.name || item?.title || item?.slug),
-                    slug: toTrimmedString(item?.slug),
-                }))
-                .filter((item) => item.name);
-
-            if (categories.length > 0) {
-                return { data: categories, meta: list.meta || {}, links: list.links || {} };
-            }
-        } catch (error) {
-            if (!RECOVERABLE_STATUS_CODES.has(error?.status)) throw error;
-        }
-
-        const courses = await courseCatalogService.listCourses({ per_page: 100 });
+        const courses = await courseCatalogService.listCourses({ per_page: 100, status: 'published' });
         const names = new Set();
         courses.data.forEach((course) => {
             (course.topics || []).forEach((topic) => {

@@ -65,6 +65,8 @@ const Explore = () => {
     const [loadingFeatured, setLoadingFeatured] = useState(false);
     const [error, setError] = useState('');
 
+    const featuredCoursePathId = String(featuredCourse?.id || '').trim();
+
     const topics = useMemo(() => ['All Topics', ...categories.map((item) => item.name).filter(Boolean)], [categories]);
     const levels = useMemo(() => {
         const values = new Set();
@@ -91,7 +93,9 @@ const Explore = () => {
                 setFeaturedCourse(featuredRes.data?.[0] || null);
             } catch (requestError) {
                 if (!active) return;
-                setError(requestError?.message || 'Failed to load explore metadata.');
+                setError(requestError?.status === 401
+                    ? 'Please log in to view courses.'
+                    : (requestError?.message || 'Failed to load explore metadata.'));
             } finally {
                 if (active) {
                     setLoadingFeatured(false);
@@ -132,7 +136,9 @@ const Explore = () => {
             } catch (requestError) {
                 if (!active) return;
                 setCourses([]);
-                setError(requestError?.message || 'Failed to load courses.');
+                setError(requestError?.status === 401
+                    ? 'Please log in to view courses.'
+                    : (requestError?.message || 'Failed to load courses.'));
             } finally {
                 if (active) {
                     setLoading(false);
@@ -215,7 +221,7 @@ const Explore = () => {
                                     <Typography variant="h4" sx={{ color: colors.text, fontWeight: 800, mb: 1 }}>{featuredCourse?.title || 'No featured course available'}</Typography>
                                     <Typography sx={{ color: colors.textSecondary, mb: 2 }}>{featuredCourse?.description || 'Courses will appear here once available.'}</Typography>
                                     <Stack direction="row" spacing={1}>
-                                        <Button variant="contained" onClick={() => featuredCourse?.id && navigate(`/explore/course/${featuredCourse.id}`)} disabled={!featuredCourse?.id} sx={{ textTransform: 'none', bgcolor: colors.primary }}>View Course</Button>
+                                        <Button variant="contained" onClick={() => featuredCoursePathId && navigate(`/explore/course/${featuredCoursePathId}`)} disabled={!featuredCoursePathId} sx={{ textTransform: 'none', bgcolor: colors.primary }}>View Course</Button>
                                         <Button variant="outlined" onClick={() => window.open(featuredCourse?.trailerUrl, '_blank', 'noopener,noreferrer')} disabled={!featuredCourse?.trailerUrl} endIcon={<OpenInNewIcon />} sx={{ textTransform: 'none', color: colors.text, borderColor: 'rgba(255,255,255,0.18)' }}>Watch Trailer</Button>
                                     </Stack>
                                 </Box>

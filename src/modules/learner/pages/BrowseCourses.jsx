@@ -1,52 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, Button } from '../../../components/common';
+import { courseCatalogService } from '../services';
 
 const BrowseCourses = () => {
-    const [courses] = useState([
-        {
-            id: 1,
-            title: 'React Fundamentals',
-            description: 'Learn the basics of React including components, state, and props.',
-            tutor: 'Jane Smith',
-            rating: 4.8,
-            students: 1234,
-            price: 'Free'
-        },
-        {
-            id: 2,
-            title: 'Advanced JavaScript',
-            description: 'Deep dive into advanced JS concepts like closures, promises, and async/await.',
-            tutor: 'John Doe',
-            rating: 4.9,
-            students: 856,
-            price: '$49.99'
-        },
-        {
-            id: 3,
-            title: 'Node.js for Beginners',
-            description: 'Build server-side applications with Node.js and Express.',
-            tutor: 'Bob Wilson',
-            rating: 4.7,
-            students: 543,
-            price: '$39.99'
-        },
-        {
-            id: 4,
-            title: 'CSS Mastery',
-            description: 'Master CSS including Flexbox, Grid, and modern styling techniques.',
-            tutor: 'Alice Brown',
-            rating: 4.6,
-            students: 721,
-            price: 'Free'
-        },
-    ]);
-
+    const navigate = useNavigate();
+    const [courses, setCourses] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const filteredCourses = courses.filter(course =>
-        course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        course.description.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    useEffect(() => {
+        let active = true;
+
+        const fetchCourses = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const response = await courseCatalogService.listCourses({
+                    q: searchTerm,
+                });
+                if (!active) return;
+                setCourses(response.data || []);
+            } catch (err) {
+                if (!active) return;
+                console.error('Failed to fetch courses:', err);
+                setError(err?.status === 401
+                    ? 'Please log in to view courses.'
+                    : 'Failed to load courses. Please try again later.');
+            } finally {
+                if (active) setLoading(false);
+            }
+        };
+
+        const timer = setTimeout(() => {
+            fetchCourses();
+        }, 300);
+
+        return () => {
+            active = false;
+            clearTimeout(timer);
+        };
+    }, [searchTerm]);
 
     return (
         <div className="browse-courses">
@@ -63,28 +58,62 @@ const BrowseCourses = () => {
                 </div>
             </div>
 
-            <div className="courses-grid">
-                {filteredCourses.map((course) => (
-                    <Card key={course.id} className="course-card">
-                        <div className="course-thumbnail">
-                            <div className="thumbnail-placeholder">📖</div>
-                        </div>
-                        <div className="course-content">
-                            <h3>{course.title}</h3>
-                            <p className="course-description">{course.description}</p>
-                            <div className="course-meta">
-                                <span className="tutor">👤 {course.tutor}</span>
-                                <span className="rating">⭐ {course.rating}</span>
-                                <span className="students">👥 {course.students}</span>
+            {loading ? (
+                <div style={{ textAlign: 'center', padding: '2rem' }}>
+                    Loading courses...
+                </div>
+            ) : error ? (
+                <div style={{ textAlign: 'center', padding: '2rem', color: 'red' }}>
+                    {error}
+                </div>
+            ) : courses.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '2rem' }}>
+                    No courses found.
+                </div>
+            ) : (
+                <div className="courses-grid">
+                    {courses.map((course) => {
+                        const coursePathId = String(course?.id || '').trim();
+
+                        return (
+                        <Card key={course.id} className="course-card">
+                            <div className="course-thumbnail">
+                                {course.image ? (
+                                    <img 
+                                        src={course.image} 
+                                        alt={course.title} 
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                    />
+                                ) : (
+                                    <div className="thumbnail-placeholder">📖</div>
+                                )}
                             </div>
-                            <div className="course-footer">
-                                <span className="price">{course.price}</span>
-                                <Button variant="primary" size="small">Enroll Now</Button>
+                            <div className="course-content">
+                                <h3>{course.title}</h3>
+                                <p className="course-description">{course.description}</p>
+                                <div className="course-meta">
+                                    <span className="tutor">👤 {course.instructor}</span>
+                                    <span className="rating">⭐ {course.rating}</span>
+                                    <span className="students">👥 {course.reviews}</span>
+                                </div>
+                                <div className="course-footer">
+                                    <span className="price">
+                                        {course.price > 0 ? `$${course.price}` : 'Free'}
+                                    </span>
+                                    <Button 
+                                        variant="primary" 
+                                        size="small" 
+                                        onClick={() => coursePathId && navigate(`/explore/course/${coursePathId}`)}
+                                    >
+                                        Enroll Now
+                                    </Button>
+                                </div>
                             </div>
-                        </div>
-                    </Card>
-                ))}
-            </div>
+                        </Card>
+                        );
+                    })}
+                </div>
+            )}
         </div>
     );
 };

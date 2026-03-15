@@ -30,6 +30,55 @@ const createHeaders = (customHeaders = {}, { isFormData = false } = {}) => {
     return headers;
 };
 
+const readResponsePayload = async (response, { allowPlainText = false } = {}) => {
+    const contentType = String(response.headers.get('content-type') || '').toLowerCase();
+    const isJson = contentType.includes('application/json');
+    const text = await response.text();
+    const trimmed = text.trim();
+
+    if (!trimmed) {
+        return {
+            contentType,
+            isJson,
+            text,
+            data: null,
+        };
+    }
+
+    if (isJson) {
+        try {
+            return {
+                contentType,
+                isJson,
+                text,
+                data: JSON.parse(text),
+            };
+        } catch {
+            throw new Error('Invalid response format: expected JSON');
+        }
+    }
+
+    try {
+        return {
+            contentType,
+            isJson,
+            text,
+            data: JSON.parse(text),
+        };
+    } catch {
+        if (allowPlainText) {
+            return {
+                contentType,
+                isJson,
+                text,
+                data: text,
+            };
+        }
+
+        throw new Error('Invalid response format: expected JSON');
+    }
+};
+
 const apiRequest = async (endpoint, options = {}) => {
     const url = `${API_BASE_URL}${endpoint}`;
     const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
@@ -41,24 +90,24 @@ const apiRequest = async (endpoint, options = {}) => {
     try {
         const response = await fetch(url, config);
 
-        const contentType = response.headers.get('content-type');
-        const isJson = contentType && contentType.includes('application/json');
-
         if (!response.ok) {
             let error;
             let errorMessage = 'An error occurred';
 
-            if (isJson) {
-                try {
-                    error = await response.json();
-                    errorMessage = error.message || errorMessage;
-                } catch {
+            try {
+                const payload = await readResponsePayload(response, { allowPlainText: true });
+                error = payload.data && typeof payload.data === 'object' ? payload.data : null;
+
+                if (payload.isJson && payload.data && typeof payload.data === 'object') {
+                    errorMessage = payload.data.message || errorMessage;
+                } else if (payload.text) {
+                    console.error('Non-JSON error response:', payload.text.substring(0, 200));
+                    errorMessage = response.statusText || `Server error (${response.status})`;
+                } else {
                     errorMessage = response.statusText || errorMessage;
                 }
-            } else {
-                const text = await response.text();
-                console.error('Non-JSON error response:', text.substring(0, 200));
-                errorMessage = `Server error (${response.status}): ${response.statusText}`;
+            } catch {
+                errorMessage = response.statusText || errorMessage;
             }
 
             const apiError = new Error(errorMessage);
@@ -67,19 +116,13 @@ const apiRequest = async (endpoint, options = {}) => {
             throw apiError;
         }
 
-        // Parse JSON response
-        if (isJson) {
-            return await response.json();
-        } else {
-            // If response is not JSON, try to parse anyway or return text
-            const text = await response.text();
-            console.warn('Non-JSON response received:', text.substring(0, 200));
-            try {
-                return JSON.parse(text);
-            } catch {
-                throw new Error('Invalid response format: expected JSON');
-            }
+        if (response.status === 204 || response.status === 205) {
+            return null;
         }
+
+        const payload = await readResponsePayload(response);
+        if (payload.data === null) return null;
+        return payload.data;
     } catch (error) {
         if (error.status) {
             throw error;

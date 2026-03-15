@@ -27,7 +27,7 @@ import { useAuth } from '../../../contexts';
 const LearnerSidebar = ({ onClose }) => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { logout } = useAuth();
+    const { logout, isAuthenticated } = useAuth();
     const [openSubmenu, setOpenSubmenu] = React.useState(
         location.pathname.startsWith('/learner/organization') ? 'Organization' : ''
     );
@@ -44,11 +44,12 @@ const LearnerSidebar = ({ onClose }) => {
     };
 
     const menuItems = [
-        { label: 'Dashboard', icon: <DashboardIcon />, path: '/learner' },
-        { label: 'My Learning', icon: <CoursesIcon />, path: '/explore/my-learning' },
+        { label: 'Dashboard', icon: <DashboardIcon />, path: '/learner', private: true },
+        { label: 'My Learning', icon: <CoursesIcon />, path: '/explore/my-learning', private: true },
         {
             label: 'Organization',
             icon: <OrganizationIcon sx={{ fontSize: 22 }} />,
+            private: true,
             children: [
                 { label: 'Overview', path: '/learner/organization/overview' },
                 { label: 'Invitations', path: '/learner/organization/invite' },
@@ -58,9 +59,13 @@ const LearnerSidebar = ({ onClose }) => {
                 { label: 'Reports', path: '/learner/organization/reports' },
             ],
         },
-        { label: 'Achievements', icon: <AchievementsIcon />, path: '/achievements' },
+        { label: 'Achievements', icon: <AchievementsIcon />, path: '/achievements', private: true },
         { label: 'Resources', icon: <ResourcesIcon />, path: '/resources' },
     ];
+
+    const displayMenuItems = isAuthenticated 
+        ? menuItems 
+        : menuItems.filter(item => !item.private);
 
     const bottomMenuItems = [
         { label: 'Settings', icon: <SettingsIcon />, path: '/settings' },
@@ -183,7 +188,7 @@ const LearnerSidebar = ({ onClose }) => {
             {/* Main Menu */}
             <Box sx={{ flex: 1, pt: 3, overflowY: 'auto' }}>
                 <List sx={{ px: 1 }}>
-                    {menuItems.map((item) => (
+                    {displayMenuItems.map((item) => (
                         <MenuItem key={item.label} item={item} />
                     ))}
                 </List>
@@ -196,44 +201,46 @@ const LearnerSidebar = ({ onClose }) => {
                     {bottomMenuItems.map((item) => (
                         <MenuItem key={item.label} item={item} />
                     ))}
-                    <ListItem disablePadding sx={{ mb: 0.5 }}>
-                        <ListItemButton
-                            onClick={async () => {
-                                try {
-                                    await logout();
-                                    navigate('/login');
-                                } catch (error) {
-                                    console.error('Logout error:', error);
-                                    navigate('/login');
-                                }
-                            }}
-                            sx={{
-                                borderRadius: 2,
-                                mx: 1,
-                                py: 1.25,
-                                '&:hover': {
-                                    bgcolor: alpha('#EF4444', 0.1)
-                                }
-                            }}
-                        >
-                            <ListItemIcon
+                    {isAuthenticated && (
+                        <ListItem disablePadding sx={{ mb: 0.5 }}>
+                            <ListItemButton
+                                onClick={async () => {
+                                    try {
+                                        await logout();
+                                        navigate('/login');
+                                    } catch (error) {
+                                        console.error('Logout error:', error);
+                                        navigate('/login');
+                                    }
+                                }}
                                 sx={{
-                                    minWidth: 40,
-                                    color: '#EF4444'
+                                    borderRadius: 2,
+                                    mx: 1,
+                                    py: 1.25,
+                                    '&:hover': {
+                                        bgcolor: alpha('#EF4444', 0.1)
+                                    }
                                 }}
                             >
-                                <LogoutIcon />
-                            </ListItemIcon>
-                            <ListItemText
-                                primary="Logout"
-                                primaryTypographyProps={{
-                                    fontSize: '0.9rem',
-                                    fontWeight: 500,
-                                    color: '#EF4444'
-                                }}
-                            />
-                        </ListItemButton>
-                    </ListItem>
+                                <ListItemIcon
+                                    sx={{
+                                        minWidth: 40,
+                                        color: '#EF4444'
+                                    }}
+                                >
+                                    <LogoutIcon />
+                                </ListItemIcon>
+                                <ListItemText
+                                    primary="Logout"
+                                    primaryTypographyProps={{
+                                        fontSize: '0.9rem',
+                                        fontWeight: 500,
+                                        color: '#EF4444'
+                                    }}
+                                />
+                            </ListItemButton>
+                        </ListItem>
+                    )}
                 </List>
             </Box>
         </Box>

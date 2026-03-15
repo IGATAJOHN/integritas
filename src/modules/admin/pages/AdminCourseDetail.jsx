@@ -329,6 +329,8 @@ const AdminCourseDetail = () => {
 
     if (!course) return null;
 
+    const hasThumbnail = Boolean(String(course.thumbnail_url || '').trim());
+
     return (
         <Box sx={{ p: { xs: 2, md: 4 }, bgcolor: '#0F1729', minHeight: '100vh', color: '#fff' }}>
             {/* Header */}
@@ -479,12 +481,22 @@ const AdminCourseDetail = () => {
                 <Box>
                     <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>Course Details</Typography>
                     <Stack spacing={3}>
-                        {course.thumbnail_url && (
-                            <Paper sx={{ ...paperStyle, padding: 2 }}>
-                                <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1 }}>Thumbnail</Typography>
+                        <Paper sx={{ ...paperStyle, padding: 2 }}>
+                            <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1 }}>Thumbnail</Typography>
+                            {hasThumbnail ? (
                                 <Box component="img" src={course.thumbnail_url} sx={{ width: '100%', maxWidth: 400, borderRadius: 1 }} />
-                            </Paper>
-                        )}
+                            ) : (
+                                <Box
+                                    sx={{
+                                        width: '100%',
+                                        maxWidth: 400,
+                                        aspectRatio: '1 / 1',
+                                        bgcolor: '#000000',
+                                        borderRadius: 1,
+                                    }}
+                                />
+                            )}
+                        </Paper>
                         <Paper sx={{ ...paperStyle, padding: 3 }}>
                             <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 2 }}>Basic Info</Typography>
                             <Stack spacing={2}>

@@ -49,6 +49,12 @@ const initialPathForm = {
     status: 'draft',
 };
 
+const readCourseLabel = (course = {}) =>
+    String(course?.title || course?.name || '').trim() || 'Untitled course';
+
+const readLearningPathLabel = (path = {}) =>
+    String(path?.title || path?.name || '').trim() || 'Untitled learning path';
+
 const OrganizationLearningPaths = () => {
     const {
         organizations,
@@ -56,11 +62,13 @@ const OrganizationLearningPaths = () => {
         selectedOrganization,
         setSelectedOrgId,
     } = useOrganizationScope();
+    const canManageLearningPaths = Boolean(selectedOrganization?.can_manage);
 
     const [learningPaths, setLearningPaths] = useState([]);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [actionLoading, setActionLoading] = useState(null);
+    const [accessDenied, setAccessDenied] = useState(false);
 
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
@@ -75,7 +83,6 @@ const OrganizationLearningPaths = () => {
 
     const [courseOptions, setCourseOptions] = useState([]);
     const [selectedCourseId, setSelectedCourseId] = useState('');
-    const [manualCourseId, setManualCourseId] = useState('');
     const [reorderDraft, setReorderDraft] = useState([]);
 
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
@@ -91,6 +98,13 @@ const OrganizationLearningPaths = () => {
     const listLearningPaths = useCallback(async () => {
         if (!selectedOrgId) {
             setLearningPaths([]);
+            setAccessDenied(false);
+            return;
+        }
+
+        if (!canManageLearningPaths) {
+            setLearningPaths([]);
+            setAccessDenied(true);
             return;
         }
 
@@ -102,16 +116,26 @@ const OrganizationLearningPaths = () => {
                 per_page: 50,
             });
             setLearningPaths(response.data || []);
+            setAccessDenied(false);
         } catch (err) {
-            console.error('Failed to list learning paths:', err);
             setLearningPaths([]);
+            if (err?.status === 403) {
+                setAccessDenied(true);
+                return;
+            }
+            console.error('Failed to list learning paths:', err);
             openSnackbar(err.message || 'Failed to load learning paths.', 'error');
         } finally {
             setLoading(false);
         }
-    }, [selectedOrgId, statusFilter, searchTerm]);
+    }, [canManageLearningPaths, searchTerm, selectedOrgId, statusFilter]);
 
     const listCourses = useCallback(async () => {
+        if (!selectedOrgId || !canManageLearningPaths) {
+            setCourseOptions([]);
+            return;
+        }
+
         try {
             const response = await organizationService.listCourses({ per_page: 100, org_id: selectedOrgId || undefined });
             setCourseOptions(response.data || []);
@@ -119,7 +143,7 @@ const OrganizationLearningPaths = () => {
             console.error('Failed to load courses for dropdown:', err);
             setCourseOptions([]);
         }
-    }, [selectedOrgId]);
+    }, [canManageLearningPaths, selectedOrgId]);
 
     useEffect(() => {
         listCourses();
@@ -132,6 +156,17 @@ const OrganizationLearningPaths = () => {
 
         return () => clearTimeout(timer);
     }, [listLearningPaths]);
+
+    useEffect(() => {
+        if (selectedOrgId && canManageLearningPaths) return;
+
+        setOpenPathModal(false);
+        setOpenDetailModal(false);
+        setEditingPath(null);
+        setSelectedPath(null);
+        setSelectedCourseId('');
+        setReorderDraft([]);
+    }, [canManageLearningPaths, selectedOrgId]);
 
     const openCreatePathModal = () => {
         setEditingPath(null);
@@ -261,9 +296,9 @@ const OrganizationLearningPaths = () => {
     const addCourseToPath = async () => {
         if (!selectedOrgId || !selectedPath?.id) return;
 
-        const courseId = String(selectedCourseId || manualCourseId || '').trim();
+        const courseId = String(selectedCourseId || '').trim();
         if (!courseId) {
-            openSnackbar('Select or paste a course ID first.', 'error');
+            openSnackbar('Select a course first.', 'error');
             return;
         }
 
@@ -274,7 +309,6 @@ const OrganizationLearningPaths = () => {
             });
 
             setSelectedCourseId('');
-            setManualCourseId('');
             openSnackbar('Course added to learning path.');
             await loadPathDetail(selectedPath.id);
             await listLearningPaths();
@@ -349,7 +383,13 @@ const OrganizationLearningPaths = () => {
                 </Box>
 
                 <Stack direction="row" spacing={1}>
-                    <Button variant="contained" startIcon={<Add />} onClick={openCreatePathModal} disabled={!selectedOrgId} sx={primaryButtonStyle}>
+                    <Button
+                        variant="contained"
+                        startIcon={<Add />}
+                        onClick={openCreatePathModal}
+                        disabled={!selectedOrgId || !canManageLearningPaths}
+                        sx={primaryButtonStyle}
+                    >
                         Create Learning Path
                     </Button>
                     <IconButton onClick={listLearningPaths} sx={{ color: '#9CA3AF' }}>
@@ -364,6 +404,12 @@ const OrganizationLearningPaths = () => {
                 selectedOrganization={selectedOrganization}
                 onChangeOrgId={setSelectedOrgId}
             />
+
+            {selectedOrgId && accessDenied && (
+                <Alert severity="info" sx={{ mb: 3, bgcolor: 'rgba(59, 130, 246, 0.15)', color: '#93C5FD' }}>
+                    You are not a manager, admin, or owner of this organization, so learning paths cannot be managed from this page.
+                </Alert>
+            )}
 
             <Paper sx={{ ...paperStyle, p: 2, mb: 3 }}>
                 <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
@@ -411,6 +457,12 @@ const OrganizationLearningPaths = () => {
                                     Select an organization to manage learning paths.
                                 </TableCell>
                             </TableRow>
+                        ) : accessDenied ? (
+                            <TableRow>
+                                <TableCell colSpan={4} align="center" sx={{ ...tableBodyCellStyle, py: 5, color: '#9CA3AF' }}>
+                                    You are not a manager, admin, or owner of this organization.
+                                </TableCell>
+                            </TableRow>
                         ) : loading ? (
                             <TableRow>
                                 <TableCell colSpan={4} align="center" sx={{ ...tableBodyCellStyle, py: 6 }}>
@@ -436,8 +488,7 @@ const OrganizationLearningPaths = () => {
                                 return (
                                     <TableRow key={path.id}>
                                         <TableCell sx={tableBodyCellStyle}>
-                                            <Typography sx={{ color: '#fff', fontWeight: 600 }}>{path.title || '-'}</Typography>
-                                            <Typography sx={{ color: '#9CA3AF', fontSize: '0.8rem' }}>{path.id}</Typography>
+                                            <Typography sx={{ color: '#fff', fontWeight: 600 }}>{readLearningPathLabel(path)}</Typography>
                                         </TableCell>
                                         <TableCell sx={tableBodyCellStyle}>
                                             <Typography sx={{ color: statusColor, textTransform: 'capitalize', fontWeight: 600 }}>
@@ -600,20 +651,12 @@ const OrganizationLearningPaths = () => {
                                                 ) : (
                                                     courseOptions.map((course) => (
                                                         <MenuItem key={course.id} value={course.id}>
-                                                            {course.title || course.name || course.id}
+                                                            {readCourseLabel(course)}
                                                         </MenuItem>
                                                     ))
                                                 )}
                                             </Select>
                                         </FormControl>
-
-                                        <TextField
-                                            label="Or paste Course ID"
-                                            value={manualCourseId}
-                                            onChange={(event) => setManualCourseId(event.target.value)}
-                                            sx={textFieldStyle}
-                                            fullWidth
-                                        />
 
                                         <Button variant="contained" onClick={addCourseToPath} disabled={saving} sx={primaryButtonStyle}>
                                             Add
@@ -650,10 +693,7 @@ const OrganizationLearningPaths = () => {
                                                     >
                                                         <Box sx={{ flex: 1 }}>
                                                             <Typography sx={{ color: '#E5E7EB', fontWeight: 600 }}>
-                                                                {item.course?.title || item.course_id}
-                                                            </Typography>
-                                                            <Typography sx={{ color: '#9CA3AF', fontSize: '0.8rem' }}>
-                                                                Item ID: {item.id}
+                                                                {readCourseLabel(item.course)}
                                                             </Typography>
                                                         </Box>
 

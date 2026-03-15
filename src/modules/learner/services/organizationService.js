@@ -180,6 +180,157 @@ const emptyList = () => ({ data: [], meta: {}, links: {} });
 
 const isRecoverableLookupError = (error) => [401, 403, 404, 405].includes(error?.status);
 
+const OWNED_ORGANIZATION_KEYS = ['owned_organizations', 'ownedOrganizations', 'owned'];
+const MEMBER_ORGANIZATION_KEYS = [
+    'membered_organizations',
+    'member_organizations',
+    'memberOrganizations',
+    'membered',
+    'memberships',
+    'member_of',
+    'memberOf',
+    'member_of_organizations',
+    'memberOfOrganizations',
+];
+const GENERIC_ORGANIZATION_KEYS = ['organizations'];
+
+const normalizeOrganizationRole = (value) => {
+    const normalized = String(value || '').trim().toLowerCase();
+    if (!normalized) return '';
+    if (normalized === 'org_owner' || normalized === 'organization_owner') return 'owner';
+    if (normalized === 'org_admin' || normalized === 'organization_admin') return 'admin';
+    if (normalized === 'org_manager' || normalized === 'organization_manager') return 'manager';
+    if (normalized === 'org_staff' || normalized === 'organization_staff') return 'staff';
+    return normalized;
+};
+
+const normalizeOrganizationEntry = (entry = {}, source = '') => {
+    const baseOrganization =
+        entry?.organization && typeof entry.organization === 'object'
+            ? entry.organization
+            : entry;
+    const pivot = entry?.pivot || baseOrganization?.pivot || null;
+    const id = String(
+        baseOrganization?.id ||
+        baseOrganization?.organization_id ||
+        baseOrganization?.org_id ||
+        entry?.organization_id ||
+        ''
+    ).trim();
+
+    if (!id) return null;
+
+    const role = normalizeOrganizationRole(
+        pivot?.role ||
+        entry?.membership_role ||
+        baseOrganization?.membership_role ||
+        entry?.organization_role ||
+        baseOrganization?.organization_role ||
+        entry?.role ||
+        baseOrganization?.role
+    );
+    const isOwner = source === 'owned' || role === 'owner';
+    const membershipRole = isOwner ? 'owner' : role;
+
+    return {
+        ...baseOrganization,
+        id,
+        pivot,
+        membership_role: membershipRole,
+        membership_source: source || (isOwner ? 'owned' : 'membered'),
+        is_owner: isOwner,
+        can_delete: isOwner,
+        can_manage: ['owner', 'admin', 'manager'].includes(membershipRole),
+    };
+};
+
+const collectOrganizationsFromPayload = (payload) => {
+    const entries = [];
+    const appendEntries = (value, source = '') => {
+        if (!Array.isArray(value)) return;
+        value.forEach((entry) => {
+            const normalized = normalizeOrganizationEntry(entry, source);
+            if (normalized) entries.push(normalized);
+        });
+    };
+
+    appendEntries(Array.isArray(payload) ? payload : [], '');
+    appendEntries(Array.isArray(payload?.data) ? payload.data : [], '');
+
+    OWNED_ORGANIZATION_KEYS.forEach((key) => {
+        appendEntries(payload?.[key], 'owned');
+        appendEntries(payload?.data?.[key], 'owned');
+    });
+
+    MEMBER_ORGANIZATION_KEYS.forEach((key) => {
+        appendEntries(payload?.[key], 'membered');
+        appendEntries(payload?.data?.[key], 'membered');
+    });
+
+    GENERIC_ORGANIZATION_KEYS.forEach((key) => {
+        appendEntries(payload?.[key], '');
+        appendEntries(payload?.data?.[key], '');
+    });
+
+    return entries;
+};
+
+const dedupeOrganizations = (entries = []) => {
+    const unique = new Map();
+
+    entries.forEach((entry) => {
+        const id = String(entry?.id || '').trim();
+        if (!id) return;
+
+        const existing = unique.get(id) || {};
+        const isOwner = Boolean(existing.is_owner || entry.is_owner);
+        const membershipRole = isOwner ? 'owner' : entry.membership_role || existing.membership_role || '';
+
+        unique.set(id, {
+            ...existing,
+            ...entry,
+            id,
+            membership_role: membershipRole,
+            membership_source: entry.membership_source || existing.membership_source || '',
+            is_owner: isOwner,
+            can_delete: Boolean(existing.can_delete || entry.can_delete || isOwner),
+            can_manage: Boolean(existing.can_manage || entry.can_manage || ['owner', 'admin', 'manager'].includes(membershipRole)),
+        });
+    });
+
+    return Array.from(unique.values());
+};
+
+const normalizeOrganizationMember = (entry = {}) => {
+    const nestedUser =
+        entry?.user && typeof entry.user === 'object'
+            ? entry.user
+            : entry?.member && typeof entry.member === 'object'
+                ? entry.member
+                : null;
+
+    const source = nestedUser ? { ...entry, ...nestedUser, pivot: entry?.pivot || nestedUser?.pivot || null } : entry;
+    const id = String(
+        source?.id ||
+        source?.user_id ||
+        source?.member_id ||
+        source?.pivot?.user_id ||
+        ''
+    ).trim();
+
+    if (!id) return null;
+
+    return {
+        ...source,
+        id,
+        name: String(source?.name || '').trim(),
+        email: String(source?.email || '').trim(),
+        role: String(source?.pivot?.role || source?.role || '').trim(),
+        status: String(source?.pivot?.status || source?.status || '').trim(),
+        joined_at: source?.pivot?.joined_at || source?.joined_at || null,
+    };
+};
+
 const tryListEndpoints = async (endpoints = []) => {
     for (const endpoint of endpoints) {
         try {
@@ -225,6 +376,21 @@ export const organizationService = {
         const data = unwrapData(res);
         logInvitationDebug(data, payload);
         return data;
+    },
+
+    listUserOrganizations: async () => {
+        try {
+            const res = await apiService.get('/orgs/user/organizations');
+            const data = dedupeOrganizations(collectOrganizationsFromPayload(res));
+            return {
+                data,
+                meta: { total: data.length },
+                links: {},
+            };
+        } catch (error) {
+            if (isRecoverableLookupError(error)) return emptyList();
+            throw error;
+        }
     },
 
     acceptInvitationPublic: async (payload) => {
@@ -435,56 +601,65 @@ export const organizationService = {
         return unwrapList(res);
     },
 
-    // -------- Helpers for dropdowns --------
-    listUsers: async ({ q, per_page = 100, page, org_id, organization_id } = {}) => {
+    listOrganizationMembers: async (orgId, { q, per_page = 100, page } = {}) => {
+        const scopedOrgId = String(orgId || '').trim();
+        if (!scopedOrgId) return emptyList();
+
         const query = buildQueryString({ q, per_page, page });
-        const scopedOrgId = String(organization_id || org_id || '').trim();
-        const endpoints = [];
+        const res = await tryListEndpoints([
+            `/orgs/organizations/${scopedOrgId}/members${query}`,
+            `/orgs/${scopedOrgId}/members${query}`,
+        ]);
 
-        if (scopedOrgId) {
-            endpoints.push(`/orgs/${scopedOrgId}/users${query}`, `/orgs/${scopedOrgId}/members${query}`);
+        if (!res) return emptyList();
+
+        const list = unwrapList(res, ['members', 'users']);
+        const queryText = String(q || '').trim().toLowerCase();
+        let data = (list.data || []).map((entry) => normalizeOrganizationMember(entry)).filter(Boolean);
+
+        if (queryText) {
+            data = data.filter((user) => {
+                const id = String(user?.id || '').toLowerCase();
+                const name = String(user?.name || '').toLowerCase();
+                const email = String(user?.email || '').toLowerCase();
+                return id.includes(queryText) || name.includes(queryText) || email.includes(queryText);
+            });
         }
 
-        endpoints.push(`/users${query}`, `/admin/students${query}`);
-        const res = await tryListEndpoints(endpoints);
+        const total = Number(
+            res?.total_members ||
+            res?.data?.total_members ||
+            list?.meta?.total ||
+            data.length
+        );
 
-        if (Array.isArray(res)) return { data: res, meta: {}, links: {} };
-        if (Array.isArray(res?.data)) return { data: res.data, meta: res.meta || {}, links: res.links || {} };
-        if (res?.data && Array.isArray(res.data.data)) {
-            return {
-                data: res.data.data,
-                meta: {
-                    current_page: res.data.current_page,
-                    from: res.data.from,
-                    last_page: res.data.last_page,
-                    path: res.data.path,
-                    per_page: res.data.per_page,
-                    to: res.data.to,
-                    total: res.data.total,
-                    links: res.data.links || [],
-                },
-                links: {
-                    first: res.data.first_page_url,
-                    last: res.data.last_page_url,
-                    prev: res.data.prev_page_url,
-                    next: res.data.next_page_url,
-                },
-            };
-        }
-        return emptyList();
+        return {
+            data,
+            meta: {
+                ...list.meta,
+                total,
+                current_page: Number(page) || list?.meta?.current_page || 1,
+                per_page: Number(per_page) || list?.meta?.per_page || data.length || 0,
+                organization_name: res?.organization_name || res?.data?.organization_name || '',
+            },
+            links: list.links || {},
+        };
     },
 
-    listCourses: async ({ q, per_page = 100, page, org_id, organization_id } = {}) => {
-        const query = buildQueryString({ q, per_page, page });
+    // -------- Helpers for dropdowns --------
+    listUsers: async ({ q, per_page = 100, page, org_id, organization_id } = {}) => {
         const scopedOrgId = String(organization_id || org_id || '').trim();
-        const endpoints = [];
+        if (!scopedOrgId) return emptyList();
+        return organizationService.listOrganizationMembers(scopedOrgId, { q, per_page, page });
+    },
 
-        if (scopedOrgId) {
-            endpoints.push(`/orgs/${scopedOrgId}/courses${query}`);
-        }
-
-        endpoints.push(`/lms/courses${query}`, `/courses${query}`);
-        const res = await tryListEndpoints(endpoints);
+    listCourses: async ({ q, per_page = 100, page } = {}) => {
+        const query = buildQueryString({ q, per_page, page });
+        const res = await tryListEndpoints([
+            `/public/courses${query}`,
+            `/lms/courses${query}`,
+            `/courses${query}`,
+        ]);
         return unwrapList(res, ['courses']);
     },
 

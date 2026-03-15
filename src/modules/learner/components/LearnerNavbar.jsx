@@ -26,7 +26,7 @@ const LearnerNavbar = ({ onMobileMenuToggle }) => {
     const theme = useTheme();
     const navigate = useNavigate();
     const location = useLocation();
-    const { logout } = useAuth();
+    const { logout, user, isAuthenticated } = useAuth();
     const [searchQuery, setSearchQuery] = useState('');
     const [profileAnchor, setProfileAnchor] = useState(null);
 
@@ -52,6 +52,10 @@ const LearnerNavbar = ({ onMobileMenuToggle }) => {
         if (path === '/learner') return location.pathname === '/learner';
         return location.pathname.startsWith(path);
     };
+
+    const displayNavLinks = isAuthenticated 
+        ? navLinks 
+        : navLinks.filter(l => l.path === '/explore' || l.path === '/community');
 
     return (
         <Box
@@ -152,7 +156,7 @@ const LearnerNavbar = ({ onMobileMenuToggle }) => {
             <Stack direction="row" alignItems="center" spacing={{ xs: 1, sm: 2 }}>
                 {/* Navigation Links (Desktop) */}
                 <Stack direction="row" spacing={3} sx={{ display: { xs: 'none', lg: 'flex' }, mr: 2 }}>
-                    {navLinks.map((link) => (
+                    {displayNavLinks.map((link) => (
                         <Typography
                             key={link.label}
                             onClick={() => navigate(link.path)}
@@ -185,38 +189,55 @@ const LearnerNavbar = ({ onMobileMenuToggle }) => {
                     </Badge>
                 </IconButton>
 
-                {/* Profile Menu */}
-                <Stack
-                    direction="row"
-                    alignItems="center"
-                    spacing={1}
-                    onClick={(e) => setProfileAnchor(e.currentTarget)}
-                    sx={{
-                        cursor: 'pointer',
-                        bgcolor: colors.card,
-                        borderRadius: 2,
-                        px: 1.5,
-                        py: 0.5,
-                        '&:hover': { bgcolor: alpha(colors.card, 0.8) }
-                    }}
-                >
-                    <Avatar
-                        sx={{ width: 32, height: 32, bgcolor: colors.primary }}
-                    >
-                        A
-                    </Avatar>
-                    <Typography
+                {/* Profile Menu or Login Button */}
+                {isAuthenticated ? (
+                    <Stack
+                        direction="row"
+                        alignItems="center"
+                        spacing={1}
+                        onClick={(e) => setProfileAnchor(e.currentTarget)}
                         sx={{
-                            color: colors.text,
-                            fontSize: '0.875rem',
-                            fontWeight: 500,
-                            display: { xs: 'none', sm: 'block' }
+                            cursor: 'pointer',
+                            bgcolor: colors.card,
+                            borderRadius: 2,
+                            px: 1.5,
+                            py: 0.5,
+                            '&:hover': { bgcolor: alpha(colors.card, 0.8) }
                         }}
                     >
-                        Alex
-                    </Typography>
-                    <ChevronDownIcon sx={{ color: colors.textSecondary, fontSize: 18 }} />
-                </Stack>
+                        <Avatar
+                            sx={{ width: 32, height: 32, bgcolor: colors.primary }}
+                        >
+                            {user?.name?.charAt(0) || user?.first_name?.charAt(0) || 'U'}
+                        </Avatar>
+                        <Typography
+                            sx={{
+                                color: colors.text,
+                                fontSize: '0.875rem',
+                                fontWeight: 500,
+                                display: { xs: 'none', sm: 'block' }
+                            }}
+                        >
+                            {user?.name || user?.first_name || 'User'}
+                        </Typography>
+                        <ChevronDownIcon sx={{ color: colors.textSecondary, fontSize: 18 }} />
+                    </Stack>
+                ) : (
+                    <Button
+                        variant="contained"
+                        onClick={() => navigate('/login')}
+                        sx={{
+                            bgcolor: colors.primary,
+                            borderRadius: 2,
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            px: 3,
+                            '&:hover': { bgcolor: alpha(colors.primary, 0.9) }
+                        }}
+                    >
+                        Log in
+                    </Button>
+                )}
 
                 <Menu
                     anchorEl={profileAnchor}
