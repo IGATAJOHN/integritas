@@ -475,7 +475,7 @@ export const organizationService = {
         page,
     } = {}) => {
         const query = buildQueryString({ status, q, per_page, page });
-        const res = await apiService.get(`/orgs/${orgId}/learning-paths${query}`);
+        const res = await apiService.get(`/learning-path/${orgId}/learning-paths${query}`);
         return unwrapList(res);
     },
 

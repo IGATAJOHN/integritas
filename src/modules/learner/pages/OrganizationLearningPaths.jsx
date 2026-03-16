@@ -4,6 +4,7 @@ import {
     Box,
     Button,
     Chip,
+    CircularProgress,
     Divider,
     Fade,
     FormControl,
@@ -15,6 +16,7 @@ import {
     Paper,
     Popover,
     Select,
+    Pagination,
     Skeleton,
     Snackbar,
     Stack,
@@ -49,7 +51,6 @@ import { useOrganizationScope } from '../hooks/useOrganizationScope';
 import OrganizationScopeToolbar from '../components/OrganizationScopeToolbar';
 import {
     modalStyle,
-    paperStyle,
     primaryButtonStyle,
     selectMenuProps,
     selectStyle,
@@ -59,6 +60,7 @@ import {
 } from '../../../styles/formStyles';
 
 const PATH_STATUSES = ['draft', 'published', 'archived'];
+const PATHS_PER_PAGE = 20;
 
 const initialPathForm = {
     title: '',
@@ -199,6 +201,13 @@ const OrganizationLearningPaths = () => {
     const [saving, setSaving] = useState(false);
     const [actionLoading, setActionLoading] = useState(null);
     const [accessDenied, setAccessDenied] = useState(false);
+    const [page, setPage] = useState(1);
+    const [paginationMeta, setPaginationMeta] = useState({
+        current_page: 1,
+        last_page: 1,
+        total: 0,
+        per_page: PATHS_PER_PAGE,
+    });
 
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
@@ -229,12 +238,24 @@ const OrganizationLearningPaths = () => {
         if (!selectedOrgId) {
             setLearningPaths([]);
             setAccessDenied(false);
+            setPaginationMeta({
+                current_page: 1,
+                last_page: 1,
+                total: 0,
+                per_page: PATHS_PER_PAGE,
+            });
             return;
         }
 
         if (!canManageLearningPaths) {
             setLearningPaths([]);
             setAccessDenied(true);
+            setPaginationMeta({
+                current_page: 1,
+                last_page: 1,
+                total: 0,
+                per_page: PATHS_PER_PAGE,
+            });
             return;
         }
 
@@ -243,12 +264,25 @@ const OrganizationLearningPaths = () => {
             const response = await organizationService.listLearningPaths(selectedOrgId, {
                 status: statusFilter,
                 q: searchTerm,
-                per_page: 50,
+                per_page: PATHS_PER_PAGE,
+                page,
             });
             setLearningPaths(response.data || []);
+            setPaginationMeta({
+                current_page: Number(response?.meta?.current_page) || page,
+                last_page: Number(response?.meta?.last_page) || 1,
+                total: Number(response?.meta?.total) || (response.data || []).length,
+                per_page: Number(response?.meta?.per_page) || PATHS_PER_PAGE,
+            });
             setAccessDenied(false);
         } catch (err) {
             setLearningPaths([]);
+            setPaginationMeta({
+                current_page: 1,
+                last_page: 1,
+                total: 0,
+                per_page: PATHS_PER_PAGE,
+            });
             if (err?.status === 403) {
                 setAccessDenied(true);
                 return;
@@ -258,7 +292,7 @@ const OrganizationLearningPaths = () => {
         } finally {
             setLoading(false);
         }
-    }, [canManageLearningPaths, searchTerm, selectedOrgId, statusFilter]);
+    }, [canManageLearningPaths, page, searchTerm, selectedOrgId, statusFilter]);
 
     const listCourses = useCallback(async () => {
         if (!selectedOrgId || !canManageLearningPaths) {
@@ -286,6 +320,10 @@ const OrganizationLearningPaths = () => {
 
         return () => clearTimeout(timer);
     }, [listLearningPaths]);
+
+    useEffect(() => {
+        setPage(1);
+    }, [searchTerm, selectedOrgId, statusFilter]);
 
     useEffect(() => {
         if (selectedOrgId && canManageLearningPaths) return;
@@ -594,7 +632,7 @@ const OrganizationLearningPaths = () => {
 
             <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
                 <Typography sx={{ color: '#64748B', fontSize: '0.85rem' }}>
-                    Showing {learningPaths.length} learning paths
+                    Showing {learningPaths.length} of {paginationMeta.total} learning paths
                 </Typography>
                 <FilterPopover
                     statusFilter={statusFilter}
@@ -772,6 +810,28 @@ const OrganizationLearningPaths = () => {
                 </Table>
             </TableContainer>
 
+            {!accessDenied && paginationMeta.last_page > 1 && (
+                <Stack direction="row" justifyContent="center" sx={{ mt: 3 }}>
+                    <Pagination
+                        page={paginationMeta.current_page}
+                        count={paginationMeta.last_page}
+                        onChange={(_, nextPage) => setPage(nextPage)}
+                        color="primary"
+                        shape="rounded"
+                        sx={{
+                            '& .MuiPaginationItem-root': {
+                                color: '#CBD5E1',
+                                borderColor: '#334155',
+                            },
+                            '& .Mui-selected': {
+                                bgcolor: 'rgba(59, 130, 246, 0.18)',
+                                color: '#BFDBFE',
+                            },
+                        }}
+                    />
+                </Stack>
+            )}
+
             {/* Path Creation/Edit Modal */}
             <Modal open={openPathModal} onClose={() => !saving && setOpenPathModal(false)}>
                 <Box 
@@ -909,9 +969,9 @@ const OrganizationLearningPaths = () => {
                                         <Typography variant="overline" sx={{ color: '#64748B', fontWeight: 800, letterSpacing: '0.1em' }}>Add Course to Sequence</Typography>
                                         <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
                                             <FormControl fullWidth size="small">
-                                                <InputLabel sx={{ color: '#94A3B8' }}>Search Course Warehouse</InputLabel>
+                                                <InputLabel sx={{ color: '#94A3B8' }}>Search Course</InputLabel>
                                                 <Select
-                                                    label="Search Course Warehouse"
+                                                    label="Search Course"
                                                     value={selectedCourseId}
                                                     onChange={(event) => setSelectedCourseId(event.target.value)}
                                                     sx={selectStyle}
