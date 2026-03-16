@@ -5,15 +5,19 @@ import {
     Button,
     Checkbox,
     Chip,
-    CircularProgress,
+    Divider,
+    Fade,
     FormControl,
     IconButton,
+    InputAdornment,
     InputBase,
     InputLabel,
     MenuItem,
     Modal,
     Paper,
+    Popover,
     Select,
+    Skeleton,
     Snackbar,
     Stack,
     Table,
@@ -26,7 +30,20 @@ import {
     Tooltip,
     Typography,
 } from '@mui/material';
-import { Add, Close, Refresh, Replay, Block } from '@mui/icons-material';
+import {
+    AddRounded,
+    BlockRounded,
+    BusinessOutlined,
+    CloseRounded,
+    EmailOutlined,
+    FilterListRounded,
+    MailOutlined,
+    PeopleAltOutlined,
+    RefreshRounded,
+    ReplayRounded,
+    SearchRounded,
+    InfoOutlined,
+} from '@mui/icons-material';
 import { organizationService } from '../services/organizationService';
 import { useOrganizationScope } from '../hooks/useOrganizationScope';
 import OrganizationScopeToolbar from '../components/OrganizationScopeToolbar';
@@ -34,8 +51,6 @@ import {
     modalStyle,
     paperStyle,
     primaryButtonStyle,
-    searchBarStyle,
-    searchInputStyle,
     selectMenuProps,
     selectStyle,
     tableBodyCellStyle,
@@ -98,6 +113,119 @@ const formatDateTime = (value) => {
     return date.toLocaleString();
 };
 
+const FilterPopover = ({
+    statusFilter,
+    setStatusFilter,
+    searchTerm,
+    setSearchTerm,
+}) => {
+    const [anchorEl, setAnchorEl] = useState(null);
+    const open = Boolean(anchorEl);
+
+    return (
+        <>
+            <Tooltip title="Filters">
+                <Button
+                    startIcon={<FilterListRounded />}
+                    onClick={(e) => setAnchorEl(e.currentTarget)}
+                    sx={{
+                        bgcolor: 'rgba(30, 41, 59, 0.5)',
+                        border: '1px solid #1E293B',
+                        color: '#E2E8F0',
+                        textTransform: 'none',
+                        px: 2,
+                        '&:hover': { bgcolor: 'rgba(30, 41, 59, 0.8)', borderColor: '#334155' },
+                    }}
+                >
+                    Filters
+                    {(statusFilter || searchTerm) && (
+                        <Box
+                            sx={{
+                                ml: 1,
+                                width: 8,
+                                height: 8,
+                                borderRadius: '50%',
+                                bgcolor: '#3B82F6',
+                                border: '2px solid #0F172A',
+                            }}
+                        />
+                    )}
+                </Button>
+            </Tooltip>
+            <Popover
+                open={open}
+                anchorEl={anchorEl}
+                onClose={() => setAnchorEl(null)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                PaperProps={{
+                    sx: {
+                        bgcolor: '#0F172A',
+                        border: '1px solid #1E293B',
+                        borderRadius: 2,
+                        p: 2,
+                        minWidth: 280,
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)',
+                    },
+                }}
+            >
+                <Typography variant="subtitle2" sx={{ color: '#F8FAFC', fontWeight: 700, mb: 2 }}>
+                    Filter Invitations
+                </Typography>
+                <Stack spacing={2.5}>
+                    <TextField
+                        size="small"
+                        placeholder="Search by email..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        sx={textFieldStyle}
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchRounded sx={{ color: '#64748B', fontSize: 20 }} />
+                                </InputAdornment>
+                            ),
+                        }}
+                    />
+
+                    <FormControl fullWidth size="small">
+                        <InputLabel sx={{ color: '#94A3B8' }}>Status</InputLabel>
+                        <Select
+                            label="Status"
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            sx={selectStyle}
+                            MenuProps={selectMenuProps}
+                        >
+                            <MenuItem value="">All Statuses</MenuItem>
+                            {INVITE_STATUSES.map((status) => (
+                                <MenuItem key={status} value={status} sx={{ textTransform: 'capitalize' }}>
+                                    {status}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+
+                    <Divider sx={{ borderColor: '#1E293B' }} />
+
+                    <Button
+                        size="small"
+                        fullWidth
+                        onClick={() => {
+                            setSearchTerm('');
+                            setStatusFilter('');
+                            setAnchorEl(null);
+                        }}
+                        sx={{ color: '#EF4444', textTransform: 'none', fontWeight: 600 }}
+                    >
+                        Reset Filters
+                    </Button>
+                </Stack>
+            </Popover>
+        </>
+    );
+};
+
 const OrganizationInvitations = () => {
     const {
         organizations,
@@ -113,7 +241,6 @@ const OrganizationInvitations = () => {
 
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
-    
 
     const [selectedInvitationIds, setSelectedInvitationIds] = useState([]);
     const [meta, setMeta] = useState({ total: 0 });
@@ -126,10 +253,12 @@ const OrganizationInvitations = () => {
     const [bulkForm, setBulkForm] = useState(initialBulkActionForm);
 
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+
     const selectedOrgDomain = useMemo(
         () => normalizeDomain(selectedOrganization?.email_domain),
         [selectedOrganization]
     );
+
     const batchSummary = useMemo(
         () => getBatchEmailSummary(batchForm.emails_text, selectedOrgDomain),
         [batchForm.emails_text, selectedOrgDomain]
@@ -190,7 +319,7 @@ const OrganizationInvitations = () => {
     );
 
     const handleToggleSelectAll = () => {
-        if (selectedInvitationIds.length === invitations.length) {
+        if (selectedInvitationIds.length === invitations.length && invitations.length > 0) {
             setSelectedInvitationIds([]);
             return;
         }
@@ -348,44 +477,88 @@ const OrganizationInvitations = () => {
     };
 
     return (
-        <Box sx={{ p: { xs: 2, md: 4 }, bgcolor: '#0C1322', minHeight: 'calc(100vh - 70px)', width: '100%' }}>
-            <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={2} sx={{ mb: 4 }}>
+        <Box sx={{ p: { xs: 2.5, md: 5 }, bgcolor: '#0F1729', minHeight: 'calc(100vh - 70px)', width: '100%' }}>
+            <Stack
+                direction={{ xs: 'column', md: 'row' }}
+                justifyContent="space-between"
+                alignItems={{ xs: 'stretch', md: 'center' }}
+                spacing={3}
+                sx={{ mb: 5 }}
+            >
                 <Box>
-                    <Typography variant="h4" sx={{ color: '#fff', fontWeight: 700, mb: 1 }}>
+                    <Typography
+                        variant="h4"
+                        sx={{
+                            color: '#F8FAFC',
+                            fontWeight: 800,
+                            letterSpacing: '-0.02em',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1.5,
+                        }}
+                    >
+                        <MailOutlined sx={{ fontSize: 32, color: '#10B981' }} />
                         Organization Invitations
                     </Typography>
-                    <Typography variant="body2" sx={{ color: '#9CA3AF' }}>
-                        Invite staff quickly, or use bulk tools for multiple invitations.
+                    <Typography variant="body2" sx={{ color: '#64748B', mt: 1, maxWidth: 600 }}>
+                        Manage access to your organization. Invite staff quickly, use bulk tools to handle multiple invitations, and track status.
                     </Typography>
                 </Box>
 
-                <Stack direction="row" spacing={1}>
+                <Stack direction="row" spacing={2}>
                     <Button
-                        variant="outlined"
-                        startIcon={<Add />}
+                        variant="contained"
+                        startIcon={<AddRounded />}
                         onClick={() => setOpenBatchModal(true)}
                         disabled={!selectedOrgId}
-                        sx={{ borderColor: '#374151', color: '#E5E7EB', textTransform: 'none' }}
+                        sx={{
+                            ...primaryButtonStyle,
+                            borderRadius: '10px',
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            px: 3,
+                            height: 44,
+                        }}
                     >
                         Invite Staff
                     </Button>
 
                     <Button
-                        variant="outlined"
-                        startIcon={<Replay />}
+                        variant="soft"
+                        startIcon={<ReplayRounded />}
                         onClick={() => {
                             setBulkForm(initialBulkActionForm);
                             setOpenBulkModal(true);
                         }}
                         disabled={!selectedOrgId || selectedInvitationIds.length === 0}
-                        sx={{ borderColor: '#374151', color: '#E5E7EB' }}
+                        sx={{
+                            bgcolor: 'rgba(99, 102, 241, 0.1)',
+                            color: '#818CF8',
+                            borderRadius: '10px',
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            px: 2,
+                            '&:hover': { bgcolor: 'rgba(99, 102, 241, 0.2)' },
+                            '&.Mui-disabled': { bgcolor: 'rgba(30, 41, 59, 0.4)', color: '#475569' },
+                        }}
                     >
                         Bulk Action ({selectedInvitationIds.length})
                     </Button>
 
-                    <IconButton onClick={fetchInvitations} sx={{ color: '#9CA3AF' }}>
-                        <Refresh />
-                    </IconButton>
+                    <Tooltip title="Refresh Data">
+                        <IconButton
+                            onClick={fetchInvitations}
+                            sx={{
+                                color: '#94A3B8',
+                                bgcolor: 'rgba(30, 41, 59, 0.4)',
+                                border: '1px solid #1E293B',
+                                borderRadius: '10px',
+                                '&:hover': { bgcolor: 'rgba(30, 41, 59, 0.8)' },
+                            }}
+                        >
+                            <RefreshRounded />
+                        </IconButton>
+                    </Tooltip>
                 </Stack>
             </Stack>
 
@@ -396,150 +569,185 @@ const OrganizationInvitations = () => {
                 onChangeOrgId={setSelectedOrgId}
             />
 
-            <Paper sx={{ ...paperStyle, p: 2, mb: 3 }}>
-                <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
-                    <Box sx={{ ...searchBarStyle, maxWidth: 420 }}>
-                        <InputBase
-                            placeholder="Search by email..."
-                            value={searchTerm}
-                            onChange={(event) => setSearchTerm(event.target.value)}
-                            sx={searchInputStyle}
-                        />
-                    </Box>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                <Typography sx={{ color: '#64748B', fontSize: '0.85rem' }}>
+                    Showing {invitations.length} of {meta.total || invitations.length} invitations
+                </Typography>
+                <FilterPopover
+                    statusFilter={statusFilter}
+                    setStatusFilter={setStatusFilter}
+                    searchTerm={searchTerm}
+                    setSearchTerm={setSearchTerm}
+                />
+            </Stack>
 
-                    <FormControl sx={{ minWidth: 180 }}>
-                        <InputLabel sx={{ color: '#9CA3AF' }}>Status</InputLabel>
-                        <Select
-                            label="Status"
-                            value={statusFilter}
-                            onChange={(event) => setStatusFilter(event.target.value)}
-                            sx={selectStyle}
-                            MenuProps={selectMenuProps}
-                        >
-                            <MenuItem value="">All</MenuItem>
-                            {INVITE_STATUSES.map((status) => (
-                                <MenuItem key={status} value={status}>{status}</MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-
-                    <Typography sx={{ color: '#9CA3AF', fontSize: '0.82rem' }}>
-                        Total: {meta.total || invitations.length}
-                    </Typography>
-                </Stack>
-            </Paper>
-
-            <TableContainer component={Paper} sx={paperStyle}>
+            <TableContainer
+                component={Paper}
+                elevation={0}
+                sx={{
+                    bgcolor: 'rgba(15, 23, 42, 0.4)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: 3,
+                    border: '1px solid #1E293B',
+                    overflow: 'hidden',
+                }}
+            >
                 <Table>
                     <TableHead>
-                        <TableRow>
-                            <TableCell sx={tableHeaderCellStyle} padding="checkbox">
+                        <TableRow sx={{ bgcolor: 'rgba(30, 41, 59, 0.5)' }}>
+                            <TableCell sx={{ ...tableHeaderCellStyle, py: 2.5 }} padding="checkbox">
                                 <Checkbox
                                     checked={invitations.length > 0 && selectedInvitationIds.length === invitations.length}
                                     indeterminate={selectedInvitationIds.length > 0 && selectedInvitationIds.length < invitations.length}
                                     onChange={handleToggleSelectAll}
-                                    sx={{ color: '#9CA3AF' }}
+                                    sx={{
+                                        color: '#475569',
+                                        '&.Mui-checked': { color: '#3B82F6' },
+                                        '&.MuiCheckbox-indeterminate': { color: '#3B82F6' },
+                                    }}
                                 />
                             </TableCell>
-                            <TableCell sx={tableHeaderCellStyle}>Email</TableCell>
-                            <TableCell sx={tableHeaderCellStyle}>Status</TableCell>
-                            <TableCell sx={tableHeaderCellStyle}>Expires</TableCell>
-                            <TableCell sx={tableHeaderCellStyle}>Accepted At</TableCell>
-                            <TableCell align="right" sx={tableHeaderCellStyle}>Actions</TableCell>
+                            <TableCell sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Member Email</TableCell>
+                            <TableCell sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</TableCell>
+                            <TableCell sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Expires</TableCell>
+                            <TableCell sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Accepted At</TableCell>
+                            <TableCell align="right" sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {!selectedOrgId ? (
+                        {loading ? (
+                            Array.from({ length: 5 }).map((_, i) => (
+                                <TableRow key={i} sx={{ borderBottom: '1px solid #1E293B' }}>
+                                    <TableCell padding="checkbox"><Skeleton variant="rectangular" sx={{ bgcolor: '#1E293B', width: 20, height: 20, borderRadius: 0.5 }} /></TableCell>
+                                    <TableCell sx={tableBodyCellStyle}><Skeleton variant="text" sx={{ bgcolor: '#1E293B', width: '60%', height: 24 }} /></TableCell>
+                                    <TableCell sx={tableBodyCellStyle}><Skeleton variant="rectangular" sx={{ bgcolor: '#1E293B', width: 80, height: 24, borderRadius: 1 }} /></TableCell>
+                                    <TableCell sx={tableBodyCellStyle}><Skeleton variant="text" sx={{ bgcolor: '#1E293B', width: 140 }} /></TableCell>
+                                    <TableCell sx={tableBodyCellStyle}><Skeleton variant="text" sx={{ bgcolor: '#1E293B', width: 140 }} /></TableCell>
+                                    <TableCell align="right" sx={tableBodyCellStyle}><Skeleton variant="rectangular" sx={{ bgcolor: '#1E293B', width: 120, height: 32, borderRadius: 1, ml: 'auto' }} /></TableCell>
+                                </TableRow>
+                            ))
+                        ) : !selectedOrgId ? (
                             <TableRow>
-                                <TableCell colSpan={7} align="center" sx={{ ...tableBodyCellStyle, py: 5, color: '#9CA3AF' }}>
-                                    Select an organization to view invitations.
-                                </TableCell>
-                            </TableRow>
-                        ) : loading ? (
-                            <TableRow>
-                                <TableCell colSpan={7} align="center" sx={{ ...tableBodyCellStyle, py: 6 }}>
-                                    <CircularProgress />
+                                <TableCell colSpan={6} sx={{ p: 0 }}>
+                                    <Box sx={{ py: 10, textAlign: 'center' }}>
+                                        <BusinessOutlined sx={{ fontSize: 60, color: '#1E293B', mb: 2 }} />
+                                        <Typography sx={{ color: '#F8FAFC', fontWeight: 600, mb: 1 }}>No Organization Selected</Typography>
+                                        <Typography sx={{ color: '#64748B', maxWidth: 300, mx: 'auto' }}>Please select an organization context above to manage pending and accepted invitations.</Typography>
+                                    </Box>
                                 </TableCell>
                             </TableRow>
                         ) : invitations.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={7} align="center" sx={{ ...tableBodyCellStyle, py: 5, color: '#9CA3AF' }}>
-                                    No invitations found.
+                                <TableCell colSpan={6} sx={{ p: 0 }}>
+                                    <Box sx={{ py: 10, textAlign: 'center' }}>
+                                        <PeopleAltOutlined sx={{ fontSize: 60, color: '#1E293B', mb: 2 }} />
+                                        <Typography sx={{ color: '#F8FAFC', fontWeight: 600, mb: 1 }}>No Invitations Found</Typography>
+                                        <Typography sx={{ color: '#64748B', maxWidth: 300, mx: 'auto' }}>
+                                            {searchTerm || statusFilter 
+                                                ? "Try adjusting your filters or search terms to find what you're looking for."
+                                                : "Start building your team by inviting members to join your organization."}
+                                        </Typography>
+                                    </Box>
                                 </TableCell>
                             </TableRow>
                         ) : (
                             invitations.map((invitation) => {
-                                const statusColor =
-                                    invitation.status === 'accepted'
-                                        ? '#10B981'
-                                        : invitation.status === 'pending'
-                                            ? '#F59E0B'
-                                            : invitation.status === 'revoked'
-                                                ? '#EF4444'
-                                                : '#9CA3AF';
-
                                 const rowLoading = actionLoading === invitation.id || actionLoading === invitation.email;
                                 const isSelected = selectedInvitationIds.includes(invitation.id);
 
                                 return (
-                                    <TableRow key={invitation.id}>
+                                    <TableRow
+                                        key={invitation.id}
+                                        sx={{
+                                            '&:hover': { bgcolor: 'rgba(255,255,255,0.02)' },
+                                            transition: 'background-color 0.2s ease',
+                                            borderBottom: '1px solid #1E293B',
+                                            bgcolor: isSelected ? 'rgba(59, 130, 246, 0.05)' : 'transparent',
+                                        }}
+                                    >
                                         <TableCell sx={tableBodyCellStyle} padding="checkbox">
                                             <Checkbox
                                                 checked={isSelected}
                                                 onChange={() => handleToggleRow(invitation.id)}
-                                                sx={{ color: '#9CA3AF' }}
+                                                sx={{
+                                                    color: '#475569',
+                                                    '&.Mui-checked': { color: '#3B82F6' },
+                                                }}
                                             />
                                         </TableCell>
-                                        <TableCell sx={{ ...tableBodyCellStyle, color: '#fff', fontWeight: 600 }}>
-                                            {invitation.email}
+                                        <TableCell sx={tableBodyCellStyle}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                                <EmailOutlined sx={{ color: '#64748B', fontSize: 18 }} />
+                                                <Typography sx={{ color: '#F1F5F9', fontWeight: 600, fontSize: '0.9rem' }}>
+                                                    {invitation.email}
+                                                </Typography>
+                                            </Box>
                                         </TableCell>
                                         <TableCell sx={tableBodyCellStyle}>
                                             <Chip
                                                 size="small"
                                                 label={invitation.status || 'unknown'}
                                                 sx={{
-                                                    color: statusColor,
-                                                    bgcolor: 'rgba(255,255,255,0.06)',
                                                     textTransform: 'capitalize',
-                                                    fontWeight: 600,
+                                                    bgcolor: invitation.status === 'accepted'
+                                                        ? 'rgba(16, 185, 129, 0.1)'
+                                                        : invitation.status === 'revoked'
+                                                            ? 'rgba(239, 68, 68, 0.1)'
+                                                            : invitation.status === 'pending'
+                                                                ? 'rgba(245, 158, 11, 0.1)'
+                                                                : 'rgba(100, 116, 139, 0.1)',
+                                                    color:
+                                                        invitation.status === 'accepted'
+                                                            ? '#10B981'
+                                                            : invitation.status === 'revoked'
+                                                                ? '#EF4444'
+                                                                : invitation.status === 'pending'
+                                                                    ? '#F59E0B'
+                                                                    : '#94A3B8',
+                                                    fontWeight: 700,
+                                                    fontSize: '0.7rem',
+                                                    borderRadius: '6px',
                                                 }}
                                             />
                                         </TableCell>
-                                        <TableCell sx={{ ...tableBodyCellStyle, color: '#D1D5DB' }}>
+                                        <TableCell sx={{ ...tableBodyCellStyle, color: '#94A3B8', fontSize: '0.85rem' }}>
                                             {formatDateTime(invitation.expires_at)}
                                         </TableCell>
-                                        <TableCell sx={{ ...tableBodyCellStyle, color: '#D1D5DB' }}>
+                                        <TableCell sx={{ ...tableBodyCellStyle, color: '#94A3B8', fontSize: '0.85rem' }}>
                                             {formatDateTime(invitation.accepted_at)}
                                         </TableCell>
                                         <TableCell align="right" sx={tableBodyCellStyle}>
                                             <Stack direction="row" spacing={1} justifyContent="flex-end">
-                                                <Tooltip title="Resend">
-                                                    <span>
-                                                        <Button
-                                                            size="small"
-                                                            onClick={() => handleResendSingle(invitation.email)}
-                                                            disabled={rowLoading || invitation.status === 'accepted'}
-                                                            sx={{ color: '#3B82F6', textTransform: 'none' }}
-                                                        >
-                                                            Resend
-                                                        </Button>
-                                                    </span>
-                                                </Tooltip>
-
-                                                <Tooltip title="Revoke">
-                                                    <span>
-                                                        <Button
-                                                            size="small"
-                                                            color="error"
-                                                            startIcon={<Block fontSize="small" />}
-                                                            onClick={() => handleRevokeSingle(invitation)}
-                                                            disabled={rowLoading || invitation.status === 'accepted' || invitation.status === 'revoked'}
-                                                            sx={{ textTransform: 'none' }}
-                                                        >
-                                                            Revoke
-                                                        </Button>
-                                                    </span>
-                                                </Tooltip>
+                                                <Button
+                                                    size="small"
+                                                    onClick={() => handleResendSingle(invitation.email)}
+                                                    disabled={rowLoading || invitation.status === 'accepted'}
+                                                    sx={{
+                                                        textTransform: 'none',
+                                                        color: '#3B82F6',
+                                                        fontWeight: 600,
+                                                        fontSize: '0.8rem',
+                                                        '&:hover': { bgcolor: 'rgba(59, 130, 246, 0.1)' },
+                                                        '&.Mui-disabled': { color: '#334155' },
+                                                    }}
+                                                >
+                                                    Resend
+                                                </Button>
+                                                <Button
+                                                    size="small"
+                                                    onClick={() => handleRevokeSingle(invitation)}
+                                                    disabled={rowLoading || invitation.status === 'accepted' || invitation.status === 'revoked'}
+                                                    sx={{
+                                                        textTransform: 'none',
+                                                        color: '#EF4444',
+                                                        fontWeight: 600,
+                                                        fontSize: '0.8rem',
+                                                        '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.1)' },
+                                                        '&.Mui-disabled': { color: '#334155' },
+                                                    }}
+                                                >
+                                                    Revoke
+                                                </Button>
                                             </Stack>
                                         </TableCell>
                                     </TableRow>
@@ -550,30 +758,47 @@ const OrganizationInvitations = () => {
                 </Table>
             </TableContainer>
 
+            {/* Batch Invite Modal */}
             <Modal open={openBatchModal} onClose={() => !saving && setOpenBatchModal(false)}>
-                <Box sx={{ ...modalStyle, width: { xs: '95%', md: 640 } }}>
-                    <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ p: 2.5, borderBottom: '1px solid #374151' }}>
-                        <Typography sx={{ color: '#fff', fontWeight: 700 }}>Invite Staff</Typography>
-                        <IconButton onClick={() => !saving && setOpenBatchModal(false)} sx={{ color: '#9CA3AF' }}>
-                            <Close />
+                <Box 
+                    sx={{ 
+                        ...modalStyle, 
+                        width: { xs: '95%', md: 640 },
+                        bgcolor: '#0F172A',
+                        border: '1px solid #1E293B',
+                        borderRadius: 3,
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                        p: 0,
+                        overflow: 'hidden'
+                    }}
+                >
+                    <Box sx={{ p: 3, borderBottom: '1px solid #1E293B', bgcolor: 'rgba(30, 41, 59, 0.5)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box>
+                            <Typography variant="h6" sx={{ color: '#F8FAFC', fontWeight: 700 }}>
+                                Invite Staff Members
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: '#94A3B8', mt: 0.5 }}>
+                                Add new members to your organization.
+                            </Typography>
+                        </Box>
+                        <IconButton onClick={() => !saving && setOpenBatchModal(false)} sx={{ color: '#94A3B8' }}>
+                            <CloseRounded />
                         </IconButton>
-                    </Stack>
+                    </Box>
 
-                        <Stack spacing={2} sx={{ p: 2.5 }}>
-                            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-                                <TextField
-                                    label="Expires In (days)"
-                                    type="number"
-                                value={batchForm.expires_days}
-                                onChange={(event) => setBatchForm((prev) => ({ ...prev, expires_days: event.target.value }))}
-                                sx={textFieldStyle}
-                                fullWidth
-                            />
-                        </Stack>
+                    <Stack spacing={3} sx={{ p: 3 }}>
+                        <TextField
+                            label="Expiration Period (Days)"
+                            type="number"
+                            value={batchForm.expires_days}
+                            onChange={(event) => setBatchForm((prev) => ({ ...prev, expires_days: event.target.value }))}
+                            sx={textFieldStyle}
+                            fullWidth
+                        />
 
                         <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
                             <TextField
-                                label="Add Staff Email"
+                                label="Single Email Entry"
                                 value={batchEmailInput}
                                 onChange={handleBatchEmailInputChange}
                                 onKeyDown={(event) => {
@@ -582,114 +807,133 @@ const OrganizationInvitations = () => {
                                         handleAddBatchEmail();
                                     }
                                 }}
-                                placeholder={selectedOrgDomain ? `staff@` : 'staff@company.com'}
+                                placeholder={selectedOrgDomain ? `user@` : 'user@company.com'}
                                 sx={textFieldStyle}
                                 fullWidth
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <EmailOutlined sx={{ color: '#64748B', fontSize: 20 }} />
+                                        </InputAdornment>
+                                    ),
+                                }}
                             />
                             <Button
-                                variant="outlined"
+                                variant="contained"
                                 onClick={handleAddBatchEmail}
-                                sx={{ borderColor: '#374151', color: '#E5E7EB', textTransform: 'none', minWidth: 120 }}
+                                sx={{ ...primaryButtonStyle, minWidth: 100, py: 0 }}
                             >
                                 Add
                             </Button>
                         </Stack>
 
                         {!!selectedOrgDomain && (
-                            <Typography sx={{ color: '#93C5FD', fontSize: '0.78rem' }}>
-                                Type `staff@` to auto-complete domain: @{selectedOrgDomain}
-                            </Typography>
+                            <Box sx={{ p: 1, px: 1.5, borderRadius: 1.5, bgcolor: 'rgba(59, 130, 246, 0.05)', border: '1px solid rgba(59, 130, 246, 0.1)' }}>
+                                <Typography sx={{ color: '#3B82F6', fontSize: '0.75rem', fontWeight: 600 }}>
+                                    Domain Lock: @{selectedOrgDomain}
+                                </Typography>
+                            </Box>
                         )}
 
                         <TextField
-                            label="Add Multiple Emails"
+                            label="Bulk Email Import"
                             multiline
-                            rows={6}
+                            rows={4}
                             value={batchForm.emails_text}
                             onChange={(event) => setBatchForm((prev) => ({ ...prev, emails_text: event.target.value }))}
                             sx={textFieldStyle}
-                            placeholder={'staff1@org.com\nstaff2@org.com\nstaff3@org.com'}
+                            placeholder={'user1@company.com\nuser2@company.com\nuser3@company.com'}
+                            helperText="Separate emails by new lines or commas."
                         />
 
-                        <Stack spacing={1}>
-                            <Typography sx={{ color: '#9CA3AF', fontSize: '0.8rem' }}>
-                                Ready to invite: {batchSummary.valid.length} valid
-                                {batchSummary.invalid.length > 0 ? ` | ${batchSummary.invalid.length} invalid` : ''}
-                                {batchSummary.duplicatesRemoved > 0 ? ` | ${batchSummary.duplicatesRemoved} duplicates removed` : ''}
+                        <Box>
+                            <Typography sx={{ color: '#94A3B8', fontSize: '0.8rem', mb: 1, fontWeight: 600 }}>
+                                Validation Summary: {batchSummary.valid.length} Valid | {batchSummary.invalid.length} Invalid
                             </Typography>
+                            
+                            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                                {batchSummary.valid.map((email) => (
+                                    <Chip
+                                        key={email}
+                                        label={email}
+                                        onDelete={() => handleRemoveBatchEmail(email)}
+                                        size="small"
+                                        sx={{ bgcolor: 'rgba(16, 185, 129, 0.1)', color: '#10B981', border: '1px solid rgba(16, 185, 129, 0.2)', fontWeight: 600 }}
+                                    />
+                                ))}
+                                {batchSummary.invalid.map((email) => (
+                                    <Chip
+                                        key={email}
+                                        label={email}
+                                        onDelete={() => handleRemoveBatchEmail(email)}
+                                        size="small"
+                                        sx={{ bgcolor: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', border: '1px solid rgba(239, 68, 68, 0.2)', fontWeight: 600 }}
+                                    />
+                                ))}
+                            </Stack>
+                        </Box>
 
-                            {batchSummary.valid.length > 0 && (
-                                <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-                                    {batchSummary.valid.map((email) => (
-                                        <Chip
-                                            key={email}
-                                            label={email}
-                                            onDelete={() => handleRemoveBatchEmail(email)}
-                                            size="small"
-                                            sx={{ bgcolor: 'rgba(16, 185, 129, 0.14)', color: '#6EE7B7' }}
-                                        />
-                                    ))}
-                                </Stack>
-                            )}
-
-                            {batchSummary.invalid.length > 0 && (
-                                <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-                                    {batchSummary.invalid.map((email) => (
-                                        <Chip
-                                            key={email}
-                                            label={`Invalid: ${email}`}
-                                            onDelete={() => handleRemoveBatchEmail(email)}
-                                            size="small"
-                                            sx={{ bgcolor: 'rgba(239, 68, 68, 0.14)', color: '#FCA5A5' }}
-                                        />
-                                    ))}
-                                </Stack>
-                            )}
-                        </Stack>
-
-                        <Alert severity="info" sx={{ bgcolor: 'rgba(59, 130, 246, 0.15)', color: '#93C5FD' }}>
-                            Paste from Excel/CSV directly.
+                        <Alert 
+                            severity="info" 
+                            icon={<InfoOutlined sx={{ color: '#3B82F6' }} />}
+                            sx={{ bgcolor: 'rgba(59, 130, 246, 0.05)', color: '#94A3B8', border: '1px solid rgba(59, 130, 246, 0.1)' }}
+                        >
+                            Paste directly from CSV or spreadsheets to invite multiple members at once.
                         </Alert>
                     </Stack>
 
-                    <Stack direction="row" justifyContent="flex-end" spacing={1.5} sx={{ p: 2.5, borderTop: '1px solid #374151' }}>
-                        <Button onClick={() => setOpenBatchModal(false)} disabled={saving} sx={{ color: '#9CA3AF', textTransform: 'none' }}>
+                    <Box sx={{ p: 3, borderTop: '1px solid #1E293B', bgcolor: 'rgba(30, 41, 59, 0.5)', display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+                        <Button onClick={() => setOpenBatchModal(false)} disabled={saving} sx={{ color: '#94A3B8', textTransform: 'none', fontWeight: 600 }}>
                             Cancel
                         </Button>
                         <Button variant="contained" onClick={handleBatchInvite} disabled={saving} sx={primaryButtonStyle}>
                             {saving ? 'Sending...' : 'Send Invitations'}
                         </Button>
-                    </Stack>
+                    </Box>
                 </Box>
             </Modal>
 
+            {/* Bulk Action Modal */}
             <Modal open={openBulkModal} onClose={() => !saving && setOpenBulkModal(false)}>
-                <Box sx={{ ...modalStyle, width: { xs: '95%', md: 580 } }}>
-                    <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ p: 2.5, borderBottom: '1px solid #374151' }}>
-                        <Typography sx={{ color: '#fff', fontWeight: 700 }}>Bulk Invitation Action</Typography>
-                        <IconButton onClick={() => !saving && setOpenBulkModal(false)} sx={{ color: '#9CA3AF' }}>
-                            <Close />
+                <Box 
+                    sx={{ 
+                        ...modalStyle, 
+                        width: { xs: '95%', md: 520 },
+                        bgcolor: '#0F172A',
+                        border: '1px solid #1E293B',
+                        borderRadius: 3,
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                        p: 0,
+                        overflow: 'hidden'
+                    }}
+                >
+                    <Box sx={{ p: 3, borderBottom: '1px solid #1E293B', bgcolor: 'rgba(30, 41, 59, 0.5)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="h6" sx={{ color: '#F8FAFC', fontWeight: 700 }}>
+                            Bulk Action Control
+                        </Typography>
+                        <IconButton onClick={() => !saving && setOpenBulkModal(false)} sx={{ color: '#94A3B8' }}>
+                            <CloseRounded />
                         </IconButton>
-                    </Stack>
+                    </Box>
 
-                    <Stack spacing={2} sx={{ p: 2.5 }}>
+                    <Stack spacing={3} sx={{ p: 3 }}>
                         <FormControl fullWidth>
-                            <InputLabel sx={{ color: '#9CA3AF' }}>Action</InputLabel>
+                            <InputLabel sx={{ color: '#94A3B8' }}>Select Operation</InputLabel>
                             <Select
-                                label="Action"
+                                label="Select Operation"
                                 value={bulkForm.action}
                                 onChange={(event) => setBulkForm((prev) => ({ ...prev, action: event.target.value }))}
                                 sx={selectStyle}
                                 MenuProps={selectMenuProps}
                             >
-                                <MenuItem value="resend">Resend Selected</MenuItem>
-                                <MenuItem value="revoke">Revoke Selected</MenuItem>
+                                <MenuItem value="resend">Resend Selected Invitations</MenuItem>
+                                <MenuItem value="revoke">Revoke Selected Invitations</MenuItem>
                             </Select>
                         </FormControl>
 
                         {bulkForm.action === 'resend' ? (
                             <TextField
-                                label="Expires In (days)"
+                                label="New Expiration Period (Days)"
                                 type="number"
                                 value={bulkForm.expires_days}
                                 onChange={(event) => setBulkForm((prev) => ({ ...prev, expires_days: event.target.value }))}
@@ -698,32 +942,46 @@ const OrganizationInvitations = () => {
                             />
                         ) : (
                             <TextField
-                                label="Revoke Reason"
+                                label="Revocation Reason"
                                 value={bulkForm.reason}
                                 onChange={(event) => setBulkForm((prev) => ({ ...prev, reason: event.target.value }))}
                                 sx={textFieldStyle}
                                 fullWidth
+                                placeholder="e.g. Access policy update"
                             />
                         )}
 
-                        <Typography sx={{ color: '#9CA3AF', fontSize: '0.82rem' }}>
-                            Selected invitations: {selectedInvitationIds.length}
-                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 2, borderRadius: 2, bgcolor: 'rgba(30, 41, 59, 0.5)', border: '1px solid #1E293B' }}>
+                            <PeopleAltOutlined sx={{ color: '#3B82F6' }} />
+                            <Typography sx={{ color: '#E2E8F0', fontWeight: 600 }}>
+                                {selectedInvitationIds.length} members targeted for this action.
+                            </Typography>
+                        </Box>
                     </Stack>
 
-                    <Stack direction="row" justifyContent="flex-end" spacing={1.5} sx={{ p: 2.5, borderTop: '1px solid #374151' }}>
-                        <Button onClick={() => setOpenBulkModal(false)} disabled={saving} sx={{ color: '#9CA3AF', textTransform: 'none' }}>
+                    <Box sx={{ p: 3, borderTop: '1px solid #1E293B', bgcolor: 'rgba(30, 41, 59, 0.5)', display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+                        <Button onClick={() => setOpenBulkModal(false)} disabled={saving} sx={{ color: '#94A3B8', textTransform: 'none', fontWeight: 600 }}>
                             Cancel
                         </Button>
-                        <Button variant="contained" onClick={handleExecuteBulkAction} disabled={saving} sx={primaryButtonStyle}>
-                            {saving ? 'Applying...' : 'Apply Action'}
+                        <Button variant="contained" onClick={handleExecuteBulkAction} disabled={saving} sx={{ ...primaryButtonStyle, bgcolor: bulkForm.action === 'revoke' ? '#EF4444' : '#3B82F6', '&:hover': { bgcolor: bulkForm.action === 'revoke' ? '#DC2626' : '#2563EB' } }}>
+                            {saving ? 'Applying...' : 'Apply Bulk Action'}
                         </Button>
-                    </Stack>
+                    </Box>
                 </Box>
             </Modal>
 
-            <Snackbar open={snackbar.open} autoHideDuration={3500} onClose={closeSnackbar} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert severity={snackbar.severity} onClose={closeSnackbar} variant="filled">
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={4000}
+                onClose={closeSnackbar}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            >
+                <Alert
+                    severity={snackbar.severity}
+                    onClose={closeSnackbar}
+                    variant="filled"
+                    sx={{ borderRadius: 2, fontWeight: 600 }}
+                >
                     {snackbar.message}
                 </Alert>
             </Snackbar>

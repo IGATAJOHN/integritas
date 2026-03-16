@@ -4,13 +4,18 @@ import {
     Box,
     Button,
     Chip,
-    CircularProgress,
+    Divider,
+    Fade,
     FormControl,
     IconButton,
+    InputAdornment,
     InputLabel,
     MenuItem,
+    Modal,
     Paper,
+    Popover,
     Select,
+    Skeleton,
     Snackbar,
     Stack,
     Table,
@@ -20,9 +25,21 @@ import {
     TableHead,
     TableRow,
     TextField,
+    Tooltip,
     Typography,
 } from '@mui/material';
-import { Refresh } from '@mui/icons-material';
+import {
+    AddRounded,
+    AssignmentOutlined,
+    BusinessOutlined,
+    CalendarMonthRounded,
+    CheckCircleRounded,
+    FilterListRounded,
+    HistoryRounded,
+    InfoOutlined,
+    RefreshRounded,
+    SearchRounded,
+} from '@mui/icons-material';
 import { useAuth } from '../../../contexts';
 import { canManageOrganization } from '../../../utils';
 import { useLocation } from 'react-router-dom';
@@ -139,6 +156,339 @@ const renderSelectedUsers = (selectedIds = [], options = []) => {
     return `${labels.slice(0, 2).join(', ')} +${labels.length - 2} more`;
 };
 
+const CreateAssignmentModal = ({
+    open,
+    onClose,
+    onAssign,
+    saving,
+    assignForm,
+    setAssignForm,
+    courses,
+    learningPaths,
+    userOptions,
+    selectedUserIds,
+    setSelectedUserIds,
+    inviteStats,
+}) => {
+    return (
+        <Modal
+            open={open}
+            onClose={onClose}
+            closeAfterTransition
+            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 }}
+        >
+            <Fade in={open}>
+                <Paper
+                    sx={{
+                        width: '100%',
+                        maxWidth: 600,
+                        bgcolor: '#0F172A',
+                        border: '1px solid #1E293B',
+                        borderRadius: 3,
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                        overflow: 'hidden',
+                        position: 'relative',
+                    }}
+                >
+                    <Box sx={{ p: 3, borderBottom: '1px solid #1E293B', bgcolor: 'rgba(30, 41, 59, 0.5)' }}>
+                        <Typography variant="h6" sx={{ color: '#F8FAFC', fontWeight: 700 }}>
+                            Create New Assignment
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#94A3B8', mt: 0.5 }}>
+                            Assign educational content to your organization members.
+                        </Typography>
+                    </Box>
+
+                    <Box sx={{ p: 3 }}>
+                        <Stack spacing={3}>
+                            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                                <FormControl fullWidth>
+                                    <InputLabel sx={{ color: '#94A3B8' }}>Content Type</InputLabel>
+                                    <Select
+                                        label="Content Type"
+                                        value={assignForm.type}
+                                        onChange={(event) =>
+                                            setAssignForm((prev) => ({
+                                                ...prev,
+                                                type: event.target.value,
+                                                course_id: '',
+                                                learning_path_id: '',
+                                            }))
+                                        }
+                                        sx={{ ...selectStyle, bgcolor: '#0B1120' }}
+                                        MenuProps={selectMenuProps}
+                                    >
+                                        {ASSIGNMENT_TYPES.map((type) => (
+                                            <MenuItem key={type} value={type} sx={{ textTransform: 'capitalize' }}>
+                                                {type.replace('_', ' ')}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+
+                                {assignForm.type === 'course' ? (
+                                    <FormControl fullWidth>
+                                        <InputLabel sx={{ color: '#94A3B8' }}>Select Course</InputLabel>
+                                        <Select
+                                            label="Select Course"
+                                            value={assignForm.course_id}
+                                            onChange={(event) => setAssignForm((prev) => ({ ...prev, course_id: event.target.value }))}
+                                            sx={{ ...selectStyle, bgcolor: '#0B1120' }}
+                                            MenuProps={selectMenuProps}
+                                        >
+                                            {courses.length === 0 ? (
+                                                <MenuItem value="" disabled>No courses found</MenuItem>
+                                            ) : (
+                                                courses.map((course) => (
+                                                    <MenuItem key={course.id} value={course.id}>
+                                                        {readCourseLabel(course)}
+                                                    </MenuItem>
+                                                ))
+                                            )}
+                                        </Select>
+                                    </FormControl>
+                                ) : (
+                                    <FormControl fullWidth>
+                                        <InputLabel sx={{ color: '#94A3B8' }}>Select Learning Path</InputLabel>
+                                        <Select
+                                            label="Select Learning Path"
+                                            value={assignForm.learning_path_id}
+                                            onChange={(event) => setAssignForm((prev) => ({ ...prev, learning_path_id: event.target.value }))}
+                                            sx={{ ...selectStyle, bgcolor: '#0B1120' }}
+                                            MenuProps={selectMenuProps}
+                                        >
+                                            {learningPaths.length === 0 ? (
+                                                <MenuItem value="" disabled>No learning paths found</MenuItem>
+                                            ) : (
+                                                learningPaths.map((path) => (
+                                                    <MenuItem key={path.id} value={path.id}>
+                                                        {readLearningPathLabel(path)}
+                                                    </MenuItem>
+                                                ))
+                                            )}
+                                        </Select>
+                                    </FormControl>
+                                )}
+                            </Stack>
+
+                            <FormControl fullWidth>
+                                <InputLabel sx={{ color: '#94A3B8' }}>Select Members</InputLabel>
+                                <Select
+                                    multiple
+                                    label="Select Members"
+                                    value={selectedUserIds}
+                                    onChange={(event) => {
+                                        const value = event.target.value;
+                                        setSelectedUserIds(typeof value === 'string' ? value.split(',') : value);
+                                    }}
+                                    sx={{ ...selectStyle, bgcolor: '#0B1120' }}
+                                    MenuProps={selectMenuProps}
+                                    renderValue={(selected) => renderSelectedUsers(selected, userOptions)}
+                                    startAdornment={
+                                        <InputAdornment position="start">
+                                            <SearchRounded sx={{ color: '#64748B', fontSize: 20, ml: 1 }} />
+                                        </InputAdornment>
+                                    }
+                                >
+                                    {userOptions.length === 0 ? (
+                                        <MenuItem value="" disabled>No members found</MenuItem>
+                                    ) : (
+                                        userOptions.map((user) => (
+                                            <MenuItem key={user.id} value={user.id}>
+                                                {formatUserLabel(user)}
+                                            </MenuItem>
+                                        ))
+                                    )}
+                                </Select>
+                            </FormControl>
+
+                            <TextField
+                                label="Deadline (Optional)"
+                                type="date"
+                                value={assignForm.due_at}
+                                onChange={(event) => setAssignForm((prev) => ({ ...prev, due_at: event.target.value }))}
+                                sx={{ ...textFieldStyle, '& .MuiInputBase-root': { bgcolor: '#0B1120' } }}
+                                InputLabelProps={{ shrink: true }}
+                                fullWidth
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <CalendarMonthRounded sx={{ color: '#64748B', fontSize: 20 }} />
+                                        </InputAdornment>
+                                    ),
+                                }}
+                            />
+
+                            {(inviteStats.pending > 0 || inviteStats.acceptedWithoutUser > 0) && (
+                                <Box
+                                    sx={{
+                                        p: 1.5,
+                                        borderRadius: 2,
+                                        bgcolor: 'rgba(59, 130, 246, 0.05)',
+                                        border: '1px solid rgba(59, 130, 246, 0.1)',
+                                        display: 'flex',
+                                        gap: 1.5,
+                                    }}
+                                >
+                                    <InfoOutlined sx={{ color: '#3B82F6', fontSize: 20, mt: 0.2 }} />
+                                    <Typography variant="caption" sx={{ color: '#94A3B8', lineHeight: 1.4 }}>
+                                        {inviteStats.pending > 0 ? `${inviteStats.pending} members are still pending. ` : ''}
+                                        {inviteStats.acceptedWithoutUser > 0 ? `Some members are awaiting sync and aren't listed yet.` : ''}
+                                    </Typography>
+                                </Box>
+                            )}
+                        </Stack>
+                    </Box>
+
+                    <Box sx={{ p: 3, bgcolor: 'rgba(30, 41, 59, 0.5)', borderTop: '1px solid #1E293B', display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+                        <Button
+                            onClick={onClose}
+                            sx={{
+                                color: '#94A3B8',
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' },
+                            }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="contained"
+                            onClick={onAssign}
+                            disabled={saving}
+                            sx={{
+                                ...primaryButtonStyle,
+                                px: 4,
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.3)',
+                            }}
+                        >
+                            {saving ? 'Creating...' : 'Create Assignment'}
+                        </Button>
+                    </Box>
+                </Paper>
+            </Fade>
+        </Modal>
+    );
+};
+
+const FilterPopover = ({
+    typeFilter,
+    setTypeFilter,
+    statusFilter,
+    setStatusFilter,
+}) => {
+    const [anchorEl, setAnchorEl] = useState(null);
+    const open = Boolean(anchorEl);
+
+    return (
+        <>
+            <Tooltip title="Filters">
+                <Button
+                    startIcon={<FilterListRounded />}
+                    onClick={(e) => setAnchorEl(e.currentTarget)}
+                    sx={{
+                        bgcolor: 'rgba(30, 41, 59, 0.5)',
+                        border: '1px solid #1E293B',
+                        color: '#E2E8F0',
+                        textTransform: 'none',
+                        px: 2,
+                        '&:hover': { bgcolor: 'rgba(30, 41, 59, 0.8)', borderColor: '#334155' },
+                    }}
+                >
+                    Filters
+                    {(typeFilter || statusFilter) && (
+                        <Box
+                            sx={{
+                                ml: 1,
+                                width: 8,
+                                height: 8,
+                                borderRadius: '50%',
+                                bgcolor: '#3B82F6',
+                                border: '2px solid #0F172A',
+                            }}
+                        />
+                    )}
+                </Button>
+            </Tooltip>
+            <Popover
+                open={open}
+                anchorEl={anchorEl}
+                onClose={() => setAnchorEl(null)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                PaperProps={{
+                    sx: {
+                        bgcolor: '#0F172A',
+                        border: '1px solid #1E293B',
+                        borderRadius: 2,
+                        p: 2,
+                        minWidth: 260,
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)',
+                    },
+                }}
+            >
+                <Typography variant="subtitle2" sx={{ color: '#F8FAFC', fontWeight: 700, mb: 2 }}>
+                    Filter Assignments
+                </Typography>
+                <Stack spacing={2.5}>
+                    <FormControl fullWidth size="small">
+                        <InputLabel sx={{ color: '#94A3B8' }}>Type</InputLabel>
+                        <Select
+                            label="Type"
+                            value={typeFilter}
+                            onChange={(e) => setTypeFilter(e.target.value)}
+                            sx={selectStyle}
+                            MenuProps={selectMenuProps}
+                        >
+                            <MenuItem value="">All Types</MenuItem>
+                            {ASSIGNMENT_TYPES.map((type) => (
+                                <MenuItem key={type} value={type} sx={{ textTransform: 'capitalize' }}>
+                                    {type}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+
+                    <FormControl fullWidth size="small">
+                        <InputLabel sx={{ color: '#94A3B8' }}>Status</InputLabel>
+                        <Select
+                            label="Status"
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            sx={selectStyle}
+                            MenuProps={selectMenuProps}
+                        >
+                            <MenuItem value="">All Statuses</MenuItem>
+                            {ASSIGNMENT_STATUSES.map((status) => (
+                                <MenuItem key={status} value={status} sx={{ textTransform: 'capitalize' }}>
+                                    {status}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+
+                    <Divider sx={{ borderColor: '#1E293B' }} />
+
+                    <Button
+                        size="small"
+                        fullWidth
+                        onClick={() => {
+                            setTypeFilter('');
+                            setStatusFilter('');
+                            setAnchorEl(null);
+                        }}
+                        sx={{ color: '#EF4444', textTransform: 'none', fontWeight: 600 }}
+                    >
+                        Reset Filters
+                    </Button>
+                </Stack>
+            </Popover>
+        </>
+    );
+};
+
 const OrganizationAssignments = () => {
     const { user } = useAuth();
     const { pathname } = useLocation();
@@ -176,6 +526,7 @@ const OrganizationAssignments = () => {
     });
 
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+    const [createModalOpen, setCreateModalOpen] = useState(false);
 
     const openSnackbar = (message, severity = 'success') => {
         setSnackbar({ open: true, message, severity });
@@ -217,7 +568,6 @@ const OrganizationAssignments = () => {
                 per_page: 20,
             });
             setMyAssignments(response.data || []);
-            openSnackbar('Loaded my assignments.');
         } catch (err) {
             console.error('Failed to load my assignments:', err);
             openSnackbar(err.message || 'Failed to load my assignments.', 'error');
@@ -277,9 +627,6 @@ const OrganizationAssignments = () => {
             });
         } catch (err) {
             console.error('Failed to load assignment options:', err);
-            setUsers([]);
-            setCourses([]);
-            setInviteStats({ pending: 0, acceptedWithoutUser: 0 });
         }
     }, [canManageAssignments, isMyAssignmentsRoute, selectedOrgId]);
 
@@ -369,6 +716,7 @@ const OrganizationAssignments = () => {
             openSnackbar('Assignment created successfully.');
             setSelectedUserIds([]);
             setAssignForm((prev) => ({ ...prev, due_at: '' }));
+            setCreateModalOpen(false);
             await listAssignments();
         } catch (err) {
             console.error('Failed to assign content:', err);
@@ -397,26 +745,77 @@ const OrganizationAssignments = () => {
     const assignmentRows = useMemo(() => assignments, [assignments]);
 
     return (
-        <Box sx={{ p: { xs: 2, md: 4 }, bgcolor: '#0C1322', minHeight: 'calc(100vh - 70px)', width: '100%' }}>
-            <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={2} sx={{ mb: 4 }}>
+        <Box sx={{ p: { xs: 2.5, md: 5 }, bgcolor: '#0F1729', minHeight: 'calc(100vh - 70px)', width: '100%' }}>
+            <Stack
+                direction={{ xs: 'column', md: 'row' }}
+                justifyContent="space-between"
+                alignItems={{ xs: 'stretch', md: 'center' }}
+                spacing={3}
+                sx={{ mb: 5 }}
+            >
                 <Box>
-                    <Typography variant="h4" sx={{ color: '#fff', fontWeight: 700, mb: 1 }}>
-                        {isMyAssignmentsRoute ? 'My Assignments' : 'Organization Assignments'}
+                    <Typography
+                        variant="h4"
+                        sx={{
+                            color: '#F8FAFC',
+                            fontWeight: 800,
+                            letterSpacing: '-0.02em',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1.5,
+                        }}
+                    >
+                        {isMyAssignmentsRoute ? (
+                            <>
+                                <AssignmentOutlined sx={{ fontSize: 32, color: '#6366F1' }} />
+                                My Learning Tasks
+                            </>
+                        ) : (
+                            <>
+                                <AssignmentOutlined sx={{ fontSize: 32, color: '#3B82F6' }} />
+                                Workforce Assignments
+                            </>
+                        )}
                     </Typography>
-                    <Typography variant="body2" sx={{ color: '#9CA3AF' }}>
+                    <Typography variant="body2" sx={{ color: '#64748B', mt: 1, maxWidth: 600 }}>
                         {isMyAssignmentsRoute
-                            ? 'View assignments for your account.'
-                            : 'Assign courses or learning paths to users and monitor assignment status.'}
+                            ? 'Monitor your assigned courses and learning paths, track deadlines, and view your progress in real-time.'
+                            : 'Orchestrate your team’s development. Create specific assignments, set deadlines, and monitor completion metrics across your organization.'}
                     </Typography>
                 </Box>
 
-                <Stack direction="row" spacing={1}>
-                    <Button variant="outlined" onClick={listMyAssignments} sx={{ borderColor: '#374151', color: '#E5E7EB' }}>
-                        Load My Assignments
-                    </Button>
-                    <IconButton onClick={canManageAssignments && !isMyAssignmentsRoute ? listAssignments : listMyAssignments} sx={{ color: '#9CA3AF' }}>
-                        <Refresh />
-                    </IconButton>
+                <Stack direction="row" spacing={2}>
+                    {canManageAssignments && !isMyAssignmentsRoute && (
+                        <Button
+                            variant="contained"
+                            startIcon={<AddRounded />}
+                            onClick={() => setCreateModalOpen(true)}
+                            sx={{
+                                ...primaryButtonStyle,
+                                borderRadius: '10px',
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                px: 3,
+                                height: 44,
+                            }}
+                        >
+                            Create Assignment
+                        </Button>
+                    )}
+                    <Tooltip title="Refresh Data">
+                        <IconButton
+                            onClick={canManageAssignments && !isMyAssignmentsRoute ? listAssignments : listMyAssignments}
+                            sx={{
+                                color: '#94A3B8',
+                                bgcolor: 'rgba(30, 41, 59, 0.4)',
+                                border: '1px solid #1E293B',
+                                borderRadius: '10px',
+                                '&:hover': { bgcolor: 'rgba(30, 41, 59, 0.8)' },
+                            }}
+                        >
+                            <RefreshRounded />
+                        </IconButton>
+                    </Tooltip>
                 </Stack>
             </Stack>
 
@@ -428,229 +827,120 @@ const OrganizationAssignments = () => {
             />
 
             {!canManageAssignments && !isMyAssignmentsRoute && (
-                <Alert severity="info" sx={{ mb: 3, bgcolor: 'rgba(59, 130, 246, 0.15)', color: '#93C5FD' }}>
-                    Organization assignment management requires an org admin or manager role. You can still load and view your own assignments below.
-                </Alert>
+                <Fade in>
+                    <Box
+                        sx={{
+                            p: 2,
+                            mb: 4,
+                            borderRadius: 2,
+                            bgcolor: 'rgba(59, 130, 246, 0.05)',
+                            border: '1px solid rgba(59, 130, 246, 0.1)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 2,
+                        }}
+                    >
+                        <InfoOutlined sx={{ color: '#3B82F6' }} />
+                        <Typography variant="body2" sx={{ color: '#94A3B8' }}>
+                            You are viewing your personal learning dashboard. Switch organization context or contact your admin if you need management access.
+                        </Typography>
+                    </Box>
+                </Fade>
             )}
 
             {canManageAssignments && !isMyAssignmentsRoute && (
-                <>
-                    <Paper sx={{ ...paperStyle, p: 2.5, mb: 3 }}>
-                <Typography sx={{ color: '#fff', fontWeight: 700, mb: 1.5 }}>Create Assignment</Typography>
-
-                <Stack spacing={2}>
-                    <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-                        <FormControl fullWidth>
-                            <InputLabel sx={{ color: '#9CA3AF' }}>Type</InputLabel>
-                            <Select
-                                label="Type"
-                                value={assignForm.type}
-                                onChange={(event) =>
-                                    setAssignForm((prev) => ({
-                                        ...prev,
-                                        type: event.target.value,
-                                        course_id: '',
-                                        learning_path_id: '',
-                                    }))
-                                }
-                                sx={selectStyle}
-                                MenuProps={selectMenuProps}
-                            >
-                                {ASSIGNMENT_TYPES.map((type) => (
-                                    <MenuItem key={type} value={type}>{type}</MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-
-                        {assignForm.type === 'course' ? (
-                            <FormControl fullWidth>
-                                <InputLabel sx={{ color: '#9CA3AF' }}>Course</InputLabel>
-                                <Select
-                                    label="Course"
-                                    value={assignForm.course_id}
-                                    onChange={(event) => setAssignForm((prev) => ({ ...prev, course_id: event.target.value }))}
-                                    sx={selectStyle}
-                                    MenuProps={selectMenuProps}
-                                >
-                                    {courses.length === 0 ? (
-                                        <MenuItem value="" disabled>No courses found</MenuItem>
-                                    ) : (
-                                        courses.map((course) => (
-                                            <MenuItem key={course.id} value={course.id}>
-                                                {readCourseLabel(course)}
-                                            </MenuItem>
-                                        ))
-                                    )}
-                                </Select>
-                            </FormControl>
-                        ) : (
-                            <FormControl fullWidth>
-                                <InputLabel sx={{ color: '#9CA3AF' }}>Learning Path</InputLabel>
-                                <Select
-                                    label="Learning Path"
-                                    value={assignForm.learning_path_id}
-                                    onChange={(event) => setAssignForm((prev) => ({ ...prev, learning_path_id: event.target.value }))}
-                                    sx={selectStyle}
-                                    MenuProps={selectMenuProps}
-                                >
-                                    {learningPaths.length === 0 ? (
-                                        <MenuItem value="" disabled>No learning paths found</MenuItem>
-                                    ) : (
-                                        learningPaths.map((path) => (
-                                            <MenuItem key={path.id} value={path.id}>
-                                                {readLearningPathLabel(path)}
-                                            </MenuItem>
-                                        ))
-                                    )}
-                                </Select>
-                            </FormControl>
-                        )}
-
-                        <TextField
-                            label="Due Date"
-                            type="date"
-                            value={assignForm.due_at}
-                            onChange={(event) => setAssignForm((prev) => ({ ...prev, due_at: event.target.value }))}
-                            sx={textFieldStyle}
-                            InputLabelProps={{ shrink: true }}
-                            fullWidth
-                        />
-                    </Stack>
-
-                    <FormControl fullWidth>
-                        <InputLabel sx={{ color: '#9CA3AF' }}>Select Users</InputLabel>
-                        <Select
-                            multiple
-                            label="Select Users"
-                            value={selectedUserIds}
-                            onChange={(event) => {
-                                const value = event.target.value;
-                                setSelectedUserIds(typeof value === 'string' ? value.split(',') : value);
-                            }}
-                            sx={selectStyle}
-                            MenuProps={selectMenuProps}
-                            renderValue={(selected) => renderSelectedUsers(selected, userOptions)}
-                        >
-                            {userOptions.length === 0 ? (
-                                <MenuItem value="" disabled>No users found</MenuItem>
-                            ) : (
-                                userOptions.map((user) => (
-                                    <MenuItem key={user.id} value={user.id}>
-                                        {formatUserLabel(user)}
-                                    </MenuItem>
-                                ))
-                            )}
-                        </Select>
-                    </FormControl>
-
-                    {(inviteStats.pending > 0 || inviteStats.acceptedWithoutUser > 0) && (
-                        <Alert severity="info" sx={{ bgcolor: 'rgba(59, 130, 246, 0.15)', color: '#93C5FD' }}>
-                            {inviteStats.pending > 0
-                                ? `${inviteStats.pending} invited user(s) are still pending and cannot be assigned yet. `
-                                : ''}
-                            {inviteStats.acceptedWithoutUser > 0
-                                ? `${inviteStats.acceptedWithoutUser} accepted invite(s) have no linked user record in the API response, so they cannot be added to this selector.`
-                                : ''}
-                        </Alert>
-                    )}
-
-                    <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', md: 'center' }} spacing={1}>
-                        <Typography sx={{ color: '#9CA3AF', fontSize: '0.82rem' }}>
-                            Total users to assign: {mergedUserIds.length}
-                        </Typography>
-
-                        <Button variant="contained" onClick={handleAssign} disabled={saving || !selectedOrgId} sx={primaryButtonStyle}>
-                            {saving ? 'Assigning...' : 'Create Assignment'}
-                        </Button>
-                    </Stack>
+                <Stack direction="row" justifyContent="flex-end" sx={{ mb: 2 }}>
+                    <FilterPopover
+                        typeFilter={typeFilter}
+                        setTypeFilter={setTypeFilter}
+                        statusFilter={statusFilter}
+                        setStatusFilter={setStatusFilter}
+                    />
                 </Stack>
-            </Paper>
+            )}
 
-                    <Paper sx={{ ...paperStyle, p: 2, mb: 2 }}>
-                <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-                    <FormControl sx={{ minWidth: 200 }}>
-                        <InputLabel sx={{ color: '#9CA3AF' }}>Type Filter</InputLabel>
-                        <Select
-                            label="Type Filter"
-                            value={typeFilter}
-                            onChange={(event) => setTypeFilter(event.target.value)}
-                            sx={selectStyle}
-                            MenuProps={selectMenuProps}
-                        >
-                            <MenuItem value="">All</MenuItem>
-                            {ASSIGNMENT_TYPES.map((type) => (
-                                <MenuItem key={type} value={type}>{type}</MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-
-                    <FormControl sx={{ minWidth: 220 }}>
-                        <InputLabel sx={{ color: '#9CA3AF' }}>Status Filter</InputLabel>
-                        <Select
-                            label="Status Filter"
-                            value={statusFilter}
-                            onChange={(event) => setStatusFilter(event.target.value)}
-                            sx={selectStyle}
-                            MenuProps={selectMenuProps}
-                        >
-                            <MenuItem value="">All</MenuItem>
-                            {ASSIGNMENT_STATUSES.map((status) => (
-                                <MenuItem key={status} value={status}>{status}</MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                </Stack>
-            </Paper>
-
-                    <TableContainer component={Paper} sx={paperStyle}>
+            <TableContainer
+                component={Paper}
+                elevation={0}
+                sx={{
+                    bgcolor: 'rgba(15, 23, 42, 0.4)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: 3,
+                    border: '1px solid #1E293B',
+                    overflow: 'hidden',
+                }}
+            >
                 <Table>
                     <TableHead>
-                        <TableRow>
-                            <TableCell sx={tableHeaderCellStyle}>Assignee</TableCell>
-                            <TableCell sx={tableHeaderCellStyle}>Type</TableCell>
-                            <TableCell sx={tableHeaderCellStyle}>Content</TableCell>
-                            <TableCell sx={tableHeaderCellStyle}>Due Date</TableCell>
-                            <TableCell sx={tableHeaderCellStyle}>Status</TableCell>
-                            <TableCell align="right" sx={tableHeaderCellStyle}>Action</TableCell>
+                        <TableRow sx={{ bgcolor: 'rgba(30, 41, 59, 0.5)' }}>
+                            <TableCell sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Member</TableCell>
+                            <TableCell sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Type</TableCell>
+                            <TableCell sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Assigned Content</TableCell>
+                            <TableCell sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Due Date</TableCell>
+                            <TableCell sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</TableCell>
+                            <TableCell align="right" sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Control</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {!selectedOrgId ? (
+                        {loading ? (
+                            Array.from({ length: 5 }).map((_, i) => (
+                                <TableRow key={i} sx={{ borderBottom: '1px solid #1E293B' }}>
+                                    <TableCell sx={tableBodyCellStyle}>
+                                        <Skeleton variant="text" sx={{ bgcolor: '#1E293B', width: '70%', height: 24 }} />
+                                        <Skeleton variant="text" sx={{ bgcolor: '#1E293B', width: '50%', height: 16 }} />
+                                    </TableCell>
+                                    <TableCell sx={tableBodyCellStyle}><Skeleton variant="text" sx={{ bgcolor: '#1E293B', width: 60 }} /></TableCell>
+                                    <TableCell sx={tableBodyCellStyle}><Skeleton variant="text" sx={{ bgcolor: '#1E293B', width: '80%' }} /></TableCell>
+                                    <TableCell sx={tableBodyCellStyle}><Skeleton variant="text" sx={{ bgcolor: '#1E293B', width: 100 }} /></TableCell>
+                                    <TableCell sx={tableBodyCellStyle}><Skeleton variant="rectangular" sx={{ bgcolor: '#1E293B', width: 80, height: 24, borderRadius: 1 }} /></TableCell>
+                                    <TableCell align="right" sx={tableBodyCellStyle}><Skeleton variant="rectangular" sx={{ bgcolor: '#1E293B', width: 60, height: 32, borderRadius: 1, ml: 'auto' }} /></TableCell>
+                                </TableRow>
+                            ))
+                        ) : !selectedOrgId ? (
                             <TableRow>
-                                <TableCell colSpan={6} align="center" sx={{ ...tableBodyCellStyle, py: 5, color: '#9CA3AF' }}>
-                                    Select an organization to view assignments.
-                                </TableCell>
-                            </TableRow>
-                        ) : loading ? (
-                            <TableRow>
-                                <TableCell colSpan={6} align="center" sx={{ ...tableBodyCellStyle, py: 6 }}>
-                                    <CircularProgress />
+                                <TableCell colSpan={6} sx={{ p: 0 }}>
+                                    <Box sx={{ py: 10, textAlign: 'center' }}>
+                                        <BusinessOutlined sx={{ fontSize: 60, color: '#1E293B', mb: 2 }} />
+                                        <Typography sx={{ color: '#F8FAFC', fontWeight: 600, mb: 1 }}>No Organization Selected</Typography>
+                                        <Typography sx={{ color: '#64748B', maxWidth: 300, mx: 'auto' }}>Please select an organization context above to see the member assignments.</Typography>
+                                    </Box>
                                 </TableCell>
                             </TableRow>
                         ) : assignmentRows.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={6} align="center" sx={{ ...tableBodyCellStyle, py: 5, color: '#9CA3AF' }}>
-                                    No assignments found.
+                                <TableCell colSpan={6} sx={{ p: 0 }}>
+                                    <Box sx={{ py: 10, textAlign: 'center' }}>
+                                        <HistoryRounded sx={{ fontSize: 60, color: '#1E293B', mb: 2 }} />
+                                        <Typography sx={{ color: '#F8FAFC', fontWeight: 600, mb: 1 }}>Clean Slate</Typography>
+                                        <Typography sx={{ color: '#64748B', maxWidth: 300, mx: 'auto' }}>No assignments have been created yet. Click "Create Assignment" to get started.</Typography>
+                                    </Box>
                                 </TableCell>
                             </TableRow>
                         ) : (
                             assignmentRows.map((assignment) => (
-                                <TableRow key={assignment.id}>
+                                <TableRow
+                                    key={assignment.id}
+                                    sx={{
+                                        '&:hover': { bgcolor: 'rgba(255,255,255,0.02)' },
+                                        transition: 'background-color 0.2s ease',
+                                        borderBottom: '1px solid #1E293B',
+                                    }}
+                                >
                                     <TableCell sx={tableBodyCellStyle}>
-                                        <Typography sx={{ color: '#fff', fontWeight: 600 }}>
+                                        <Typography sx={{ color: '#F1F5F9', fontWeight: 600, fontSize: '0.9rem' }}>
                                             {readAssignmentUserPrimary(assignment)}
                                         </Typography>
-                                        <Typography sx={{ color: '#9CA3AF', fontSize: '0.8rem' }}>
+                                        <Typography sx={{ color: '#64748B', fontSize: '0.75rem' }}>
                                             {readAssignmentUserSecondary(assignment)}
                                         </Typography>
                                     </TableCell>
-                                    <TableCell sx={{ ...tableBodyCellStyle, color: '#D1D5DB', textTransform: 'capitalize' }}>
-                                        {assignment.type}
+                                    <TableCell sx={{ ...tableBodyCellStyle, color: '#94A3B8', textTransform: 'capitalize', fontSize: '0.85rem' }}>
+                                        {assignment.type === 'learning_path' ? 'Learning Path' : assignment.type}
                                     </TableCell>
-                                    <TableCell sx={{ ...tableBodyCellStyle, color: '#D1D5DB' }}>
+                                    <TableCell sx={{ ...tableBodyCellStyle, color: '#E2E8F0', fontWeight: 500, fontSize: '0.85rem' }}>
                                         {readAssignmentContentTitle(assignment)}
                                     </TableCell>
-                                    <TableCell sx={{ ...tableBodyCellStyle, color: '#D1D5DB' }}>
+                                    <TableCell sx={{ ...tableBodyCellStyle, color: '#94A3B8', fontSize: '0.85rem' }}>
                                         {formatDate(assignment.due_at)}
                                     </TableCell>
                                     <TableCell sx={tableBodyCellStyle}>
@@ -659,7 +949,13 @@ const OrganizationAssignments = () => {
                                             label={assignment.status || 'unknown'}
                                             sx={{
                                                 textTransform: 'capitalize',
-                                                bgcolor: 'rgba(255,255,255,0.06)',
+                                                bgcolor: assignment.status === 'completed'
+                                                    ? 'rgba(16, 185, 129, 0.1)'
+                                                    : assignment.status === 'revoked'
+                                                        ? 'rgba(239, 68, 68, 0.1)'
+                                                        : assignment.status === 'in_progress'
+                                                            ? 'rgba(59, 130, 246, 0.1)'
+                                                            : 'rgba(245, 158, 11, 0.1)',
                                                 color:
                                                     assignment.status === 'completed'
                                                         ? '#10B981'
@@ -668,19 +964,31 @@ const OrganizationAssignments = () => {
                                                             : assignment.status === 'in_progress'
                                                                 ? '#3B82F6'
                                                                 : '#F59E0B',
-                                                fontWeight: 600,
+                                                fontWeight: 700,
+                                                fontSize: '0.7rem',
+                                                borderRadius: '6px',
+                                                border: '1px solid transparent',
+                                                borderColor: assignment.status === 'completed'
+                                                    ? 'rgba(16, 185, 129, 0.2)'
+                                                    : 'rgba(239, 68, 68, 0.2)',
                                             }}
                                         />
                                     </TableCell>
                                     <TableCell align="right" sx={tableBodyCellStyle}>
                                         <Button
                                             size="small"
-                                            color="error"
                                             onClick={() => handleRevoke(assignment.id)}
                                             disabled={actionLoading === assignment.id || assignment.status === 'revoked'}
-                                            sx={{ textTransform: 'none' }}
+                                            sx={{
+                                                textTransform: 'none',
+                                                color: '#EF4444',
+                                                fontWeight: 600,
+                                                fontSize: '0.8rem',
+                                                '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.1)' },
+                                                '&.Mui-disabled': { color: '#334155' },
+                                            }}
                                         >
-                                            Revoke
+                                            {actionLoading === assignment.id ? 'Revoking...' : 'Revoke'}
                                         </Button>
                                     </TableCell>
                                 </TableRow>
@@ -688,45 +996,118 @@ const OrganizationAssignments = () => {
                         )}
                     </TableBody>
                 </Table>
-                    </TableContainer>
-                </>
-            )}
+            </TableContainer>
 
             {myAssignments.length > 0 && (
-                <Paper sx={{ ...paperStyle, p: 2, mt: 3 }}>
-                    <Typography sx={{ color: '#fff', fontWeight: 700, mb: 1.5 }}>My Assignments</Typography>
-                    <Stack spacing={1}>
+                <Box sx={{ mt: 8 }}>
+                    <Typography
+                        variant="h5"
+                        sx={{
+                            color: '#F8FAFC',
+                            fontWeight: 700,
+                            mb: 3,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1.5,
+                        }}
+                    >
+                        <CheckCircleRounded sx={{ color: '#10B981' }} />
+                        My Active Assignments
+                    </Typography>
+                    <Stack spacing={2}>
                         {myAssignments.map((assignment) => (
-                            <Stack
+                            <Paper
                                 key={assignment.id}
-                                direction={{ xs: 'column', md: 'row' }}
-                                justifyContent="space-between"
-                                sx={{ p: 1.25, borderRadius: 1, bgcolor: '#0F1729', border: '1px solid #374151' }}
+                                sx={{
+                                    p: 2.5,
+                                    borderRadius: 3,
+                                    bgcolor: '#0F172A',
+                                    border: '1px solid #1E293B',
+                                    display: 'flex',
+                                    flexDirection: { xs: 'column', md: 'row' },
+                                    justifyContent: 'space-between',
+                                    gap: 2,
+                                    transition: 'transform 0.2s ease, border-color 0.2s ease',
+                                    '&:hover': {
+                                        transform: 'translateY(-2px)',
+                                        borderColor: '#334155',
+                                    },
+                                }}
                             >
-                                <Box>
-                                    <Typography sx={{ color: '#E5E7EB', fontWeight: 600 }}>
-                                        {readAssignmentContentTitle(assignment)}
-                                    </Typography>
-                                    <Typography sx={{ color: '#9CA3AF', fontSize: '0.82rem' }}>
-                                        Organization: {readAssignmentOrganizationName(assignment)}
-                                    </Typography>
+                                <Box sx={{ display: 'flex', gap: 2 }}>
+                                    <Box
+                                        sx={{
+                                            width: 48,
+                                            height: 48,
+                                            borderRadius: 2,
+                                            bgcolor: 'rgba(99, 102, 241, 0.1)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            flexShrink: 0,
+                                        }}
+                                    >
+                                        <AssignmentOutlined sx={{ color: '#6366F1' }} />
+                                    </Box>
+                                    <Box>
+                                        <Typography sx={{ color: '#F1F5F9', fontWeight: 600, fontSize: '1rem' }}>
+                                            {readAssignmentContentTitle(assignment)}
+                                        </Typography>
+                                        <Typography sx={{ color: '#64748B', fontSize: '0.85rem', mt: 0.5 }}>
+                                            Organization: {readAssignmentOrganizationName(assignment)}
+                                        </Typography>
+                                    </Box>
                                 </Box>
-                                <Stack spacing={0.5} alignItems={{ xs: 'flex-start', md: 'flex-end' }}>
-                                    <Typography sx={{ color: '#9CA3AF', fontSize: '0.82rem' }}>
-                                        Status: {assignment.status || '-'}
-                                    </Typography>
-                                    <Typography sx={{ color: '#9CA3AF', fontSize: '0.82rem' }}>
-                                        Due: {formatDate(assignment.due_at)}
-                                    </Typography>
+                                <Stack direction="row" spacing={3} alignItems="center">
+                                    <Box sx={{ textAlign: { xs: 'left', md: 'right' } }}>
+                                        <Typography sx={{ color: '#94A3B8', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>Due Date</Typography>
+                                        <Typography sx={{ color: '#E2E8F0', fontWeight: 600 }}>{formatDate(assignment.due_at)}</Typography>
+                                    </Box>
+                                    <Chip
+                                        size="small"
+                                        label={assignment.status || 'Pending'}
+                                        sx={{
+                                            bgcolor: 'rgba(99, 102, 241, 0.1)',
+                                            color: '#818CF8',
+                                            fontWeight: 700,
+                                            fontSize: '0.7rem',
+                                            borderRadius: '6px',
+                                        }}
+                                    />
                                 </Stack>
-                            </Stack>
+                            </Paper>
                         ))}
                     </Stack>
-                </Paper>
+                </Box>
             )}
 
-            <Snackbar open={snackbar.open} autoHideDuration={3500} onClose={closeSnackbar} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert severity={snackbar.severity} onClose={closeSnackbar} variant="filled">
+            <CreateAssignmentModal
+                open={createModalOpen}
+                onClose={() => setCreateModalOpen(false)}
+                onAssign={handleAssign}
+                saving={saving}
+                assignForm={assignForm}
+                setAssignForm={setAssignForm}
+                courses={courses}
+                learningPaths={learningPaths}
+                userOptions={userOptions}
+                selectedUserIds={selectedUserIds}
+                setSelectedUserIds={setSelectedUserIds}
+                inviteStats={inviteStats}
+            />
+
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={4000}
+                onClose={closeSnackbar}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            >
+                <Alert
+                    severity={snackbar.severity}
+                    onClose={closeSnackbar}
+                    variant="filled"
+                    sx={{ borderRadius: 2, fontWeight: 600 }}
+                >
                     {snackbar.message}
                 </Alert>
             </Snackbar>

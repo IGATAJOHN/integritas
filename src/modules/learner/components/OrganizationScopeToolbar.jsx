@@ -4,7 +4,6 @@ import {
     Box,
     Chip,
     FormControl,
-    InputLabel,
     ListSubheader,
     MenuItem,
     Paper,
@@ -12,6 +11,7 @@ import {
     Stack,
     Typography,
 } from '@mui/material';
+import { BusinessOutlined, ExpandMoreRounded } from '@mui/icons-material';
 import { selectMenuProps, selectStyle } from '../../../styles/formStyles';
 
 const getOrganizationAccessLabel = (organization = {}) => {
@@ -42,93 +42,108 @@ const OrganizationScopeToolbar = ({
     );
 
     return (
-        <Paper sx={{ bgcolor: '#1A2230', borderRadius: 2, border: '1px solid #374151', p: 2.5, mb: 3 }}>
-            <Stack spacing={2}>
+        <Paper
+            elevation={0}
+            sx={{
+                bgcolor: 'rgba(15, 23, 42, 0.4)',
+                backdropFilter: 'blur(8px)',
+                borderRadius: 2,
+                border: '1px solid #1E293B',
+                p: { xs: 1.5, md: 2 },
+                mb: 3,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 2,
+            }}
+        >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, minWidth: 280 }}>
+                <Box
+                    sx={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: '10px',
+                        bgcolor: selectedOrganization ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255, 255, 255, 0.03)',
+                        border: '1px solid',
+                        borderColor: selectedOrganization ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                    }}
+                >
+                    <BusinessOutlined
+                        sx={{
+                            color: selectedOrganization ? '#60A5FA' : '#64748B',
+                            fontSize: 22,
+                        }}
+                    />
+                </Box>
                 <Box>
-                    <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '1rem', mb: 0.5 }}>
-                        {title}
+                    <Typography sx={{ color: selectedOrganization ? '#F8FAFC' : '#E2E8F0', fontSize: '0.95rem', fontWeight: 600, lineHeight: 1.2 }}>
+                        {selectedOrganization ? selectedOrganization.name : title}
                     </Typography>
-                    <Typography sx={{ color: '#9CA3AF', fontSize: '0.82rem' }}>
-                        {subtitle}
+                    <Typography sx={{ color: '#94A3B8', fontSize: '0.8rem', mt: 0.5 }}>
+                        {selectedOrganization
+                            ? `Role: ${getOrganizationAccessLabel(selectedOrganization)}`
+                            : subtitle}
                     </Typography>
                 </Box>
+            </Box>
 
-                <Stack direction={{ xs: 'column', lg: 'row' }} spacing={1.5} alignItems={{ xs: 'stretch', lg: 'center' }}>
-                    <FormControl sx={{ minWidth: { xs: '100%', lg: 320 } }}>
-                        <InputLabel sx={{ color: '#9CA3AF' }}>Known Organizations</InputLabel>
-                        <Select
-                            label="Known Organizations"
-                            value={selectedOrgId}
-                            onChange={(event) => onChangeOrgId?.(event.target.value)}
-                            sx={selectStyle}
-                            MenuProps={selectMenuProps}
-                        >
-                            <MenuItem value="">
-                                <em>None selected</em>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexShrink: 0, width: { xs: '100%', sm: 'auto' } }}>
+                <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 240 } }}>
+                    <Select
+                        displayEmpty
+                        value={selectedOrgId}
+                        onChange={(event) => onChangeOrgId?.(event.target.value)}
+                        IconComponent={ExpandMoreRounded}
+                        sx={{
+                            ...selectStyle,
+                            height: 42,
+                            bgcolor: '#0B1120',
+                            borderColor: '#1E293B',
+                            borderRadius: '8px',
+                            '&:hover': {
+                                borderColor: '#334155',
+                            },
+                            '& .MuiSelect-select': {
+                                py: 1,
+                                px: 1.5,
+                                color: selectedOrgId ? '#F8FAFC' : '#64748B',
+                                fontSize: '0.9rem',
+                            },
+                        }}
+                        MenuProps={selectMenuProps}
+                    >
+                        <MenuItem value="" disabled>
+                            <em>Select Organization Context</em>
+                        </MenuItem>
+                        {manageableOrganizations.length > 0 && (
+                            <ListSubheader disableSticky sx={{ bgcolor: '#0B1120', color: '#94A3B8', fontSize: '0.75rem', lineHeight: '32px' }}>
+                                Manageable Organizations
+                            </ListSubheader>
+                        )}
+                        {manageableOrganizations.map((organization) => (
+                            <MenuItem key={organization.id} value={organization.id} sx={{ fontSize: '0.9rem' }}>
+                                {organization.name}
                             </MenuItem>
-                            {manageableOrganizations.length > 0 && (
-                                <ListSubheader disableSticky sx={{ bgcolor: '#111827', color: '#9CA3AF' }}>
-                                    Manageable Organizations
-                                </ListSubheader>
-                            )}
-                            {manageableOrganizations.map((organization) => (
-                                <MenuItem key={organization.id} value={organization.id}>
-                                    {organization.name}
-                                </MenuItem>
-                            ))}
-                            {invitedOrganizations.length > 0 && (
-                                <ListSubheader disableSticky sx={{ bgcolor: '#111827', color: '#9CA3AF' }}>
-                                    Invited Organizations
-                                </ListSubheader>
-                            )}
-                            {invitedOrganizations.map((organization) => (
-                                <MenuItem key={organization.id} value={organization.id}>
-                                    {organization.name}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-
-                    {actions}
-                </Stack>
-
-                {selectedOrganization ? (
-                    <Alert severity="info" sx={{ bgcolor: 'rgba(59, 130, 246, 0.15)', color: '#93C5FD' }}>
-                        Active organization: <strong>{selectedOrganization.name}</strong>. Access: {getOrganizationAccessLabel(selectedOrganization)}.
-                    </Alert>
-                ) : (
-                    <Alert severity="warning" sx={{ bgcolor: 'rgba(245, 158, 11, 0.15)', color: '#F59E0B' }}>
-                        No organization selected. Choose one to continue. Invited organizations appear below when available.
-                    </Alert>
-                )}
-
-                {invitedOrganizations.length > 0 && (
-                    <Box>
-                        <Typography sx={{ color: '#E5E7EB', fontWeight: 600, fontSize: '0.82rem', mb: 1 }}>
-                            Invited Organizations
-                        </Typography>
-                        <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-                            {invitedOrganizations.map((organization) => {
-                                const isActive = organization.id === selectedOrgId;
-                                return (
-                                    <Chip
-                                        key={organization.id}
-                                        label={organization.name}
-                                        onClick={() => onChangeOrgId?.(organization.id)}
-                                        variant={isActive ? 'filled' : 'outlined'}
-                                        sx={{
-                                            bgcolor: isActive ? 'rgba(17,82,212,0.2)' : 'transparent',
-                                            color: isActive ? '#93C5FD' : '#D1D5DB',
-                                            borderColor: '#374151',
-                                            fontWeight: 600,
-                                        }}
-                                    />
-                                );
-                            })}
-                        </Stack>
-                    </Box>
-                )}
-            </Stack>
+                        ))}
+                        {invitedOrganizations.length > 0 && (
+                            <ListSubheader disableSticky sx={{ bgcolor: '#0B1120', color: '#94A3B8', fontSize: '0.75rem', lineHeight: '32px', borderTop: '1px solid #1E293B' }}>
+                                Invited Organizations
+                            </ListSubheader>
+                        )}
+                        {invitedOrganizations.map((organization) => (
+                            <MenuItem key={organization.id} value={organization.id} sx={{ fontSize: '0.9rem' }}>
+                                {organization.name}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+                {actions}
+            </Box>
         </Paper>
     );
 };

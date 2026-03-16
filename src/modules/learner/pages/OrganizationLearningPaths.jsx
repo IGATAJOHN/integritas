@@ -3,15 +3,19 @@ import {
     Alert,
     Box,
     Button,
-    CircularProgress,
+    Chip,
+    Divider,
+    Fade,
     FormControl,
     IconButton,
-    InputBase,
+    InputAdornment,
     InputLabel,
     MenuItem,
     Modal,
     Paper,
+    Popover,
     Select,
+    Skeleton,
     Snackbar,
     Stack,
     Table,
@@ -24,7 +28,22 @@ import {
     Tooltip,
     Typography,
 } from '@mui/material';
-import { Add, Close, Delete, Edit, Refresh, Visibility } from '@mui/icons-material';
+import {
+    AddRounded,
+    ArchiveOutlined,
+    AutoStoriesOutlined,
+    BusinessOutlined,
+    CloseRounded,
+    DeleteRounded,
+    EditRounded,
+    FilterListRounded,
+    InfoOutlined,
+    LayersOutlined,
+    PublishRounded,
+    RefreshRounded,
+    SearchRounded,
+    VisibilityRounded,
+} from '@mui/icons-material';
 import { organizationService } from '../services/organizationService';
 import { useOrganizationScope } from '../hooks/useOrganizationScope';
 import OrganizationScopeToolbar from '../components/OrganizationScopeToolbar';
@@ -32,8 +51,6 @@ import {
     modalStyle,
     paperStyle,
     primaryButtonStyle,
-    searchBarStyle,
-    searchInputStyle,
     selectMenuProps,
     selectStyle,
     tableBodyCellStyle,
@@ -54,6 +71,119 @@ const readCourseLabel = (course = {}) =>
 
 const readLearningPathLabel = (path = {}) =>
     String(path?.title || path?.name || '').trim() || 'Untitled learning path';
+
+const FilterPopover = ({
+    statusFilter,
+    setStatusFilter,
+    searchTerm,
+    setSearchTerm,
+}) => {
+    const [anchorEl, setAnchorEl] = useState(null);
+    const open = Boolean(anchorEl);
+
+    return (
+        <>
+            <Tooltip title="Filters">
+                <Button
+                    startIcon={<FilterListRounded />}
+                    onClick={(e) => setAnchorEl(e.currentTarget)}
+                    sx={{
+                        bgcolor: 'rgba(30, 41, 59, 0.5)',
+                        border: '1px solid #1E293B',
+                        color: '#E2E8F0',
+                        textTransform: 'none',
+                        px: 2,
+                        '&:hover': { bgcolor: 'rgba(30, 41, 59, 0.8)', borderColor: '#334155' },
+                    }}
+                >
+                    Filters
+                    {(statusFilter || searchTerm) && (
+                        <Box
+                            sx={{
+                                ml: 1,
+                                width: 8,
+                                height: 8,
+                                borderRadius: '50%',
+                                bgcolor: '#3B82F6',
+                                border: '2px solid #0F172A',
+                            }}
+                        />
+                    )}
+                </Button>
+            </Tooltip>
+            <Popover
+                open={open}
+                anchorEl={anchorEl}
+                onClose={() => setAnchorEl(null)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                PaperProps={{
+                    sx: {
+                        bgcolor: '#0F172A',
+                        border: '1px solid #1E293B',
+                        borderRadius: 2,
+                        p: 2,
+                        minWidth: 280,
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)',
+                    },
+                }}
+            >
+                <Typography variant="subtitle2" sx={{ color: '#F8FAFC', fontWeight: 700, mb: 2 }}>
+                    Filter Learning Paths
+                </Typography>
+                <Stack spacing={2.5}>
+                    <TextField
+                        size="small"
+                        placeholder="Search by title..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        sx={textFieldStyle}
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchRounded sx={{ color: '#64748B', fontSize: 20 }} />
+                                </InputAdornment>
+                            ),
+                        }}
+                    />
+
+                    <FormControl fullWidth size="small">
+                        <InputLabel sx={{ color: '#94A3B8' }}>Status</InputLabel>
+                        <Select
+                            label="Status"
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            sx={selectStyle}
+                            MenuProps={selectMenuProps}
+                        >
+                            <MenuItem value="">All Statuses</MenuItem>
+                            {PATH_STATUSES.map((status) => (
+                                <MenuItem key={status} value={status} sx={{ textTransform: 'capitalize' }}>
+                                    {status}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+
+                    <Divider sx={{ borderColor: '#1E293B' }} />
+
+                    <Button
+                        size="small"
+                        fullWidth
+                        onClick={() => {
+                            setSearchTerm('');
+                            setStatusFilter('');
+                            setAnchorEl(null);
+                        }}
+                        sx={{ color: '#EF4444', textTransform: 'none', fontWeight: 600 }}
+                    >
+                        Reset Filters
+                    </Button>
+                </Stack>
+            </Popover>
+        </>
+    );
+};
 
 const OrganizationLearningPaths = () => {
     const {
@@ -371,30 +501,65 @@ const OrganizationLearningPaths = () => {
     }, [selectedPath]);
 
     return (
-        <Box sx={{ p: { xs: 2, md: 4 }, bgcolor: '#0C1322', minHeight: 'calc(100vh - 70px)', width: '100%' }}>
-            <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={2} sx={{ mb: 4 }}>
+        <Box sx={{ p: { xs: 2.5, md: 5 }, bgcolor: '#0F1729', minHeight: 'calc(100vh - 70px)', width: '100%' }}>
+            <Stack
+                direction={{ xs: 'column', md: 'row' }}
+                justifyContent="space-between"
+                alignItems={{ xs: 'stretch', md: 'center' }}
+                spacing={3}
+                sx={{ mb: 5 }}
+            >
                 <Box>
-                    <Typography variant="h4" sx={{ color: '#fff', fontWeight: 700, mb: 1 }}>
-                        Organization Learning Paths
+                    <Typography
+                        variant="h4"
+                        sx={{
+                            color: '#F8FAFC',
+                            fontWeight: 800,
+                            letterSpacing: '-0.02em',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1.5,
+                        }}
+                    >
+                        <LayersOutlined sx={{ fontSize: 32, color: '#6366F1' }} />
+                        Learning Paths
                     </Typography>
-                    <Typography variant="body2" sx={{ color: '#9CA3AF' }}>
-                        Manage learning paths and courses inside each organization.
+                    <Typography variant="body2" sx={{ color: '#64748B', mt: 1, maxWidth: 600 }}>
+                        Curate specialized educational journeys. Oragnize courses into structured paths, manage status, and monitor deployment across your organization.
                     </Typography>
                 </Box>
 
-                <Stack direction="row" spacing={1}>
+                <Stack direction="row" spacing={2}>
                     <Button
                         variant="contained"
-                        startIcon={<Add />}
+                        startIcon={<AddRounded />}
                         onClick={openCreatePathModal}
                         disabled={!selectedOrgId || !canManageLearningPaths}
-                        sx={primaryButtonStyle}
+                        sx={{
+                            ...primaryButtonStyle,
+                            borderRadius: '10px',
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            px: 3,
+                            height: 44,
+                        }}
                     >
                         Create Learning Path
                     </Button>
-                    <IconButton onClick={listLearningPaths} sx={{ color: '#9CA3AF' }}>
-                        <Refresh />
-                    </IconButton>
+                    <Tooltip title="Refresh Data">
+                        <IconButton
+                            onClick={listLearningPaths}
+                            sx={{
+                                color: '#94A3B8',
+                                bgcolor: 'rgba(30, 41, 59, 0.4)',
+                                border: '1px solid #1E293B',
+                                borderRadius: '10px',
+                                '&:hover': { bgcolor: 'rgba(30, 41, 59, 0.8)' },
+                            }}
+                        >
+                            <RefreshRounded />
+                        </IconButton>
+                    </Tooltip>
                 </Stack>
             </Stack>
 
@@ -406,141 +571,197 @@ const OrganizationLearningPaths = () => {
             />
 
             {selectedOrgId && accessDenied && (
-                <Alert severity="info" sx={{ mb: 3, bgcolor: 'rgba(59, 130, 246, 0.15)', color: '#93C5FD' }}>
-                    You are not a manager, admin, or owner of this organization, so learning paths cannot be managed from this page.
-                </Alert>
+                <Fade in>
+                    <Box
+                        sx={{
+                            p: 2,
+                            mb: 4,
+                            borderRadius: 2,
+                            bgcolor: 'rgba(59, 130, 246, 0.05)',
+                            border: '1px solid rgba(59, 130, 246, 0.1)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 2,
+                        }}
+                    >
+                        <InfoOutlined sx={{ color: '#3B82F6' }} />
+                        <Typography variant="body2" sx={{ color: '#94A3B8' }}>
+                            You are not authorized to manage learning paths in this organization. Please contact your administrator for manager access.
+                        </Typography>
+                    </Box>
+                </Fade>
             )}
 
-            <Paper sx={{ ...paperStyle, p: 2, mb: 3 }}>
-                <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
-                    <Box sx={{ ...searchBarStyle, maxWidth: 420 }}>
-                        <InputBase
-                            placeholder="Search learning path title..."
-                            value={searchTerm}
-                            onChange={(event) => setSearchTerm(event.target.value)}
-                            sx={searchInputStyle}
-                        />
-                    </Box>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                <Typography sx={{ color: '#64748B', fontSize: '0.85rem' }}>
+                    Showing {learningPaths.length} learning paths
+                </Typography>
+                <FilterPopover
+                    statusFilter={statusFilter}
+                    setStatusFilter={setStatusFilter}
+                    searchTerm={searchTerm}
+                    setSearchTerm={setSearchTerm}
+                />
+            </Stack>
 
-                    <FormControl sx={{ minWidth: 200 }}>
-                        <InputLabel sx={{ color: '#9CA3AF' }}>Status</InputLabel>
-                        <Select
-                            label="Status"
-                            value={statusFilter}
-                            onChange={(event) => setStatusFilter(event.target.value)}
-                            sx={selectStyle}
-                            MenuProps={selectMenuProps}
-                        >
-                            <MenuItem value="">All</MenuItem>
-                            {PATH_STATUSES.map((status) => (
-                                <MenuItem key={status} value={status}>{status}</MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                </Stack>
-            </Paper>
-
-            <TableContainer component={Paper} sx={paperStyle}>
+            <TableContainer
+                component={Paper}
+                elevation={0}
+                sx={{
+                    bgcolor: 'rgba(15, 23, 42, 0.4)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: 3,
+                    border: '1px solid #1E293B',
+                    overflow: 'hidden',
+                }}
+            >
                 <Table>
                     <TableHead>
-                        <TableRow>
-                            <TableCell sx={tableHeaderCellStyle}>Learning Path</TableCell>
-                            <TableCell sx={tableHeaderCellStyle}>Status</TableCell>
-                            <TableCell sx={tableHeaderCellStyle}>Items</TableCell>
-                            <TableCell align="right" sx={tableHeaderCellStyle}>Actions</TableCell>
+                        <TableRow sx={{ bgcolor: 'rgba(30, 41, 59, 0.5)' }}>
+                            <TableCell sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Path Name</TableCell>
+                            <TableCell sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</TableCell>
+                            <TableCell sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Course Count</TableCell>
+                            <TableCell align="right" sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {!selectedOrgId ? (
+                        {loading ? (
+                            Array.from({ length: 5 }).map((_, i) => (
+                                <TableRow key={i} sx={{ borderBottom: '1px solid #1E293B' }}>
+                                    <TableCell sx={tableBodyCellStyle}><Skeleton variant="text" sx={{ bgcolor: '#1E293B', width: '60%', height: 24 }} /></TableCell>
+                                    <TableCell sx={tableBodyCellStyle}><Skeleton variant="rectangular" sx={{ bgcolor: '#1E293B', width: 80, height: 24, borderRadius: 1 }} /></TableCell>
+                                    <TableCell sx={tableBodyCellStyle}><Skeleton variant="text" sx={{ bgcolor: '#1E293B', width: 40 }} /></TableCell>
+                                    <TableCell align="right" sx={tableBodyCellStyle}><Skeleton variant="rectangular" sx={{ bgcolor: '#1E293B', width: 140, height: 32, borderRadius: 1, ml: 'auto' }} /></TableCell>
+                                </TableRow>
+                            ))
+                        ) : !selectedOrgId ? (
                             <TableRow>
-                                <TableCell colSpan={4} align="center" sx={{ ...tableBodyCellStyle, py: 5, color: '#9CA3AF' }}>
-                                    Select an organization to manage learning paths.
-                                </TableCell>
-                            </TableRow>
-                        ) : accessDenied ? (
-                            <TableRow>
-                                <TableCell colSpan={4} align="center" sx={{ ...tableBodyCellStyle, py: 5, color: '#9CA3AF' }}>
-                                    You are not a manager, admin, or owner of this organization.
-                                </TableCell>
-                            </TableRow>
-                        ) : loading ? (
-                            <TableRow>
-                                <TableCell colSpan={4} align="center" sx={{ ...tableBodyCellStyle, py: 6 }}>
-                                    <CircularProgress />
+                                <TableCell colSpan={4} sx={{ p: 0 }}>
+                                    <Box sx={{ py: 10, textAlign: 'center' }}>
+                                        <BusinessOutlined sx={{ fontSize: 60, color: '#1E293B', mb: 2 }} />
+                                        <Typography sx={{ color: '#F8FAFC', fontWeight: 600, mb: 1 }}>No Organization Selected</Typography>
+                                        <Typography sx={{ color: '#64748B', maxWidth: 300, mx: 'auto' }}>Select an organization context to view and manage your curated learning paths.</Typography>
+                                    </Box>
                                 </TableCell>
                             </TableRow>
                         ) : learningPaths.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={4} align="center" sx={{ ...tableBodyCellStyle, py: 5, color: '#9CA3AF' }}>
-                                    No learning paths found.
+                                <TableCell colSpan={4} sx={{ p: 0 }}>
+                                    <Box sx={{ py: 10, textAlign: 'center' }}>
+                                        <AutoStoriesOutlined sx={{ fontSize: 60, color: '#1E293B', mb: 2 }} />
+                                        <Typography sx={{ color: '#F8FAFC', fontWeight: 600, mb: 1 }}>No Paths Created</Typography>
+                                        <Typography sx={{ color: '#64748B', maxWidth: 300, mx: 'auto' }}>
+                                            {searchTerm || statusFilter 
+                                                ? "No paths match your current filters. Try adjusting them."
+                                                : "Create your first learning journey for this organization."}
+                                        </Typography>
+                                    </Box>
                                 </TableCell>
                             </TableRow>
                         ) : (
                             learningPaths.map((path) => {
                                 const rowLoading = actionLoading === path.id;
-                                const statusColor =
-                                    path.status === 'published'
-                                        ? '#10B981'
-                                        : path.status === 'archived'
-                                            ? '#EF4444'
-                                            : '#F59E0B';
-
                                 return (
-                                    <TableRow key={path.id}>
+                                    <TableRow
+                                        key={path.id}
+                                        sx={{
+                                            '&:hover': { bgcolor: 'rgba(255,255,255,0.02)' },
+                                            transition: 'background-color 0.2s ease',
+                                            borderBottom: '1px solid #1E293B',
+                                        }}
+                                    >
                                         <TableCell sx={tableBodyCellStyle}>
-                                            <Typography sx={{ color: '#fff', fontWeight: 600 }}>{readLearningPathLabel(path)}</Typography>
-                                        </TableCell>
-                                        <TableCell sx={tableBodyCellStyle}>
-                                            <Typography sx={{ color: statusColor, textTransform: 'capitalize', fontWeight: 600 }}>
-                                                {path.status || 'unknown'}
+                                            <Typography sx={{ color: '#F1F5F9', fontWeight: 600, fontSize: '0.9rem' }}>
+                                                {readLearningPathLabel(path)}
                                             </Typography>
+                                            {path.description && (
+                                                <Typography sx={{ color: '#64748B', fontSize: '0.75rem', mt: 0.5, maxWidth: 350 }} noWrap>
+                                                    {path.description}
+                                                </Typography>
+                                            )}
                                         </TableCell>
-                                        <TableCell sx={{ ...tableBodyCellStyle, color: '#D1D5DB' }}>
-                                            {path.items_count ?? 0}
+                                        <TableCell sx={tableBodyCellStyle}>
+                                            <Chip
+                                                size="small"
+                                                label={path.status || 'unknown'}
+                                                sx={{
+                                                    textTransform: 'capitalize',
+                                                    bgcolor: path.status === 'published'
+                                                        ? 'rgba(16, 185, 129, 0.1)'
+                                                        : path.status === 'archived'
+                                                            ? 'rgba(239, 68, 68, 0.1)'
+                                                            : 'rgba(245, 158, 11, 0.1)',
+                                                    color:
+                                                        path.status === 'published'
+                                                            ? '#10B981'
+                                                            : path.status === 'archived'
+                                                                ? '#EF4444'
+                                                                : '#F59E0B',
+                                                    fontWeight: 700,
+                                                    fontSize: '0.7rem',
+                                                    borderRadius: '6px',
+                                                }}
+                                            />
+                                        </TableCell>
+                                        <TableCell sx={{ ...tableBodyCellStyle, color: '#94A3B8', fontSize: '0.9rem' }}>
+                                            {path.items_count ?? 0} courses
                                         </TableCell>
                                         <TableCell align="right" sx={tableBodyCellStyle}>
                                             <Stack direction="row" spacing={1} justifyContent="flex-end">
-                                                <IconButton
-                                                    onClick={() => loadPathDetail(path.id, { openModal: true })}
-                                                    disabled={rowLoading}
-                                                    sx={{ color: '#3B82F6' }}
-                                                >
-                                                    <Visibility fontSize="small" />
-                                                </IconButton>
-
-                                                <IconButton
-                                                    onClick={() => openEditPathModal(path)}
-                                                    disabled={rowLoading}
-                                                    sx={{ color: '#F59E0B' }}
-                                                >
-                                                    <Edit fontSize="small" />
-                                                </IconButton>
-
-                                                <Button
-                                                    size="small"
-                                                    onClick={() => runPathAction(path, 'publish')}
-                                                    disabled={rowLoading || path.status === 'published'}
-                                                    sx={{ color: '#10B981', textTransform: 'none' }}
-                                                >
-                                                    Publish
-                                                </Button>
-
-                                                <Button
-                                                    size="small"
-                                                    onClick={() => runPathAction(path, 'archive')}
-                                                    disabled={rowLoading || path.status === 'archived'}
-                                                    sx={{ color: '#EF4444', textTransform: 'none' }}
-                                                >
-                                                    Archive
-                                                </Button>
-
-                                                <IconButton
-                                                    onClick={() => runPathAction(path, 'delete')}
-                                                    disabled={rowLoading}
-                                                    sx={{ color: '#EF4444' }}
-                                                >
-                                                    <Delete fontSize="small" />
-                                                </IconButton>
+                                                <Tooltip title="View Details">
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => loadPathDetail(path.id, { openModal: true })}
+                                                        disabled={rowLoading}
+                                                        sx={{ color: '#3B82F6', '&:hover': { bgcolor: 'rgba(59, 130, 246, 0.1)' } }}
+                                                    >
+                                                        <VisibilityRounded fontSize="small" />
+                                                    </IconButton>
+                                                </Tooltip>
+                                                <Tooltip title="Edit Metadata">
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => openEditPathModal(path)}
+                                                        disabled={rowLoading}
+                                                        sx={{ color: '#F59E0B', '&:hover': { bgcolor: 'rgba(245, 158, 11, 0.1)' } }}
+                                                    >
+                                                        <EditRounded fontSize="small" />
+                                                    </IconButton>
+                                                </Tooltip>
+                                                {path.status !== 'published' && (
+                                                    <Tooltip title="Publish Path">
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={() => runPathAction(path, 'publish')}
+                                                            disabled={rowLoading}
+                                                            sx={{ color: '#10B981', '&:hover': { bgcolor: 'rgba(16, 185, 129, 0.1)' } }}
+                                                        >
+                                                            <PublishRounded fontSize="small" />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                )}
+                                                {path.status !== 'archived' && (
+                                                    <Tooltip title="Archive Path">
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={() => runPathAction(path, 'archive')}
+                                                            disabled={rowLoading}
+                                                            sx={{ color: '#94A3B8', '&:hover': { bgcolor: 'rgba(148, 163, 184, 0.1)' } }}
+                                                        >
+                                                            <ArchiveOutlined fontSize="small" />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                )}
+                                                <Tooltip title="Delete Permanently">
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => runPathAction(path, 'delete')}
+                                                        disabled={rowLoading}
+                                                        sx={{ color: '#EF4444', '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.1)' } }}
+                                                    >
+                                                        <DeleteRounded fontSize="small" />
+                                                    </IconButton>
+                                                </Tooltip>
                                             </Stack>
                                         </TableCell>
                                     </TableRow>
@@ -551,192 +772,301 @@ const OrganizationLearningPaths = () => {
                 </Table>
             </TableContainer>
 
+            {/* Path Creation/Edit Modal */}
             <Modal open={openPathModal} onClose={() => !saving && setOpenPathModal(false)}>
-                <Box sx={{ ...modalStyle, width: { xs: '95%', md: 680 } }}>
-                    <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ p: 2.5, borderBottom: '1px solid #374151' }}>
-                        <Typography sx={{ color: '#fff', fontWeight: 700 }}>
-                            {editingPath ? 'Update Learning Path' : 'Create Learning Path'}
-                        </Typography>
-                        <IconButton onClick={() => !saving && setOpenPathModal(false)} sx={{ color: '#9CA3AF' }}>
-                            <Close />
+                <Box 
+                    sx={{ 
+                        ...modalStyle, 
+                        width: { xs: '95%', md: 640 },
+                        bgcolor: '#0F172A',
+                        border: '1px solid #1E293B',
+                        borderRadius: 3,
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                        p: 0,
+                        overflow: 'hidden'
+                    }}
+                >
+                    <Box sx={{ p: 3, borderBottom: '1px solid #1E293B', bgcolor: 'rgba(30, 41, 59, 0.5)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box>
+                            <Typography variant="h6" sx={{ color: '#F8FAFC', fontWeight: 700 }}>
+                                {editingPath ? 'Update Learning Path' : 'Create New Learning Journey'}
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: '#94A3B8', mt: 0.5 }}>
+                                {editingPath ? 'Modify path metadata and status.' : 'Define the name and context for your new path.'}
+                            </Typography>
+                        </Box>
+                        <IconButton onClick={() => !saving && setOpenPathModal(false)} sx={{ color: '#94A3B8' }}>
+                            <CloseRounded />
                         </IconButton>
-                    </Stack>
+                    </Box>
 
-                    <Stack spacing={2} sx={{ p: 2.5 }}>
+                    <Stack spacing={3} sx={{ p: 3 }}>
                         <TextField
-                            label="Title"
+                            label="Journey Title"
                             value={pathForm.title}
                             onChange={(event) => setPathForm((prev) => ({ ...prev, title: event.target.value }))}
                             sx={textFieldStyle}
                             fullWidth
+                            placeholder="e.g. Senior Leadership Fundamentals"
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <LayersOutlined sx={{ color: '#64748B', fontSize: 20 }} />
+                                    </InputAdornment>
+                                ),
+                            }}
                         />
 
                         <TextField
-                            label="Description"
+                            label="Executive Summary"
                             value={pathForm.description}
                             onChange={(event) => setPathForm((prev) => ({ ...prev, description: event.target.value }))}
                             sx={textFieldStyle}
                             fullWidth
                             multiline
-                            rows={4}
+                            rows={3}
+                            placeholder="Provide a brief overview of the learning objectives."
                         />
 
                         <FormControl fullWidth>
-                            <InputLabel sx={{ color: '#9CA3AF' }}>Status</InputLabel>
+                            <InputLabel sx={{ color: '#94A3B8' }}>Operational Status</InputLabel>
                             <Select
-                                label="Status"
+                                label="Operational Status"
                                 value={pathForm.status}
                                 onChange={(event) => setPathForm((prev) => ({ ...prev, status: event.target.value }))}
                                 sx={selectStyle}
                                 MenuProps={selectMenuProps}
                             >
                                 {PATH_STATUSES.map((status) => (
-                                    <MenuItem key={status} value={status}>{status}</MenuItem>
+                                    <MenuItem key={status} value={status} sx={{ textTransform: 'capitalize' }}>
+                                        {status}
+                                    </MenuItem>
                                 ))}
                             </Select>
                         </FormControl>
                     </Stack>
 
-                    <Stack direction="row" justifyContent="flex-end" spacing={1.5} sx={{ p: 2.5, borderTop: '1px solid #374151' }}>
-                        <Button onClick={() => setOpenPathModal(false)} disabled={saving} sx={{ color: '#9CA3AF', textTransform: 'none' }}>
+                    <Box sx={{ p: 3, borderTop: '1px solid #1E293B', bgcolor: 'rgba(30, 41, 59, 0.5)', display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+                        <Button onClick={() => setOpenPathModal(false)} disabled={saving} sx={{ color: '#94A3B8', textTransform: 'none', fontWeight: 600 }}>
                             Cancel
                         </Button>
                         <Button variant="contained" onClick={handleSavePath} disabled={saving} sx={primaryButtonStyle}>
-                            {saving ? 'Saving...' : editingPath ? 'Update Path' : 'Create Path'}
+                            {saving ? 'Synchronizing...' : editingPath ? 'Update Journey' : 'Begin Journey Creation'}
                         </Button>
-                    </Stack>
-                </Box>
-            </Modal>
-
-            <Modal open={openDetailModal} onClose={() => setOpenDetailModal(false)}>
-                <Box sx={{ ...modalStyle, width: { xs: '95%', md: 920 }, maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}>
-                    <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ p: 2.5, borderBottom: '1px solid #374151' }}>
-                        <Typography sx={{ color: '#fff', fontWeight: 700 }}>Learning Path Details</Typography>
-                        <IconButton onClick={() => setOpenDetailModal(false)} sx={{ color: '#9CA3AF' }}>
-                            <Close />
-                        </IconButton>
-                    </Stack>
-
-                    <Box sx={{ p: 2.5, overflowY: 'auto' }}>
-                        {detailLoading ? (
-                            <Box sx={{ py: 6, display: 'flex', justifyContent: 'center' }}>
-                                <CircularProgress />
-                            </Box>
-                        ) : !selectedPath ? (
-                            <Typography sx={{ color: '#9CA3AF' }}>No learning path selected.</Typography>
-                        ) : (
-                            <Stack spacing={2.5}>
-                                <Paper sx={{ ...paperStyle, p: 2 }}>
-                                    <Typography sx={{ color: '#fff', fontWeight: 700, mb: 1 }}>{selectedPath.title || '-'}</Typography>
-                                    <Typography sx={{ color: '#D1D5DB', mb: 1 }}>{selectedPath.description || '-'}</Typography>
-                                    <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', textTransform: 'capitalize' }}>
-                                        Status: {selectedPath.status || '-'}
-                                    </Typography>
-                                </Paper>
-
-                                <Paper sx={{ ...paperStyle, p: 2 }}>
-                                    <Typography sx={{ color: '#fff', fontWeight: 700, mb: 1.5 }}>Add Course Item</Typography>
-                                    <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
-                                        <FormControl fullWidth>
-                                            <InputLabel sx={{ color: '#9CA3AF' }}>Select Course</InputLabel>
-                                            <Select
-                                                label="Select Course"
-                                                value={selectedCourseId}
-                                                onChange={(event) => setSelectedCourseId(event.target.value)}
-                                                sx={selectStyle}
-                                                MenuProps={selectMenuProps}
-                                            >
-                                                {courseOptions.length === 0 ? (
-                                                    <MenuItem value="" disabled>No courses found</MenuItem>
-                                                ) : (
-                                                    courseOptions.map((course) => (
-                                                        <MenuItem key={course.id} value={course.id}>
-                                                            {readCourseLabel(course)}
-                                                        </MenuItem>
-                                                    ))
-                                                )}
-                                            </Select>
-                                        </FormControl>
-
-                                        <Button variant="contained" onClick={addCourseToPath} disabled={saving} sx={primaryButtonStyle}>
-                                            Add
-                                        </Button>
-                                    </Stack>
-                                </Paper>
-
-                                <Paper sx={{ ...paperStyle, p: 2 }}>
-                                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
-                                        <Typography sx={{ color: '#fff', fontWeight: 700 }}>Path Items</Typography>
-                                        <Button
-                                            size="small"
-                                            onClick={applyReorder}
-                                            disabled={saving || reorderDraft.length === 0}
-                                            sx={{ color: '#3B82F6', textTransform: 'none' }}
-                                        >
-                                            Apply Reorder
-                                        </Button>
-                                    </Stack>
-
-                                    {sortedPathItems.length === 0 ? (
-                                        <Typography sx={{ color: '#9CA3AF' }}>No items in this learning path yet.</Typography>
-                                    ) : (
-                                        <Stack spacing={1.25}>
-                                            {sortedPathItems.map((item) => {
-                                                const draft = reorderDraft.find((entry) => entry.id === item.id);
-                                                return (
-                                                    <Stack
-                                                        key={item.id}
-                                                        direction={{ xs: 'column', md: 'row' }}
-                                                        spacing={1.5}
-                                                        alignItems={{ xs: 'stretch', md: 'center' }}
-                                                        sx={{ p: 1.25, borderRadius: 1, bgcolor: '#0F1729', border: '1px solid #374151' }}
-                                                    >
-                                                        <Box sx={{ flex: 1 }}>
-                                                            <Typography sx={{ color: '#E5E7EB', fontWeight: 600 }}>
-                                                                {readCourseLabel(item.course)}
-                                                            </Typography>
-                                                        </Box>
-
-                                                        <TextField
-                                                            label="Position"
-                                                            type="number"
-                                                            value={draft?.position ?? item.position ?? ''}
-                                                            onChange={(event) => {
-                                                                const value = event.target.value;
-                                                                setReorderDraft((prev) =>
-                                                                    prev.map((entry) =>
-                                                                        entry.id === item.id
-                                                                            ? { ...entry, position: value }
-                                                                            : entry
-                                                                    )
-                                                                );
-                                                            }}
-                                                            sx={{ ...textFieldStyle, width: { xs: '100%', md: 140 } }}
-                                                        />
-
-                                                        <Button
-                                                            color="error"
-                                                            startIcon={<Delete />}
-                                                            onClick={() => removePathItem(item.id)}
-                                                            disabled={actionLoading === item.id}
-                                                            sx={{ textTransform: 'none' }}
-                                                        >
-                                                            Remove
-                                                        </Button>
-                                                    </Stack>
-                                                );
-                                            })}
-                                        </Stack>
-                                    )}
-                                </Paper>
-                            </Stack>
-                        )}
                     </Box>
                 </Box>
             </Modal>
 
-            <Snackbar open={snackbar.open} autoHideDuration={3500} onClose={closeSnackbar} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert severity={snackbar.severity} onClose={closeSnackbar} variant="filled">
+            {/* Item Management Modal (Detail) */}
+            <Modal open={openDetailModal} onClose={() => setOpenDetailModal(false)}>
+                <Box 
+                    sx={{ 
+                        ...modalStyle, 
+                        width: { xs: '95%', md: 920 }, 
+                        maxHeight: '92vh', 
+                        display: 'flex', 
+                        flexDirection: 'column',
+                        bgcolor: '#0F172A',
+                        border: '1px solid #1E293B',
+                        borderRadius: 3,
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                        p: 0,
+                        overflow: 'hidden'
+                    }}
+                >
+                    <Box sx={{ p: 3, borderBottom: '1px solid #1E293B', bgcolor: 'rgba(30, 41, 59, 0.5)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <LayersOutlined sx={{ color: '#6366F1' }} />
+                            <Box>
+                                <Typography variant="h6" sx={{ color: '#F8FAFC', fontWeight: 700 }}>
+                                    {selectedPath?.title || 'Journey Content Management'}
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: '#94A3B8' }}>
+                                    Orchestrate courses and manage sequences.
+                                </Typography>
+                            </Box>
+                        </Box>
+                        <IconButton onClick={() => setOpenDetailModal(false)} sx={{ color: '#94A3B8' }}>
+                            <CloseRounded />
+                        </IconButton>
+                    </Box>
+
+                    <Box sx={{ p: 3, overflowY: 'auto', flex: 1 }}>
+                        {detailLoading ? (
+                            <Box sx={{ py: 10, textAlign: 'center' }}>
+                                <CircularProgress size={32} sx={{ color: '#3B82F6', mb: 2 }} />
+                                <Typography sx={{ color: '#64748B' }}>Fetching journey architecture...</Typography>
+                            </Box>
+                        ) : !selectedPath ? (
+                            <Box sx={{ py: 6, textAlign: 'center' }}>
+                                <InfoOutlined sx={{ fontSize: 48, color: '#1E293B', mb: 2 }} />
+                                <Typography sx={{ color: '#64748B' }}>Resource context lost. Please try reopening.</Typography>
+                            </Box>
+                        ) : (
+                            <Stack spacing={4}>
+                                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
+                                    <Paper sx={{ p: 2.5, bgcolor: 'rgba(30, 41, 59, 0.3)', border: '1px solid #1E293B', borderRadius: 2 }}>
+                                        <Typography variant="overline" sx={{ color: '#64748B', fontWeight: 800, letterSpacing: '0.1em' }}>Add Course to Sequence</Typography>
+                                        <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+                                            <FormControl fullWidth size="small">
+                                                <InputLabel sx={{ color: '#94A3B8' }}>Search Course Warehouse</InputLabel>
+                                                <Select
+                                                    label="Search Course Warehouse"
+                                                    value={selectedCourseId}
+                                                    onChange={(event) => setSelectedCourseId(event.target.value)}
+                                                    sx={selectStyle}
+                                                    MenuProps={selectMenuProps}
+                                                >
+                                                    {courseOptions.length === 0 ? (
+                                                        <MenuItem value="" disabled>No compatible courses found</MenuItem>
+                                                    ) : (
+                                                        courseOptions.map((course) => (
+                                                            <MenuItem key={course.id} value={course.id}>
+                                                                {readCourseLabel(course)}
+                                                            </MenuItem>
+                                                        ))
+                                                    )}
+                                                </Select>
+                                            </FormControl>
+                                            <Button 
+                                                variant="contained" 
+                                                onClick={addCourseToPath} 
+                                                disabled={saving} 
+                                                sx={{ ...primaryButtonStyle, minWidth: 80, height: 40, py: 0 }}
+                                            >
+                                                {saving ? 'Adding...' : 'Inject'}
+                                            </Button>
+                                        </Stack>
+                                    </Paper>
+
+                                    <Paper sx={{ p: 2.5, bgcolor: 'rgba(30, 41, 59, 0.3)', border: '1px solid #1E293B', borderRadius: 2, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                                        <Typography variant="overline" sx={{ color: '#64748B', fontWeight: 800, letterSpacing: '0.1em' }}>Journey Metrics</Typography>
+                                        <Stack direction="row" spacing={4} sx={{ mt: 1.5 }}>
+                                            <Box>
+                                                <Typography variant="h4" sx={{ color: '#F1F5F9', fontWeight: 800 }}>{sortedPathItems.length}</Typography>
+                                                <Typography variant="caption" sx={{ color: '#94A3B8' }}>Total Items</Typography>
+                                            </Box>
+                                            <Box>
+                                                <Typography variant="h4" sx={{ color: '#3B82F6', fontWeight: 800 }}>{selectedPath.status === 'published' ? 'Active' : 'Offline'}</Typography>
+                                                <Typography variant="caption" sx={{ color: '#94A3B8' }}>Current Logic</Typography>
+                                            </Box>
+                                        </Stack>
+                                    </Paper>
+                                </Box>
+
+                                <Box>
+                                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                                        <Typography variant="subtitle1" sx={{ color: '#F1F5F9', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <AutoStoriesOutlined sx={{ fontSize: 20, color: '#3B82F6' }} />
+                                            Sequence Architecture
+                                        </Typography>
+                                        <Button
+                                            startIcon={<LayersOutlined />}
+                                            onClick={applyReorder}
+                                            disabled={saving || reorderDraft.length === 0}
+                                            sx={{ color: '#3B82F6', textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: 'rgba(59, 130, 246, 0.05)' } }}
+                                        >
+                                            Apply Structural Change
+                                        </Button>
+                                    </Stack>
+
+                                    {sortedPathItems.length === 0 ? (
+                                        <Box sx={{ py: 6, textAlign: 'center', bgcolor: 'rgba(30, 41, 59, 0.2)', border: '1px dashed #334155', borderRadius: 3 }}>
+                                            <Typography sx={{ color: '#64748B' }}>No courses have been added to this path sequence.</Typography>
+                                        </Box>
+                                    ) : (
+                                        <Stack spacing={1.5}>
+                                            {sortedPathItems.map((item, index) => {
+                                                const draft = reorderDraft.find((entry) => entry.id === item.id);
+                                                const isLast = index === sortedPathItems.length - 1;
+                                                return (
+                                                    <Box key={item.id}>
+                                                        <Paper
+                                                            sx={{
+                                                                p: 2,
+                                                                bgcolor: '#0F172A',
+                                                                border: '1px solid #1E293B',
+                                                                borderRadius: 2,
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: 2,
+                                                                transition: 'transform 0.2s ease, border-color 0.2s ease',
+                                                                '&:hover': { transform: 'translateX(4px)', borderColor: '#334155' }
+                                                            }}
+                                                        >
+                                                            <Box sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: 'rgba(59, 130, 246, 0.1)', color: '#3B82F6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.8rem' }}>
+                                                                {item.position || index + 1}
+                                                            </Box>
+                                                            <Box sx={{ flex: 1 }}>
+                                                                <Typography sx={{ color: '#F1F5F9', fontWeight: 600 }}>{readCourseLabel(item.course)}</Typography>
+                                                                <Typography sx={{ color: '#64748B', fontSize: '0.75rem' }}>Course ID: {item.course_id || 'Internal'}</Typography>
+                                                            </Box>
+                                                            <Stack direction="row" spacing={2} alignItems="center">
+                                                                <TextField
+                                                                    size="small"
+                                                                    label="Pos"
+                                                                    type="number"
+                                                                    value={draft?.position ?? item.position ?? ''}
+                                                                    onChange={(event) => {
+                                                                        const value = event.target.value;
+                                                                        setReorderDraft((prev) =>
+                                                                            prev.map((entry) =>
+                                                                                entry.id === item.id
+                                                                                    ? { ...entry, position: value }
+                                                                                    : entry
+                                                                            )
+                                                                        );
+                                                                    }}
+                                                                    sx={{ ...textFieldStyle, width: 80, '& .MuiInputBase-input': { py: 0.8, fontSize: '0.85rem' } }}
+                                                                />
+                                                                <IconButton
+                                                                    size="small"
+                                                                    onClick={() => removePathItem(item.id)}
+                                                                    disabled={actionLoading === item.id}
+                                                                    sx={{ color: '#EF4444', bgcolor: 'rgba(239, 68, 68, 0.05)', '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.1)' } }}
+                                                                >
+                                                                    <DeleteRounded fontSize="small" />
+                                                                </IconButton>
+                                                            </Stack>
+                                                        </Paper>
+                                                        {!isLast && (
+                                                            <Box sx={{ ml: 3.8, width: 2, height: 12, bgcolor: '#1E293B' }} />
+                                                        )}
+                                                    </Box>
+                                                );
+                                            })}
+                                        </Stack>
+                                    )}
+                                </Box>
+                            </Stack>
+                        )}
+                    </Box>
+
+                    <Box sx={{ p: 3, borderTop: '1px solid #1E293B', bgcolor: 'rgba(30, 41, 59, 0.5)', display: 'flex', justifyContent: 'flex-end' }}>
+                        <Button
+                            variant="outlined"
+                            onClick={() => setOpenDetailModal(false)}
+                            disabled={saving}
+                            sx={{ color: '#94A3B8', borderColor: '#334155', textTransform: 'none', fontWeight: 600, px: 4, '&:hover': { borderColor: '#475569', bgcolor: 'rgba(255,255,255,0.05)' } }}
+                        >
+                            Return to Journey Repository
+                        </Button>
+                    </Box>
+                </Box>
+            </Modal>
+
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={4000}
+                onClose={closeSnackbar}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            >
+                <Alert
+                    severity={snackbar.severity}
+                    onClose={closeSnackbar}
+                    variant="filled"
+                    sx={{ borderRadius: 2, fontWeight: 600 }}
+                >
                     {snackbar.message}
                 </Alert>
             </Snackbar>
