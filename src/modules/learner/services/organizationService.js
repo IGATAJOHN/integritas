@@ -582,7 +582,7 @@ export const organizationService = {
         }
 
         try {
-            const res = await apiService.get(`/my/assignments${query}`);
+            const res = await apiService.get(`/learning-path/my/assignments${query}`);
             return unwrapList(res);
         } catch (error) {
             if (error?.status !== 404 && error?.status !== 405) throw error;

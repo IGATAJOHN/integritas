@@ -47,7 +47,6 @@ import { organizationService } from '../services/organizationService';
 import { useOrganizationScope } from '../hooks/useOrganizationScope';
 import OrganizationScopeToolbar from '../components/OrganizationScopeToolbar';
 import {
-    paperStyle,
     primaryButtonStyle,
     selectMenuProps,
     selectStyle,
@@ -658,9 +657,9 @@ const OrganizationAssignments = () => {
     }, [listAssignments]);
 
     useEffect(() => {
-        if (!isMyAssignmentsRoute && canManageAssignments) return;
+        if (!isMyAssignmentsRoute) return;
         void listMyAssignments();
-    }, [canManageAssignments, isMyAssignmentsRoute, listMyAssignments]);
+    }, [isMyAssignmentsRoute, listMyAssignments]);
 
     useEffect(() => {
         const allowedIds = new Set((users || []).map((user) => String(user?.id || '').trim()).filter(Boolean));
@@ -804,7 +803,7 @@ const OrganizationAssignments = () => {
                     )}
                     <Tooltip title="Refresh Data">
                         <IconButton
-                            onClick={canManageAssignments && !isMyAssignmentsRoute ? listAssignments : listMyAssignments}
+                            onClick={isMyAssignmentsRoute ? listMyAssignments : listAssignments}
                             sx={{
                                 color: '#94A3B8',
                                 bgcolor: 'rgba(30, 41, 59, 0.4)',
@@ -842,7 +841,7 @@ const OrganizationAssignments = () => {
                     >
                         <InfoOutlined sx={{ color: '#3B82F6' }} />
                         <Typography variant="body2" sx={{ color: '#94A3B8' }}>
-                            You are viewing your personal learning dashboard. Switch organization context or contact your admin if you need management access.
+                            You do not have organization assignment management access. Open the My Assignments menu to view the items assigned to you.
                         </Typography>
                     </Box>
                 </Fade>
@@ -859,29 +858,30 @@ const OrganizationAssignments = () => {
                 </Stack>
             )}
 
-            <TableContainer
-                component={Paper}
-                elevation={0}
-                sx={{
-                    bgcolor: 'rgba(15, 23, 42, 0.4)',
-                    backdropFilter: 'blur(10px)',
-                    borderRadius: 3,
-                    border: '1px solid #1E293B',
-                    overflow: 'hidden',
-                }}
-            >
-                <Table>
-                    <TableHead>
-                        <TableRow sx={{ bgcolor: 'rgba(30, 41, 59, 0.5)' }}>
-                            <TableCell sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Member</TableCell>
-                            <TableCell sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Type</TableCell>
-                            <TableCell sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Assigned Content</TableCell>
-                            <TableCell sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Due Date</TableCell>
-                            <TableCell sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</TableCell>
-                            <TableCell align="right" sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Control</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
+            {!isMyAssignmentsRoute && (
+                <TableContainer
+                    component={Paper}
+                    elevation={0}
+                    sx={{
+                        bgcolor: 'rgba(15, 23, 42, 0.4)',
+                        backdropFilter: 'blur(10px)',
+                        borderRadius: 3,
+                        border: '1px solid #1E293B',
+                        overflow: 'hidden',
+                    }}
+                >
+                    <Table>
+                        <TableHead>
+                            <TableRow sx={{ bgcolor: 'rgba(30, 41, 59, 0.5)' }}>
+                                <TableCell sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Member</TableCell>
+                                <TableCell sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Type</TableCell>
+                                <TableCell sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Assigned Content</TableCell>
+                                <TableCell sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Due Date</TableCell>
+                                <TableCell sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</TableCell>
+                                <TableCell align="right" sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Control</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
                         {loading ? (
                             Array.from({ length: 5 }).map((_, i) => (
                                 <TableRow key={i} sx={{ borderBottom: '1px solid #1E293B' }}>
@@ -994,11 +994,12 @@ const OrganizationAssignments = () => {
                                 </TableRow>
                             ))
                         )}
-                    </TableBody>
-                </Table>
-            </TableContainer>
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            )}
 
-            {myAssignments.length > 0 && (
+            {isMyAssignmentsRoute && (
                 <Box sx={{ mt: 8 }}>
                     <Typography
                         variant="h5"
@@ -1014,70 +1015,108 @@ const OrganizationAssignments = () => {
                         <CheckCircleRounded sx={{ color: '#10B981' }} />
                         My Active Assignments
                     </Typography>
-                    <Stack spacing={2}>
-                        {myAssignments.map((assignment) => (
-                            <Paper
-                                key={assignment.id}
-                                sx={{
-                                    p: 2.5,
-                                    borderRadius: 3,
-                                    bgcolor: '#0F172A',
-                                    border: '1px solid #1E293B',
-                                    display: 'flex',
-                                    flexDirection: { xs: 'column', md: 'row' },
-                                    justifyContent: 'space-between',
-                                    gap: 2,
-                                    transition: 'transform 0.2s ease, border-color 0.2s ease',
-                                    '&:hover': {
-                                        transform: 'translateY(-2px)',
-                                        borderColor: '#334155',
-                                    },
-                                }}
-                            >
-                                <Box sx={{ display: 'flex', gap: 2 }}>
-                                    <Box
-                                        sx={{
-                                            width: 48,
-                                            height: 48,
-                                            borderRadius: 2,
-                                            bgcolor: 'rgba(99, 102, 241, 0.1)',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            flexShrink: 0,
-                                        }}
-                                    >
-                                        <AssignmentOutlined sx={{ color: '#6366F1' }} />
+                    {loading && isMyAssignmentsRoute ? (
+                        <Stack spacing={2}>
+                            {Array.from({ length: 3 }).map((_, index) => (
+                                <Paper
+                                    key={index}
+                                    sx={{
+                                        p: 2.5,
+                                        borderRadius: 3,
+                                        bgcolor: '#0F172A',
+                                        border: '1px solid #1E293B',
+                                    }}
+                                >
+                                    <Skeleton variant="text" sx={{ bgcolor: '#1E293B', width: '55%', height: 28 }} />
+                                    <Skeleton variant="text" sx={{ bgcolor: '#1E293B', width: '35%', height: 20 }} />
+                                    <Skeleton variant="text" sx={{ bgcolor: '#1E293B', width: '25%', height: 20 }} />
+                                </Paper>
+                            ))}
+                        </Stack>
+                    ) : myAssignments.length === 0 ? (
+                        <Paper
+                            sx={{
+                                p: 4,
+                                borderRadius: 3,
+                                bgcolor: '#0F172A',
+                                border: '1px solid #1E293B',
+                                textAlign: 'center',
+                            }}
+                        >
+                            <HistoryRounded sx={{ fontSize: 52, color: '#1E293B', mb: 2 }} />
+                            <Typography sx={{ color: '#F8FAFC', fontWeight: 600, mb: 1 }}>
+                                No assignments yet
+                            </Typography>
+                            <Typography sx={{ color: '#64748B', maxWidth: 360, mx: 'auto' }}>
+                                You have not been assigned any courses or learning paths yet.
+                            </Typography>
+                        </Paper>
+                    ) : (
+                        <Stack spacing={2}>
+                            {myAssignments.map((assignment) => (
+                                <Paper
+                                    key={assignment.id}
+                                    sx={{
+                                        p: 2.5,
+                                        borderRadius: 3,
+                                        bgcolor: '#0F172A',
+                                        border: '1px solid #1E293B',
+                                        display: 'flex',
+                                        flexDirection: { xs: 'column', md: 'row' },
+                                        justifyContent: 'space-between',
+                                        gap: 2,
+                                        transition: 'transform 0.2s ease, border-color 0.2s ease',
+                                        '&:hover': {
+                                            transform: 'translateY(-2px)',
+                                            borderColor: '#334155',
+                                        },
+                                    }}
+                                >
+                                    <Box sx={{ display: 'flex', gap: 2 }}>
+                                        <Box
+                                            sx={{
+                                                width: 48,
+                                                height: 48,
+                                                borderRadius: 2,
+                                                bgcolor: 'rgba(99, 102, 241, 0.1)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                flexShrink: 0,
+                                            }}
+                                        >
+                                            <AssignmentOutlined sx={{ color: '#6366F1' }} />
+                                        </Box>
+                                        <Box>
+                                            <Typography sx={{ color: '#F1F5F9', fontWeight: 600, fontSize: '1rem' }}>
+                                                {readAssignmentContentTitle(assignment)}
+                                            </Typography>
+                                            <Typography sx={{ color: '#64748B', fontSize: '0.85rem', mt: 0.5 }}>
+                                                Organization: {readAssignmentOrganizationName(assignment)}
+                                            </Typography>
+                                        </Box>
                                     </Box>
-                                    <Box>
-                                        <Typography sx={{ color: '#F1F5F9', fontWeight: 600, fontSize: '1rem' }}>
-                                            {readAssignmentContentTitle(assignment)}
-                                        </Typography>
-                                        <Typography sx={{ color: '#64748B', fontSize: '0.85rem', mt: 0.5 }}>
-                                            Organization: {readAssignmentOrganizationName(assignment)}
-                                        </Typography>
-                                    </Box>
-                                </Box>
-                                <Stack direction="row" spacing={3} alignItems="center">
-                                    <Box sx={{ textAlign: { xs: 'left', md: 'right' } }}>
-                                        <Typography sx={{ color: '#94A3B8', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>Due Date</Typography>
-                                        <Typography sx={{ color: '#E2E8F0', fontWeight: 600 }}>{formatDate(assignment.due_at)}</Typography>
-                                    </Box>
-                                    <Chip
-                                        size="small"
-                                        label={assignment.status || 'Pending'}
-                                        sx={{
-                                            bgcolor: 'rgba(99, 102, 241, 0.1)',
-                                            color: '#818CF8',
-                                            fontWeight: 700,
-                                            fontSize: '0.7rem',
-                                            borderRadius: '6px',
-                                        }}
-                                    />
-                                </Stack>
-                            </Paper>
-                        ))}
-                    </Stack>
+                                    <Stack direction="row" spacing={3} alignItems="center">
+                                        <Box sx={{ textAlign: { xs: 'left', md: 'right' } }}>
+                                            <Typography sx={{ color: '#94A3B8', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>Due Date</Typography>
+                                            <Typography sx={{ color: '#E2E8F0', fontWeight: 600 }}>{formatDate(assignment.due_at)}</Typography>
+                                        </Box>
+                                        <Chip
+                                            size="small"
+                                            label={assignment.status || 'Pending'}
+                                            sx={{
+                                                bgcolor: 'rgba(99, 102, 241, 0.1)',
+                                                color: '#818CF8',
+                                                fontWeight: 700,
+                                                fontSize: '0.7rem',
+                                                borderRadius: '6px',
+                                            }}
+                                        />
+                                    </Stack>
+                                </Paper>
+                            ))}
+                        </Stack>
+                    )}
                 </Box>
             )}
 
