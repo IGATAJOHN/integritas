@@ -159,8 +159,8 @@ const InviteAcceptPage = () => {
             const organizationName = readInvitationOrganizationName(response);
             setSuccess(
                 organizationName
-                    ? `Invite accepted for ${organizationName}. Redirecting to organization workspace...`
-                    : 'Invite accepted. Redirecting to organization workspace...'
+                    ? `Invite accepted for ${organizationName}. Redirecting to organization...`
+                    : 'Invite accepted. Redirecting to organization...'
             );
             setTimeout(() => {
                 window.location.assign('/learner/organization');

@@ -756,7 +756,7 @@ const OrganizationLearningPaths = () => {
                                                         <VisibilityRounded fontSize="small" />
                                                     </IconButton>
                                                 </Tooltip>
-                                                <Tooltip title="Edit Metadata">
+                                                <Tooltip title="Edit data">
                                                     <IconButton
                                                         size="small"
                                                         onClick={() => openEditPathModal(path)}
@@ -942,7 +942,7 @@ const OrganizationLearningPaths = () => {
                                     {selectedPath?.title || 'Journey Content Management'}
                                 </Typography>
                                 <Typography variant="body2" sx={{ color: '#94A3B8' }}>
-                                    Orchestrate courses and manage sequences.
+                                    Plan courses and manage order.
                                 </Typography>
                             </Box>
                         </Box>
@@ -966,7 +966,7 @@ const OrganizationLearningPaths = () => {
                             <Stack spacing={4}>
                                 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
                                     <Paper sx={{ p: 2.5, bgcolor: 'rgba(30, 41, 59, 0.3)', border: '1px solid #1E293B', borderRadius: 2 }}>
-                                        <Typography variant="overline" sx={{ color: '#64748B', fontWeight: 800, letterSpacing: '0.1em' }}>Add Course to Sequence</Typography>
+                                        <Typography variant="overline" sx={{ color: '#64748B', fontWeight: 800, letterSpacing: '0.1em' }}>Add Course to order</Typography>
                                         <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
                                             <FormControl fullWidth size="small">
                                                 <InputLabel sx={{ color: '#94A3B8' }}>Search Course</InputLabel>
@@ -1000,7 +1000,7 @@ const OrganizationLearningPaths = () => {
                                     </Paper>
 
                                     <Paper sx={{ p: 2.5, bgcolor: 'rgba(30, 41, 59, 0.3)', border: '1px solid #1E293B', borderRadius: 2, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                                        <Typography variant="overline" sx={{ color: '#64748B', fontWeight: 800, letterSpacing: '0.1em' }}>Journey Metrics</Typography>
+                                        <Typography variant="overline" sx={{ color: '#64748B', fontWeight: 800, letterSpacing: '0.1em' }}>Learning path Metrics</Typography>
                                         <Stack direction="row" spacing={4} sx={{ mt: 1.5 }}>
                                             <Box>
                                                 <Typography variant="h4" sx={{ color: '#F1F5F9', fontWeight: 800 }}>{sortedPathItems.length}</Typography>
@@ -1018,7 +1018,7 @@ const OrganizationLearningPaths = () => {
                                     <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
                                         <Typography variant="subtitle1" sx={{ color: '#F1F5F9', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
                                             <AutoStoriesOutlined sx={{ fontSize: 20, color: '#3B82F6' }} />
-                                            Sequence Architecture
+                                            Order Architecture
                                         </Typography>
                                         <Button
                                             startIcon={<LayersOutlined />}
@@ -1032,7 +1032,7 @@ const OrganizationLearningPaths = () => {
 
                                     {sortedPathItems.length === 0 ? (
                                         <Box sx={{ py: 6, textAlign: 'center', bgcolor: 'rgba(30, 41, 59, 0.2)', border: '1px dashed #334155', borderRadius: 3 }}>
-                                            <Typography sx={{ color: '#64748B' }}>No courses have been added to this path sequence.</Typography>
+                                            <Typography sx={{ color: '#64748B' }}>No courses have been added to this path order.</Typography>
                                         </Box>
                                     ) : (
                                         <Stack spacing={1.5}>
@@ -1109,7 +1109,7 @@ const OrganizationLearningPaths = () => {
                             disabled={saving}
                             sx={{ color: '#94A3B8', borderColor: '#334155', textTransform: 'none', fontWeight: 600, px: 4, '&:hover': { borderColor: '#475569', bgcolor: 'rgba(255,255,255,0.05)' } }}
                         >
-                            Return to Journey Repository
+                            Return To List
                         </Button>
                     </Box>
                 </Box>

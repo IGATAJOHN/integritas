@@ -179,7 +179,7 @@ const OrganizationOverview = () => {
                         Organization Hub
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#64748B', mt: 1, maxWidth: 600 }}>
-                        Manage your enterprise ecosystems. Switch between organizations, monitor access roles, and provision new workspaces from a centralized dashboard.
+                        Manage your enterprise ecosystems. Switch between organizations, monitor access roles, and provision new organization from a centralized dashboard.
                     </Typography>
                 </Box>
 
@@ -224,7 +224,7 @@ const OrganizationOverview = () => {
 
             <OrganizationScopeToolbar
                 title="Context Selector"
-                subtitle="Override the active organization context to manage a different workspace."
+                subtitle="Override the active organization context to manage a different organization."
                 organizations={organizations}
                 selectedOrgId={selectedOrgId}
                 selectedOrganization={selectedOrganization}
@@ -271,11 +271,11 @@ const OrganizationOverview = () => {
                 <Table>
                     <TableHead>
                         <TableRow sx={{ bgcolor: 'rgba(30, 41, 59, 0.5)' }}>
-                            <TableCell sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Workplace Name</TableCell>
+                            <TableCell sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Organization Name</TableCell>
                             <TableCell sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Access Tier</TableCell>
-                            <TableCell sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sync Domain</TableCell>
-                            <TableCell sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Context Status</TableCell>
-                            <TableCell align="right" sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Control</TableCell>
+                            <TableCell sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Domain</TableCell>
+                            <TableCell sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</TableCell>
+                            <TableCell align="right" sx={{ ...tableHeaderCellStyle, py: 2.5, color: '#94A3B8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Action</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -438,7 +438,7 @@ const OrganizationOverview = () => {
                                 Add New Organization
                             </Typography>
                             <Typography variant="body2" sx={{ color: '#94A3B8', mt: 0.5 }}>
-                                Deploy a fresh organization instance for your workforce.
+                                Deploy a fresh organization instance for your work team.
                             </Typography>
                         </Box>
                         <IconButton onClick={() => !saving && setOpenCreateModal(false)} sx={{ color: '#94A3B8' }}>
@@ -448,7 +448,7 @@ const OrganizationOverview = () => {
 
                     <Stack spacing={3} sx={{ p: 3 }}>
                         <TextField
-                            label="Organization Descriptor"
+                            label="Organization Title"
                             value={formData.name}
                             onChange={(event) => setFormData((prev) => ({ ...prev, name: event.target.value }))}
                             fullWidth
@@ -464,7 +464,7 @@ const OrganizationOverview = () => {
                         />
 
                         <TextField
-                            label="Corporate Email Domain"
+                            label="Organization Email Domain"
                             value={formData.email_domain}
                             onChange={(event) => setFormData((prev) => ({ ...prev, email_domain: event.target.value }))}
                             fullWidth
@@ -526,7 +526,7 @@ const OrganizationOverview = () => {
                             Cancel
                         </Button>
                         <Button variant="contained" onClick={handleCreateOrganization} disabled={saving} sx={primaryButtonStyle}>
-                            {saving ? <CircularProgress size={18} color="inherit" /> : 'Deploy Workspace'}
+                            {saving ? <CircularProgress size={18} color="inherit" /> : 'Deploy Organization'}
                         </Button>
                     </Box>
                 </Box>

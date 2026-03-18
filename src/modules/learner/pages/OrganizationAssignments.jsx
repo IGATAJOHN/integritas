@@ -772,14 +772,14 @@ const OrganizationAssignments = () => {
                         ) : (
                             <>
                                 <AssignmentOutlined sx={{ fontSize: 32, color: '#3B82F6' }} />
-                                Workforce Assignments
+                                Organization Assignments
                             </>
                         )}
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#64748B', mt: 1, maxWidth: 600 }}>
                         {isMyAssignmentsRoute
                             ? 'Monitor your assigned courses and learning paths, track deadlines, and view your progress in real-time.'
-                            : 'Orchestrate your team’s development. Create specific assignments, set deadlines, and monitor completion metrics across your organization.'}
+                            : 'Plan your team’s development. Create specific assignments, set deadlines, and monitor completion metrics across your organization.'}
                     </Typography>
                 </Box>
 
