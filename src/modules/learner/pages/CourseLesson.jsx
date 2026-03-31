@@ -1,649 +1,704 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
+    Accordion,
+    AccordionDetails,
+    AccordionSummary,
+    Alert,
     Box,
-    Grid,
-    Card,
-    CardContent,
-    Typography,
     Button,
+    Chip,
+    CircularProgress,
+    Divider,
     IconButton,
-    TextField,
-    InputAdornment,
-    Tabs,
-    Tab,
+    LinearProgress,
     List,
     ListItemButton,
     ListItemIcon,
     ListItemText,
-    Accordion,
-    AccordionSummary,
-    AccordionDetails,
     Slider,
     Stack,
-    Chip,
-    Avatar,
-    useTheme,
-    alpha
+    Typography,
+    alpha,
 } from '@mui/material';
 import {
-    PlayArrow,
-    Pause,
-    VolumeUp,
-    Settings,
-    Fullscreen,
+    AccessTime as ClockIcon,
+    ArrowBack,
+    CalendarToday as CalendarIcon,
+    CardMembershipOutlined as CertificateIcon,
+    CheckCircle,
     ChevronLeft,
     ChevronRight,
     ExpandMore,
-    PlayCircleOutline,
-    CheckCircle,
+    Fullscreen,
+    Language as LanguageIcon,
     Lock,
-    Download,
+    Pause,
+    PlayArrow,
+    PlayCircleOutline,
+    Settings,
+    SignalCellularAlt as LevelIcon,
     Subtitles,
-    Search,
-    Notifications,
-    Person
+    VolumeUp,
 } from '@mui/icons-material';
 import logo from '../../../assets/images/GGH_logo.png';
+import { courseCatalogService, learnerEnrollmentService } from '../services';
 
-/**
- * CourseLesson Component
- * 
- * Full-page course lesson view with video player, lesson content,
- * notes section, and module navigation sidebar.
- * This is a standalone page without the dashboard sidebar.
- */
+const colors = {
+    bg: '#080D19',
+    sidebar: '#0C1322',
+    card: '#1A1F2E',
+    border: 'rgba(255,255,255,0.06)',
+    text: '#FFFFFF',
+    textSecondary: '#9CA3AF',
+    primary: '#2563EB',
+    success: '#10B981',
+};
+
+const formatTime = (seconds) => {
+    const s = Math.max(0, Math.floor(seconds));
+    const mins = Math.floor(s / 60);
+    const secs = s % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
+
+const parseDurationMinutes = (value) => {
+    if (!value) return 0;
+    const n = parseInt(String(value), 10);
+    return Number.isFinite(n) ? n : 0;
+};
+
 const CourseLesson = () => {
-    const theme = useTheme();
+    const { courseId, lessonId } = useParams();
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState(0);
+
+    const [courseData, setCourseData] = useState(null);
+    const [modules, setModules] = useState([]);
+    const [selectedLessonId, setSelectedLessonId] = useState(lessonId || null);
+    const [currentLesson, setCurrentLesson] = useState(null);
+    const [enrollmentData, setEnrollmentData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [lessonLoading, setLessonLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [expandedModule, setExpandedModule] = useState(null);
+
+    // Video player state
     const [isPlaying, setIsPlaying] = useState(false);
-    const [currentTime, setCurrentTime] = useState(312); // 5:12 in seconds
-    const [duration] = useState(930); // 15:30 in seconds
-    const [expandedModule, setExpandedModule] = useState('module1');
-    const [noteText, setNoteText] = useState('');
+    const [currentTime, setCurrentTime] = useState(0);
+    const [duration] = useState(900); // default 15 min placeholder
 
-    // Format time in mm:ss
-    const formatTime = (seconds) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = Math.floor(seconds % 60);
-        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    const initialLessonLoaded = useRef(false);
+
+    // --- Load course + modules on mount ---
+    useEffect(() => {
+        if (!courseId) return;
+        let active = true;
+
+        const load = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const data = await courseCatalogService.getCourseById(courseId);
+                if (!active) return;
+
+                const raw = data?.raw_data || data;
+                setCourseData(data);
+
+                // Extract modules + nested lessons from raw API response
+                const rawModules = Array.isArray(raw?.modules) ? raw.modules : [];
+                const moduleList = rawModules.map((m) => ({
+                    id: String(m.id || ''),
+                    title: String(m.title || m.name || 'Untitled Module'),
+                    order: m.order || m.position || 0,
+                    lessons: Array.isArray(m.lessons) ? m.lessons.map((l) => ({
+                        id: String(l.id || ''),
+                        title: String(l.title || l.name || 'Untitled Lesson'),
+                        duration: l.duration || l.duration_minutes || 0,
+                        order: l.order || l.position || 0,
+                        video_url: l.video_url || l.video || '',
+                        description: l.description || '',
+                        content: l.content || '',
+                    })) : [],
+                }));
+
+                setModules(moduleList);
+
+                // Pick initial lesson
+                if (!initialLessonLoaded.current) {
+                    const allLessons = moduleList.flatMap((m) => m.lessons);
+                    const target = lessonId
+                        ? allLessons.find((l) => l.id === lessonId)
+                        : allLessons[0];
+
+                    if (target) {
+                        setSelectedLessonId(target.id);
+                        // Auto-expand that module
+                        const ownerModule = moduleList.find((m) =>
+                            m.lessons.some((l) => l.id === target.id)
+                        );
+                        if (ownerModule) setExpandedModule(ownerModule.id);
+                    }
+                    initialLessonLoaded.current = true;
+                }
+
+                // Non-blocking enrollment info
+                learnerEnrollmentService.getEnrollmentStatus(courseId)
+                    .then((res) => { if (active) setEnrollmentData(res); })
+                    .catch(() => {});
+            } catch (err) {
+                if (active) setError(err?.message || 'Failed to load course.');
+            } finally {
+                if (active) setLoading(false);
+            }
+        };
+
+        load();
+        return () => { active = false; };
+    }, [courseId]);
+
+    // --- Load lesson detail when selectedLessonId changes ---
+    useEffect(() => {
+        if (!selectedLessonId) return;
+        let active = true;
+
+        // First try to populate from cached module data
+        const cached = modules.flatMap((m) => m.lessons).find((l) => l.id === selectedLessonId);
+        if (cached) setCurrentLesson(cached);
+
+        setLessonLoading(true);
+        setCurrentTime(0);
+        setIsPlaying(false);
+
+        courseCatalogService.getLessonById(selectedLessonId)
+            .then((detail) => {
+                if (!active) return;
+                setCurrentLesson((prev) => ({ ...prev, ...detail }));
+            })
+            .catch(() => {}) // keep cached data on error
+            .finally(() => { if (active) setLessonLoading(false); });
+
+        return () => { active = false; };
+    }, [selectedLessonId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const allLessons = useMemo(() => modules.flatMap((m) => m.lessons), [modules]);
+    const currentIndex = useMemo(
+        () => allLessons.findIndex((l) => l.id === selectedLessonId),
+        [allLessons, selectedLessonId]
+    );
+    const prevLesson = allLessons[currentIndex - 1] || null;
+    const nextLesson = allLessons[currentIndex + 1] || null;
+
+    const remainingLessons = allLessons.slice(currentIndex + 1);
+    const remainingMinutes = remainingLessons.reduce(
+        (sum, l) => sum + parseDurationMinutes(l.duration), 0
+    );
+
+    const totalLessons = allLessons.length;
+    const progressPercent = enrollmentData?.progress_percent
+        ? Number(enrollmentData.progress_percent)
+        : 0;
+    const completedLessons = Math.round((progressPercent / 100) * totalLessons);
+
+    const currentModule = modules.find((m) =>
+        m.lessons.some((l) => l.id === selectedLessonId)
+    );
+
+    const handleSelectLesson = (lesson) => {
+        setSelectedLessonId(lesson.id);
+        navigate(`/explore/lesson/${courseId}/${lesson.id}`, { replace: true });
+        const ownerModule = modules.find((m) => m.lessons.some((l) => l.id === lesson.id));
+        if (ownerModule) setExpandedModule(ownerModule.id);
     };
 
-    // Mock data for lesson
-    const lesson = {
-        id: '1.2',
-        title: '1.2 Transparency in Public Office',
-        module: 'Module 1: Principles of Governance',
-        lastUpdated: 'Oct 2023',
-        description: 'Transparency is the cornerstone of trust in public office. In this lesson, we explore the mechanisms that ensure government actions, decisions, and data are open to public scrutiny. We will cover Freedom of Information acts, open data initiatives, and the role of whistleblowers in maintaining integrity.',
-        learningOutcomes: [
-            'Understand the legal frameworks supporting transparency.',
-            'Identify the difference between active and passive transparency.',
-            'Analyze real-world case studies of transparency failures.'
-        ],
-        videoUrl: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=1200&h=675&fit=crop'
-    };
+    // --- Render ---
+    if (loading) {
+        return (
+            <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <CircularProgress />
+            </Box>
+        );
+    }
 
-    // Mock data for modules/lessons
-    const modules = [
-        {
-            id: 'module1',
-            title: 'Module 1: Principles',
-            lessons: [
-                { id: '1.1', title: '1.1 Introduction to Governance', duration: '12 min', completed: true },
-                { id: '1.2', title: '1.2 Transparency in Public Office', duration: '16 min', active: true },
-                { id: '1.3', title: '1.3 Accountability Mechanisms', duration: '14 min', locked: false }
-            ]
-        },
-        {
-            id: 'module2',
-            title: 'Module 2: Ethics & Law',
-            lessons: [
-                { id: '2.1', title: '2.1 Ethical Foundations', duration: '18 min', locked: true },
-                { id: '2.2', title: '2.2 Legal Frameworks', duration: '20 min', locked: true }
-            ]
-        },
-        {
-            id: 'module3',
-            title: 'Module 3: Citizen Engagement',
-            lessons: [
-                { id: '3.1', title: '3.1 Public Participation', duration: '15 min', locked: true },
-                { id: '3.2', title: '3.2 Digital Democracy', duration: '17 min', locked: true }
-            ]
-        }
-    ];
+    if (error) {
+        return (
+            <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4 }}>
+                <Alert severity="error">{error}</Alert>
+            </Box>
+        );
+    }
 
-    const handleTabChange = (event, newValue) => {
-        setActiveTab(newValue);
-    };
-
-    const handleModuleChange = (panel) => (event, isExpanded) => {
-        setExpandedModule(isExpanded ? panel : false);
-    };
+    const videoSrc = currentLesson?.video_url || currentLesson?.video || courseData?.image || '';
+    const tags = Array.isArray(courseData?.raw?.tags) ? courseData.raw.tags : [];
+    const cert = courseData?.raw?.certificate;
+    const hasCertificate = cert?.enabled ?? Boolean(cert);
+    const courseDuration = courseData?.duration || '—';
+    const courseLevel = courseData?.level || '—';
+    const courseLanguage = courseData?.raw?.language || '—';
+    const courseStartDate = courseData?.raw?.start_date || courseData?.raw?.published_at || 'Ongoing';
 
     return (
-        <Box sx={{
-            minHeight: '100vh',
-            bgcolor: theme.palette.mode === 'dark' ? '#080D19' : '#F8FAFC',
-            display: 'flex',
-            flexDirection: 'column'
-        }}>
-            {/* Top Header */}
-            <Box
-                sx={{
-                    bgcolor: theme.palette.mode === 'dark' ? '#0C1322' : '#fff',
-                    borderBottom: `1px solid ${theme.palette.divider}`,
-                    px: 3,
-                    py: 1.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between'
-                }}
-            >
+        <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, display: 'flex', flexDirection: 'column' }}>
 
-
-                // ... (existing imports)
-
-                {/* Left: Logo and Search */}
-                <Stack direction="row" alignItems="center" spacing={3}>
-                    <Stack
-                        direction="row"
-                        alignItems="center"
-                        spacing={1}
-                        sx={{ cursor: 'pointer' }}
-                        onClick={() => navigate('/explore')}
-                    >
-                        <Box
-                            component="img"
-                            src={logo}
-                            alt="Integritas Hub"
-                            sx={{ width: 32, height: 32, objectFit: 'contain' }}
-                        />
-                        <Typography variant="subtitle1" sx={{ fontWeight: 700, color: theme.palette.text.primary, whiteSpace: 'nowrap' }}>
-                            Integritas Hub
+            {/* ── Header ── */}
+            <Box sx={{
+                bgcolor: colors.sidebar,
+                borderBottom: `1px solid ${colors.border}`,
+                px: 3,
+                py: 1.25,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexShrink: 0,
+            }}>
+                <Stack direction="row" alignItems="center" spacing={2}>
+                    <Box component="img" src={logo} alt="Integritas Hub" sx={{ width: 30, height: 30, objectFit: 'contain' }} />
+                    <Stack direction="row" alignItems="center" spacing={0.75} sx={{ color: colors.textSecondary, fontSize: '0.82rem' }}>
+                        <Typography
+                            variant="body2"
+                            sx={{ color: colors.textSecondary, cursor: 'pointer', '&:hover': { color: colors.text } }}
+                            onClick={() => navigate('/explore/my-learning')}
+                        >
+                            My Learning
                         </Typography>
+                        <Typography variant="body2" sx={{ color: colors.textSecondary }}>›</Typography>
+                        <Typography
+                            variant="body2"
+                            sx={{ color: colors.textSecondary, cursor: 'pointer', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', '&:hover': { color: colors.text } }}
+                            onClick={() => navigate(`/explore/course/${courseId}`)}
+                        >
+                            {courseData?.title || 'Course'}
+                        </Typography>
+                        {currentModule && (
+                            <>
+                                <Typography variant="body2" sx={{ color: colors.textSecondary }}>›</Typography>
+                                <Typography variant="body2" sx={{ color: colors.text, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {currentModule.title}
+                                </Typography>
+                            </>
+                        )}
                     </Stack>
-
-                    <TextField
-                        size="small"
-                        placeholder="Search"
-                        InputProps={{
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <Search sx={{ color: theme.palette.text.secondary, fontSize: 20 }} />
-                                </InputAdornment>
-                            ),
-                        }}
-                        sx={{
-                            width: 200,
-                            '& .MuiOutlinedInput-root': {
-                                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : '#f1f5f9',
-                                borderRadius: 2,
-                                '& fieldset': { border: 'none' }
-                            },
-                            '& .MuiInputBase-input': {
-                                color: theme.palette.text.primary,
-                                py: 0.75,
-                                '&::placeholder': {
-                                    color: theme.palette.text.secondary,
-                                    opacity: 1
-                                }
-                            }
-                        }}
-                    />
                 </Stack>
 
-                {/* Right: Navigation */}
-                <Stack direction="row" alignItems="center" spacing={3}>
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            color: theme.palette.text.secondary,
-                            cursor: 'pointer',
-                            '&:hover': { color: theme.palette.text.primary }
-                        }}
-                    >
-                        Browse Catalog
-                    </Typography>
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            color: theme.palette.text.primary,
-                            fontWeight: 600,
-                            cursor: 'pointer'
-                        }}
-                        onClick={() => navigate('/explore')}
-                    >
-                        My Dashboard
-                    </Typography>
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            color: theme.palette.text.secondary,
-                            cursor: 'pointer',
-                            '&:hover': { color: theme.palette.text.primary }
-                        }}
-                    >
-                        Community
-                    </Typography>
-                    <IconButton size="small" sx={{ color: theme.palette.text.secondary }}>
-                        <Notifications fontSize="small" />
-                    </IconButton>
-                    <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
-                        <Person sx={{ fontSize: 18 }} />
-                    </Avatar>
-                </Stack>
+                <Button
+                    startIcon={<ArrowBack sx={{ fontSize: 16 }} />}
+                    size="small"
+                    onClick={() => navigate(`/explore/course/${courseId}`)}
+                    sx={{ color: colors.textSecondary, textTransform: 'none', '&:hover': { color: colors.text } }}
+                >
+                    Back to Course
+                </Button>
             </Box>
 
-            {/* Main Content Area */}
-            <Box sx={{ display: 'flex', flex: 1 }}>
-                {/* Left Content */}
-                <Box sx={{ flex: 1, p: 3, overflowY: 'auto' }}>
-                    {/* Video Player */}
-                    <Box
-                        sx={{
-                            position: 'relative',
-                            width: '100%',
-                            aspectRatio: '16/9',
-                            bgcolor: '#000',
-                            borderRadius: 2,
-                            overflow: 'hidden',
-                            mb: 3
-                        }}
-                    >
-                        {/* Video Thumbnail/Placeholder */}
-                        <Box
-                            sx={{
-                                width: '100%',
-                                height: '100%',
-                                backgroundImage: `url(${lesson.videoUrl})`,
-                                backgroundSize: 'cover',
-                                backgroundPosition: 'center',
-                                position: 'relative'
-                            }}
-                        >
-                            {/* Dark Overlay */}
-                            <Box sx={{ position: 'absolute', inset: 0, bgcolor: 'rgba(0,0,0,0.3)' }} />
+            {/* ── 3-panel body ── */}
+            <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
 
-                            {/* Play Button */}
-                            <Box
-                                sx={{
-                                    position: 'absolute',
-                                    top: '50%',
-                                    left: '50%',
-                                    transform: 'translate(-50%, -50%)',
-                                    cursor: 'pointer'
-                                }}
-                                onClick={() => setIsPlaying(!isPlaying)}
-                            >
-                                <Box
-                                    sx={{
-                                        width: 64,
-                                        height: 64,
-                                        borderRadius: '50%',
-                                        bgcolor: 'primary.main',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        '&:hover': {
-                                            bgcolor: 'primary.dark',
-                                            transform: 'scale(1.1)',
-                                            transition: 'all 0.2s ease'
-                                        }
-                                    }}
-                                >
-                                    {isPlaying ? (
-                                        <Pause sx={{ color: '#fff', fontSize: 32 }} />
-                                    ) : (
-                                        <PlayArrow sx={{ color: '#fff', fontSize: 32, ml: 0.5 }} />
-                                    )}
-                                </Box>
-                            </Box>
-                        </Box>
-
-                        {/* Video Controls */}
-                        <Box
-                            sx={{
-                                position: 'absolute',
-                                bottom: 0,
-                                left: 0,
-                                right: 0,
-                                bgcolor: 'rgba(0,0,0,0.8)',
-                                p: 1.5
-                            }}
-                        >
-                            {/* Progress Bar */}
-                            <Slider
-                                value={(currentTime / duration) * 100}
-                                onChange={(e, value) => setCurrentTime((value / 100) * duration)}
-                                sx={{
-                                    color: 'primary.main',
-                                    height: 4,
-                                    p: 0,
-                                    mb: 1,
-                                    '& .MuiSlider-thumb': {
-                                        width: 12,
-                                        height: 12,
-                                        '&:hover': { boxShadow: 'none' }
-                                    },
-                                    '& .MuiSlider-rail': {
-                                        bgcolor: 'rgba(255,255,255,0.3)'
-                                    }
-                                }}
-                            />
-
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <Stack direction="row" alignItems="center" spacing={1}>
-                                    <IconButton size="small" sx={{ color: '#fff' }} onClick={() => setIsPlaying(!isPlaying)}>
-                                        {isPlaying ? <Pause fontSize="small" /> : <PlayArrow fontSize="small" />}
-                                    </IconButton>
-                                    <IconButton size="small" sx={{ color: '#fff' }}>
-                                        <VolumeUp fontSize="small" />
-                                    </IconButton>
-                                    <Typography variant="caption" sx={{ color: '#fff', ml: 1 }}>
-                                        {formatTime(currentTime)} / {formatTime(duration)}
-                                    </Typography>
-                                </Stack>
-
-                                <Stack direction="row" alignItems="center" spacing={0.5}>
-                                    <IconButton size="small" sx={{ color: '#fff' }}>
-                                        <Subtitles fontSize="small" />
-                                    </IconButton>
-                                    <IconButton size="small" sx={{ color: '#fff' }}>
-                                        <Settings fontSize="small" />
-                                    </IconButton>
-                                    <IconButton size="small" sx={{ color: '#fff' }}>
-                                        <Fullscreen fontSize="small" />
-                                    </IconButton>
-                                </Stack>
-                            </Box>
-                        </Box>
-                    </Box>
-
-                    {/* Lesson Header */}
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
-                        <Box>
-                            <Typography variant="h5" sx={{ fontWeight: 700, color: theme.palette.text.primary, mb: 0.5 }}>
-                                {lesson.title}
+                {/* LEFT SIDEBAR — module/lesson nav */}
+                <Box sx={{
+                    width: 280,
+                    flexShrink: 0,
+                    bgcolor: colors.sidebar,
+                    borderRight: `1px solid ${colors.border}`,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    height: '100%',
+                    position: 'sticky',
+                    top: 0,
+                    overflowY: 'auto',
+                }}>
+                    {/* Course info + progress */}
+                    <Box sx={{ p: 2.5, borderBottom: `1px solid ${colors.border}` }}>
+                        <Typography variant="caption" sx={{ color: colors.primary, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase' }}>
+                            Current Course
+                        </Typography>
+                        <Typography variant="subtitle1" sx={{ color: colors.text, fontWeight: 700, mt: 0.5, mb: 1.5, lineHeight: 1.3 }}>
+                            {courseData?.title || 'Course'}
+                        </Typography>
+                        <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.75 }}>
+                            <Typography variant="body2" sx={{ color: colors.text, fontWeight: 600 }}>
+                                {progressPercent.toFixed(0)}% Complete
                             </Typography>
-                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
-                                {lesson.module} • Last updated {lesson.lastUpdated}
+                            <Typography variant="caption" sx={{ color: colors.textSecondary }}>
+                                {completedLessons}/{totalLessons} Lessons
                             </Typography>
-                        </Box>
-
-                        <Stack direction="row" spacing={1}>
-                            <Button
-                                variant="outlined"
-                                startIcon={<ChevronLeft />}
-                                sx={{
-                                    borderColor: theme.palette.divider,
-                                    color: theme.palette.text.primary,
-                                    textTransform: 'none',
-                                    '&:hover': { borderColor: theme.palette.text.secondary }
-                                }}
-                            >
-                                Previous
-                            </Button>
-                            <Button
-                                variant="contained"
-                                endIcon={<ChevronRight />}
-                                sx={{ textTransform: 'none' }}
-                            >
-                                Next Lesson
-                            </Button>
                         </Stack>
-                    </Box>
-
-                    {/* Content Tabs */}
-                    <Box sx={{ borderBottom: 1, borderColor: theme.palette.divider, mb: 3 }}>
-                        <Tabs
-                            value={activeTab}
-                            onChange={handleTabChange}
+                        <LinearProgress
+                            variant="determinate"
+                            value={progressPercent}
                             sx={{
-                                '& .MuiTab-root': {
-                                    textTransform: 'none',
-                                    color: theme.palette.text.secondary,
-                                    fontWeight: 500,
-                                    minWidth: 'auto',
-                                    px: 2,
-                                    '&.Mui-selected': {
-                                        color: theme.palette.primary.main
-                                    }
-                                }
+                                height: 5,
+                                borderRadius: 3,
+                                bgcolor: 'rgba(255,255,255,0.08)',
+                                '& .MuiLinearProgress-bar': { bgcolor: colors.primary, borderRadius: 3 },
                             }}
-                        >
-                            <Tab label="Overview" />
-                            <Tab label="Notes & Bookmarks" />
-                            <Tab label="Resources (3)" />
-                            <Tab label="Discussion" />
-                        </Tabs>
+                        />
                     </Box>
 
-                    {/* Tab Content */}
-                    <Box sx={{ display: 'flex', gap: 3 }}>
-                        {/* Left: Course Content */}
-                        <Box sx={{ flex: 1 }}>
-                            {activeTab === 0 && (
-                                <Box>
-                                    <Typography variant="body1" sx={{ color: theme.palette.text.primary, mb: 3, lineHeight: 1.8 }}>
-                                        {lesson.description}
-                                    </Typography>
-
-                                    <Typography variant="subtitle1" sx={{ fontWeight: 700, color: theme.palette.text.primary, mb: 2 }}>
-                                        Key Learning Outcomes:
-                                    </Typography>
-                                    <List sx={{ pl: 2 }}>
-                                        {lesson.learningOutcomes.map((outcome, index) => (
-                                            <Box key={index} sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
-                                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
-                                                    • {outcome}
-                                                </Typography>
-                                            </Box>
-                                        ))}
-                                    </List>
-                                </Box>
-                            )}
-
-                            {activeTab === 1 && (
-                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
-                                    Your notes and bookmarks will appear here.
-                                </Typography>
-                            )}
-
-                            {activeTab === 2 && (
-                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
-                                    Downloadable resources for this lesson.
-                                </Typography>
-                            )}
-
-                            {activeTab === 3 && (
-                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
-                                    Join the discussion with other learners.
-                                </Typography>
-                            )}
-                        </Box>
-
-                        {/* Right: Take a Note Section */}
-                        <Box sx={{ width: 300, flexShrink: 0 }}>
-                            <Card
-                                sx={{
-                                    bgcolor: theme.palette.mode === 'dark' ? '#1F2937' : '#fff',
-                                    borderRadius: 2,
-                                    boxShadow: theme.shadows[1],
-                                    position: 'sticky',
-                                    top: 16
-                                }}
-                            >
-                                <CardContent sx={{ p: 2.5 }}>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                        <Typography variant="subtitle1" sx={{ fontWeight: 700, color: theme.palette.text.primary }}>
-                                            Take a Note
-                                        </Typography>
-                                        <Chip
-                                            label={`At ${formatTime(currentTime)}`}
-                                            size="small"
-                                            sx={{
-                                                bgcolor: alpha(theme.palette.primary.main, 0.1),
-                                                color: theme.palette.primary.main,
-                                                fontSize: '0.7rem'
-                                            }}
-                                        />
-                                    </Box>
-
-                                    <TextField
-                                        multiline
-                                        rows={4}
-                                        placeholder="Type your observation here..."
-                                        value={noteText}
-                                        onChange={(e) => setNoteText(e.target.value)}
-                                        fullWidth
-                                        sx={{
-                                            mb: 2,
-                                            '& .MuiOutlinedInput-root': {
-                                                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : '#f9fafb',
-                                                '& fieldset': {
-                                                    borderColor: theme.palette.divider
-                                                }
-                                            },
-                                            '& .MuiInputBase-input': {
-                                                color: theme.palette.text.primary,
-                                                '&::placeholder': {
-                                                    color: theme.palette.text.secondary,
-                                                    opacity: 1
-                                                }
-                                            }
-                                        }}
-                                    />
-
-                                    <Button
-                                        variant="contained"
-                                        fullWidth
-                                        sx={{
-                                            textTransform: 'none',
-                                            borderRadius: 2,
-                                            py: 1
-                                        }}
-                                    >
-                                        Save Note
-                                    </Button>
-                                </CardContent>
-                            </Card>
-                        </Box>
-                    </Box>
-                </Box>
-
-                {/* Right Sidebar - Module Navigation */}
-                <Box
-                    sx={{
-                        width: 300,
-                        flexShrink: 0,
-                        bgcolor: theme.palette.mode === 'dark' ? '#0C1322' : '#fff',
-                        borderLeft: `1px solid ${theme.palette.divider}`,
-                        display: 'flex',
-                        flexDirection: 'column'
-                    }}
-                >
-                    {/* Module Accordions */}
+                    {/* Module accordions */}
                     <Box sx={{ flex: 1, overflowY: 'auto' }}>
-                        {modules.map((module) => (
+                        {modules.length === 0 ? (
+                            <Box sx={{ p: 2.5 }}>
+                                <Typography variant="body2" sx={{ color: colors.textSecondary }}>No modules available.</Typography>
+                            </Box>
+                        ) : modules.map((mod) => (
                             <Accordion
-                                key={module.id}
-                                expanded={expandedModule === module.id}
-                                onChange={handleModuleChange(module.id)}
+                                key={mod.id}
+                                expanded={expandedModule === mod.id}
+                                onChange={(_, open) => setExpandedModule(open ? mod.id : false)}
                                 sx={{
                                     bgcolor: 'transparent',
                                     boxShadow: 'none',
                                     '&:before': { display: 'none' },
                                     '& .MuiAccordionSummary-root': {
-                                        bgcolor: theme.palette.mode === 'dark' ? '#0F172A' : '#f1f5f9',
-                                        minHeight: 48,
-                                        '&.Mui-expanded': { minHeight: 48 }
-                                    }
+                                        bgcolor: 'rgba(255,255,255,0.02)',
+                                        minHeight: 52,
+                                        '&.Mui-expanded': { minHeight: 52 },
+                                    },
                                 }}
                             >
                                 <AccordionSummary
-                                    expandIcon={<ExpandMore sx={{ color: theme.palette.text.secondary }} />}
-                                    sx={{ px: 2 }}
+                                    expandIcon={<ExpandMore sx={{ color: colors.textSecondary, fontSize: 18 }} />}
+                                    sx={{ px: 2.5 }}
                                 >
-                                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: theme.palette.text.primary }}>
-                                        {module.title}
-                                    </Typography>
+                                    <Box>
+                                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: colors.text, lineHeight: 1.3 }}>
+                                            {mod.title}
+                                        </Typography>
+                                        <Typography variant="caption" sx={{ color: colors.textSecondary }}>
+                                            {mod.lessons.length} {mod.lessons.length === 1 ? 'lesson' : 'lessons'}
+                                        </Typography>
+                                    </Box>
                                 </AccordionSummary>
                                 <AccordionDetails sx={{ p: 0 }}>
-                                    <List sx={{ py: 0 }}>
-                                        {module.lessons.map((lessonItem) => (
-                                            <ListItemButton
-                                                key={lessonItem.id}
-                                                sx={{
-                                                    py: 1.5,
-                                                    px: 2,
-                                                    bgcolor: lessonItem.active
-                                                        ? alpha(theme.palette.primary.main, 0.1)
-                                                        : 'transparent',
-                                                    borderLeft: lessonItem.active
-                                                        ? `3px solid ${theme.palette.primary.main}`
-                                                        : '3px solid transparent',
-                                                    '&:hover': {
-                                                        bgcolor: alpha(theme.palette.primary.main, 0.05)
-                                                    }
-                                                }}
-                                            >
-                                                <ListItemIcon sx={{ minWidth: 32 }}>
-                                                    {lessonItem.completed ? (
-                                                        <CheckCircle sx={{ color: '#10B981', fontSize: 18 }} />
-                                                    ) : lessonItem.active ? (
-                                                        <PlayCircleOutline sx={{ color: theme.palette.primary.main, fontSize: 18 }} />
-                                                    ) : lessonItem.locked ? (
-                                                        <Lock sx={{ color: theme.palette.text.secondary, fontSize: 18 }} />
-                                                    ) : (
-                                                        <PlayCircleOutline sx={{ color: theme.palette.text.secondary, fontSize: 18 }} />
-                                                    )}
-                                                </ListItemIcon>
-                                                <ListItemText
-                                                    primary={lessonItem.title}
-                                                    secondary={lessonItem.duration}
-                                                    primaryTypographyProps={{
-                                                        variant: 'body2',
-                                                        fontWeight: lessonItem.active ? 600 : 400,
-                                                        color: lessonItem.active
-                                                            ? theme.palette.primary.main
-                                                            : theme.palette.text.primary
+                                    <List disablePadding>
+                                        {mod.lessons.map((l) => {
+                                            const isActive = l.id === selectedLessonId;
+                                            return (
+                                                <ListItemButton
+                                                    key={l.id}
+                                                    onClick={() => handleSelectLesson(l)}
+                                                    sx={{
+                                                        py: 1.25,
+                                                        pl: 2.5,
+                                                        pr: 2,
+                                                        bgcolor: isActive ? alpha(colors.primary, 0.12) : 'transparent',
+                                                        borderLeft: `3px solid ${isActive ? colors.primary : 'transparent'}`,
+                                                        '&:hover': { bgcolor: alpha(colors.primary, 0.07) },
                                                     }}
-                                                    secondaryTypographyProps={{
-                                                        variant: 'caption',
-                                                        color: theme.palette.text.secondary
-                                                    }}
-                                                />
-                                            </ListItemButton>
-                                        ))}
+                                                >
+                                                    <ListItemIcon sx={{ minWidth: 28 }}>
+                                                        {isActive ? (
+                                                            <PlayCircleOutline sx={{ color: colors.primary, fontSize: 18 }} />
+                                                        ) : (
+                                                            <PlayCircleOutline sx={{ color: colors.textSecondary, fontSize: 18 }} />
+                                                        )}
+                                                    </ListItemIcon>
+                                                    <ListItemText
+                                                        primary={l.title}
+                                                        secondary={l.duration ? `${l.duration} min` : null}
+                                                        primaryTypographyProps={{
+                                                            variant: 'body2',
+                                                            fontWeight: isActive ? 600 : 400,
+                                                            color: isActive ? colors.primary : colors.text,
+                                                            sx: { fontSize: '0.84rem' },
+                                                        }}
+                                                        secondaryTypographyProps={{
+                                                            variant: 'caption',
+                                                            sx: { color: colors.textSecondary },
+                                                        }}
+                                                    />
+                                                </ListItemButton>
+                                            );
+                                        })}
                                     </List>
                                 </AccordionDetails>
                             </Accordion>
                         ))}
                     </Box>
 
-                    {/* Download Syllabus Button */}
-                    <Box sx={{ p: 2, borderTop: `1px solid ${theme.palette.divider}` }}>
+                    {/* Back button */}
+                    <Box sx={{ p: 2, borderTop: `1px solid ${colors.border}` }}>
                         <Button
-                            variant="outlined"
                             fullWidth
-                            startIcon={<Download />}
+                            startIcon={<ArrowBack />}
+                            onClick={() => navigate(`/explore/course/${courseId}`)}
                             sx={{
-                                borderColor: theme.palette.divider,
-                                color: theme.palette.text.primary,
+                                justifyContent: 'flex-start',
+                                color: colors.textSecondary,
                                 textTransform: 'none',
+                                bgcolor: 'rgba(255,255,255,0.04)',
                                 borderRadius: 2,
-                                '&:hover': {
-                                    borderColor: theme.palette.primary.main,
-                                    color: theme.palette.primary.main
-                                }
+                                '&:hover': { bgcolor: 'rgba(255,255,255,0.08)', color: colors.text },
                             }}
                         >
-                            Download Syllabus
+                            Back to Course
                         </Button>
                     </Box>
                 </Box>
+
+                {/* MAIN CONTENT — video + lesson info */}
+                <Box sx={{ flex: 1, overflowY: 'auto', p: { xs: 2, md: 4 } }}>
+                    {/* Video Player */}
+                    <Box sx={{
+                        position: 'relative',
+                        width: '100%',
+                        aspectRatio: '16/9',
+                        bgcolor: '#000',
+                        borderRadius: 2,
+                        overflow: 'hidden',
+                        mb: 3,
+                    }}>
+                        {/* Thumbnail / video area */}
+                        <Box sx={{
+                            width: '100%',
+                            height: '100%',
+                            backgroundImage: videoSrc ? `url(${videoSrc})` : 'none',
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            bgcolor: '#111827',
+                            position: 'relative',
+                        }}>
+                            <Box sx={{ position: 'absolute', inset: 0, bgcolor: 'rgba(0,0,0,0.35)' }} />
+
+                            {lessonLoading ? (
+                                <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)' }}>
+                                    <CircularProgress size={48} />
+                                </Box>
+                            ) : (
+                                <Box
+                                    sx={{
+                                        position: 'absolute',
+                                        top: '50%',
+                                        left: '50%',
+                                        transform: 'translate(-50%,-50%)',
+                                        cursor: 'pointer',
+                                    }}
+                                    onClick={() => setIsPlaying(!isPlaying)}
+                                >
+                                    <Box sx={{
+                                        width: 64,
+                                        height: 64,
+                                        borderRadius: '50%',
+                                        bgcolor: colors.primary,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        transition: 'transform 0.15s',
+                                        '&:hover': { transform: 'scale(1.1)' },
+                                    }}>
+                                        {isPlaying
+                                            ? <Pause sx={{ color: '#fff', fontSize: 32 }} />
+                                            : <PlayArrow sx={{ color: '#fff', fontSize: 32, ml: 0.5 }} />
+                                        }
+                                    </Box>
+                                </Box>
+                            )}
+                        </Box>
+
+                        {/* Controls */}
+                        <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, bgcolor: 'rgba(0,0,0,0.8)', p: 1.5 }}>
+                            <Slider
+                                value={(currentTime / duration) * 100}
+                                onChange={(_, v) => setCurrentTime((v / 100) * duration)}
+                                sx={{
+                                    color: colors.primary,
+                                    height: 4,
+                                    p: 0,
+                                    mb: 1,
+                                    '& .MuiSlider-thumb': { width: 12, height: 12, '&:hover': { boxShadow: 'none' } },
+                                    '& .MuiSlider-rail': { bgcolor: 'rgba(255,255,255,0.3)' },
+                                }}
+                            />
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Stack direction="row" alignItems="center" spacing={0.5}>
+                                    <IconButton size="small" sx={{ color: '#fff' }} onClick={() => setIsPlaying(!isPlaying)}>
+                                        {isPlaying ? <Pause fontSize="small" /> : <PlayArrow fontSize="small" />}
+                                    </IconButton>
+                                    <IconButton size="small" sx={{ color: '#fff' }}>
+                                        <VolumeUp fontSize="small" />
+                                    </IconButton>
+                                    <Typography variant="caption" sx={{ color: '#fff', ml: 0.5 }}>
+                                        {formatTime(currentTime)} / {formatTime(duration)}
+                                    </Typography>
+                                </Stack>
+                                <Stack direction="row" alignItems="center" spacing={0.25}>
+                                    <IconButton size="small" sx={{ color: '#fff' }}><Subtitles fontSize="small" /></IconButton>
+                                    <IconButton size="small" sx={{ color: '#fff' }}><Settings fontSize="small" /></IconButton>
+                                    <IconButton size="small" sx={{ color: '#fff' }}><Fullscreen fontSize="small" /></IconButton>
+                                </Stack>
+                            </Box>
+                        </Box>
+                    </Box>
+
+                    {/* Lesson header + nav */}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2.5, flexWrap: 'wrap', gap: 1.5 }}>
+                        <Box>
+                            <Typography variant="h5" sx={{ fontWeight: 700, color: colors.text, mb: 0.5 }}>
+                                {currentLesson?.title || 'Select a lesson'}
+                            </Typography>
+                            {currentLesson?.updated_at && (
+                                <Typography variant="body2" sx={{ color: colors.textSecondary }}>
+                                    Last updated {new Date(currentLesson.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </Typography>
+                            )}
+                        </Box>
+                        <Stack direction="row" spacing={1}>
+                            <Button
+                                variant="outlined"
+                                startIcon={<ChevronLeft />}
+                                disabled={!prevLesson}
+                                onClick={() => prevLesson && handleSelectLesson(prevLesson)}
+                                sx={{ borderColor: 'rgba(255,255,255,0.15)', color: colors.text, textTransform: 'none', '&:hover': { borderColor: 'rgba(255,255,255,0.3)' }, '&.Mui-disabled': { color: colors.textSecondary, borderColor: 'rgba(255,255,255,0.06)' } }}
+                            >
+                                Previous
+                            </Button>
+                            <Button
+                                variant="contained"
+                                endIcon={<ChevronRight />}
+                                disabled={!nextLesson}
+                                onClick={() => nextLesson && handleSelectLesson(nextLesson)}
+                                sx={{ bgcolor: colors.primary, textTransform: 'none', '&:hover': { bgcolor: '#1D4ED8' } }}
+                            >
+                                Next Lesson
+                            </Button>
+                        </Stack>
+                    </Box>
+
+                    <Divider sx={{ borderColor: colors.border, mb: 3 }} />
+
+                    {/* Lesson description */}
+                    {currentLesson?.description && (
+                        <Typography variant="body1" sx={{ color: colors.text, lineHeight: 1.8, mb: 3 }}>
+                            {currentLesson.description}
+                        </Typography>
+                    )}
+
+                    {/* Key Learning Outcomes */}
+                    {(() => {
+                        const content = currentLesson?.content;
+                        if (!content) return null;
+                        const items = Array.isArray(content) ? content : [];
+                        if (items.length === 0) return null;
+                        return (
+                            <Box sx={{ mb: 3 }}>
+                                <Typography variant="subtitle1" sx={{ fontWeight: 700, color: colors.text, mb: 1.5 }}>
+                                    Key Learning Outcomes
+                                </Typography>
+                                {items.map((item, i) => (
+                                    <Box key={i} sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
+                                        <Typography variant="body2" sx={{ color: colors.textSecondary, mr: 1 }}>•</Typography>
+                                        <Typography variant="body2" sx={{ color: colors.textSecondary }}>
+                                            {typeof item === 'string' ? item : JSON.stringify(item)}
+                                        </Typography>
+                                    </Box>
+                                ))}
+                            </Box>
+                        );
+                    })()}
+                </Box>
+
+                {/* RIGHT PANEL — course details + time remaining */}
+                <Box sx={{
+                    width: 300,
+                    flexShrink: 0,
+                    bgcolor: colors.sidebar,
+                    borderLeft: `1px solid ${colors.border}`,
+                    p: 2.5,
+                    overflowY: 'auto',
+                }}>
+                    {/* Course Details */}
+                    <Typography variant="subtitle2" sx={{ color: colors.text, fontWeight: 700, mb: 1.5, textTransform: 'uppercase', fontSize: '0.72rem', letterSpacing: 0.5 }}>
+                        Course Details
+                    </Typography>
+                    <Box sx={{ bgcolor: colors.card, borderRadius: 2, p: 2, mb: 2.5 }}>
+                        <Stack spacing={1.5}>
+                            <Stack direction="row" spacing={1.25} alignItems="center">
+                                <LevelIcon sx={{ color: colors.primary, fontSize: 18 }} />
+                                <Box>
+                                    <Typography variant="caption" sx={{ color: colors.textSecondary, display: 'block', fontSize: '0.68rem', textTransform: 'uppercase' }}>Level</Typography>
+                                    <Typography variant="body2" sx={{ color: colors.text, fontWeight: 600 }}>{courseLevel}</Typography>
+                                </Box>
+                            </Stack>
+                            <Stack direction="row" spacing={1.25} alignItems="center">
+                                <ClockIcon sx={{ color: colors.primary, fontSize: 18 }} />
+                                <Box>
+                                    <Typography variant="caption" sx={{ color: colors.textSecondary, display: 'block', fontSize: '0.68rem', textTransform: 'uppercase' }}>Total Duration</Typography>
+                                    <Typography variant="body2" sx={{ color: colors.text, fontWeight: 600 }}>{courseDuration}</Typography>
+                                </Box>
+                            </Stack>
+                            <Stack direction="row" spacing={1.25} alignItems="center">
+                                <CertificateIcon sx={{ color: colors.primary, fontSize: 18 }} />
+                                <Box>
+                                    <Typography variant="caption" sx={{ color: colors.textSecondary, display: 'block', fontSize: '0.68rem', textTransform: 'uppercase' }}>Certificate</Typography>
+                                    <Typography variant="body2" sx={{ color: hasCertificate ? colors.success : colors.textSecondary, fontWeight: 600 }}>
+                                        {hasCertificate ? 'Available' : 'Not included'}
+                                    </Typography>
+                                </Box>
+                            </Stack>
+                            <Stack direction="row" spacing={1.25} alignItems="center">
+                                <LanguageIcon sx={{ color: colors.primary, fontSize: 18 }} />
+                                <Box>
+                                    <Typography variant="caption" sx={{ color: colors.textSecondary, display: 'block', fontSize: '0.68rem', textTransform: 'uppercase' }}>Language</Typography>
+                                    <Typography variant="body2" sx={{ color: colors.text, fontWeight: 600 }}>{courseLanguage}</Typography>
+                                </Box>
+                            </Stack>
+                            <Stack direction="row" spacing={1.25} alignItems="center">
+                                <CalendarIcon sx={{ color: colors.primary, fontSize: 18 }} />
+                                <Box>
+                                    <Typography variant="caption" sx={{ color: colors.textSecondary, display: 'block', fontSize: '0.68rem', textTransform: 'uppercase' }}>Start Date</Typography>
+                                    <Typography variant="body2" sx={{ color: colors.text, fontWeight: 600 }}>{courseStartDate}</Typography>
+                                </Box>
+                            </Stack>
+                        </Stack>
+                    </Box>
+
+                    {/* Time Remaining */}
+                    <Typography variant="subtitle2" sx={{ color: colors.text, fontWeight: 700, mb: 1.5, textTransform: 'uppercase', fontSize: '0.72rem', letterSpacing: 0.5 }}>
+                        Time Remaining
+                    </Typography>
+                    <Box sx={{ bgcolor: colors.card, borderRadius: 2, p: 2, mb: 2.5 }}>
+                        <Stack direction="row" spacing={1.25} alignItems="center" sx={{ mb: 1.25 }}>
+                            <ClockIcon sx={{ color: colors.success, fontSize: 18 }} />
+                            <Box>
+                                <Typography variant="body2" sx={{ color: colors.text, fontWeight: 700 }}>
+                                    {remainingLessons.length} {remainingLessons.length === 1 ? 'lesson' : 'lessons'} left
+                                </Typography>
+                                <Typography variant="caption" sx={{ color: colors.textSecondary }}>
+                                    {remainingMinutes > 0 ? `~${remainingMinutes} min remaining` : 'Last lesson'}
+                                </Typography>
+                            </Box>
+                        </Stack>
+                        <LinearProgress
+                            variant="determinate"
+                            value={totalLessons > 0 ? ((totalLessons - remainingLessons.length) / totalLessons) * 100 : 0}
+                            sx={{
+                                height: 5,
+                                borderRadius: 3,
+                                bgcolor: 'rgba(255,255,255,0.08)',
+                                '& .MuiLinearProgress-bar': { bgcolor: colors.success, borderRadius: 3 },
+                            }}
+                        />
+                    </Box>
+
+                    {/* Tags */}
+                    {tags.length > 0 && (
+                        <>
+                            <Typography variant="subtitle2" sx={{ color: colors.text, fontWeight: 700, mb: 1.25, textTransform: 'uppercase', fontSize: '0.72rem', letterSpacing: 0.5 }}>
+                                Topics
+                            </Typography>
+                            <Stack direction="row" flexWrap="wrap" gap={0.75}>
+                                {tags.map((tag, i) => (
+                                    <Chip
+                                        key={i}
+                                        label={tag?.name || tag}
+                                        size="small"
+                                        sx={{ bgcolor: 'rgba(37,99,235,0.15)', color: '#93C5FD', fontSize: '0.72rem', height: 24 }}
+                                    />
+                                ))}
+                            </Stack>
+                        </>
+                    )}
+                </Box>
+
             </Box>
         </Box>
     );

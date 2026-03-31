@@ -45,11 +45,23 @@ const okOrData = (res) => {
 
 export const learnerEnrollmentService = {
     /**
+     * Check course access for the authenticated user
+     * GET /lms/courses/{id}/access
+     *
+     * @param {string} courseId
+     * @returns {Promise<{course_id, is_essential, can_access, pay_type, message}>}
+     */
+    getCourseAccess: async (courseId) => {
+        const res = await apiService.get(`/lms/courses/${courseId}/access`);
+        return res?.data ? res.data : res;
+    },
+
+    /**
      * Enroll in a course
      * POST /lms/courses/{id}/enroll
-     * 
+     *
      * @param {string|number} courseId - The course ID to enroll in
-     * @returns {Promise<Object>} - Enrollment data
+     * @returns {Promise<Object>} - Enrollment data (may include payment_url for paid courses)
      */
     enrollInCourse: async (courseId) => {
         const res = await apiService.post(`/lms/courses/${courseId}/enroll`);
@@ -57,23 +69,79 @@ export const learnerEnrollmentService = {
     },
 
     /**
-     * Get all enrollments for the authenticated user
-     * GET /lms/my-enrollments
-     * 
+     * Enroll in an essential course
+     * POST /lms/essential/enroll
+     *
+     * @param {string|number} courseId - The course ID to enroll in
+     * @returns {Promise<Object>} - Enrollment data (may include payment_url for paid courses)
+     */
+    enrollInEssentialCourse: async (courseId) => {
+        const res = await apiService.post('/lms/essential/enroll', { course_id: courseId });
+        return unwrapEnrollment(res);
+    },
+
+    /**
+     * Get paginated list of enrollments with optional filters
+     * GET /lms/enrollments
+     *
      * @param {Object} options - Query options
-     * @param {number} [options.page] - Page number for pagination
+     * @param {string} [options.user_id] - Filter by user UUID
+     * @param {string} [options.course_id] - Filter by course UUID
+     * @param {string} [options.status] - Filter by enrollment status
      * @param {number} [options.per_page] - Items per page
-     * @param {string} [options.status] - Filter by enrollment status (active, completed, etc.)
+     * @param {number} [options.page] - Page number
      * @returns {Promise<{data: Array, meta: Object, links: Object}>}
+     */
+    getEnrollments: async ({ user_id, course_id, status, per_page = 20, page } = {}) => {
+        const params = new URLSearchParams();
+        if (user_id) params.append('user_id', user_id);
+        if (course_id) params.append('course_id', course_id);
+        if (status) params.append('status', status);
+        if (per_page) params.append('per_page', per_page);
+        if (page) params.append('page', page);
+        const qs = params.toString();
+        const res = await apiService.get(`/lms/enrollments${qs ? `?${qs}` : ''}`);
+        return unwrapList(res);
+    },
+
+    /**
+     * Verify a payment after Paystack redirect
+     * GET /payments/verify?trxref=...&reference=...
+     *
+     * @param {Object} params
+     * @param {string} params.trxref - Transaction reference from Paystack
+     * @param {string} params.reference - Payment reference
+     * @returns {Promise<Object>} - Verification result with enrollment data
+     */
+    verifyPayment: async ({ trxref, reference }) => {
+        const res = await apiService.get(`/payments/verify?trxref=${trxref}&reference=${reference}`);
+        return res?.data ? res.data : res;
+    },
+
+    /**
+     * Verify payment status after enrollment payment callback
+     * GET /payments/verify-status?reference=ENR_...
+     *
+     * Called when the backend redirects to /payment/success?reference=...
+     *
+     * @param {string} reference - The enrollment payment reference (e.g. ENR_17749600101498)
+     * @returns {Promise<Object>} - Verification result with enrollment/payment status
+     */
+    verifyPaymentStatus: async (reference) => {
+        const res = await apiService.get(`/payments/verify-status?reference=${encodeURIComponent(reference)}`);
+        return res?.data ? res.data : res;
+    },
+
+    /**
+     * @deprecated Use getEnrollments instead
      */
     getMyEnrollments: async ({ page, per_page = 20, status } = {}) => {
         const params = new URLSearchParams();
         if (page) params.append('page', page);
         if (per_page) params.append('per_page', per_page);
         if (status) params.append('status', status);
-
         const queryString = params.toString();
-        const endpoint = queryString ? `/lms/my-enrollments?${queryString}` : '/lms/my-enrollments';
+        const endpoint = queryString ? `/lms/enrollments?${queryString}` : '/lms/enrollments';
         const res = await apiService.get(endpoint);
         return unwrapList(res);
     },

@@ -56,7 +56,16 @@ const RecommendedCourseCard = ({ course }) => {
                     fullWidth
                     variant="outlined"
                     size="small"
-                    onClick={() => navigate('/checkout')}
+                    onClick={() => navigate('/checkout', {
+                        state: {
+                            courseId: course.id,
+                            title: course.title,
+                            price: course.price,
+                            instructor: course.instructor,
+                            level: course.level,
+                            thumbnail: course.image,
+                        }
+                    })}
                     sx={{
                         borderColor: 'rgba(255,255,255,0.1)',
                         color: '#fff',

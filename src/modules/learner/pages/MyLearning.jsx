@@ -1,14 +1,17 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+    Alert,
     Avatar,
     Box,
     Button,
     Chip,
+    CircularProgress,
     Grid,
     InputBase,
     LinearProgress,
     Paper,
+    Skeleton,
     Stack,
     Typography,
     alpha,
@@ -18,99 +21,77 @@ import {
     CheckCircle,
     Search,
 } from '@mui/icons-material';
+import { learnerEnrollmentService } from '../services';
 
 const tabs = ['All Courses', 'In Progress', 'Completed', 'Certificates'];
 
-const courses = [
-    {
-        id: 1,
-        title: 'Introduction to Public Policy',
-        instructor: 'Dr. Sarah Jenkins',
-        category: 'PUBLIC POLICY',
-        categoryColor: '#2563EB',
-        status: 'IN PROGRESS',
-        progress: 65,
-        lastAccessed: '2h ago',
-        image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=250&fit=crop',
-    },
-    {
-        id: 2,
-        title: 'Ethics in Leadership',
-        instructor: 'Prof. Michael Chang',
-        category: 'ETHICS',
-        categoryColor: '#EC4899',
-        status: 'IN PROGRESS',
-        progress: 32,
-        lastAccessed: '1d ago',
-        image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&h=250&fit=crop',
-    },
-    {
-        id: 3,
-        title: 'Strategic Urban Planning',
-        instructor: 'Elena Rodriguez',
-        category: 'MANAGEMENT',
-        categoryColor: '#6B7280',
-        status: 'COMPLETED',
-        finishedDate: 'Oct 12, 2023',
-        hasCertificate: true,
-        image: 'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=400&h=250&fit=crop',
-    },
-    {
-        id: 4,
-        title: 'Public Sector Finance 101',
-        instructor: 'David Kim',
-        category: 'FINANCE',
-        categoryColor: '#F97316',
-        status: 'IN PROGRESS',
-        progress: 15,
-        lastAccessed: '3d ago',
-        image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=250&fit=crop',
-    },
-    {
-        id: 5,
-        title: 'Sustainable Development Goals',
-        instructor: 'Dr. Amara Okafor',
-        category: 'SUSTAINABILITY',
-        categoryColor: '#10B981',
-        status: 'COMPLETED',
-        finishedDate: 'Sep 20, 2023',
-        hasCertificate: true,
-        image: 'https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=400&h=250&fit=crop',
-    },
-];
+const normalizeStatus = (status) => {
+    if (!status) return 'IN PROGRESS';
+    const s = String(status).toLowerCase();
+    if (s === 'completed') return 'COMPLETED';
+    return 'IN PROGRESS';
+};
+
+const fallbackImage = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450"><rect width="100%25" height="100%25" fill="%23111827"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" fill="%239CA3AF" font-size="28">Course Image</text></svg>';
 
 const MyLearning = () => {
     const navigate = useNavigate();
 
+    const [enrollments, setEnrollments] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
     const [activeTab, setActiveTab] = useState('All Courses');
     const [searchTerm, setSearchTerm] = useState('');
 
-    const filteredCourses = useMemo(() => {
-        const byTab = courses.filter((course) => {
+    useEffect(() => {
+        let active = true;
+        setLoading(true);
+        setError('');
+
+        learnerEnrollmentService.getEnrollments({ per_page: 50 })
+            .then((res) => {
+                if (!active) return;
+                setEnrollments(res.data || []);
+            })
+            .catch((err) => {
+                if (!active) return;
+                setError(err?.message || 'Failed to load your enrollments.');
+            })
+            .finally(() => {
+                if (active) setLoading(false);
+            });
+
+        return () => { active = false; };
+    }, []);
+
+    const filteredEnrollments = useMemo(() => {
+        const byTab = enrollments.filter((enrollment) => {
+            const status = normalizeStatus(enrollment.status);
             if (activeTab === 'All Courses') return true;
-            if (activeTab === 'In Progress') return course.status === 'IN PROGRESS';
-            if (activeTab === 'Completed') return course.status === 'COMPLETED';
-            if (activeTab === 'Certificates') return course.hasCertificate;
+            if (activeTab === 'In Progress') return status === 'IN PROGRESS';
+            if (activeTab === 'Completed') return status === 'COMPLETED';
+            if (activeTab === 'Certificates') return status === 'COMPLETED';
             return true;
         });
 
         const q = String(searchTerm || '').trim().toLowerCase();
         if (!q) return byTab;
 
-        return byTab.filter((course) =>
-            String(course.title || '').toLowerCase().includes(q) ||
-            String(course.instructor || '').toLowerCase().includes(q)
-        );
-    }, [activeTab, searchTerm]);
+        return byTab.filter((enrollment) => {
+            const title = String(enrollment.course?.title || enrollment.course_title || '').toLowerCase();
+            const instructor = String(enrollment.course?.instructor || enrollment.instructor || '').toLowerCase();
+            return title.includes(q) || instructor.includes(q);
+        });
+    }, [enrollments, activeTab, searchTerm]);
 
-    const inProgressCount = courses.filter((course) => course.status === 'IN PROGRESS').length;
-    const certificatesCount = courses.filter((course) => course.hasCertificate).length;
+    const completedCount = enrollments.filter((e) => normalizeStatus(e.status) === 'COMPLETED').length;
+    const inProgressCount = enrollments.filter((e) => normalizeStatus(e.status) === 'IN PROGRESS').length;
 
     const tabCounts = {
-        'All Courses': courses.length,
+        'All Courses': enrollments.length,
         'In Progress': inProgressCount,
-        Completed: courses.filter((course) => course.status === 'COMPLETED').length,
-        Certificates: certificatesCount,
+        'Completed': completedCount,
+        'Certificates': completedCount,
     };
 
     return (
@@ -143,6 +124,8 @@ const MyLearning = () => {
                 </Stack>
             </Stack>
 
+            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
             <Grid container spacing={2} sx={{ mb: 3 }}>
                 <Grid item xs={12} md={6}>
                     <Paper sx={{ bgcolor: '#1A2230', border: '1px solid #374151', borderRadius: 2, p: 2 }}>
@@ -152,10 +135,10 @@ const MyLearning = () => {
                             </Avatar>
                             <Box>
                                 <Typography sx={{ color: '#9CA3AF', fontSize: '0.72rem', fontWeight: 700, letterSpacing: 0.5 }}>
-                                    HOURS LEARNED
+                                    COURSES ENROLLED
                                 </Typography>
                                 <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '1.15rem' }}>
-                                    12h 30m
+                                    {loading ? <Skeleton width={60} sx={{ bgcolor: '#374151' }} /> : enrollments.length}
                                 </Typography>
                             </Box>
                         </Stack>
@@ -172,7 +155,7 @@ const MyLearning = () => {
                                     CERTIFICATES
                                 </Typography>
                                 <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '1.15rem' }}>
-                                    {certificatesCount}
+                                    {loading ? <Skeleton width={40} sx={{ bgcolor: '#374151' }} /> : completedCount}
                                 </Typography>
                             </Box>
                         </Stack>
@@ -200,7 +183,7 @@ const MyLearning = () => {
                                     },
                                 }}
                             >
-                                {tab} ({tabCounts[tab]})
+                                {tab} ({tabCounts[tab] ?? 0})
                             </Button>
                         ))}
                     </Stack>
@@ -234,104 +217,126 @@ const MyLearning = () => {
                 </Stack>
             </Paper>
 
-            <Grid container spacing={2}>
-                {filteredCourses.map((course) => (
-                    <Grid key={course.id} item xs={12} sm={6} xl={4}>
-                        <Paper sx={{ bgcolor: '#1A2230', border: '1px solid #374151', borderRadius: 2, overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column' }}>
-                            <Box
-                                sx={{
-                                    height: 158,
-                                    backgroundImage: `url(${course.image})`,
-                                    backgroundSize: 'cover',
-                                    backgroundPosition: 'center',
-                                    position: 'relative',
-                                }}
-                            >
-                                <Chip
-                                    label={course.category}
-                                    size="small"
-                                    sx={{
-                                        position: 'absolute',
-                                        top: 10,
-                                        left: 10,
-                                        bgcolor: course.categoryColor,
-                                        color: '#fff',
-                                        fontSize: '0.68rem',
-                                        fontWeight: 700,
-                                        borderRadius: 1,
-                                    }}
-                                />
-                            </Box>
+            {loading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+                    <CircularProgress />
+                </Box>
+            ) : filteredEnrollments.length === 0 ? (
+                <Box sx={{ p: 5, textAlign: 'center', border: '1px dashed #374151', borderRadius: 2 }}>
+                    <Typography sx={{ color: '#fff', fontWeight: 600, mb: 0.5 }}>
+                        {enrollments.length === 0 ? 'No enrollments yet' : 'No courses match your filter'}
+                    </Typography>
+                    <Typography sx={{ color: '#9CA3AF', fontSize: '0.9rem', mb: 2 }}>
+                        {enrollments.length === 0
+                            ? 'Browse and enroll in a course to get started.'
+                            : 'Try a different tab or search term.'}
+                    </Typography>
+                    {enrollments.length === 0 && (
+                        <Button
+                            variant="contained"
+                            onClick={() => navigate('/explore')}
+                            sx={{ bgcolor: '#1152D4', textTransform: 'none', '&:hover': { bgcolor: '#0D42AF' } }}
+                        >
+                            Explore Courses
+                        </Button>
+                    )}
+                </Box>
+            ) : (
+                <Grid container spacing={2}>
+                    {filteredEnrollments.map((enrollment) => {
+                        const status = normalizeStatus(enrollment.status);
+                        const progress = Number(enrollment.progress_percent || 0);
+                        const title = String(enrollment.course?.title || enrollment.course_title || 'Untitled Course');
+                        const instructor = String(enrollment.course?.instructor || enrollment.instructor || 'Integritas Hub');
+                        const image = String(enrollment.course?.thumbnail_url || enrollment.course?.image || '').trim() || fallbackImage;
+                        const courseId = enrollment.course_id || enrollment.course?.id;
 
-                            <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1.25, flex: 1 }}>
-                                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                    <Typography sx={{ color: course.status === 'IN PROGRESS' ? '#60A5FA' : '#34D399', fontSize: '0.72rem', fontWeight: 700 }}>
-                                        {course.status}
-                                    </Typography>
-                                    <Typography sx={{ color: '#9CA3AF', fontSize: '0.72rem' }}>
-                                        {course.status === 'IN PROGRESS'
-                                            ? `Last accessed ${course.lastAccessed}`
-                                            : `Finished ${course.finishedDate}`}
-                                    </Typography>
-                                </Stack>
+                        return (
+                            <Grid key={enrollment.id} item xs={12} sm={6} xl={4}>
+                                <Paper sx={{ bgcolor: '#1A2230', border: '1px solid #374151', borderRadius: 2, overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column' }}>
+                                    <Box
+                                        component="img"
+                                        src={image}
+                                        alt={title}
+                                        onError={(e) => { e.currentTarget.src = fallbackImage; }}
+                                        sx={{
+                                            height: 158,
+                                            width: '100%',
+                                            objectFit: 'cover',
+                                        }}
+                                    />
 
-                                <Typography sx={{ color: '#fff', fontWeight: 700, lineHeight: 1.35 }}>
-                                    {course.title}
-                                </Typography>
-                                <Typography sx={{ color: '#9CA3AF', fontSize: '0.82rem' }}>
-                                    Instructor: {course.instructor}
-                                </Typography>
-
-                                <Box sx={{ mt: 'auto' }}>
-                                    {course.status === 'IN PROGRESS' ? (
-                                        <>
-                                            <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.75 }}>
-                                                <Typography sx={{ color: '#9CA3AF', fontSize: '0.74rem' }}>Progress</Typography>
-                                                <Typography sx={{ color: '#fff', fontSize: '0.74rem', fontWeight: 700 }}>{course.progress}%</Typography>
-                                            </Stack>
-                                            <LinearProgress
-                                                variant="determinate"
-                                                value={course.progress}
-                                                sx={{
-                                                    height: 7,
-                                                    borderRadius: 10,
-                                                    bgcolor: 'rgba(255,255,255,0.08)',
-                                                    mb: 1.3,
-                                                    '& .MuiLinearProgress-bar': { bgcolor: course.categoryColor },
-                                                }}
-                                            />
-                                            <Button
-                                                fullWidth
-                                                variant="contained"
-                                                onClick={() => navigate(`/explore/lesson/${course.id}/1`)}
-                                                sx={{ bgcolor: '#1152D4', textTransform: 'none', '&:hover': { bgcolor: '#0D42AF' } }}
-                                            >
-                                                Resume Course
-                                            </Button>
-                                        </>
-                                    ) : (
+                                    <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1.25, flex: 1 }}>
                                         <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                            <Stack direction="row" spacing={0.75} alignItems="center">
-                                                <CheckCircle sx={{ color: '#34D399', fontSize: 16 }} />
-                                                <Typography sx={{ color: '#34D399', fontSize: '0.76rem', fontWeight: 600 }}>
-                                                    Certificate Earned
+                                            <Typography sx={{ color: status === 'IN PROGRESS' ? '#60A5FA' : '#34D399', fontSize: '0.72rem', fontWeight: 700 }}>
+                                                {status === 'IN PROGRESS' ? 'IN PROGRESS' : 'COMPLETED'}
+                                            </Typography>
+                                            {enrollment.enrolled_at && (
+                                                <Typography sx={{ color: '#9CA3AF', fontSize: '0.72rem' }}>
+                                                    Enrolled {new Date(enrollment.enrolled_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                                                 </Typography>
-                                            </Stack>
-                                            <Button
-                                                size="small"
-                                                onClick={() => navigate('/explore/courses')}
-                                                sx={{ color: '#9CA3AF', textTransform: 'none' }}
-                                            >
-                                                Review
-                                            </Button>
+                                            )}
                                         </Stack>
-                                    )}
-                                </Box>
-                            </Box>
-                        </Paper>
-                    </Grid>
-                ))}
-            </Grid>
+
+                                        <Typography sx={{ color: '#fff', fontWeight: 700, lineHeight: 1.35 }}>
+                                            {title}
+                                        </Typography>
+                                        <Typography sx={{ color: '#9CA3AF', fontSize: '0.82rem' }}>
+                                            Instructor: {instructor}
+                                        </Typography>
+
+                                        <Box sx={{ mt: 'auto' }}>
+                                            {status === 'IN PROGRESS' ? (
+                                                <>
+                                                    <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.75 }}>
+                                                        <Typography sx={{ color: '#9CA3AF', fontSize: '0.74rem' }}>Progress</Typography>
+                                                        <Typography sx={{ color: '#fff', fontSize: '0.74rem', fontWeight: 700 }}>{progress}%</Typography>
+                                                    </Stack>
+                                                    <LinearProgress
+                                                        variant="determinate"
+                                                        value={progress}
+                                                        sx={{
+                                                            height: 7,
+                                                            borderRadius: 10,
+                                                            bgcolor: 'rgba(255,255,255,0.08)',
+                                                            mb: 1.3,
+                                                            '& .MuiLinearProgress-bar': { bgcolor: '#2563EB' },
+                                                        }}
+                                                    />
+                                                    <Button
+                                                        fullWidth
+                                                        variant="contained"
+                                                        onClick={() => courseId && navigate(`/explore/lesson/${courseId}`)}
+                                                        sx={{ bgcolor: '#1152D4', textTransform: 'none', '&:hover': { bgcolor: '#0D42AF' } }}
+                                                    >
+                                                        Resume Course
+                                                    </Button>
+                                                </>
+                                            ) : (
+                                                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                                    <Stack direction="row" spacing={0.75} alignItems="center">
+                                                        <CheckCircle sx={{ color: '#34D399', fontSize: 16 }} />
+                                                        <Typography sx={{ color: '#34D399', fontSize: '0.76rem', fontWeight: 600 }}>
+                                                            Certificate Earned
+                                                        </Typography>
+                                                    </Stack>
+                                                    <Button
+                                                        size="small"
+                                                        onClick={() => courseId && navigate(`/explore/course/${courseId}`)}
+                                                        sx={{ color: '#9CA3AF', textTransform: 'none' }}
+                                                    >
+                                                        Review
+                                                    </Button>
+                                                </Stack>
+                                            )}
+                                        </Box>
+                                    </Box>
+                                </Paper>
+                            </Grid>
+                        );
+                    })}
+                </Grid>
+            )}
         </Box>
     );
 };

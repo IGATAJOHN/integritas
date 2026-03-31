@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
     Box,
     Typography,
@@ -17,7 +17,9 @@ import {
     Avatar,
     useTheme,
     alpha,
-    Container
+    Container,
+    CircularProgress,
+    Alert
 } from '@mui/material';
 import {
     LockOutlined as Lock,
@@ -37,6 +39,7 @@ import {
     EmailOutlined as Email
 } from '@mui/icons-material';
 import logo from '../../../assets/images/GGH_logo.png';
+import { learnerEnrollmentService } from '../services';
 
 /**
  * Checkout Component
@@ -47,21 +50,52 @@ import logo from '../../../assets/images/GGH_logo.png';
 const Checkout = () => {
     const theme = useTheme();
     const navigate = useNavigate();
+    const location = useLocation();
     const [paymentMethod, setPaymentMethod] = useState('card');
     const [saveCard, setSaveCard] = useState(false);
+    const [enrolling, setEnrolling] = useState(false);
+    const [enrollError, setEnrollError] = useState(null);
 
-    // Mock course data
+    // Course data passed via route state from "Enroll Now" buttons
+    const stateData = location.state || {};
+    // Guard: instructor may arrive as a string or as the full {name,title,bio} object
+    const instructorName = typeof stateData.instructor === 'string'
+        ? stateData.instructor
+        : stateData.instructor?.name || '—';
     const course = {
-        title: 'Advanced Public Policy Analysis',
-        instructor: 'Dr. Elena Rivas',
-        level: 'Expert',
-        thumbnail: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&h=600&fit=crop',
-        price: 450.00,
-        tax: 45.00,
-        fee: 0.00
+        courseId: stateData.courseId || null,
+        title: stateData.title || 'Course Enrollment',
+        instructor: instructorName,
+        level: stateData.level || '—',
+        thumbnail: stateData.thumbnail || null,
+        price: stateData.price || 0,
+        tax: stateData.tax || 0,
+        fee: stateData.fee || 0,
     };
 
     const total = course.price + course.tax + course.fee;
+
+    const handleCompletePurchase = async () => {
+        if (!course.courseId) {
+            setEnrollError('Course information is missing. Please go back and try again.');
+            return;
+        }
+        setEnrolling(true);
+        setEnrollError(null);
+        try {
+            const result = await learnerEnrollmentService.enrollInCourse(course.courseId);
+            if (result?.payment_url) {
+                window.location.href = result.payment_url;
+            } else {
+                navigate('/payment-success', { state: { enrollment: result, course } });
+            }
+        } catch (err) {
+            const message = err?.message || 'Enrollment failed. Please try again.';
+            setEnrollError(message);
+        } finally {
+            setEnrolling(false);
+        }
+    };
 
     return (
         <Box sx={{
@@ -610,13 +644,21 @@ const Checkout = () => {
                                     </Button>
                                 </Box>
 
+                                {/* Enroll error */}
+                                {enrollError && (
+                                    <Alert severity="error" sx={{ mb: 2, bgcolor: 'rgba(239,68,68,0.1)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.2)', fontSize: '0.8rem' }}>
+                                        {enrollError}
+                                    </Alert>
+                                )}
+
                                 {/* Complete Purchase Button */}
                                 <Button
                                     fullWidth
                                     variant="contained"
                                     size="large"
-                                    onClick={() => navigate('/payment-success')}
-                                    startIcon={<Lock />}
+                                    onClick={handleCompletePurchase}
+                                    disabled={enrolling}
+                                    startIcon={enrolling ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : <Lock />}
                                     sx={{
                                         bgcolor: '#2563EB',
                                         color: '#fff',
@@ -626,10 +668,11 @@ const Checkout = () => {
                                         fontSize: '1rem',
                                         mb: 2,
                                         boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.1), 0 2px 4px -1px rgba(37, 99, 235, 0.06)',
-                                        '&:hover': { bgcolor: '#1d4ed8' }
+                                        '&:hover': { bgcolor: '#1d4ed8' },
+                                        '&.Mui-disabled': { bgcolor: '#1d4ed8', opacity: 0.7 }
                                     }}
                                 >
-                                    Complete Purchase
+                                    {enrolling ? 'Processing...' : 'Complete Purchase'}
                                 </Button>
 
                                 {/* Security Badge */}

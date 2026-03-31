@@ -248,7 +248,7 @@ export const courseCatalogService = {
         category,
         level,
         sort = 'popular',
-        status = 'published',
+        status,
         language,
         page,
         per_page = 30,
@@ -304,6 +304,11 @@ export const courseCatalogService = {
              ...normalizeCourse(rawCourse),
              raw_data: rawCourse,
         };
+    },
+
+    getLessonById: async (lessonId) => {
+        const res = await apiService.get(`/lms/lessons/${encodeURIComponent(toTrimmedString(lessonId))}`);
+        return res?.data ? res.data : res;
     },
 
     getFeaturedCourses: async ({ limit = 1 } = {}) => {

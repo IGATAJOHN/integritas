@@ -51,6 +51,10 @@ export const learnerRoutes = [
         element: <CourseDetail />,
     },
     {
+        path: '/explore/lesson/:courseId',
+        element: <CourseLesson />,
+    },
+    {
         path: '/explore/lesson/:courseId/:lessonId',
         element: <CourseLesson />,
     },
@@ -64,6 +68,10 @@ export const learnerRoutes = [
     },
     {
         path: '/payment-success',
+        element: <PaymentSuccess />,
+    },
+    {
+        path: '/payment/success',
         element: <PaymentSuccess />,
     },
     {

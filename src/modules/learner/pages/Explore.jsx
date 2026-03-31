@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../contexts';
 import {
     Alert,
     Box,
@@ -28,6 +29,7 @@ import {
 } from '@mui/icons-material';
 import CourseCard from '../components/CourseCard';
 import { courseCatalogService } from '../services';
+import { learnerEnrollmentService } from '../services';
 
 const SORT_OPTIONS = ['Most Popular', 'Newest', 'Highest Rated', 'Price: Low to High'];
 
@@ -50,6 +52,7 @@ const mapSortBy = (value) => {
 
 const Explore = () => {
     const navigate = useNavigate();
+    const { isAuthenticated } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
     const [sortBy, setSortBy] = useState('Most Popular');
     const [activeTopic, setActiveTopic] = useState('All Topics');
@@ -60,14 +63,18 @@ const Explore = () => {
 
     const [categories, setCategories] = useState([]);
     const [courses, setCourses] = useState([]);
+    const [accessMap, setAccessMap] = useState({});
     const [featuredCourse, setFeaturedCourse] = useState(null);
     const [loading, setLoading] = useState(false);
-    const [loadingFeatured, setLoadingFeatured] = useState(false);
     const [error, setError] = useState('');
 
-    const featuredCoursePathId = String(featuredCourse?.id || '').trim();
+    // Guards so featured course and categories are only populated from the
+    // first unfiltered load — prevents re-render loops.
+    const featuredSet = useRef(false);
+    const categoriesSet = useRef(false);
 
-    const topics = useMemo(() => ['All Topics', ...categories.map((item) => item.name).filter(Boolean)], [categories]);
+    const topics = useMemo(() => ['All Topics', ...categories.map((c) => c.name).filter(Boolean)], [categories]);
+
     const levels = useMemo(() => {
         const values = new Set();
         courses.forEach((course) => {
@@ -81,42 +88,15 @@ const Explore = () => {
     useEffect(() => {
         let active = true;
 
-        const loadMeta = async () => {
-            setLoadingFeatured(true);
-            try {
-                const [categoryRes, featuredRes] = await Promise.all([
-                    courseCatalogService.listCategories(),
-                    courseCatalogService.getFeaturedCourses({ limit: 1 }),
-                ]);
-                if (!active) return;
-                setCategories(categoryRes.data || []);
-                setFeaturedCourse(featuredRes.data?.[0] || null);
-            } catch (requestError) {
-                if (!active) return;
-                setError(requestError?.status === 401
-                    ? 'Please log in to view courses.'
-                    : (requestError?.message || 'Failed to load explore metadata.'));
-            } finally {
-                if (active) {
-                    setLoadingFeatured(false);
-                }
-            }
-        };
-
-        loadMeta();
-        return () => { active = false; };
-    }, []);
-
-    useEffect(() => {
-        let active = true;
-
         const timer = setTimeout(async () => {
             setLoading(true);
             setError('');
             try {
+                // Derive slug from topic label directly — avoids needing `categories`
+                // in the deps array, which would cause a re-run loop on first load.
                 const selectedCategory = activeTopic === 'All Topics'
                     ? undefined
-                    : (categories.find((item) => item.name === activeTopic)?.slug || activeTopic);
+                    : activeTopic.toLowerCase().replace(/\s+/g, '-');
 
                 const response = await courseCatalogService.listCourses({
                     q: searchTerm.trim() || undefined,
@@ -129,10 +109,44 @@ const Explore = () => {
                 if (!active) return;
 
                 let rows = response.data || [];
-                if (selectedLevels.length > 0) rows = rows.filter((course) => selectedLevels.includes(course.level));
-                if (minimumRating > 0) rows = rows.filter((course) => Number(course.rating || 0) >= minimumRating);
+                if (selectedLevels.length > 0) rows = rows.filter((c) => selectedLevels.includes(c.level));
+                if (minimumRating > 0) rows = rows.filter((c) => Number(c.rating || 0) >= minimumRating);
                 setCourses(rows);
-                if (!featuredCourse && rows.length > 0) setFeaturedCourse(rows[0]);
+
+                // Fetch access info for all courses if authenticated (non-blocking)
+                if (isAuthenticated && rows.length > 0) {
+                    Promise.allSettled(rows.map((c) => learnerEnrollmentService.getCourseAccess(c.id)))
+                        .then((results) => {
+                            if (!active) return;
+                            const map = {};
+                            results.forEach((r, i) => {
+                                if (r.status === 'fulfilled' && r.value) {
+                                    map[rows[i].id] = r.value;
+                                }
+                            });
+                            setAccessMap(map);
+                        });
+                }
+
+                // Set featured course once from the first batch of results.
+                if (!featuredSet.current && rows.length > 0) {
+                    featuredSet.current = true;
+                    setFeaturedCourse(rows[0]);
+                }
+
+                // Derive categories once from the initial unfiltered load.
+                if (!categoriesSet.current && activeTopic === 'All Topics' && !searchTerm && selectedLevels.length === 0) {
+                    const names = new Set();
+                    rows.forEach((c) => (c.topics || []).forEach((t) => { if (t) names.add(t); }));
+                    if (names.size > 0) {
+                        categoriesSet.current = true;
+                        setCategories(Array.from(names).map((name) => ({
+                            id: name.toLowerCase().replace(/\s+/g, '-'),
+                            name,
+                            slug: name.toLowerCase().replace(/\s+/g, '-'),
+                        })));
+                    }
+                }
             } catch (requestError) {
                 if (!active) return;
                 setCourses([]);
@@ -140,9 +154,7 @@ const Explore = () => {
                     ? 'Please log in to view courses.'
                     : (requestError?.message || 'Failed to load courses.'));
             } finally {
-                if (active) {
-                    setLoading(false);
-                }
+                if (active) setLoading(false);
             }
         }, 250);
 
@@ -150,7 +162,10 @@ const Explore = () => {
             active = false;
             clearTimeout(timer);
         };
-    }, [activeTopic, categories, featuredCourse, minimumRating, searchTerm, selectedLevels, sortBy]);
+    // `categories` intentionally excluded — slug is derived from activeTopic directly.
+    // `featuredCourse` intentionally excluded — guarded by featuredSet ref.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeTopic, minimumRating, searchTerm, selectedLevels, sortBy]);
 
     const resetFilters = () => {
         setActiveTopic('All Topics');
@@ -159,8 +174,10 @@ const Explore = () => {
     };
 
     const toggleLevel = (level) => {
-        setSelectedLevels((prev) => prev.includes(level) ? prev.filter((item) => item !== level) : [...prev, level]);
+        setSelectedLevels((prev) => prev.includes(level) ? prev.filter((l) => l !== level) : [...prev, level]);
     };
+
+    const featuredCourseId = String(featuredCourse?.id || '').trim();
 
     const renderFilters = () => (
         <Box>
@@ -204,6 +221,7 @@ const Explore = () => {
             </Drawer>
 
             <Box sx={{ display: 'flex' }}>
+                {/* Sidebar filters — desktop */}
                 <Box sx={{ width: 280, p: 3, bgcolor: colors.paper, borderRight: '1px solid rgba(255,255,255,0.05)', display: { xs: 'none', md: 'block' } }}>
                     {renderFilters()}
                 </Box>
@@ -211,42 +229,94 @@ const Explore = () => {
                 <Box sx={{ flex: 1, p: { xs: 2, md: 4 } }}>
                     {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
+                    {/* Featured Course Banner */}
                     <Card sx={{ bgcolor: colors.card, p: 3, mb: 3, border: '1px solid rgba(255,255,255,0.08)' }}>
-                        {loadingFeatured ? (
-                            <Stack direction="row" spacing={1.5} alignItems="center"><CircularProgress size={20} /><Typography sx={{ color: colors.textSecondary }}>Loading featured course...</Typography></Stack>
+                        {!featuredCourse && loading ? (
+                            <Stack direction="row" spacing={1.5} alignItems="center">
+                                <CircularProgress size={20} />
+                                <Typography sx={{ color: colors.textSecondary }}>Loading featured course...</Typography>
+                            </Stack>
                         ) : (
                             <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2}>
                                 <Box sx={{ maxWidth: 760 }}>
                                     <Typography sx={{ color: colors.primary, fontSize: '0.78rem', fontWeight: 700, mb: 1 }}>FEATURED COURSE</Typography>
-                                    <Typography variant="h4" sx={{ color: colors.text, fontWeight: 800, mb: 1 }}>{featuredCourse?.title || 'No featured course available'}</Typography>
-                                    <Typography sx={{ color: colors.textSecondary, mb: 2 }}>{featuredCourse?.description || 'Courses will appear here once available.'}</Typography>
+                                    <Typography variant="h4" sx={{ color: colors.text, fontWeight: 800, mb: 1 }}>
+                                        {featuredCourse?.title || 'No featured course available'}
+                                    </Typography>
+                                    <Typography sx={{ color: colors.textSecondary, mb: 2 }}>
+                                        {featuredCourse?.description || 'Courses will appear here once available.'}
+                                    </Typography>
                                     <Stack direction="row" spacing={1}>
-                                        <Button variant="contained" onClick={() => featuredCoursePathId && navigate(`/explore/course/${featuredCoursePathId}`)} disabled={!featuredCoursePathId} sx={{ textTransform: 'none', bgcolor: colors.primary }}>View Course</Button>
-                                        <Button variant="outlined" onClick={() => window.open(featuredCourse?.trailerUrl, '_blank', 'noopener,noreferrer')} disabled={!featuredCourse?.trailerUrl} endIcon={<OpenInNewIcon />} sx={{ textTransform: 'none', color: colors.text, borderColor: 'rgba(255,255,255,0.18)' }}>Watch Trailer</Button>
+                                        <Button
+                                            variant="contained"
+                                            onClick={() => featuredCourseId && navigate(`/explore/course/${featuredCourseId}`)}
+                                            disabled={!featuredCourseId}
+                                            sx={{ textTransform: 'none', bgcolor: colors.primary }}
+                                        >
+                                            View Course
+                                        </Button>
+                                        <Button
+                                            variant="outlined"
+                                            onClick={() => window.open(featuredCourse?.trailerUrl, '_blank', 'noopener,noreferrer')}
+                                            disabled={!featuredCourse?.trailerUrl}
+                                            endIcon={<OpenInNewIcon />}
+                                            sx={{ textTransform: 'none', color: colors.text, borderColor: 'rgba(255,255,255,0.18)' }}
+                                        >
+                                            Watch Trailer
+                                        </Button>
                                     </Stack>
                                 </Box>
-                                <Box component="img" src={featuredCourse?.image || ''} alt={featuredCourse?.title || 'featured'} sx={{ width: { xs: '100%', md: 320 }, height: { xs: 180, md: 190 }, objectFit: 'cover', borderRadius: 2, bgcolor: '#111827' }} />
+                                <Box
+                                    component="img"
+                                    src={featuredCourse?.image || ''}
+                                    alt={featuredCourse?.title || 'featured'}
+                                    sx={{ width: { xs: '100%', md: 320 }, height: { xs: 180, md: 190 }, objectFit: 'cover', borderRadius: 2, bgcolor: '#111827' }}
+                                />
                             </Stack>
                         )}
                     </Card>
 
+                    {/* Heading + Search + Sort */}
                     <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'center' }} spacing={2} sx={{ mb: 2 }}>
                         <Box>
                             <Typography variant="h5" sx={{ color: colors.text, fontWeight: 800 }}>Explore Courses</Typography>
-                            <Typography sx={{ color: colors.textSecondary, fontSize: '0.9rem' }}>All course data is loaded from API endpoints.</Typography>
+                            <Typography sx={{ color: colors.textSecondary, fontSize: '0.9rem' }}>Discover governance and policy courses.</Typography>
                         </Box>
                         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
                             <Box sx={{ bgcolor: colors.card, px: 1.5, borderRadius: 2, display: 'flex', alignItems: 'center', minWidth: 260 }}>
                                 <SearchIcon sx={{ color: colors.textSecondary, mr: 1 }} />
-                                <InputBase value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Search courses..." sx={{ color: colors.text, width: '100%' }} />
+                                <InputBase
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    placeholder="Search courses..."
+                                    sx={{ color: colors.text, width: '100%' }}
+                                />
                             </Box>
-                            <Button onClick={(event) => setSortAnchorEl(event.currentTarget)} startIcon={<SortIcon />} sx={{ color: colors.text, border: '1px solid rgba(255,255,255,0.2)', textTransform: 'none' }}>{sortBy}</Button>
-                            <IconButton onClick={() => setIsFilterOpen(true)} sx={{ display: { xs: 'inline-flex', md: 'none' }, color: colors.text, border: '1px solid rgba(255,255,255,0.2)' }}>
+                            <Button
+                                onClick={(e) => setSortAnchorEl(e.currentTarget)}
+                                startIcon={<SortIcon />}
+                                sx={{ color: colors.text, border: '1px solid rgba(255,255,255,0.2)', textTransform: 'none' }}
+                            >
+                                {sortBy}
+                            </Button>
+                            <IconButton
+                                onClick={() => setIsFilterOpen(true)}
+                                sx={{ display: { xs: 'inline-flex', md: 'none' }, color: colors.text, border: '1px solid rgba(255,255,255,0.2)' }}
+                            >
                                 <FilterIcon />
                             </IconButton>
-                            <Menu anchorEl={sortAnchorEl} open={Boolean(sortAnchorEl)} onClose={() => setSortAnchorEl(null)} PaperProps={{ sx: { bgcolor: colors.card, color: colors.text } }}>
+                            <Menu
+                                anchorEl={sortAnchorEl}
+                                open={Boolean(sortAnchorEl)}
+                                onClose={() => setSortAnchorEl(null)}
+                                PaperProps={{ sx: { bgcolor: colors.card, color: colors.text } }}
+                            >
                                 {SORT_OPTIONS.map((option) => (
-                                    <MenuItem key={option} selected={sortBy === option} onClick={() => { setSortBy(option); setSortAnchorEl(null); }}>
+                                    <MenuItem
+                                        key={option}
+                                        selected={sortBy === option}
+                                        onClick={() => { setSortBy(option); setSortAnchorEl(null); }}
+                                    >
                                         {option}
                                     </MenuItem>
                                 ))}
@@ -254,14 +324,23 @@ const Explore = () => {
                         </Stack>
                     </Stack>
 
+                    {/* Topic filter chips */}
                     <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', mb: 3 }}>
                         {topics.map((topic) => (
-                            <Chip key={topic} label={topic} onClick={() => setActiveTopic(topic)} sx={{ bgcolor: activeTopic === topic ? colors.primary : colors.card, color: colors.text }} />
+                            <Chip
+                                key={topic}
+                                label={topic}
+                                onClick={() => setActiveTopic(topic)}
+                                sx={{ bgcolor: activeTopic === topic ? colors.primary : colors.card, color: colors.text }}
+                            />
                         ))}
                     </Stack>
 
+                    {/* Course grid */}
                     {loading ? (
-                        <Box sx={{ minHeight: 180, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><CircularProgress /></Box>
+                        <Box sx={{ minHeight: 180, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <CircularProgress />
+                        </Box>
                     ) : courses.length === 0 ? (
                         <Box sx={{ p: 4, textAlign: 'center', border: '1px dashed rgba(255,255,255,0.2)', borderRadius: 2 }}>
                             <Typography sx={{ color: colors.text, fontWeight: 600 }}>No courses found</Typography>
@@ -270,7 +349,12 @@ const Explore = () => {
                     ) : (
                         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2,1fr)', lg: 'repeat(3,1fr)' }, gap: 2.5 }}>
                             {courses.map((course) => (
-                                <CourseCard key={course.id} course={course} colors={colors} />
+                                <CourseCard
+                                    key={course.id}
+                                    course={course}
+                                    colors={colors}
+                                    access={accessMap[course.id] || null}
+                                />
                             ))}
                         </Box>
                     )}

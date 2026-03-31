@@ -10,7 +10,9 @@ import OnboardingGuard from '../components/OnboardingGuard';
 const PUBLIC_LEARNER_PATHS = [
     '/explore',
     '/explore/courses',
-    '/explore/course/:courseId'
+    '/explore/course/:courseId',
+    '/payment-success',
+    '/payment/success',
 ];
 
 const router = createBrowserRouter([

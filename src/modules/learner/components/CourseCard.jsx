@@ -15,7 +15,7 @@ import {
     SignalCellularAlt as LevelIcon
 } from '@mui/icons-material';
 
-const CourseCard = ({ course, colors }) => {
+const CourseCard = ({ course, colors, access }) => {
     const navigate = useNavigate();
     const fallbackImage = useMemo(
         () => 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450"><rect width="100%" height="100%" fill="%23111827"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%239CA3AF" font-size="28">Course Image</text></svg>',
@@ -107,6 +107,36 @@ const CourseCard = ({ course, colors }) => {
                     }} />
                     {safeLevel}
                 </Box>
+
+                {/* Essential / Standard Badge — only shown when access info is available */}
+                {access && (
+                    <Box sx={{
+                        position: 'absolute',
+                        top: 16,
+                        right: 16,
+                        px: 1.5,
+                        py: 0.6,
+                        borderRadius: '8px',
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                        letterSpacing: '0.4px',
+                        backdropFilter: 'blur(8px)',
+                        ...(access.is_essential
+                            ? {
+                                bgcolor: 'rgba(245, 158, 11, 0.85)',
+                                color: '#fff',
+                                border: '1px solid rgba(245, 158, 11, 0.6)',
+                            }
+                            : {
+                                bgcolor: 'rgba(16, 185, 129, 0.8)',
+                                color: '#fff',
+                                border: '1px solid rgba(16, 185, 129, 0.5)',
+                            }
+                        )
+                    }}>
+                        {access.is_essential ? 'Essential' : 'Standard'}
+                    </Box>
+                )}
             </Box>
 
             {/* Card Content */}

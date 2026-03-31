@@ -46,7 +46,7 @@ import { useLocation } from 'react-router-dom';
 import { alpha } from '@mui/material/styles';
 import logo from '../../../assets/images/GGH_logo.png';
 import Footer from '../../../components/Footer';
-import { courseCatalogService } from '../services';
+import { courseCatalogService, learnerEnrollmentService } from '../services';
 
 const colors = {
     bg: '#0B0F19',
@@ -150,6 +150,10 @@ const CourseDetail = () => {
     const [courseData, setCourseData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [enrolling, setEnrolling] = useState(false);
+    const [enrollError, setEnrollError] = useState(null);
+    const [accessInfo, setAccessInfo] = useState(null);
+    const [isEnrolled, setIsEnrolled] = useState(false);
 
     useEffect(() => {
         let active = true;
@@ -164,54 +168,48 @@ const CourseDetail = () => {
                     const raw = data.raw_data || data;
                     const tutorProfile = resolveTutorProfile(raw);
 
+                    // Price: prefer certificate.fee_amount, fall back to course price field
+                    const certFee = raw.certificate?.fee_amount ? parseFloat(raw.certificate.fee_amount) : null;
+                    const coursePrice = certFee ?? (data.price ? parseFloat(data.price) : 0);
+                    const currency = raw.certificate?.currency || 'USD';
+
+                    // Learning objectives: only use real API data
+                    const rawObjectives = raw.learning_objectives;
+                    const learningObjectives = Array.isArray(rawObjectives) && rawObjectives.length > 0
+                        ? rawObjectives
+                        : typeof rawObjectives === 'string' && rawObjectives.trim()
+                            ? [rawObjectives]
+                            : [];
+
                     setCourseData({
                         id: data.id,
                         title: data.title || 'Untitled Course',
                         description: data.description || 'No description available.',
-                        price: data.price ? parseFloat(data.price) : 0,
-                        originalPrice: data.price ? parseFloat(data.price) * 1.2 : 0,
-                        discount: data.price ? 20 : 0,
-                        offerEndsIn: 2,
+                        price: coursePrice,
+                        currency,
                         level: data.level || 'Intermediate',
                         duration: data.duration || 'TBD',
-                        certificate: 'Yes, Official',
+                        hasCertificate: raw.certificate?.enabled ?? false,
+                        language: raw.language || '—',
                         startDate: raw.start_date || raw.published_at || 'Ongoing',
                         rating: data.rating || 0,
                         reviewCount: data.reviews || 0,
                         image: data.image || raw.thumbnail_url || raw.banner_url || '',
-                        tags: raw.tags?.map(t => ({ label: t.name || t, icon: VerifiedIcon, iconColor: '#3B82F6', bgColor: '#374151' })) || [
-                            { label: 'VERIFIED COURSE', icon: VerifiedIcon, iconColor: '#3B82F6', bgColor: '#374151' }
-                        ],
-                        learningObjectives: raw.learning_objectives || [
-                            'Navigate complex ethical dilemmas in public office scenarios.',
-                            'Understand the legal responsibilities of public servants.'
-                        ],
-                        modules: raw.modules || [
-                            { id: 1, title: 'Module 1: Getting Started', lessons: 3, duration: '4h' }
-                        ],
+                        tags: Array.isArray(raw.tags) && raw.tags.length > 0
+                            ? raw.tags.map(t => ({ label: t.name || t, icon: VerifiedIcon, iconColor: '#3B82F6', bgColor: '#374151' }))
+                            : [],
+                        learningObjectives,
+                        modules: Array.isArray(raw.modules) ? raw.modules : [],
                         instructor: {
-                            name: readTutorName(tutorProfile) || data.instructor || 'Integritas Hub Instructor',
-                            title: readTutorValue(tutorProfile, 'headline', 'title', 'profession') || 'Expert Instructor',
-                            avatar: readTutorValue(tutorProfile, 'avatar_url', 'profile_photo_url', 'photo_url') || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80',
-                            bio: readTutorValue(tutorProfile, 'bio') || 'Experienced educator with years of industry experience.',
-                            credentials: 'Certified Professional',
-                            students: '10K+',
-                            courses:  5
+                            name: readTutorName(tutorProfile) || data.instructor || 'Integritas Hub',
+                            title: readTutorValue(tutorProfile, 'headline', 'title', 'profession') || 'Course Instructor',
+                            bio: readTutorValue(tutorProfile, 'bio') || '',
                         },
-                        reviews: [
-                            {
-                                id: 1,
-                                user: 'Example Student',
-                                avatar: 'ES',
-                                rating: data.rating || 5,
-                                date: 'Recently',
-                                comment: 'Great course, highly recommended!'
-                            }
-                        ],
-                        ratingBreakdown: {
-                            5: 80, 4: 12, 3: 5, 2: 2, 1: 1
-                        },
-                        trainingFor: ['Government Officials', 'Policy Makers', 'Civil Servants', 'NGO Leaders']
+                        reviews: [],
+                        ratingBreakdown: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+                        trainingFor: Array.isArray(raw.target_audience) && raw.target_audience.length > 0
+                            ? raw.target_audience
+                            : [],
                     });
                 } else {
                     setError('Course not found');
@@ -238,6 +236,22 @@ const CourseDetail = () => {
         };
     }, [courseId]);
 
+    // Fetch access info + enrollment status once authenticated
+    useEffect(() => {
+        if (!isAuthenticated || !courseId) return;
+        learnerEnrollmentService.getCourseAccess(courseId)
+            .then((data) => setAccessInfo(data))
+            .catch(() => {});
+        learnerEnrollmentService.getEnrollmentStatus(courseId)
+            .then((data) => {
+                const status = String(data?.status || '').toLowerCase();
+                if (status === 'enrolled' || status === 'in_progress' || status === 'completed') {
+                    setIsEnrolled(true);
+                }
+            })
+            .catch(() => {});
+    }, [isAuthenticated, courseId]);
+
     const handleTabChange = (event, newValue) => {
         setActiveTab(newValue);
     };
@@ -247,6 +261,30 @@ const CourseDetail = () => {
     };
 
     const hasCourseImage = Boolean(String(courseData?.image || '').trim());
+
+    const handleEnroll = async () => {
+        if (!isAuthenticated) {
+            navigate('/login', { state: { from: location } });
+            return;
+        }
+        setEnrolling(true);
+        setEnrollError(null);
+        try {
+            const enrollFn = accessInfo?.is_essential
+                ? learnerEnrollmentService.enrollInEssentialCourse
+                : learnerEnrollmentService.enrollInCourse;
+            const result = await enrollFn(courseData.id);
+            if (result?.payment_url) {
+                window.location.href = result.payment_url;
+            } else {
+                navigate('/payment-success', { state: { enrollment: result, course: { courseId: courseData.id, title: courseData.title, price: courseData.price, thumbnail: courseData.image } } });
+            }
+        } catch (err) {
+            setEnrollError(err?.message || 'Enrollment failed. Please try again.');
+        } finally {
+            setEnrolling(false);
+        }
+    };
 
     return (
         <Box sx={{ bgcolor: colors.bg, color: colors.text, minHeight: '100vh' }}>
@@ -320,20 +358,22 @@ const CourseDetail = () => {
                             }}
                         />
                     </Box>
-                    <Button
-                        component={Link}
-                        to="/login"
-                        variant="contained"
-                        sx={{
-                            bgcolor: colors.primary,
-                            textTransform: 'none',
-                            fontWeight: 600,
-                            borderRadius: 1,
-                            px: 3
-                        }}
-                    >
-                        Log in
-                    </Button>
+                    {!isAuthenticated && (
+                        <Button
+                            component={Link}
+                            to="/login"
+                            variant="contained"
+                            sx={{
+                                bgcolor: colors.primary,
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                borderRadius: 1,
+                                px: 3
+                            }}
+                        >
+                            Log in
+                        </Button>
+                    )}
                 </Stack>
             </Box>
 
@@ -378,7 +418,7 @@ const CourseDetail = () => {
                         </Typography>
 
                         {/* Tags */}
-                        {/* Tags */}
+                        {courseData.tags.length > 0 && (
                         <Box sx={{
                             display: 'flex',
                             flexDirection: 'row',
@@ -414,6 +454,7 @@ const CourseDetail = () => {
                                 </Typography>
                             </Stack>
                         </Box>
+                        )}
 
                         {/* Tabs */}
                         <Box sx={{ borderBottom: `2px solid ${colors.border}`, mb: 4 }}>
@@ -444,28 +485,32 @@ const CourseDetail = () => {
                         {activeTab === 0 && (
                             <Box>
                                 {/* Learning Objectives */}
-                                <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>What you'll learn</Typography>
-                                <Box sx={{
-                                    display: 'grid',
-                                    gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' },
-                                    gap: 2,
-                                    mb: 5
-                                }}>
-                                    {courseData.learningObjectives.map((objective, index) => (
-                                        <Card key={index} sx={{
-                                            bgcolor: colors.card,
-                                            border: `1px solid ${colors.border}`,
-                                            borderRadius: 1
+                                {courseData.learningObjectives.length > 0 && (
+                                    <>
+                                        <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>What you'll learn</Typography>
+                                        <Box sx={{
+                                            display: 'grid',
+                                            gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' },
+                                            gap: 2,
+                                            mb: 5
                                         }}>
-                                            <CardContent sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, p: 2.5, '&:last-child': { pb: 2.5 } }}>
-                                                <CheckIcon sx={{ color: colors.accent, fontSize: 20, mt: 0.25 }} />
-                                                <Typography sx={{ color: colors.textSecondary, fontSize: '0.875rem', lineHeight: 1.5 }}>
-                                                    {objective}
-                                                </Typography>
-                                            </CardContent>
-                                        </Card>
-                                    ))}
-                                </Box>
+                                            {courseData.learningObjectives.map((objective, index) => (
+                                                <Card key={index} sx={{
+                                                    bgcolor: colors.card,
+                                                    border: `1px solid ${colors.border}`,
+                                                    borderRadius: 1
+                                                }}>
+                                                    <CardContent sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, p: 2.5, '&:last-child': { pb: 2.5 } }}>
+                                                        <CheckIcon sx={{ color: colors.accent, fontSize: 20, mt: 0.25 }} />
+                                                        <Typography sx={{ color: colors.textSecondary, fontSize: '0.875rem', lineHeight: 1.5 }}>
+                                                            {objective}
+                                                        </Typography>
+                                                    </CardContent>
+                                                </Card>
+                                            ))}
+                                        </Box>
+                                    </>
+                                )}
 
                                 {/* Curriculum Summary */}
                                 {/* Course Content Header & Summary */}
@@ -478,7 +523,11 @@ const CourseDetail = () => {
 
                                 {/* Modules Accordion */}
                                 <Box sx={{ mb: 5 }}>
-                                    {courseData.modules.map((module) => (
+                                    {courseData.modules.length === 0 ? (
+                                        <Typography sx={{ color: colors.textSecondary, fontSize: '0.875rem' }}>
+                                            Curriculum not yet available.
+                                        </Typography>
+                                    ) : courseData.modules.map((module) => (
                                         <Accordion
                                             key={module.id}
                                             expanded={expandedModule === `module-${module.id}`}
@@ -499,7 +548,8 @@ const CourseDetail = () => {
                                                 <Box>
                                                     <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', mb: 0.5 }}>{module.title}</Typography>
                                                     <Typography sx={{ color: colors.textSecondary, fontSize: '0.8rem' }}>
-                                                        {module.lessons} Lessons • {module.duration}
+                                                        {module.lessons_count ?? module.lessons ?? 0} Lessons
+                                                        {module.duration_minutes ? ` • ${module.duration_minutes}m` : module.duration ? ` • ${module.duration}` : ''}
                                                     </Typography>
                                                 </Box>
                                             </AccordionSummary>
@@ -523,59 +573,15 @@ const CourseDetail = () => {
                                     p: 3,
                                     mb: 5
                                 }}>
-                                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3}>
-                                        <Stack spacing={2} alignItems="center">
-                                            <Avatar
-                                                src={courseData.instructor.avatar}
-                                                sx={{ width: 100, height: 100, border: `3px solid ${colors.primary}` }}
-                                            />
-                                            <Stack direction="row" spacing={1.5}>
-                                                <Box sx={{
-                                                    p: 0.5,
-                                                    borderRadius: 1,
-                                                    bgcolor: alpha(colors.textSecondary, 0.1),
-                                                    color: colors.textSecondary,
-                                                    cursor: 'pointer',
-                                                    '&:hover': { color: colors.primary, bgcolor: alpha(colors.primary, 0.1) }
-                                                }}>
-                                                    <WorldIcon sx={{ fontSize: 20 }} />
-                                                </Box>
-                                                <Box sx={{
-                                                    p: 0.5,
-                                                    borderRadius: 1,
-                                                    bgcolor: alpha(colors.textSecondary, 0.1),
-                                                    color: colors.textSecondary,
-                                                    cursor: 'pointer',
-                                                    '&:hover': { color: colors.primary, bgcolor: alpha(colors.primary, 0.1) }
-                                                }}>
-                                                    <EmailIcon sx={{ fontSize: 20 }} />
-                                                </Box>
-                                            </Stack>
-                                        </Stack>
-                                        <Box sx={{ flex: 1 }}>
-                                            <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>{courseData.instructor.name}</Typography>
-                                            <Typography sx={{ color: colors.accent, fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', mb: 2 }}>
-                                                {courseData.instructor.title}
-                                            </Typography>
-                                            <Typography sx={{ color: colors.textSecondary, fontSize: '0.875rem', lineHeight: 1.7, mb: 3 }}>
-                                                {courseData.instructor.bio}
-                                            </Typography>
-                                            <Stack direction="row" spacing={3} flexWrap="wrap">
-                                                <Stack direction="row" alignItems="center" spacing={1}>
-                                                    <SchoolIcon sx={{ color: colors.textSecondary, fontSize: 18 }} />
-                                                    <Typography sx={{ color: colors.textSecondary, fontSize: '0.8rem' }}>{courseData.instructor.credentials}</Typography>
-                                                </Stack>
-                                                <Stack direction="row" alignItems="center" spacing={1}>
-                                                    <PeopleIcon sx={{ color: colors.textSecondary, fontSize: 18 }} />
-                                                    <Typography sx={{ color: colors.textSecondary, fontSize: '0.8rem' }}>{courseData.instructor.students} Students</Typography>
-                                                </Stack>
-                                                <Stack direction="row" alignItems="center" spacing={1}>
-                                                    <LessonsIcon sx={{ color: colors.textSecondary, fontSize: 18 }} />
-                                                    <Typography sx={{ color: colors.textSecondary, fontSize: '0.8rem' }}>{courseData.instructor.courses} Courses</Typography>
-                                                </Stack>
-                                            </Stack>
-                                        </Box>
-                                    </Stack>
+                                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>{courseData.instructor.name}</Typography>
+                                    <Typography sx={{ color: colors.accent, fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', mb: 2 }}>
+                                        {courseData.instructor.title}
+                                    </Typography>
+                                    {courseData.instructor.bio && (
+                                        <Typography sx={{ color: colors.textSecondary, fontSize: '0.875rem', lineHeight: 1.7 }}>
+                                            {courseData.instructor.bio}
+                                        </Typography>
+                                    )}
                                 </Card>
 
                                 {/* Reviews Header */}
@@ -685,14 +691,11 @@ const CourseDetail = () => {
 
                         {activeTab === 2 && (
                             <Card sx={{ bgcolor: colors.card, border: `1px solid ${colors.border}`, borderRadius: 3, p: 3 }}>
-                                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3}>
-                                    <Avatar src={courseData.instructor.avatar} sx={{ width: 100, height: 100, border: `3px solid ${colors.primary}` }} />
-                                    <Box>
-                                        <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>{courseData.instructor.name}</Typography>
-                                        <Typography sx={{ color: colors.accent, fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', mb: 2 }}>{courseData.instructor.title}</Typography>
-                                        <Typography sx={{ color: colors.textSecondary, fontSize: '0.875rem', lineHeight: 1.7 }}>{courseData.instructor.bio}</Typography>
-                                    </Box>
-                                </Stack>
+                                <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>{courseData.instructor.name}</Typography>
+                                <Typography sx={{ color: colors.accent, fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', mb: 2 }}>{courseData.instructor.title}</Typography>
+                                {courseData.instructor.bio && (
+                                    <Typography sx={{ color: colors.textSecondary, fontSize: '0.875rem', lineHeight: 1.7 }}>{courseData.instructor.bio}</Typography>
+                                )}
                             </Card>
                         )}
 
@@ -780,39 +783,60 @@ const CourseDetail = () => {
 
                             <CardContent sx={{ p: 2.5 }}>
                                 {/* Pricing */}
-                                <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.5 }}>
-                                    <Stack direction="row" alignItems="baseline" spacing={1}>
-                                        <Typography variant="h5" sx={{ fontWeight: 700 }}>${courseData.price}</Typography>
-                                        <Typography sx={{ color: colors.textSecondary, textDecoration: 'line-through', fontSize: '1rem' }}>${courseData.originalPrice}</Typography>
-                                    </Stack>
-                                    <Typography sx={{ color: colors.success, fontWeight: 600, fontSize: '0.8rem' }}>{courseData.discount}% OFF</Typography>
-                                </Stack>
-
-                                {/* Offer Timer */}
-                                <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mb: 2 }}>
-                                    <ClockIcon sx={{ color: colors.error, fontSize: 16 }} />
-                                    <Typography sx={{ color: colors.error, fontSize: '0.8rem', fontWeight: 500 }}>
-                                        Offer ends in {courseData.offerEndsIn} days
-                                    </Typography>
+                                <Stack direction="row" alignItems="center" sx={{ mb: 2 }}>
+                                    {courseData.price > 0 ? (
+                                        <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                                            {courseData.currency === 'NGN' ? '₦' : '$'}{Number(courseData.price).toLocaleString()}
+                                        </Typography>
+                                    ) : (
+                                        <Typography variant="h5" sx={{ fontWeight: 700, color: colors.success }}>Free</Typography>
+                                    )}
                                 </Stack>
 
                                 {/* Action Buttons */}
-                                <Button
-                                    fullWidth
-                                    variant="contained"
-                                    onClick={() => isAuthenticated ? navigate('/checkout') : navigate('/login', { state: { from: location } })}
-                                    sx={{
-                                        bgcolor: colors.primary,
-                                        py: 1.25,
-                                        fontWeight: 600,
-                                        textTransform: 'none',
-                                        borderRadius: 1,
-                                        mb: 1.5,
-                                        fontSize: '0.95rem'
-                                    }}
-                                >
-                                    Enroll Now
-                                </Button>
+                                {enrollError && (
+                                    <Typography sx={{ color: colors.error, fontSize: '0.8rem', mb: 1.5 }}>
+                                        {enrollError}
+                                    </Typography>
+                                )}
+                                {isEnrolled ? (
+                                    <Button
+                                        fullWidth
+                                        variant="contained"
+                                        onClick={() => navigate(`/explore/lesson/${courseId}/`)}
+                                        sx={{
+                                            bgcolor: colors.success,
+                                            py: 1.25,
+                                            fontWeight: 600,
+                                            textTransform: 'none',
+                                            borderRadius: 1,
+                                            mb: 1.5,
+                                            fontSize: '0.95rem',
+                                            '&:hover': { bgcolor: '#059669' }
+                                        }}
+                                    >
+                                        Resume Course
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        fullWidth
+                                        variant="contained"
+                                        onClick={handleEnroll}
+                                        disabled={enrolling}
+                                        sx={{
+                                            bgcolor: colors.primary,
+                                            py: 1.25,
+                                            fontWeight: 600,
+                                            textTransform: 'none',
+                                            borderRadius: 1,
+                                            mb: 1.5,
+                                            fontSize: '0.95rem',
+                                            '&.Mui-disabled': { bgcolor: colors.primary, opacity: 0.7 }
+                                        }}
+                                    >
+                                        {enrolling ? 'Processing...' : 'Enroll Now'}
+                                    </Button>
+                                )}
 
                                 <Button
                                     fullWidth
@@ -836,7 +860,8 @@ const CourseDetail = () => {
                                     {[
                                         { icon: LevelIcon, label: 'Level', value: courseData.level },
                                         { icon: ClockIcon, label: 'Duration', value: courseData.duration },
-                                        { icon: CertificateIcon, label: 'Certificate', value: courseData.certificate },
+                                        { icon: CertificateIcon, label: 'Certificate', value: courseData.hasCertificate ? 'Yes, Official' : 'No' },
+                                        { icon: WorldIcon, label: 'Language', value: courseData.language },
                                         { icon: CalendarIcon, label: 'Start Date', value: courseData.startDate }
                                     ].map((item, index) => (
                                         <Stack key={index} direction="row" justifyContent="space-between" alignItems="center">
@@ -863,30 +888,32 @@ const CourseDetail = () => {
                             </Box>
                         </Card>
 
-                        {/* Training For Card */}
-                        <Card sx={{
-                            bgcolor: colors.card,
-                            border: `1px solid ${colors.border}`,
-                            borderRadius: 1,
-                            mt: 2,
-                            p: 2.5
-                        }}>
-                            <Typography sx={{ fontWeight: 600, mb: 1.5, fontSize: '0.95rem' }}>Training For</Typography>
-                            <Stack direction="row" flexWrap="wrap" gap={1}>
-                                {courseData.trainingFor.map((item, index) => (
-                                    <Chip
-                                        key={index}
-                                        label={item}
-                                        size="small"
-                                        sx={{
-                                            bgcolor: alpha(colors.primary, 0.2),
-                                            color: colors.accent,
-                                            fontSize: '0.75rem'
-                                        }}
-                                    />
-                                ))}
-                            </Stack>
-                        </Card>
+                        {/* Training For Card — only shown when API provides target_audience */}
+                        {courseData.trainingFor.length > 0 && (
+                            <Card sx={{
+                                bgcolor: colors.card,
+                                border: `1px solid ${colors.border}`,
+                                borderRadius: 1,
+                                mt: 2,
+                                p: 2.5
+                            }}>
+                                <Typography sx={{ fontWeight: 600, mb: 1.5, fontSize: '0.95rem' }}>Training For</Typography>
+                                <Stack direction="row" flexWrap="wrap" gap={1}>
+                                    {courseData.trainingFor.map((item, index) => (
+                                        <Chip
+                                            key={index}
+                                            label={item}
+                                            size="small"
+                                            sx={{
+                                                bgcolor: alpha(colors.primary, 0.2),
+                                                color: colors.accent,
+                                                fontSize: '0.75rem'
+                                            }}
+                                        />
+                                    ))}
+                                </Stack>
+                            </Card>
+                        )}
                     </Box>
                 </Stack>
                 </>
