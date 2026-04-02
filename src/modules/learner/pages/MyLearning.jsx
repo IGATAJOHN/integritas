@@ -1,11 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Alert,
     Avatar,
     Box,
     Button,
-    Chip,
     CircularProgress,
     Grid,
     InputBase,
@@ -48,7 +47,7 @@ const MyLearning = () => {
         setLoading(true);
         setError('');
 
-        learnerEnrollmentService.getEnrollments({ per_page: 50 })
+        learnerEnrollmentService.getMyEnrolledCourses({ per_page: 50 })
             .then((res) => {
                 if (!active) return;
                 setEnrollments(res.data || []);

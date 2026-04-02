@@ -33,7 +33,7 @@ import {
     Payments,
     History,
 } from '@mui/icons-material';
-import { formatCurrency } from '../../../utils';
+import { formatCurrency, getImageUrl } from '../../../utils';
 
 /**
  * My Courses Page - Lists all courses created by the tutor
@@ -269,7 +269,7 @@ const MyCourses = () => {
                                                 }}
                                             >
                                                 {course.thumbnail_url ? (
-                                                    <img src={course.thumbnail_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                    <img src={getImageUrl(course.thumbnail_url)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                 ) : (
                                                     <School sx={{ color: '#fff', fontSize: 22 }} />
                                                 )}

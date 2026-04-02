@@ -130,6 +130,16 @@ export const isEmpty = (obj) => {
     return Object.keys(obj).length === 0;
 };
 
+const IMAGE_BASE_URL = 'https://goodgov.andjemztech.com/';
+
+export const getImageUrl = (path) => {
+    if (!path) return '';
+    const trimmed = String(path).trim();
+    if (!trimmed) return '';
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) return trimmed;
+    return IMAGE_BASE_URL + trimmed.replace(/^\//, '');
+};
+
 export {
     getPrimaryRole,
     getDashboardRoute,

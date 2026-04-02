@@ -75,8 +75,6 @@ const KycReview = () => {
         setError("");
 
         const res = await adminListKyc({
-            status: "submitted",
-            role: "tutor",
             q: searchTerm,
             page,
         });
@@ -181,7 +179,7 @@ const KycReview = () => {
                 documents: refreshed.documents || [],
             });
 
-            const res = await adminListKyc({ status: "submitted", role: "tutor", q: searchTerm, page });
+            const res = await adminListKyc({ q: searchTerm, page });
             setSubmissions(res?.data || []);
         } catch (e) {
             console.error(e);
@@ -737,7 +735,7 @@ const KycReview = () => {
                 {/* Stats chips */}
                 <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ gap: 1 }}>
                     <Chip
-                        label={`Submitted: ${submissions.length}`}
+                        label={`Total: ${submissions.length}`}
                         sx={{
                         bgcolor: 'rgba(245,158,11,0.12)',
                         color: '#F59E0B',

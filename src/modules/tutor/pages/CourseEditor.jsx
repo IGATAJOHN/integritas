@@ -35,7 +35,8 @@ import {
     AccessTime,
     Edit,
     Visibility,
-    MoreVert
+    MoreVert,
+    DragIndicator
 } from '@mui/icons-material';
 
 const CourseEditor = () => {

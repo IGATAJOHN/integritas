@@ -48,7 +48,7 @@ import {
     RateReviewOutlined,
     ChevronRight,
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { textFieldStyle, selectStyle, selectMenuProps, modalStyle } from '../../../styles/formStyles';
 import { formatCurrency } from '../../../utils';
 import { categoryService } from '../../../services/categoryService';
@@ -70,11 +70,16 @@ const languages = [
 
 const CreateCourse = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const editCourseId = new URLSearchParams(location.search).get('edit') || null;
+    const isEditMode = Boolean(editCourseId);
+
     const [activeStep, setActiveStep] = useState(0);
     const [lastSaved, setLastSaved] = useState(null);
     const [slugEdited, setSlugEdited] = useState(false);
     const [submitModalOpen, setSubmitModalOpen] = useState(false);
     const [validationErrors, setValidationErrors] = useState({});
+    const [loadingCourse, setLoadingCourse] = useState(isEditMode);
 
     // Submission state
     const [submitting, setSubmitting] = useState(false);
@@ -98,6 +103,8 @@ const CreateCourse = () => {
         category_id: '',
         status: 'draft',
         is_editable: true,
+        tags: [],
+        certificate_fee_amount: '',
     });
 
     // Thumbnail file state - stores the actual File object for server upload
@@ -143,12 +150,10 @@ const CreateCourse = () => {
             try {
                 setLoadingCategories(true);
                 const categoriesData = await categoryService.getAllCategories();
-                // Handle both array and object response
                 const categoryList = Array.isArray(categoriesData) ? categoriesData : [];
                 setCategories(categoryList);
             } catch (error) {
                 console.error('Error fetching categories:', error);
-                // Keep empty array on error
                 setCategories([]);
             } finally {
                 setLoadingCategories(false);
@@ -156,6 +161,42 @@ const CreateCourse = () => {
         };
         fetchCategories();
     }, []);
+
+    // Load existing course data when in edit mode
+    useEffect(() => {
+        if (!isEditMode) return;
+        const fetchCourse = async () => {
+            setLoadingCourse(true);
+            try {
+                const course = await tutorCoursesService.getCourseById(editCourseId);
+                const c = course?.data ?? course;
+                setCourseData({
+                    title: c.title || '',
+                    slug: c.slug || '',
+                    summary: c.summary || '',
+                    description: c.description || '',
+                    level: c.level || 'beginner',
+                    language: c.language || 'en',
+                    price: c.price ?? 0,
+                    currency: c.currency || 'NGN',
+                    duration_minutes: c.duration_minutes || 0,
+                    thumbnail_url: c.thumbnail_url || '',
+                    category_id: c.categories?.[0]?.id || c.category_id || '',
+                    status: c.status || 'draft',
+                    is_editable: c.is_editable !== false,
+                    tags: c.tags || [],
+                    certificate_fee_amount: c.certificate?.fee_amount ?? '',
+                });
+                setSlugEdited(true); // Prevent auto-overwriting the existing slug
+            } catch (error) {
+                console.error('Error loading course for editing:', error);
+                setSnackbar({ open: true, message: 'Failed to load course data.', severity: 'error' });
+            } finally {
+                setLoadingCourse(false);
+            }
+        };
+        fetchCourse();
+    }, [editCourseId, isEditMode]);
 
     const handleInputChange = (field, value) => {
         setCourseData(prev => ({ ...prev, [field]: value }));
@@ -282,138 +323,123 @@ const CreateCourse = () => {
     };
 
     /**
-     * Handle course submission - creates course, modules, and lessons via API
+     * Handle course save — creates (POST) or updates (PUT/PATCH) depending on edit mode.
      * @param {boolean} asDraft - If true, saves as draft; if false, submits for approval
      */
     const handleSubmit = async (asDraft = true) => {
-        // Validate if submitting for approval
-        if (!asDraft) {
-            if (!validateStep(3)) return;
-        }
+        if (!asDraft && !validateStep(3)) return;
 
         setSubmitting(true);
         setSubmitModalOpen(false);
 
         try {
-            // Step 1: Create the course
-            // API Note: slug is auto-generated from title, status is not needed on create
-            // API uses category_ids (array) not category_id
-            let createdCourse;
-
-            if (thumbnailFile) {
-                // Create FormData for multipart upload with thumbnail
-                const formData = new FormData();
-                formData.append('title', courseData.title);
-                formData.append('summary', courseData.summary);
-                // Note: description may be optional based on API
-                if (courseData.description) {
-                    formData.append('description', courseData.description);
-                }
-                formData.append('level', courseData.level);
-                formData.append('language', courseData.language);
-                formData.append('price', courseData.price || 0);
-                formData.append('currency', courseData.currency || 'USD');
-                formData.append('duration_minutes', courseData.duration_minutes || 0);
-                // API expects category_ids as array - for FormData we need to append each
-                if (courseData.category_id) {
-                    formData.append('category_ids[]', courseData.category_id);
-                }
-                // Append the actual thumbnail file
-                formData.append('thumbnail', thumbnailFile);
-
-                console.log('Creating course with thumbnail (multipart)');
-                createdCourse = await tutorCoursesService.createCourseMultipart(formData);
-            } else {
-                // No thumbnail, use regular JSON payload
-                // Following the exact API structure from documentation
-                const coursePayload = {
-                    title: courseData.title,
-                    summary: courseData.summary,
-                    level: courseData.level,
-                    language: courseData.language,
-                    price: courseData.price || 0,
-                    currency: courseData.currency || 'USD',
-                    duration_minutes: courseData.duration_minutes || 0,
-                    // API expects category_ids as an array
-                    category_ids: courseData.category_id ? [courseData.category_id] : [],
-                };
-
-                // Add optional description if provided
-                if (courseData.description) {
-                    coursePayload.description = courseData.description;
-                }
-
-                console.log('Creating course with payload:', coursePayload);
-                createdCourse = await tutorCoursesService.createCourseJson(coursePayload);
-            }
-
-            const courseId = createdCourse?.id || createdCourse?.data?.id;
-
-            if (!courseId) {
-                throw new Error('Course was created but no ID was returned');
-            }
-
-            console.log('Course created with ID:', courseId);
-
-            // Step 2: Create modules for the course
-            // API Note: position is auto-assigned to next available, use 'summary' not 'description'
-            for (let i = 0; i < modules.length; i++) {
-                const module = modules[i];
-                const modulePayload = {
-                    title: module.title,
-                    // API uses 'summary' field, not 'description'
-                    summary: module.description || '',
-                    // Optional meta field for additional info
-                    // meta: { icon: 'book' }
-                };
-
-                console.log('Creating module:', modulePayload);
-                const createdModule = await tutorModuleService.createModule(courseId, modulePayload);
-                const moduleId = createdModule?.id || createdModule?.data?.id;
-
-                if (!moduleId) {
-                    console.warn('Module created but no ID returned, skipping lessons for this module');
-                    continue;
-                }
-
-                console.log('Module created with ID:', moduleId);
-
-                // Step 3: Create lessons for each module
-                const lessons = module.lessons || [];
-                for (let j = 0; j < lessons.length; j++) {
-                    const lesson = lessons[j];
-                    const lessonPayload = {
-                        title: lesson.title,
-                        type: lesson.type || 'text',
-                        content: lesson.content || '',
-                        duration: lesson.duration || 0,
-                        position: j + 1,
+            if (isEditMode) {
+                // ── EDIT MODE ── PUT (JSON) or PATCH (multipart when new thumbnail)
+                if (thumbnailFile) {
+                    // PATCH /lms/courses/{id} — multipart to replace media
+                    const formData = new FormData();
+                    formData.append('title', courseData.title);
+                    formData.append('summary', courseData.summary);
+                    if (courseData.description) formData.append('description', courseData.description);
+                    formData.append('level', courseData.level);
+                    formData.append('language', courseData.language);
+                    formData.append('duration_minutes', courseData.duration_minutes || 0);
+                    if (courseData.category_id) formData.append('category_ids[]', courseData.category_id);
+                    formData.append('thumbnail', thumbnailFile);
+                    await tutorCoursesService.updateCourseMultipart(editCourseId, formData);
+                } else {
+                    // PUT /lms/courses/{id} — JSON update
+                    const payload = {
+                        title: courseData.title,
+                        summary: courseData.summary,
+                        level: courseData.level,
+                        language: courseData.language,
+                        duration_minutes: courseData.duration_minutes || 0,
+                        category_ids: courseData.category_id ? [courseData.category_id] : [],
                     };
-
-                    console.log('Creating lesson:', lessonPayload);
-                    await tutorLessonService.createLesson(moduleId, lessonPayload);
+                    if (courseData.description) payload.description = courseData.description;
+                    if (Array.isArray(courseData.tags) && courseData.tags.length > 0) {
+                        payload.tags = courseData.tags;
+                    }
+                    if (courseData.certificate_fee_amount !== '' && courseData.certificate_fee_amount != null) {
+                        payload.certificate_fee_amount = Number(courseData.certificate_fee_amount);
+                    }
+                    await tutorCoursesService.updateCourseJson(editCourseId, payload);
                 }
+
+                setSnackbar({ open: true, message: 'Course updated successfully!', severity: 'success' });
+                setTimeout(() => navigate('/tutor/courses'), 1500);
+
+            } else {
+                // ── CREATE MODE ── POST multipart or JSON
+                let createdCourse;
+
+                if (thumbnailFile) {
+                    const formData = new FormData();
+                    formData.append('title', courseData.title);
+                    formData.append('summary', courseData.summary);
+                    if (courseData.description) formData.append('description', courseData.description);
+                    formData.append('level', courseData.level);
+                    formData.append('language', courseData.language);
+                    formData.append('price', courseData.price || 0);
+                    formData.append('currency', courseData.currency || 'USD');
+                    formData.append('duration_minutes', courseData.duration_minutes || 0);
+                    if (courseData.category_id) formData.append('category_ids[]', courseData.category_id);
+                    formData.append('thumbnail', thumbnailFile);
+                    createdCourse = await tutorCoursesService.createCourseMultipart(formData);
+                } else {
+                    const coursePayload = {
+                        title: courseData.title,
+                        summary: courseData.summary,
+                        level: courseData.level,
+                        language: courseData.language,
+                        price: courseData.price || 0,
+                        currency: courseData.currency || 'USD',
+                        duration_minutes: courseData.duration_minutes || 0,
+                        category_ids: courseData.category_id ? [courseData.category_id] : [],
+                    };
+                    if (courseData.description) coursePayload.description = courseData.description;
+                    createdCourse = await tutorCoursesService.createCourseJson(coursePayload);
+                }
+
+                const courseId = createdCourse?.id || createdCourse?.data?.id;
+                if (!courseId) throw new Error('Course was created but no ID was returned');
+
+                // Create modules and lessons
+                for (let i = 0; i < modules.length; i++) {
+                    const module = modules[i];
+                    const createdModule = await tutorModuleService.createModule(courseId, {
+                        title: module.title,
+                        summary: module.description || '',
+                    });
+                    const moduleId = createdModule?.id || createdModule?.data?.id;
+                    if (!moduleId) continue;
+
+                    for (let j = 0; j < (module.lessons || []).length; j++) {
+                        const lesson = module.lessons[j];
+                        await tutorLessonService.createLesson(moduleId, {
+                            title: lesson.title,
+                            type: lesson.type || 'text',
+                            content: lesson.content || '',
+                            duration: lesson.duration || 0,
+                            position: j + 1,
+                        });
+                    }
+                }
+
+                setSnackbar({
+                    open: true,
+                    message: asDraft ? 'Course saved as draft successfully!' : 'Course submitted for approval successfully!',
+                    severity: 'success'
+                });
+                setTimeout(() => navigate('/tutor/courses'), 1500);
             }
-
-            // Success!
-            setSnackbar({
-                open: true,
-                message: asDraft
-                    ? 'Course saved as draft successfully!'
-                    : 'Course submitted for approval successfully!',
-                severity: 'success'
-            });
-
-            // Navigate to courses list after a short delay
-            setTimeout(() => {
-                navigate('/tutor/courses');
-            }, 1500);
 
         } catch (error) {
-            console.error('Error creating course:', error);
+            console.error('Error saving course:', error);
             setSnackbar({
                 open: true,
-                message: error.message || 'Failed to create course. Please try again.',
+                message: error.message || `Failed to ${isEditMode ? 'update' : 'create'} course. Please try again.`,
                 severity: 'error'
             });
         } finally {
@@ -1020,16 +1046,24 @@ const CreateCourse = () => {
         );
     };
 
+    if (loadingCourse) {
+        return (
+            <Box sx={{ p: 4, bgcolor: '#0C1322', minHeight: 'calc(100vh - 70px)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                <CircularProgress sx={{ color: '#1152D4' }} />
+            </Box>
+        );
+    }
+
     return (
         <Box sx={{ p: { xs: 2, md: 4 }, bgcolor: '#0C1322', minHeight: 'calc(100vh - 70px)', width: '100%' }}>
             {/* Header */}
             <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
                 <Box>
                     <Typography variant="h4" sx={{ color: '#fff', fontWeight: 700, mb: 0.5 }}>
-                        Create New Course
+                        {isEditMode ? 'Edit Course' : 'Create New Course'}
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#9CA3AF' }}>
-                        Share your expertise in governance and policy.
+                        {isEditMode ? 'Update your course details and media.' : 'Share your expertise in governance and policy.'}
                     </Typography>
                 </Box>
                 <Stack direction="row" alignItems="center" spacing={2}>
@@ -1158,13 +1192,31 @@ const CreateCourse = () => {
             </Paper>
 
             {/* Navigation Buttons */}
-            <Stack direction="row" justifyContent="space-between">
-                <Button
-                    onClick={() => navigate('/tutor/courses')}
-                    sx={{ color: '#9CA3AF', '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' } }}
-                >
-                    Cancel
-                </Button>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1}>
+                <Stack direction="row" spacing={1}>
+                    <Button
+                        onClick={() => navigate('/tutor/courses')}
+                        sx={{ color: '#9CA3AF', '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' } }}
+                    >
+                        Cancel
+                    </Button>
+                    {/* Save Draft / Save Changes — always visible on every step */}
+                    {!(activeStep === steps.length - 1 && isEditMode) && (
+                        <Button
+                            onClick={() => handleSubmit(true)}
+                            disabled={submitting || !courseData.title}
+                            variant="outlined"
+                            sx={{
+                                borderColor: '#374151',
+                                color: '#9CA3AF',
+                                '&:hover': { borderColor: '#6B7280', color: '#fff' },
+                                '&:disabled': { borderColor: '#1F2937', color: '#374151' },
+                            }}
+                        >
+                            {submitting ? 'Saving…' : isEditMode ? 'Save Changes' : 'Save Draft'}
+                        </Button>
+                    )}
+                </Stack>
                 <Stack direction="row" spacing={2}>
                     {activeStep > 0 && (
                         <Button
@@ -1187,12 +1239,13 @@ const CreateCourse = () => {
                         </Button>
                     ) : (
                         <Button
-                            onClick={() => setSubmitModalOpen(true)}
+                            onClick={() => isEditMode ? handleSubmit(true) : setSubmitModalOpen(true)}
                             endIcon={<Send />}
                             variant="contained"
+                            disabled={submitting}
                             sx={{ bgcolor: '#10B981', '&:hover': { bgcolor: '#059669' } }}
                         >
-                            Submit Course
+                            {isEditMode ? 'Save Changes' : 'Submit Course'}
                         </Button>
                     )}
                 </Stack>

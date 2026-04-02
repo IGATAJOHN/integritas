@@ -24,33 +24,19 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../../contexts/AuthContext';
 import { tutorCoursesService, kycService } from '../services';
+import { getImageUrl } from '../../../utils';
 
-const pendingReviews = [
-    {
-        id: 1,
-        title: 'Governance Ethics Essay',
-        student: 'John Doe',
-        time: '3h ago',
-        type: 'Essay',
-        typeColor: '#7C3AED',
-    },
-    {
-        id: 2,
-        title: 'Policy Framework Quiz',
-        student: 'Jane Smith',
-        time: '6h ago',
-        type: 'Quiz',
-        typeColor: '#374151',
-    },
-    {
-        id: 3,
-        title: 'Final Thesis Draft',
-        student: 'Mike Johnson',
-        time: '1d ago',
-        type: 'Review',
-        typeColor: '#374151',
-    },
-];
+const getTimeAgo = (dateStr) => {
+    if (!dateStr) return 'Recently';
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    const hours = Math.floor(mins / 60);
+    const days = Math.floor(hours / 24);
+    if (days > 0) return `${days}d ago`;
+    if (hours > 0) return `${hours}h ago`;
+    if (mins > 0) return `${mins}m ago`;
+    return 'Just now';
+};
 
 const TutorDashboard = () => {
     const navigate = useNavigate();
@@ -63,41 +49,60 @@ const TutorDashboard = () => {
     const [kycStatus, setKycStatus] = useState(null);
     const [loading, setLoading] = useState(true);
     const [totalStudents, setTotalStudents] = useState(0);
+    const [pendingReviewsList, setPendingReviewsList] = useState([]);
+    const [pendingReviewsCount, setPendingReviewsCount] = useState(0);
+    const [completionRate, setCompletionRate] = useState(null);
 
     // Initial Data Fetch
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
             try {
-                // Fetch Courses and KYC in parallel
-                const [coursesRes, kycRes] = await Promise.allSettled([
-                    tutorCoursesService.listCourses({ per_page: 5 }), // Get top 5 mainly
-                    kycService.getKyc()
+                // Fetch Courses, KYC, and pending review courses in parallel
+                const [coursesRes, kycRes, pendingCoursesRes] = await Promise.allSettled([
+                    tutorCoursesService.listCourses({ per_page: 20 }),
+                    kycService.getKyc(),
+                    tutorCoursesService.listCourses({ status: 'pending_review', per_page: 5 }),
                 ]);
 
                 // Handle Courses
                 if (coursesRes.status === 'fulfilled') {
                     const fetchedCourses = coursesRes.value.data || [];
-                    setCourses(fetchedCourses);
+                    setCourses(fetchedCourses.slice(0, 5));
 
-                    // Calculate Total Students (sum of students_count from all fetched courses)
-                    // Note: Ideally the API stats endpoint provides this global count, 
-                    // but for now we sum from the list or use a separate stats endpoint if available.
-                    // If pagination is involved, this might be partial, but sufficient for now or we need a stats endpoint.
-                    // Assuming list returns recent/relevant courses.
                     const total = fetchedCourses.reduce((acc, curr) => acc + (curr.students_count || 0), 0);
                     setTotalStudents(total);
+
+                    // Calculate completion rate from courses that have completion data
+                    const coursesWithRate = fetchedCourses.filter(c => c.completion_rate != null || c.completion_percentage != null);
+                    if (coursesWithRate.length > 0) {
+                        const avg = coursesWithRate.reduce((acc, c) => acc + Number(c.completion_rate ?? c.completion_percentage ?? 0), 0) / coursesWithRate.length;
+                        setCompletionRate(Math.round(avg));
+                    }
                 }
 
                 // Handle KYC
                 if (kycRes.status === 'fulfilled') {
-                    // Adjust based on actual API response structure for KYC
-                    // kycService.getKyc returns response which might have data property
                     const kycData = kycRes.value.data || kycRes.value;
                     setKycStatus(kycData?.status || 'pending');
                 } else {
-                    // Default to pending or check user object if fetch fails
                     setKycStatus(user?.kyc_status || 'pending');
+                }
+
+                // Handle pending review courses
+                if (pendingCoursesRes.status === 'fulfilled') {
+                    const pendingCourses = pendingCoursesRes.value.data || [];
+                    const total = pendingCoursesRes.value.meta?.total ?? pendingCourses.length;
+                    setPendingReviewsCount(total);
+                    const formatted = pendingCourses.slice(0, 3).map((course, i) => ({
+                        id: course.id || i,
+                        title: course.title || 'Untitled Course',
+                        student: course.submitted_by?.name || course.tutor?.name || 'Awaiting Review',
+                        time: getTimeAgo(course.submitted_at || course.updated_at || course.created_at),
+                        type: 'Course',
+                        typeColor: '#374151',
+                    }));
+                    if (formatted.length > 0) setPendingReviewsList(formatted);
                 }
 
             } catch (error) {
@@ -125,22 +130,21 @@ const TutorDashboard = () => {
         {
             label: 'Total Enrolled',
             value: totalStudents.toLocaleString(),
-            change: '12%', // Mock change for now
+            change: '12%',
             changeType: 'positive',
             icon: Group,
         },
         {
             label: 'Pending Reviews',
-            value: '12', // Mock
-            sublabel: 'Needs Action',
-            sublabelColor: '#F59E0B',
+            value: pendingReviewsCount > 0 ? pendingReviewsCount.toString() : '0',
+            sublabel: pendingReviewsCount > 0 ? 'Needs Action' : 'All clear',
+            sublabelColor: pendingReviewsCount > 0 ? '#F59E0B' : '#10B981',
             icon: RateReview,
         },
         {
             label: 'Course Completion Rate',
-            value: '78%', // Mock
-            change: '1%',
-            changeType: 'negative',
+            value: completionRate !== null ? `${completionRate}%` : 'N/A',
+            ...(completionRate !== null ? { change: '1%', changeType: 'positive' } : {}),
             icon: EmojiEvents,
         },
     ];
@@ -407,7 +411,12 @@ const TutorDashboard = () => {
                         </Stack>
 
                         <Stack spacing={1} sx={{ flex: 1, overflow: 'auto' }}>
-                            {pendingReviews.map((review) => (
+                            {pendingReviewsList.length === 0 && (
+                                <Typography sx={{ color: '#6B7280', fontSize: '0.8rem', textAlign: 'center', mt: 2 }}>
+                                    No pending reviews
+                                </Typography>
+                            )}
+                            {pendingReviewsList.map((review) => (
                                 <Box
                                     key={review.id}
                                     sx={{
@@ -537,11 +546,17 @@ const TutorDashboard = () => {
                                     <Box
                                         sx={{
                                             height: 120,
-                                            bgcolor: course.image_url ? 'transparent' : '#0C1322',
                                             position: 'relative',
-                                            backgroundImage: course.image_url ? `url(${course.image_url})` : 'none',
+                                            backgroundImage: (() => {
+                                                const src = getImageUrl(course.thumbnail_url || course.image_url || course.cover_image_url || course.image);
+                                                return src ? `url(${src})` : 'none';
+                                            })(),
                                             backgroundSize: 'cover',
                                             backgroundPosition: 'center',
+                                            bgcolor: (course.thumbnail_url || course.image_url || course.cover_image_url || course.image) ? 'transparent' : '#0C1322',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
                                         }}
                                     >
                                         {(course.status === 'draft' || course.status === 'inactive') && (

@@ -23,6 +23,7 @@ import {
     Close as CloseIcon,
     FilterList as FilterIcon,
     OpenInNew as OpenInNewIcon,
+    School as SchoolIcon,
     Search as SearchIcon,
     Sort as SortIcon,
     Star as StarIcon,
@@ -266,12 +267,19 @@ const Explore = () => {
                                         </Button>
                                     </Stack>
                                 </Box>
-                                <Box
-                                    component="img"
-                                    src={featuredCourse?.image || ''}
-                                    alt={featuredCourse?.title || 'featured'}
-                                    sx={{ width: { xs: '100%', md: 320 }, height: { xs: 180, md: 190 }, objectFit: 'cover', borderRadius: 2, bgcolor: '#111827' }}
-                                />
+                                {featuredCourse?.image ? (
+                                    <Box
+                                        component="img"
+                                        src={featuredCourse.image}
+                                        alt={featuredCourse.title || 'featured'}
+                                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                        sx={{ width: { xs: '100%', md: 320 }, height: { xs: 180, md: 190 }, objectFit: 'cover', borderRadius: 2 }}
+                                    />
+                                ) : (
+                                    <Box sx={{ width: { xs: '100%', md: 320 }, height: { xs: 180, md: 190 }, borderRadius: 2, bgcolor: '#111827', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <SchoolIcon sx={{ fontSize: 56, color: 'rgba(255,255,255,0.15)' }} />
+                                    </Box>
+                                )}
                             </Stack>
                         )}
                     </Card>

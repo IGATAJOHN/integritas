@@ -27,6 +27,13 @@ export const AuthProvider = ({ children }) => {
                         userData.token = parsed.token;
                         userData.role = pickRole(userData) || userData.role;
 
+                        // Preserve kyc_status from stored user if /auth/me doesn't return it.
+                        // Without this, every page refresh strips kyc_status and forces approved
+                        // tutors through the KYC redirect loop.
+                        if (!userData.kyc_status && parsed.kyc_status) {
+                            userData.kyc_status = parsed.kyc_status;
+                        }
+
                         // Temporary bypass for testing: Force admin role for specific email
                         if (userData.email === 'admin@test.com') {
                             userData.role = 'admin';
@@ -78,6 +85,11 @@ export const AuthProvider = ({ children }) => {
                 const freshUserData = currentUserData.user || currentUserData;
                 freshUserData.token = token;
                 freshUserData.role = pickRole(freshUserData) || freshUserData.role;
+
+                // Preserve kyc_status from login response if /auth/me doesn't return it
+                if (!freshUserData.kyc_status && baseUser.kyc_status) {
+                    freshUserData.kyc_status = baseUser.kyc_status;
+                }
 
                 setUser(freshUserData);
                 localStorage.setItem('user', JSON.stringify(freshUserData));
@@ -192,6 +204,11 @@ export const AuthProvider = ({ children }) => {
             if (user?.token) {
                 userData.token = user.token;
                 userData.role = pickRole(userData) || userData.role;
+            }
+
+            // Preserve kyc_status if /auth/me doesn't return it
+            if (!userData.kyc_status && user?.kyc_status) {
+                userData.kyc_status = user.kyc_status;
             }
 
             setUser(userData);

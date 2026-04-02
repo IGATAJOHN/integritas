@@ -85,7 +85,6 @@ const Kyc = () => {
             try {
                 const data = await kycService.getKyc();
                 if (data) {
-                    console.log('KYC data received:', data); // Debug log
                     // Skills might be in data.data.skills or data.skills, and could be a JSON string
                     let skills = data.data?.skills || data.skills || [];
                     if (typeof skills === 'string') {
@@ -116,8 +115,10 @@ const Kyc = () => {
                     }
                 }
             } catch (err) {
-                console.error('Failed to fetch KYC:', err);
-                setError('Failed to load your KYC data. Please try again.');
+                // 404 means no KYC record yet — start with blank form, not an error
+                if (err?.status !== 404) {
+                    setError('Failed to load your KYC data. Please try again.');
+                }
             } finally {
                 setLoading(false);
             }
@@ -265,7 +266,6 @@ const Kyc = () => {
                 ...formData,
                 skills: Array.isArray(formData.skills) ? formData.skills : [],
             };
-            console.log('Saving KYC draft with payload:', payload); // Debug log
             await kycService.updateKyc(payload);
             setLastSaved(new Date());
         } catch (err) {
@@ -284,7 +284,6 @@ const Kyc = () => {
                     ...formData,
                     skills: Array.isArray(formData.skills) ? formData.skills : [],
                 };
-                console.log('Saving step 1 with payload:', payload);
                 await kycService.updateKyc(payload);
                 setLastSaved(new Date());
                 setActiveStep((prev) => prev + 1);
@@ -306,9 +305,8 @@ const Kyc = () => {
         setLoading(true);
         setError(null);
         try {
-            const data = await kycService.submitKyc();
+            await kycService.submitKyc();
             setStatus('submitted');
-            console.log('Submitted response:', data);
         } catch (err) {
             if (err.status === 422 && err.data?.missing) {
                 const missingList = err.data.missing.map(field => field.replace('document:', '')).join(', ');

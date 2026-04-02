@@ -1,4 +1,5 @@
 import { apiService } from '../../../services/api';
+import { getImageUrl } from '../../../utils';
 
 const toTrimmedString = (value) => String(value ?? '').trim();
 
@@ -136,7 +137,7 @@ const normalizeCourse = (course = {}) => {
         'No description available yet.';
 
     const level = normalizeLevel(course.level || course.difficulty || course.difficulty_level);
-    const image = toTrimmedString(
+    const image = getImageUrl(
         course.thumbnail_url ||
         course.thumbnail ||
         course.cover_image_url ||
@@ -313,6 +314,17 @@ export const courseCatalogService = {
 
     getFeaturedCourses: async ({ limit = 1 } = {}) => {
         return courseCatalogService.listCourses({ per_page: limit, sort: 'popular', status: 'published' });
+    },
+
+    listEssentialCourses: async ({ per_page = 20, page, status } = {}) => {
+        const query = buildQuery({ per_page, page, status });
+        const res = await apiService.get(`/lms/courses/essential${query}`);
+        const normalized = unwrapList(res);
+        return {
+            data: (normalized.data || []).map((item) => normalizeCourse(item)).filter((item) => item.id),
+            meta: normalized.meta || {},
+            links: normalized.links || {},
+        };
     },
 
     listCategories: async () => {

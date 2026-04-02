@@ -741,8 +741,18 @@ const CourseDetail = () => {
                                             component="img"
                                             src={courseData.image}
                                             alt="Course Preview"
+                                            onError={(e) => {
+                                                e.currentTarget.style.display = 'none';
+                                                e.currentTarget.parentElement.querySelector('.img-fallback').style.display = 'flex';
+                                            }}
                                             sx={{ width: '100%', height: 180, objectFit: 'cover' }}
                                         />
+                                        <Box
+                                            className="img-fallback"
+                                            sx={{ display: 'none', width: '100%', height: 180, bgcolor: '#111827', alignItems: 'center', justifyContent: 'center' }}
+                                        >
+                                            <SchoolIcon sx={{ fontSize: 56, color: 'rgba(255,255,255,0.15)' }} />
+                                        </Box>
                                         <Box sx={{
                                             position: 'absolute',
                                             top: '50%',

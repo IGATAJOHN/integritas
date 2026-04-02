@@ -52,7 +52,7 @@ import {
     History,
 } from '@mui/icons-material';
 import { tutorCoursesService } from '../services/courseService';
-import { formatCurrency } from '../../../utils';
+import { formatCurrency, getImageUrl } from '../../../utils';
 import { tutorModuleService } from '../services/moduleService';
 import { tutorLessonService } from '../services/lessonService';
 import { tutorQuestionService } from '../services/questionService';
@@ -855,7 +855,7 @@ const CourseDashboard = () => {
                                     <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1 }}>Thumbnail</Typography>
                                     <Box
                                         component="img"
-                                        src={course.thumbnail_url}
+                                        src={getImageUrl(course.thumbnail_url)}
                                         alt="Course thumbnail"
                                         sx={{ width: '100%', maxWidth: 400, borderRadius: 1 }}
                                     />

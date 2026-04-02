@@ -1,35 +1,29 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
     Box,
     Container,
     Typography,
     Button,
-    Grid,
     Card,
     CardContent,
     CardMedia,
     Stack,
     Divider,
     Avatar,
-    IconButton,
+    Skeleton,
 } from '@mui/material';
 import {
     School,
     Verified,
     Analytics,
-    CloudQueue,
     ArrowForward,
-    Twitter,
-    LinkedIn,
-    YouTube,
-    Gavel,
-    Assessment,
     FormatQuote,
 } from '@mui/icons-material';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useThemeMode } from '../contexts';
+import { courseCatalogService } from '../modules/learner/services';
 
 
 
@@ -57,8 +51,17 @@ const LandingPage = () => {
     const { isDark } = useThemeMode();
     const colors = getColors(isDark);
 
-    const stats = [
+    const [essentialCourses, setEssentialCourses] = useState([]);
+    const [coursesLoading, setCoursesLoading] = useState(true);
 
+    useEffect(() => {
+        courseCatalogService.listEssentialCourses({ per_page: 3, status: 'published' })
+            .then(res => setEssentialCourses(res.data || []))
+            .catch(() => setEssentialCourses([]))
+            .finally(() => setCoursesLoading(false));
+    }, []);
+
+    const stats = [
         { value: '15k+', label: 'Active Learners' },
         { value: '45k+', label: 'Courses Completed' },
         { value: '120+', label: 'Partner Institutions' },
@@ -82,41 +85,6 @@ const LandingPage = () => {
         },
     ];
 
-    const courses = [
-        {
-            image: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=400&h=250&fit=crop',
-            category: 'LAW & ETHICS',
-            categoryColor: '#F97316',
-            categoryIcon: <Gavel sx={{ fontSize: 14, color: '#F97316' }} />,
-            duration: '8 Weeks',
-            title: 'Ethics in Modern Governance',
-            description: 'Understand the ethical frameworks necessary for transparent and accountable public administration.',
-            instructor: 'Dr. S. Jenkins',
-            price: '$499',
-        },
-        {
-            image: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=400&h=250&fit=crop',
-            category: 'POLICY ANALYSIS',
-            categoryColor: '#22C55E',
-            categoryIcon: <Assessment sx={{ fontSize: 14, color: '#22C55E' }} />,
-            duration: '6 Weeks',
-            title: 'Public Policy Analysis 101',
-            description: 'Learn to evaluate policy options using quantitative and qualitative methods for better outcomes.',
-            instructor: 'Prof. M. Chen',
-            price: '$399',
-        },
-        {
-            image: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=400&h=250&fit=crop',
-            category: 'DIGITAL GOV',
-            categoryColor: '#F97316',
-            categoryIcon: <CloudQueue sx={{ fontSize: 14, color: '#F97316' }} />,
-            duration: '10 Weeks',
-            title: 'Digital Transformation in Gov',
-            description: 'Navigate the complexities of implementing digital solutions in public sector environments.',
-            instructor: 'Dr. E. Rossi',
-            price: '$549',
-        },
-    ];
 
 
 
@@ -446,7 +414,7 @@ const LandingPage = () => {
             </Box>
 
 
-            {/* Featured Courses Section */}
+            {/* Essential Courses Section */}
             <Box sx={{ bgcolor: colors.bgDarker }}>
                 <Divider sx={{ borderColor: colors.border }} />
                 <Box sx={{ py: 10, px: { xs: 2, md: 4, lg: 6 } }}>
@@ -467,10 +435,10 @@ const LandingPage = () => {
                                     color: colors.textWhite,
                                 }}
                             >
-                                Featured Courses
+                                Essential Courses
                             </Typography>
                             <Typography sx={{ color: colors.textMuted }}>
-                                Highly rated by government officials worldwide.
+                                Core courses recommended for every public service professional.
                             </Typography>
                         </Box>
                         <Button
@@ -489,122 +457,161 @@ const LandingPage = () => {
                         </Button>
                     </Stack>
 
-                    <Stack
-                        direction={{ xs: 'column', md: 'row' }}
-                        spacing={3}
-                        sx={{ width: '100%' }}
-                    >
-                        {courses.map((course) => (
-                            <Box key={course.title} sx={{ flex: 1 }}>
-                                <Card
-                                    sx={{
-                                        bgcolor: colors.bgCard,
-                                        border: `1px solid ${colors.border}`,
-                                        borderRadius: 3,
-                                        overflow: 'hidden',
-                                        height: '100%',
-                                        transition: 'all 0.3s',
-                                        '&:hover': {
-                                            transform: 'translateY(-4px)',
-                                            borderColor: colors.borderLight,
-                                        },
-                                    }}
-                                >
-                                    <Box sx={{ position: 'relative' }}>
-                                        <CardMedia
-                                            component="img"
-                                            height="200"
-                                            image={course.image}
-                                            alt={course.title}
-                                        />
-                                        <Box
-                                            sx={{
-                                                position: 'absolute',
-                                                top: 16,
-                                                right: 16,
-                                                bgcolor: 'rgba(0,0,0,0.6)',
-                                                color: '#FFFFFF',
-                                                px: 1.5,
-                                                py: 0.5,
-                                                borderRadius: 1,
-                                                fontSize: '0.75rem',
-                                                fontWeight: 500,
-                                            }}
-                                        >
-                                            {course.duration}
-                                        </Box>
-                                    </Box>
-                                    <CardContent sx={{ p: 3 }}>
-                                        {/* Category Badge */}
-                                        <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 2 }}>
-                                            {course.categoryIcon}
-                                            <Typography
-                                                sx={{
-                                                    fontSize: '0.75rem',
-                                                    fontWeight: 600,
-                                                    color: course.categoryColor,
-                                                    textTransform: 'uppercase',
-                                                    letterSpacing: '0.05em',
-                                                }}
-                                            >
-                                                {course.category}
-                                            </Typography>
-                                        </Stack>
-
-
-                                        <Typography
-                                            sx={{
-                                                fontSize: '1.125rem',
-                                                fontWeight: 600,
-                                                color: colors.textWhite,
-                                                mb: 1.5
-                                            }}
-                                        >
-                                            {course.title}
-                                        </Typography>
-                                        <Typography
-                                            sx={{
-                                                fontSize: '0.875rem',
-                                                color: colors.textMuted,
-                                                lineHeight: 1.6,
-                                                mb: 3,
-                                                minHeight: 60,
-                                            }}
-                                        >
-                                            {course.description}
-                                        </Typography>
-
-                                        <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                            <Stack direction="row" spacing={1.5} alignItems="center">
-                                                <Avatar
+                    {coursesLoading ? (
+                        <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
+                            {[1, 2, 3].map(i => (
+                                <Box key={i} sx={{ flex: 1 }}>
+                                    <Skeleton variant="rounded" height={200} sx={{ mb: 1, bgcolor: colors.border }} />
+                                    <Skeleton variant="text" height={28} sx={{ bgcolor: colors.border }} />
+                                    <Skeleton variant="text" height={20} sx={{ bgcolor: colors.border }} />
+                                    <Skeleton variant="text" width="60%" height={20} sx={{ bgcolor: colors.border }} />
+                                </Box>
+                            ))}
+                        </Stack>
+                    ) : essentialCourses.length === 0 ? (
+                        <Typography sx={{ color: colors.textMuted, textAlign: 'center', py: 4 }}>
+                            No essential courses available at this time.
+                        </Typography>
+                    ) : (
+                        <Stack
+                            direction={{ xs: 'column', md: 'row' }}
+                            spacing={3}
+                            sx={{ width: '100%' }}
+                        >
+                            {essentialCourses.map((course) => (
+                                <Box key={course.id} sx={{ flex: 1 }}>
+                                    <Card
+                                        component={Link}
+                                        to={`/explore/course/${course.id}`}
+                                        sx={{
+                                            bgcolor: colors.bgCard,
+                                            border: `1px solid ${colors.border}`,
+                                            borderRadius: 3,
+                                            overflow: 'hidden',
+                                            height: '100%',
+                                            textDecoration: 'none',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            transition: 'all 0.3s',
+                                            '&:hover': {
+                                                transform: 'translateY(-4px)',
+                                                borderColor: colors.borderLight,
+                                            },
+                                        }}
+                                    >
+                                        <Box sx={{ position: 'relative' }}>
+                                            {course.image ? (
+                                                <CardMedia
+                                                    component="img"
+                                                    height="200"
+                                                    image={course.image}
+                                                    alt={course.title}
+                                                />
+                                            ) : (
+                                                <Box sx={{
+                                                    height: 200,
+                                                    bgcolor: colors.primaryLight,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                }}>
+                                                    <School sx={{ fontSize: 64, color: colors.primary, opacity: 0.5 }} />
+                                                </Box>
+                                            )}
+                                            {course.duration && course.duration !== 'TBD' && (
+                                                <Box
                                                     sx={{
-                                                        width: 32,
-                                                        height: 32,
-                                                        bgcolor: colors.primary,
+                                                        position: 'absolute',
+                                                        top: 16,
+                                                        right: 16,
+                                                        bgcolor: 'rgba(0,0,0,0.6)',
+                                                        color: '#FFFFFF',
+                                                        px: 1.5,
+                                                        py: 0.5,
+                                                        borderRadius: 1,
                                                         fontSize: '0.75rem',
+                                                        fontWeight: 500,
                                                     }}
                                                 >
-                                                    {course.instructor.split(' ').map(n => n[0]).join('')}
-                                                </Avatar>
-                                                <Typography sx={{ fontSize: '0.875rem', color: colors.textMuted }}>
-                                                    {course.instructor}
-                                                </Typography>
-                                            </Stack>
+                                                    {course.duration}
+                                                </Box>
+                                            )}
+                                        </Box>
+                                        <CardContent sx={{ p: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                            {course.topic && (
+                                                <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 2 }}>
+                                                    <School sx={{ fontSize: 14, color: '#F97316' }} />
+                                                    <Typography
+                                                        sx={{
+                                                            fontSize: '0.75rem',
+                                                            fontWeight: 600,
+                                                            color: '#F97316',
+                                                            textTransform: 'uppercase',
+                                                            letterSpacing: '0.05em',
+                                                        }}
+                                                    >
+                                                        {course.topic}
+                                                    </Typography>
+                                                </Stack>
+                                            )}
+
                                             <Typography
                                                 sx={{
                                                     fontSize: '1.125rem',
-                                                    fontWeight: 700,
+                                                    fontWeight: 600,
                                                     color: colors.textWhite,
+                                                    mb: 1.5
                                                 }}
                                             >
-                                                {course.price}
+                                                {course.title}
                                             </Typography>
-                                        </Stack>
-                                    </CardContent>
-                                </Card>
-                            </Box>
-                        ))}
-                    </Stack>
+                                            <Typography
+                                                sx={{
+                                                    fontSize: '0.875rem',
+                                                    color: colors.textMuted,
+                                                    lineHeight: 1.6,
+                                                    mb: 3,
+                                                    minHeight: 60,
+                                                    flex: 1,
+                                                }}
+                                            >
+                                                {course.description}
+                                            </Typography>
+
+                                            <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                                <Stack direction="row" spacing={1.5} alignItems="center">
+                                                    <Avatar
+                                                        sx={{
+                                                            width: 32,
+                                                            height: 32,
+                                                            bgcolor: colors.primary,
+                                                            fontSize: '0.75rem',
+                                                        }}
+                                                    >
+                                                        {course.instructor ? course.instructor.split(' ').map(n => n[0]).join('') : 'IH'}
+                                                    </Avatar>
+                                                    <Typography sx={{ fontSize: '0.875rem', color: colors.textMuted }}>
+                                                        {course.instructor || 'Integritas Hub'}
+                                                    </Typography>
+                                                </Stack>
+                                                {course.price > 0 && (
+                                                    <Typography
+                                                        sx={{
+                                                            fontSize: '1.125rem',
+                                                            fontWeight: 700,
+                                                            color: colors.textWhite,
+                                                        }}
+                                                    >
+                                                        ${course.price}
+                                                    </Typography>
+                                                )}
+                                            </Stack>
+                                        </CardContent>
+                                    </Card>
+                                </Box>
+                            ))}
+                        </Stack>
+                    )}
                 </Box>
             </Box>
 

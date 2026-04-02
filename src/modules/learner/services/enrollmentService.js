@@ -133,6 +133,24 @@ export const learnerEnrollmentService = {
     },
 
     /**
+     * Get the authenticated learner's enrolled courses
+     * GET /lms/my/courses/enrolled
+     *
+     * @param {Object} options
+     * @param {number} [options.per_page]
+     * @param {number} [options.page]
+     * @returns {Promise<{data: Array, meta: Object, links: Object}>}
+     */
+    getMyEnrolledCourses: async ({ per_page = 50, page } = {}) => {
+        const params = new URLSearchParams();
+        if (per_page) params.append('per_page', per_page);
+        if (page) params.append('page', page);
+        const qs = params.toString();
+        const res = await apiService.get(`/lms/my/courses/enrolled${qs ? `?${qs}` : ''}`);
+        return unwrapList(res);
+    },
+
+    /**
      * @deprecated Use getEnrollments instead
      */
     getMyEnrollments: async ({ page, per_page = 20, status } = {}) => {

@@ -14,6 +14,7 @@ import {
     CloudUpload, VideoLibrary
 } from '@mui/icons-material';
 import { adminCoursesService } from '../services/courseService';
+import { getImageUrl } from '../../../utils';
 import {
 
     textFieldStyle,
@@ -484,7 +485,7 @@ const AdminCourseDetail = () => {
                         <Paper sx={{ ...paperStyle, padding: 2 }}>
                             <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1 }}>Thumbnail</Typography>
                             {hasThumbnail ? (
-                                <Box component="img" src={course.thumbnail_url} sx={{ width: '100%', maxWidth: 400, borderRadius: 1 }} />
+                                <Box component="img" src={getImageUrl(course.thumbnail_url)} sx={{ width: '100%', maxWidth: 400, borderRadius: 1 }} />
                             ) : (
                                 <Box
                                     sx={{

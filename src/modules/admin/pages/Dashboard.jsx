@@ -27,6 +27,7 @@ import {
     ArrowForward,
 } from '@mui/icons-material';
 import { optionAdminService } from '../services/optionAdminService';
+import { adminService } from '../services/adminService';
 
 // Initial stats data for admin dashboard (will be updated with live data)
 const initialStatsData = [
@@ -60,64 +61,17 @@ const initialStatsData = [
     },
 ];
 
-const recentUsers = [
-    {
-        id: 1,
-        name: 'John Doe',
-        email: 'john.doe@example.com',
-        role: 'Learner',
-        status: 'active',
-        avatar: null,
-    },
-    {
-        id: 2,
-        name: 'Jane Smith',
-        email: 'jane.smith@example.com',
-        role: 'Tutor',
-        status: 'pending',
-        avatar: null,
-    },
-    {
-        id: 3,
-        name: 'Mike Johnson',
-        email: 'mike.j@example.com',
-        role: 'Learner',
-        status: 'active',
-        avatar: null,
-    },
-    {
-        id: 4,
-        name: 'Sarah Williams',
-        email: 'sarah.w@example.com',
-        role: 'Tutor',
-        status: 'active',
-        avatar: null,
-    },
-];
-
-const pendingActions = [
-    {
-        id: 1,
-        title: 'Governance Ethics Essay',
-        author: 'John Doe',
-        time: '2h ago',
-        action: 'Grade Now',
-    },
-    {
-        id: 2,
-        title: 'Policy Framework Quiz',
-        author: 'Jane Smith',
-        time: '5h ago',
-        action: 'Review',
-    },
-    {
-        id: 3,
-        title: 'Final Thesis Draft',
-        author: 'A. Williams',
-        time: '1d ago',
-        action: 'Read',
-    },
-];
+const getTimeAgo = (dateStr) => {
+    if (!dateStr) return 'Recently';
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    const hours = Math.floor(mins / 60);
+    const days = Math.floor(hours / 24);
+    if (days > 0) return `${days}d ago`;
+    if (hours > 0) return `${hours}h ago`;
+    if (mins > 0) return `${mins}m ago`;
+    return 'Just now';
+};
 
 const AdminDashboard = () => {
     const chartContainerRef = useRef(null);
@@ -126,6 +80,11 @@ const AdminDashboard = () => {
     // State for live data
     const [statsData, setStatsData] = useState(initialStatsData);
     const [activeTutors, setActiveTutors] = useState([]);
+    const [recentUsersList, setRecentUsersList] = useState([]);
+    const [pendingActionsList, setPendingActionsList] = useState([]);
+    const [chartData, setChartData] = useState([120, 180, 250, 380, 520, 847]);
+    const [chartTotal, setChartTotal] = useState('+847');
+    const [chartChange, setChartChange] = useState('+23.4%');
 
     // Fetch chart width on resize
     useEffect(() => {
@@ -139,42 +98,98 @@ const AdminDashboard = () => {
         return () => window.removeEventListener('resize', updateWidth);
     }, []);
 
-    // Fetch live tutor data from API
+    // Fetch all live dashboard data
     useEffect(() => {
-        const fetchTutors = async () => {
+        const fetchDashboardData = async () => {
             try {
-                const response = await optionAdminService.listTutors({ per_page: 20 });
-                const tutorList = response?.data || response || [];
-
-                // Handle array response
-                const tutors = Array.isArray(tutorList) ? tutorList : [];
-
-                // Map API data to display format
-                const formattedTutors = tutors.slice(0, 4).map((tutor, index) => ({
-                    id: tutor.id || index,
-                    name: tutor.name || `${tutor.first_name || ''} ${tutor.last_name || ''}`.trim() || 'Unknown Tutor',
-                    subject: tutor.specialization || tutor.expertise || 'General',
-                    status: tutor.status === 'Active' ? 'Online' : 'Offline',
-                }));
-
-                setActiveTutors(formattedTutors);
-
-                // Update stats with live tutor count
-                setStatsData(prev => prev.map(stat =>
-                    stat.label === 'Active Tutors'
-                        ? { ...stat, value: tutors.length.toString() }
-                        : stat
-                ));
-            } catch (error) {
-                console.error('Error fetching tutors:', error);
-                // Use fallback data on error
-                setActiveTutors([
-                    { id: 1, name: 'No tutors available', subject: '-', status: 'Offline' },
+                const [dashRes, statsRes, tutorsRes, studentsRes] = await Promise.allSettled([
+                    adminService.getDashboard(),
+                    adminService.getStats(),
+                    optionAdminService.listTutors({ per_page: 20 }),
+                    adminService.listStudents({ per_page: 4 }),
                 ]);
+
+                // Process dashboard overview
+                const dash = dashRes.status === 'fulfilled' ? dashRes.value : null;
+                const stats = statsRes.status === 'fulfilled' ? statsRes.value : null;
+                const combined = { ...stats, ...dash };
+
+                if (dash || stats) {
+                    setStatsData(prev => prev.map(stat => {
+                        if (stat.label === 'Total Users') {
+                            const val = combined.total_users ?? combined.users_count ?? combined.total_students ?? null;
+                            return val !== null ? { ...stat, value: Number(val).toLocaleString() } : stat;
+                        }
+                        if (stat.label === 'Active Courses') {
+                            const val = combined.active_courses ?? combined.courses_count ?? combined.total_courses ?? null;
+                            return val !== null ? { ...stat, value: Number(val).toLocaleString() } : stat;
+                        }
+                        if (stat.label === 'Pending Verifications') {
+                            const val = combined.pending_verifications ?? combined.pending_kyc ?? combined.kyc_pending ?? null;
+                            return val !== null ? { ...stat, value: Number(val).toLocaleString() } : stat;
+                        }
+                        return stat;
+                    }));
+
+                    // Pending actions from dashboard
+                    const rawActions = combined.pending_actions ?? combined.pending_courses ?? combined.recent_submissions ?? [];
+                    if (Array.isArray(rawActions) && rawActions.length > 0) {
+                        setPendingActionsList(rawActions.slice(0, 3).map((item, i) => ({
+                            id: item.id || i,
+                            title: item.title || item.name || 'Pending Item',
+                            author: item.author || item.tutor_name || item.user?.name || item.student?.name || 'Unknown',
+                            time: getTimeAgo(item.submitted_at || item.created_at || item.updated_at),
+                            action: item.action || 'Review',
+                        })));
+                    }
+
+                    // Chart data
+                    const rawGrowth = combined.user_growth ?? combined.monthly_users ?? combined.registrations ?? [];
+                    if (Array.isArray(rawGrowth) && rawGrowth.length > 0) {
+                        const values = rawGrowth.map(d => Number(d.count ?? d.value ?? d.total ?? 0));
+                        setChartData(values);
+                        const last = values[values.length - 1] || 0;
+                        setChartTotal(`+${last.toLocaleString()}`);
+                    }
+                }
+
+                // Process tutors
+                if (tutorsRes.status === 'fulfilled') {
+                    const tutorList = tutorsRes.value?.data || tutorsRes.value || [];
+                    const tutors = Array.isArray(tutorList) ? tutorList : [];
+                    const formattedTutors = tutors.slice(0, 4).map((tutor, index) => ({
+                        id: tutor.id || index,
+                        name: tutor.name || `${tutor.first_name || ''} ${tutor.last_name || ''}`.trim() || 'Unknown Tutor',
+                        subject: tutor.specialization || tutor.expertise || 'General',
+                        status: tutor.status === 'Active' ? 'Online' : 'Offline',
+                    }));
+                    setActiveTutors(formattedTutors);
+                    setStatsData(prev => prev.map(stat =>
+                        stat.label === 'Active Tutors'
+                            ? { ...stat, value: tutors.length.toString() }
+                            : stat
+                    ));
+                }
+
+                // Process recent students/users
+                if (studentsRes.status === 'fulfilled') {
+                    const students = studentsRes.value?.data || [];
+                    const formatted = students.slice(0, 4).map(s => ({
+                        id: s.id,
+                        name: s.name || `${s.first_name || ''} ${s.last_name || ''}`.trim() || 'Unknown User',
+                        email: s.email || '',
+                        role: s.role || 'Learner',
+                        status: (s.status === 'active' || s.is_active) ? 'active' : 'pending',
+                        avatar: s.avatar || s.profile_photo || null,
+                    }));
+                    if (formatted.length > 0) setRecentUsersList(formatted);
+                }
+            } catch (error) {
+                console.error('Error fetching admin dashboard data:', error);
             }
         };
 
-        fetchTutors();
+        fetchDashboardData();
     }, []);
 
     return (
@@ -312,10 +327,10 @@ const AdminDashboard = () => {
                             </Box>
                             <Stack direction="row" alignItems="center" spacing={0.5}>
                                 <Typography sx={{ color: '#FFFFFF', fontSize: '1.1rem', fontWeight: 700 }}>
-                                    +847
+                                    {chartTotal}
                                 </Typography>
                                 <Typography sx={{ color: '#10B981', fontSize: '0.7rem', fontWeight: 500 }}>
-                                    +23.4%
+                                    {chartChange}
                                 </Typography>
                             </Stack>
                         </Stack>
@@ -347,7 +362,7 @@ const AdminDashboard = () => {
                                         tickLabelStyle: { display: 'none' },
                                     }]}
                                     series={[{
-                                        data: [120, 180, 250, 380, 520, 847],
+                                        data: chartData,
                                         area: true,
                                         color: '#1152D4',
                                         showMark: false,
@@ -406,7 +421,12 @@ const AdminDashboard = () => {
                         </Stack>
 
                         <Stack spacing={1} sx={{ flex: 1 }}>
-                            {pendingActions.map((action) => (
+                            {pendingActionsList.length === 0 && (
+                                <Typography sx={{ color: '#6B7280', fontSize: '0.8rem', textAlign: 'center', mt: 2 }}>
+                                    No pending actions
+                                </Typography>
+                            )}
+                            {pendingActionsList.map((action) => (
                                 <Box
                                     key={action.id}
                                     sx={{
@@ -519,7 +539,12 @@ const AdminDashboard = () => {
                         </Stack>
 
                         <Stack spacing={1.5}>
-                            {recentUsers.map((user) => (
+                            {recentUsersList.length === 0 && (
+                                <Typography sx={{ color: '#6B7280', fontSize: '0.8rem', textAlign: 'center', mt: 2 }}>
+                                    No recent users
+                                </Typography>
+                            )}
+                            {recentUsersList.map((user) => (
                                 <Box
                                     key={user.id}
                                     sx={{

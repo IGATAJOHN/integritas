@@ -19,6 +19,31 @@ import {
 } from '@mui/icons-material';
 import { learnerEnrollmentService } from '../services';
 
+const CourseThumbnail = ({ src, alt }) => {
+    const [imgError, setImgError] = React.useState(false);
+    if (src && !imgError) {
+        return (
+            <Box
+                component="img"
+                src={src}
+                alt={alt}
+                onError={() => setImgError(true)}
+                sx={{ width: 64, height: 64, borderRadius: 1, objectFit: 'cover', flexShrink: 0 }}
+            />
+        );
+    }
+    return (
+        <Box sx={{
+            width: 64, height: 64, borderRadius: 1,
+            bgcolor: 'rgba(37,99,235,0.15)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+        }}>
+            <BookIcon sx={{ fontSize: 28, color: '#3B82F6' }} />
+        </Box>
+    );
+};
+
 const statusConfig = {
     enrolled: { label: 'Enrolled', color: '#3B82F6', bg: 'rgba(59,130,246,0.12)' },
     in_progress: { label: 'In Progress', color: '#F59E0B', bg: 'rgba(245,158,11,0.12)' },
@@ -143,15 +168,18 @@ const MyEnrollments = () => {
                                     transition: 'all 0.2s ease'
                                 }}
                             >
-                                {/* Icon / Thumbnail */}
-                                <Box sx={{
-                                    width: 64, height: 64, borderRadius: 1,
-                                    bgcolor: 'rgba(37,99,235,0.15)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    flexShrink: 0
-                                }}>
-                                    <BookIcon sx={{ fontSize: 28, color: '#3B82F6' }} />
-                                </Box>
+                                {/* Thumbnail */}
+                                <CourseThumbnail
+                                    src={
+                                        enrollment.course?.thumbnail_url ||
+                                        enrollment.course?.cover_image_url ||
+                                        enrollment.course?.image_url ||
+                                        enrollment.course?.image ||
+                                        enrollment.thumbnail_url ||
+                                        null
+                                    }
+                                    alt={courseTitle}
+                                />
 
                                 {/* Info */}
                                 <Box sx={{ flex: 1, minWidth: 0 }}>

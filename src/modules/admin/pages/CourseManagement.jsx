@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminCoursesService } from '../services';
 import { CircularProgress } from '@mui/material';
-import { formatCurrency } from '../../../utils';
+import { formatCurrency, getImageUrl } from '../../../utils';
 import {
     searchBarStyle,
     searchInputStyle,
@@ -197,7 +197,7 @@ const CourseManagement = () => {
                                                     }}
                                                 >
                                                     {course.image_url ? (
-                                                        <img src={course.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                        <img src={getImageUrl(course.image_url)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                     ) : (
                                                         <School sx={{ color: '#fff', fontSize: 20 }} />
                                                     )}
