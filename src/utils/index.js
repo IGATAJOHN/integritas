@@ -140,6 +140,16 @@ export const getImageUrl = (path) => {
     return IMAGE_BASE_URL + trimmed.replace(/^\//, '');
 };
 
+const VIDEO_BASE_URL = 'https://goodgov.andjemztech.com/storage/';
+
+export const getVideoUrl = (path) => {
+    if (!path) return '';
+    const trimmed = String(path).trim();
+    if (!trimmed) return '';
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) return trimmed;
+    return VIDEO_BASE_URL + trimmed.replace(/^\//, '');
+};
+
 export {
     getPrimaryRole,
     getDashboardRoute,

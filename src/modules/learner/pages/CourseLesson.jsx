@@ -45,6 +45,8 @@ import logo from '../../../assets/images/GGH_logo.png';
 import { courseCatalogService, learnerEnrollmentService } from '../services';
 import { apiService } from '../../../services/api';
 import { getImageUrl } from '../../../utils';
+import { getVideoUrl } from '../../../utils';
+
 
 const colors = {
     bg: '#080D19',
@@ -214,7 +216,7 @@ const CourseLesson = () => {
     // React only updates the src attribute — the browser won't load the new source unless .load() is called.
     useEffect(() => {
         if (!videoRef.current || !currentLesson) return;
-        const src = getImageUrl(currentLesson.video_url || currentLesson.video || '');
+        const src = getVideoUrl(currentLesson.video_url || currentLesson.video || '');
         if (!src || /youtube\.com|youtu\.be|vimeo\.com/.test(src)) return;
         videoRef.current.load();
     }, [currentLesson]);
@@ -266,7 +268,7 @@ const CourseLesson = () => {
         );
     }
 
-    const videoSrc = getImageUrl(currentLesson?.video_url || currentLesson?.video || '');
+    const videoSrc = getVideoUrl(currentLesson?.video_url || currentLesson?.video || '');
 
     const isYouTube = /youtube\.com|youtu\.be/.test(videoSrc);
     const isVimeo = /vimeo\.com/.test(videoSrc);
