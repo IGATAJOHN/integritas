@@ -122,6 +122,7 @@ const LearnerDashboard = () => {
     const displayName = user?.first_name || user?.name?.split(' ')[0] || 'Learner';
     const levelLabel = completedCount >= 10 ? 'Scholar Level 5' : completedCount >= 5 ? 'Scholar Level 3' : 'Scholar Level 1';
 
+
     return (
         <Box>
             {/* Welcome Header */}
@@ -333,6 +334,7 @@ const LearnerDashboard = () => {
                         ) : (
                             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                                 {recommendedCourses.map((course) => (
+                                    
                                     <Box key={course.id} sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 8px)', md: '1 1 calc(33.33% - 10.67px)' }, minWidth: 0 }}>
                                         <Card
                                             sx={{
@@ -384,7 +386,7 @@ const LearnerDashboard = () => {
                                                     variant="outlined"
                                                     fullWidth
                                                     size="small"
-                                                    onClick={() => navigate(`/learner/explore`)}
+                                                    onClick={() => navigate(`/explore/course/${course.id}`)}
                                                     sx={{
                                                         borderColor: 'rgba(255, 255, 255, 0.1)',
                                                         color: theme.palette.text.primary,
