@@ -16,13 +16,17 @@ import {
     Search,
     NotificationsOutlined,
     Menu as MenuIcon,
+    LightMode,
+    DarkMode,
 } from '@mui/icons-material';
+import { useThemeMode } from '../../../contexts';
 
 const AdminNavbar = ({
     onDrawerToggle = () => { },
 }) => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+    const { isDark, toggleThemeMode } = useThemeMode();
     const [searchQuery, setSearchQuery] = useState('');
     const { user } = useAuth();
 
@@ -99,6 +103,17 @@ const AdminNavbar = ({
             </Stack>
 
             <Stack direction="row" alignItems="center" spacing={1}>
+                {/* Theme Toggle */}
+                <IconButton
+                    onClick={toggleThemeMode}
+                    sx={{
+                        color: '#6B7280',
+                        '&:hover': { color: '#FFFFFF', bgcolor: 'rgba(255,255,255,0.05)' },
+                    }}
+                >
+                    {isDark ? <LightMode fontSize="small" /> : <DarkMode fontSize="small" />}
+                </IconButton>
+
                 <IconButton
                     sx={{
                         color: '#6B7280',

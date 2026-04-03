@@ -17,9 +17,11 @@ import {
     Search,
     NotificationsNone as BellIcon,
     ExpandMore as ChevronDownIcon,
-    Menu as MenuIcon
+    Menu as MenuIcon,
+    LightMode,
+    DarkMode,
 } from '@mui/icons-material';
-import { useAuth } from '../../../contexts';
+import { useAuth, useThemeMode } from '../../../contexts';
 import logo from '../../../assets/images/GGH_icon.png';
 
 const LearnerNavbar = ({ onMobileMenuToggle }) => {
@@ -27,6 +29,7 @@ const LearnerNavbar = ({ onMobileMenuToggle }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const { logout, user, isAuthenticated } = useAuth();
+    const { isDark, toggleThemeMode } = useThemeMode();
     const [searchQuery, setSearchQuery] = useState('');
     const [profileAnchor, setProfileAnchor] = useState(null);
 
@@ -43,9 +46,9 @@ const LearnerNavbar = ({ onMobileMenuToggle }) => {
     const navLinks = [
         { label: 'Dashboard', path: '/learner' },
         { label: 'Explore', path: '/explore' },
-        { label: 'My Learning', path: '/explore/my-learning' },
+        // { label: 'My Learning', path: '/explore/my-learning' },
         { label: 'Organization', path: '/learner/organization' },
-        { label: 'Community', path: '/community' },
+        // { label: 'Community', path: '/community' },
     ];
 
     const isActiveLink = (path) => {
@@ -174,6 +177,17 @@ const LearnerNavbar = ({ onMobileMenuToggle }) => {
                         </Typography>
                     ))}
                 </Stack>
+
+                {/* Theme Toggle */}
+                <IconButton
+                    onClick={toggleThemeMode}
+                    sx={{
+                        color: colors.textSecondary,
+                        '&:hover': { color: colors.text, bgcolor: colors.card },
+                    }}
+                >
+                    {isDark ? <LightMode fontSize="small" /> : <DarkMode fontSize="small" />}
+                </IconButton>
 
                 {/* Notifications */}
                 <IconButton

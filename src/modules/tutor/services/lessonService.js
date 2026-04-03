@@ -130,6 +130,20 @@ export const tutorLessonService = {
     },
 
     /**
+     * Create a new lesson with a file upload (multipart/form-data)
+     * POST /lms/modules/{module_id}/lessons
+     * Use when video_file is provided — takes precedence over video_url per API docs.
+     *
+     * @param {string|number} moduleId
+     * @param {FormData} formData - Must include at least: title, type. Optionally: video_file, duration_minutes, summary, content, etc.
+     * @returns {Promise<Object>} - Created lesson data
+     */
+    createLessonMultipart: async (moduleId, formData) => {
+        const res = await requestMultipart(`/lms/modules/${moduleId}/lessons`, 'POST', formData);
+        return unwrapLesson(res);
+    },
+
+    /**
      * Get lesson details by ID
      * GET /lms/lessons/{id}
      * 

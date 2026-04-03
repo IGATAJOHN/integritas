@@ -47,7 +47,7 @@ const MyLearning = () => {
         setLoading(true);
         setError('');
 
-        learnerEnrollmentService.getMyEnrolledCourses({ per_page: 50 })
+        learnerEnrollmentService.getMyEnrollments({ per_page: 50 })
             .then((res) => {
                 if (!active) return;
                 setEnrollments(res.data || []);
@@ -106,19 +106,19 @@ const MyLearning = () => {
                 </Box>
 
                 <Stack direction="row" spacing={1.25}>
-                    <Button
+                    {/* <Button
                         variant="outlined"
                         onClick={() => navigate('/explore/courses')}
                         sx={{ borderColor: '#374151', color: '#E5E7EB', textTransform: 'none' }}
                     >
                         Browse Courses
-                    </Button>
+                    </Button> */}
                     <Button
                         variant="contained"
-                        onClick={() => navigate('/explore')}
+                        onClick={() => navigate('/explore/courses')}
                         sx={{ bgcolor: '#1152D4', textTransform: 'none', '&:hover': { bgcolor: '#0D42AF' } }}
                     >
-                        Explore
+                        Explore Courses
                     </Button>
                 </Stack>
             </Stack>
@@ -126,7 +126,7 @@ const MyLearning = () => {
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
             <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Paper sx={{ bgcolor: '#1A2230', border: '1px solid #374151', borderRadius: 2, p: 2 }}>
                         <Stack direction="row" spacing={1.5} alignItems="center">
                             <Avatar sx={{ bgcolor: alpha('#2563EB', 0.15), color: '#60A5FA' }}>
@@ -143,7 +143,7 @@ const MyLearning = () => {
                         </Stack>
                     </Paper>
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Paper sx={{ bgcolor: '#1A2230', border: '1px solid #374151', borderRadius: 2, p: 2 }}>
                         <Stack direction="row" spacing={1.5} alignItems="center">
                             <Avatar sx={{ bgcolor: alpha('#10B981', 0.16), color: '#34D399' }}>
@@ -233,7 +233,7 @@ const MyLearning = () => {
                     {enrollments.length === 0 && (
                         <Button
                             variant="contained"
-                            onClick={() => navigate('/explore')}
+                            onClick={() => navigate('/explore/courses')}
                             sx={{ bgcolor: '#1152D4', textTransform: 'none', '&:hover': { bgcolor: '#0D42AF' } }}
                         >
                             Explore Courses
@@ -251,8 +251,8 @@ const MyLearning = () => {
                         const courseId = enrollment.course_id || enrollment.course?.id;
 
                         return (
-                            <Grid key={enrollment.id} item xs={12} sm={6} xl={4}>
-                                <Paper sx={{ bgcolor: '#1A2230', border: '1px solid #374151', borderRadius: 2, overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column' }}>
+                            <Grid key={enrollment.id} size={{ xs: 12, sm: 6, xl: 4 }}>
+                                <Paper sx={{ bgcolor: '#1A2230', border: '1px solid #374151', borderRadius: 2, overflow: 'hidden', height: '100%', width: '100%', display: 'flex', flexDirection: 'column' }}>
                                     <Box
                                         component="img"
                                         src={image}

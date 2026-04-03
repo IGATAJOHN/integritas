@@ -1,5 +1,7 @@
 export { default as NotFound } from './NotFound';
 export { default as LandingPage } from './LandingPage';
+export { default as AboutUsPage } from './AboutUsPage';
+export { default as PartnersPage } from './PartnersPage';
 export { default as LoginPage } from './LoginPage';
 export { default as SignupPage } from './SignupPage';
 export { default as VerifyPage } from './VerifyPage';

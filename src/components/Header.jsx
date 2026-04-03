@@ -18,7 +18,11 @@ import { useThemeMode } from '../contexts';
 import logo from '../assets/images/GGH_logo.png';
 
 const Header = () => {
-    const navItems = ['Courses', 'About Us', 'Partners'];
+    const navItems = [
+    { label: 'Courses', to: '/explore' },
+    { label: 'About Us', to: '/about-us' },
+    { label: 'Partners', to: '/partners' },
+];
     const { mode, toggleThemeMode, isDark } = useThemeMode();
     const theme = useTheme();
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -77,10 +81,10 @@ const Header = () => {
             {/* Navigation Links */}
             <List sx={{ py: 2 }}>
                 {navItems.map((item) => (
-                    <ListItem key={item} disablePadding>
+                    <ListItem key={item.label} disablePadding>
                         <ListItemButton
                             component={Link}
-                            to={`/${item.toLowerCase().replace(' ', '-')}`}
+                            to={item.to}
                             onClick={handleDrawerToggle}
                             sx={{
                                 py: 1.5,
@@ -91,7 +95,7 @@ const Header = () => {
                             }}
                         >
                             <ListItemText
-                                primary={item}
+                                primary={item.label}
                                 primaryTypographyProps={{
                                     fontWeight: 500,
                                     color: isDark ? '#9CA3AF' : '#64748B',
@@ -227,9 +231,9 @@ const Header = () => {
                             <Stack direction="row" spacing={4}>
                                 {navItems.map((item) => (
                                     <Box
-                                        key={item}
+                                        key={item.label}
                                         component={Link}
-                                        to={`/${item.toLowerCase().replace(' ', '-')}`}
+                                        to={item.to}
                                         sx={{
                                             color: isDark ? '#9CA3AF' : '#64748B',
                                             textDecoration: 'none',
@@ -238,7 +242,7 @@ const Header = () => {
                                             '&:hover': { color: isDark ? '#FFFFFF' : '#1E293B' },
                                         }}
                                     >
-                                        {item}
+                                        {item.label}
                                     </Box>
                                 ))}
                             </Stack>

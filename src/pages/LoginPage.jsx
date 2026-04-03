@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
     Box,
     Typography,
@@ -22,6 +22,7 @@ import icon from '../assets/images/GGH_icon.png';
 
 const LoginPage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { login } = useAuth();
     
     const [showPassword, setShowPassword] = useState(false);
@@ -65,7 +66,8 @@ const LoginPage = () => {
             }
 
             const dashboardRoute = getDashboardRoute(userData || userRole);
-            navigate(dashboardRoute);
+            const returnTo = location.state?.from;
+            navigate(returnTo || dashboardRoute, { replace: true });
         } catch (err) {
             console.error('Login error:', err);
             setError(err?.message || 'Login failed. Please check your credentials and try again.');

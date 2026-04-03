@@ -413,7 +413,7 @@ const CourseDashboard = () => {
         }
 
         // Type-specific validation
-        if (lessonType === 'text') {
+        if (lessonType === 'article') {
             if (!String(lessonContent).trim()) {
                 setSnackbar({ open: true, message: 'Please provide article content', severity: 'error' });
                 return;
@@ -429,7 +429,7 @@ const CourseDashboard = () => {
             }
         }
 
-        if (lessonType === 'document') {
+        if (lessonType === 'assignment') {
             if (!lessonFile) {
                 setSnackbar({ open: true, message: 'Please upload a file', severity: 'error' });
                 return;
@@ -438,64 +438,58 @@ const CourseDashboard = () => {
 
         try {
             setActionLoading(true);
-            // find module to determine position
-            const mod = modules.find(m => m.id === selectedModuleForLesson) || { lessons: [] };
-            const position = (mod.lessons?.length || 0);
-            // Map UI lesson types to API types and payload shape
-            const mapType = (t) => {
-                if (t === 'text' || t === 'reading') return 'article';
-                if (t === 'document') return 'document';
-                if (t === 'quiz') return 'quiz';
-                return t || 'article';
-            };
 
-            const apiType = mapType(lessonType);
+            // API type values: video | article | quiz | assignment
+            const apiType = lessonType || 'article';
+            const videoUrl = lessonType === 'video' ? String(lessonContent).trim() : '';
+            const hasVideoUrl = /^https?:\/\//.test(videoUrl);
 
-            const payload = { title: trimmedTitle, type: apiType, position: position + 1 };
+            let created;
 
-            // Duration field expected as `duration_minutes`
-            if (lessonDuration) payload.duration_minutes = parseInt(lessonDuration) || 0;
+            if (lessonType === 'video' && lessonFile) {
+                // Video file upload — send as multipart/form-data on the create endpoint
+                const fd = new FormData();
+                fd.append('title', trimmedTitle);
+                fd.append('type', apiType);
+                fd.append('video_file', lessonFile);
+                if (lessonDuration) fd.append('duration_minutes', String(parseInt(lessonDuration) || 0));
+                created = await tutorLessonService.createLessonMultipart(selectedModuleForLesson, fd);
+            } else {
+                // JSON payload for all other cases
+                const payload = { title: trimmedTitle, type: apiType };
+                if (lessonDuration) payload.duration_minutes = parseInt(lessonDuration) || 0;
 
-            // Content fields per type
-            if (apiType === 'article') {
-                payload.content = lessonContent.trim();
-            } else if (apiType === 'video') {
-                // If user supplied a URL, use it; otherwise, if a file was selected we set a placeholder filename
-                if (/^https?:\/\//.test(lessonContent.trim())) {
-                    payload.video_url = lessonContent.trim();
-                } else if (lessonFileName) {
-                    // File upload not implemented here; include filename as summary placeholder
-                    payload.video_url = null;
-                    payload.summary = lessonFileName;
-                }
-            } else if (apiType === 'quiz') {
-                // For quiz, allow settings (e.g., pass_percent) if provided in content as JSON
-                try {
-                    const parsed = JSON.parse(lessonContent);
-                    if (parsed && typeof parsed === 'object') payload.settings = parsed;
-                } catch (e) {
-                    // ignore parse error
-                }
-            } else if (apiType === 'document') {
-                if (lessonFileName) {
-                    payload.resource_url = null;
-                    payload.summary = lessonFileName;
-                } else {
+                if (apiType === 'article') {
                     payload.content = lessonContent.trim();
+                } else if (apiType === 'video' && hasVideoUrl) {
+                    payload.video_url = videoUrl;
+                } else if (apiType === 'quiz') {
+                    try {
+                        const parsed = JSON.parse(lessonContent);
+                        if (parsed && typeof parsed === 'object') payload.settings = parsed;
+                    } catch (e) { /* ignore */ }
+                } else if (apiType === 'assignment') {
+                    payload.summary = lessonFileName || '';
+                }
+
+                created = await tutorLessonService.createLesson(selectedModuleForLesson, payload);
+            }
+
+            console.debug('Lesson create response:', created);
+
+            // Upload file for assignment type (separate media endpoint)
+            if (apiType === 'assignment' && lessonFile && created?.id) {
+                try {
+                    const formData = new FormData();
+                    formData.append('file', lessonFile);
+                    await tutorLessonService.uploadLessonMedia(created.id, formData);
+                } catch (uploadErr) {
+                    console.warn('Assignment file upload failed:', uploadErr);
                 }
             }
 
-            const created = await tutorLessonService.createLesson(selectedModuleForLesson, payload);
-            console.debug('Lesson create response:', created);
-
-            // After creation (and optional upload), refresh the module from server so we reflect persisted state.
+            // Refresh module lessons after creation
             try {
-                if (lessonFile && (apiType === 'video' || apiType === 'document')) {
-                    const formData = new FormData();
-                    formData.append('file', lessonFile);
-                    const uploadRes = await tutorLessonService.uploadLessonMedia(created.id, formData);
-                    console.debug('Lesson upload response:', uploadRes);
-                }
 
                 // Use retry helper to ensure the created lesson appears for the module (handles eventual consistency)
                 try {
@@ -1192,8 +1186,9 @@ const CourseDashboard = () => {
                                     MenuProps={selectMenuProps}
                                 >
                                     <MenuItem value="video">Video</MenuItem>
-                                    <MenuItem value="text">Text/Article</MenuItem>
-                                    <MenuItem value="document">File Attachment</MenuItem>
+                                    <MenuItem value="article">Text / Article</MenuItem>
+                                    <MenuItem value="quiz">Quiz</MenuItem>
+                                    <MenuItem value="assignment">File Attachment</MenuItem>
                                 </Select>
                             </Box>
 
@@ -1250,10 +1245,22 @@ const CourseDashboard = () => {
                                             )}
                                         </Box>
                                     </label>
+                                    <Typography sx={{ color: '#6B7280', fontSize: '0.75rem', textAlign: 'center', my: 1 }}>— or —</Typography>
+                                    <TextField
+                                        fullWidth
+                                        placeholder="Paste a video URL (https://...)"
+                                        value={lessonContent}
+                                        onChange={(e) => {
+                                            setLessonContent(e.target.value);
+                                            if (e.target.value) { setLessonFile(null); setLessonFileName(''); }
+                                        }}
+                                        sx={textFieldStyle}
+                                        slotProps={{ htmlInput: { maxLength: 2048 } }}
+                                    />
                                 </Box>
                             )}
 
-                            {lessonType === 'text' && (
+                            {lessonType === 'article' && (
                                 <Box>
                                     <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1 }}>Article Content</Typography>
                                     <TextField
@@ -1268,7 +1275,7 @@ const CourseDashboard = () => {
                                 </Box>
                             )}
 
-                            {lessonType === 'document' && (
+                            {lessonType === 'assignment' && (
                                 <Box>
                                     <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1 }}>Upload File</Typography>
                                     <input

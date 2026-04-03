@@ -168,10 +168,8 @@ const CourseDetail = () => {
                     const raw = data.raw_data || data;
                     const tutorProfile = resolveTutorProfile(raw);
 
-                    // Price: prefer certificate.fee_amount, fall back to course price field
-                    const certFee = raw.certificate?.fee_amount ? parseFloat(raw.certificate.fee_amount) : null;
-                    const coursePrice = certFee ?? (data.price ? parseFloat(data.price) : 0);
-                    const currency = raw.certificate?.currency || 'USD';
+                    const coursePrice = data.price ? parseFloat(data.price) : 0;
+                    const currency = raw.certificate?.currency || raw.currency || 'USD';
 
                     // Learning objectives: only use real API data
                     const rawObjectives = raw.learning_objectives;
@@ -242,9 +240,10 @@ const CourseDetail = () => {
         learnerEnrollmentService.getCourseAccess(courseId)
             .then((data) => setAccessInfo(data))
             .catch(() => {});
-        learnerEnrollmentService.getEnrollmentStatus(courseId)
-            .then((data) => {
-                const status = String(data?.status || '').toLowerCase();
+        learnerEnrollmentService.getEnrollments({ course_id: courseId, per_page: 1 })
+            .then((res) => {
+                const enrollment = res.data?.[0];
+                const status = String(enrollment?.status || '').toLowerCase();
                 if (status === 'enrolled' || status === 'in_progress' || status === 'completed') {
                     setIsEnrolled(true);
                 }
@@ -275,6 +274,7 @@ const CourseDetail = () => {
                 : learnerEnrollmentService.enrollInCourse;
             const result = await enrollFn(courseData.id);
             if (result?.payment_url) {
+                sessionStorage.setItem('pending_course_id', courseData.id);
                 window.location.href = result.payment_url;
             } else {
                 navigate('/payment-success', { state: { enrollment: result, course: { courseId: courseData.id, title: courseData.title, price: courseData.price, thumbnail: courseData.image } } });
@@ -740,12 +740,12 @@ const CourseDetail = () => {
                                         <Box
                                             component="img"
                                             src={courseData.image}
-                                            alt="Course Preview"
+                                            alt="Course Thumbnail"
                                             onError={(e) => {
                                                 e.currentTarget.style.display = 'none';
                                                 e.currentTarget.parentElement.querySelector('.img-fallback').style.display = 'flex';
                                             }}
-                                            sx={{ width: '100%', height: 180, objectFit: 'cover' }}
+                                            sx={{ width: '100%', height: 180, objectFit: 'cover', display: 'block' }}
                                         />
                                         <Box
                                             className="img-fallback"
@@ -753,47 +753,17 @@ const CourseDetail = () => {
                                         >
                                             <SchoolIcon sx={{ fontSize: 56, color: 'rgba(255,255,255,0.15)' }} />
                                         </Box>
-                                        <Box sx={{
-                                            position: 'absolute',
-                                            top: '50%',
-                                            left: '50%',
-                                            transform: 'translate(-50%, -50%)',
-                                            bgcolor: 'rgba(0,0,0,0.6)',
-                                            borderRadius: '50%',
-                                            p: 1,
-                                            cursor: 'pointer',
-                                            '&:hover': { bgcolor: 'rgba(0,0,0,0.8)' }
-                                        }}>
-                                            <PlayIcon sx={{ fontSize: 28, color: colors.text }} />
-                                        </Box>
-                                        <Chip
-                                            label="Preview"
-                                            size="small"
-                                            sx={{
-                                                position: 'absolute',
-                                                bottom: 10,
-                                                left: 10,
-                                                bgcolor: colors.primary,
-                                                color: colors.text,
-                                                fontWeight: 600,
-                                                fontSize: '0.65rem'
-                                            }}
-                                        />
                                     </>
                                 ) : (
-                                    <Box
-                                        sx={{
-                                            width: '100%',
-                                            aspectRatio: '1 / 1',
-                                            bgcolor: '#000000',
-                                        }}
-                                    />
+                                    <Box sx={{ width: '100%', height: 180, bgcolor: '#111827', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <SchoolIcon sx={{ fontSize: 56, color: 'rgba(255,255,255,0.15)' }} />
+                                    </Box>
                                 )}
                             </Box>
 
                             <CardContent sx={{ p: 2.5 }}>
                                 {/* Pricing */}
-                                <Stack direction="row" alignItems="center" sx={{ mb: 2 }}>
+                                <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
                                     {courseData.price > 0 ? (
                                         <Typography variant="h5" sx={{ fontWeight: 700 }}>
                                             {courseData.currency === 'NGN' ? '₦' : '$'}{Number(courseData.price).toLocaleString()}
@@ -801,9 +771,38 @@ const CourseDetail = () => {
                                     ) : (
                                         <Typography variant="h5" sx={{ fontWeight: 700, color: colors.success }}>Free</Typography>
                                     )}
+                                    {accessInfo && (
+                                        <Chip
+                                            label={accessInfo.is_essential ? 'Essential' : 'Standard'}
+                                            size="small"
+                                            sx={{
+                                                bgcolor: accessInfo.is_essential ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                                                color: accessInfo.is_essential ? '#F59E0B' : '#10B981',
+                                                border: `1px solid ${accessInfo.is_essential ? 'rgba(245, 158, 11, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`,
+                                                fontWeight: 700,
+                                                fontSize: '0.7rem',
+                                            }}
+                                        />
+                                    )}
                                 </Stack>
 
                                 {/* Action Buttons */}
+                                {accessInfo?.is_essential && !isEnrolled && (
+                                    <Box sx={{
+                                        bgcolor: 'rgba(245, 158, 11, 0.1)',
+                                        border: '1px solid rgba(245, 158, 11, 0.3)',
+                                        borderRadius: 1,
+                                        p: 1.5,
+                                        mb: 2
+                                    }}>
+                                        <Typography sx={{ color: '#F59E0B', fontWeight: 600, fontSize: '0.8rem', mb: 0.5 }}>
+                                            One-Time Payment — Unlimited Essential Access
+                                        </Typography>
+                                        <Typography sx={{ color: colors.textSecondary, fontSize: '0.75rem', lineHeight: 1.5 }}>
+                                            Paying for any Essential course gives you permanent access to all Essential courses on the platform.
+                                        </Typography>
+                                    </Box>
+                                )}
                                 {enrollError && (
                                     <Typography sx={{ color: colors.error, fontSize: '0.8rem', mb: 1.5 }}>
                                         {enrollError}

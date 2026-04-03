@@ -43,6 +43,8 @@ import {
 } from '@mui/icons-material';
 import logo from '../../../assets/images/GGH_logo.png';
 import { courseCatalogService, learnerEnrollmentService } from '../services';
+import { apiService } from '../../../services/api';
+import { getImageUrl } from '../../../utils';
 
 const colors = {
     bg: '#080D19',
@@ -83,9 +85,10 @@ const CourseLesson = () => {
     const [expandedModule, setExpandedModule] = useState(null);
 
     // Video player state
+    const videoRef = useRef(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
-    const [duration] = useState(900); // default 15 min placeholder
+    const [duration, setDuration] = useState(0);
 
     const initialLessonLoaded = useRef(false);
 
@@ -100,26 +103,46 @@ const CourseLesson = () => {
             try {
                 const data = await courseCatalogService.getCourseById(courseId);
                 if (!active) return;
-
-                const raw = data?.raw_data || data;
                 setCourseData(data);
 
-                // Extract modules + nested lessons from raw API response
-                const rawModules = Array.isArray(raw?.modules) ? raw.modules : [];
-                const moduleList = rawModules.map((m) => ({
-                    id: String(m.id || ''),
-                    title: String(m.title || m.name || 'Untitled Module'),
-                    order: m.order || m.position || 0,
-                    lessons: Array.isArray(m.lessons) ? m.lessons.map((l) => ({
-                        id: String(l.id || ''),
-                        title: String(l.title || l.name || 'Untitled Lesson'),
-                        duration: l.duration || l.duration_minutes || 0,
-                        order: l.order || l.position || 0,
-                        video_url: l.video_url || l.video || '',
-                        description: l.description || '',
-                        content: l.content || '',
-                    })) : [],
-                }));
+                // Fetch modules list
+                const modulesRes = await apiService.get(`/lms/courses/${courseId}/modules`);
+                if (!active) return;
+                const rawModules = Array.isArray(modulesRes?.data) ? modulesRes.data
+                    : Array.isArray(modulesRes) ? modulesRes : [];
+
+                // Fetch lessons for every module in parallel
+                const moduleList = await Promise.all(
+                    rawModules.map(async (m) => {
+                        try {
+                            const lessonsRes = await apiService.get(`/lms/modules/${m.id}/lessons`);
+                            const rawLessons = Array.isArray(lessonsRes?.data) ? lessonsRes.data
+                                : Array.isArray(lessonsRes) ? lessonsRes : [];
+                            return {
+                                id: String(m.id || ''),
+                                title: String(m.title || m.name || 'Untitled Module'),
+                                order: m.order || m.position || 0,
+                                lessons: rawLessons.map((l) => ({
+                                    id: String(l.id || ''),
+                                    title: String(l.title || l.name || 'Untitled Lesson'),
+                                    duration: l.duration || l.duration_minutes || 0,
+                                    order: l.order || l.position || 0,
+                                    video_url: l.video_url || l.video || '',
+                                    description: l.description || '',
+                                    content: l.content || '',
+                                })),
+                            };
+                        } catch {
+                            return {
+                                id: String(m.id || ''),
+                                title: String(m.title || m.name || 'Untitled Module'),
+                                order: m.order || m.position || 0,
+                                lessons: [],
+                            };
+                        }
+                    })
+                );
+                if (!active) return;
 
                 setModules(moduleList);
 
@@ -142,8 +165,8 @@ const CourseLesson = () => {
                 }
 
                 // Non-blocking enrollment info
-                learnerEnrollmentService.getEnrollmentStatus(courseId)
-                    .then((res) => { if (active) setEnrollmentData(res); })
+                learnerEnrollmentService.getEnrollments({ course_id: courseId, per_page: 1 })
+                    .then((res) => { if (active) setEnrollmentData(res.data?.[0] || null); })
                     .catch(() => {});
             } catch (err) {
                 if (active) setError(err?.message || 'Failed to load course.');
@@ -167,18 +190,34 @@ const CourseLesson = () => {
 
         setLessonLoading(true);
         setCurrentTime(0);
+        setDuration(0);
         setIsPlaying(false);
+        if (videoRef.current) { videoRef.current.pause(); videoRef.current.src = ''; }
 
         courseCatalogService.getLessonById(selectedLessonId)
             .then((detail) => {
                 if (!active) return;
-                setCurrentLesson((prev) => ({ ...prev, ...detail }));
+                setCurrentLesson((prev) => ({
+                    ...prev,
+                    ...detail,
+                    // preserve cached video_url if the detail endpoint returns null/empty
+                    video_url: detail?.video_url || detail?.video || prev?.video_url || prev?.video || '',
+                }));
             })
             .catch(() => {}) // keep cached data on error
             .finally(() => { if (active) setLessonLoading(false); });
 
         return () => { active = false; };
     }, [selectedLessonId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // When currentLesson changes, force the native <video> element to reload the new src.
+    // React only updates the src attribute — the browser won't load the new source unless .load() is called.
+    useEffect(() => {
+        if (!videoRef.current || !currentLesson) return;
+        const src = getImageUrl(currentLesson.video_url || currentLesson.video || '');
+        if (!src || /youtube\.com|youtu\.be|vimeo\.com/.test(src)) return;
+        videoRef.current.load();
+    }, [currentLesson]);
 
     const allLessons = useMemo(() => modules.flatMap((m) => m.lessons), [modules]);
     const currentIndex = useMemo(
@@ -227,7 +266,38 @@ const CourseLesson = () => {
         );
     }
 
-    const videoSrc = currentLesson?.video_url || currentLesson?.video || courseData?.image || '';
+    const videoSrc = getImageUrl(currentLesson?.video_url || currentLesson?.video || '');
+
+    const isYouTube = /youtube\.com|youtu\.be/.test(videoSrc);
+    const isVimeo = /vimeo\.com/.test(videoSrc);
+    const isEmbed = isYouTube || isVimeo;
+
+    const getEmbedUrl = (url) => {
+        if (isYouTube) {
+            const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
+            return match ? `https://www.youtube.com/embed/${match[1]}?autoplay=1` : url;
+        }
+        if (isVimeo) {
+            const match = url.match(/vimeo\.com\/(\d+)/);
+            return match ? `https://player.vimeo.com/video/${match[1]}?autoplay=1` : url;
+        }
+        return url;
+    };
+
+    const handlePlayPause = () => {
+        const v = videoRef.current;
+        if (!v || !v.src) return;
+        if (v.readyState === 0) return; // no source loaded yet
+        if (v.paused) { v.play().catch(() => {}); } else { v.pause(); }
+    };
+
+    const handleSeek = (_, value) => {
+        const v = videoRef.current;
+        if (!v || !duration) return;
+        const time = (value / 100) * duration;
+        v.currentTime = time;
+        setCurrentTime(time);
+    };
     const tags = Array.isArray(courseData?.raw?.tags) ? courseData.raw.tags : [];
     const cert = courseData?.raw?.certificate;
     const hasCertificate = cert?.enabled ?? Boolean(cert);
@@ -282,7 +352,8 @@ const CourseLesson = () => {
                 <Button
                     startIcon={<ArrowBack sx={{ fontSize: 16 }} />}
                     size="small"
-                    onClick={() => navigate(`/explore/course/${courseId}`)}
+                    // onClick={() => navigate(`/explore/course/${courseId}`)}
+                    onClick={() => navigate(`/explore/my-learning`)}
                     sx={{ color: colors.textSecondary, textTransform: 'none', '&:hover': { color: colors.text } }}
                 >
                     Back to Course
@@ -420,7 +491,7 @@ const CourseLesson = () => {
                         <Button
                             fullWidth
                             startIcon={<ArrowBack />}
-                            onClick={() => navigate(`/explore/course/${courseId}`)}
+                            onClick={() => navigate(`/explore/my-learning`)}
                             sx={{
                                 justifyContent: 'flex-start',
                                 color: colors.textSecondary,
@@ -430,7 +501,7 @@ const CourseLesson = () => {
                                 '&:hover': { bgcolor: 'rgba(255,255,255,0.08)', color: colors.text },
                             }}
                         >
-                            Back to Course
+                            Back to Courses
                         </Button>
                     </Box>
                 </Box>
@@ -447,86 +518,71 @@ const CourseLesson = () => {
                         overflow: 'hidden',
                         mb: 3,
                     }}>
-                        {/* Thumbnail / video area */}
-                        <Box sx={{
-                            width: '100%',
-                            height: '100%',
-                            backgroundImage: videoSrc ? `url(${videoSrc})` : 'none',
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center',
-                            bgcolor: '#111827',
-                            position: 'relative',
-                        }}>
-                            <Box sx={{ position: 'absolute', inset: 0, bgcolor: 'rgba(0,0,0,0.35)' }} />
-
-                            {lessonLoading ? (
-                                <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)' }}>
-                                    <CircularProgress size={48} />
-                                </Box>
-                            ) : (
+                        {(lessonLoading || !currentLesson) ? (
+                            <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#111827' }}>
+                                <CircularProgress size={48} />
+                            </Box>
+                        ) : !videoSrc ? (
+                            <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: '#111827', gap: 1.5 }}>
+                                <PlayCircleOutline sx={{ fontSize: 56, color: colors.textSecondary }} />
+                                <Typography sx={{ color: colors.textSecondary, fontSize: '0.9rem' }}>No video available for this lesson</Typography>
+                            </Box>
+                        ) : isEmbed ? (
+                            <Box
+                                component="iframe"
+                                src={getEmbedUrl(videoSrc)}
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                                allowFullScreen
+                                sx={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+                            />
+                        ) : (
+                            <>
                                 <Box
-                                    sx={{
-                                        position: 'absolute',
-                                        top: '50%',
-                                        left: '50%',
-                                        transform: 'translate(-50%,-50%)',
-                                        cursor: 'pointer',
-                                    }}
-                                    onClick={() => setIsPlaying(!isPlaying)}
-                                >
-                                    <Box sx={{
-                                        width: 64,
-                                        height: 64,
-                                        borderRadius: '50%',
-                                        bgcolor: colors.primary,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        transition: 'transform 0.15s',
-                                        '&:hover': { transform: 'scale(1.1)' },
-                                    }}>
-                                        {isPlaying
-                                            ? <Pause sx={{ color: '#fff', fontSize: 32 }} />
-                                            : <PlayArrow sx={{ color: '#fff', fontSize: 32, ml: 0.5 }} />
-                                        }
+                                    component="video"
+                                    ref={videoRef}
+                                    src={videoSrc}
+                                    onTimeUpdate={() => setCurrentTime(videoRef.current?.currentTime || 0)}
+                                    onDurationChange={() => setDuration(videoRef.current?.duration || 0)}
+                                    onPlay={() => setIsPlaying(true)}
+                                    onPause={() => setIsPlaying(false)}
+                                    onEnded={() => setIsPlaying(false)}
+                                    sx={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain' }}
+                                />
+                                {/* Controls */}
+                                <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, bgcolor: 'rgba(0,0,0,0.8)', p: 1.5 }}>
+                                    <Slider
+                                        value={duration ? (currentTime / duration) * 100 : 0}
+                                        onChange={handleSeek}
+                                        sx={{
+                                            color: colors.primary,
+                                            height: 4,
+                                            p: 0,
+                                            mb: 1,
+                                            '& .MuiSlider-thumb': { width: 12, height: 12, '&:hover': { boxShadow: 'none' } },
+                                            '& .MuiSlider-rail': { bgcolor: 'rgba(255,255,255,0.3)' },
+                                        }}
+                                    />
+                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <Stack direction="row" alignItems="center" spacing={0.5}>
+                                            <IconButton size="small" sx={{ color: '#fff' }} onClick={handlePlayPause}>
+                                                {isPlaying ? <Pause fontSize="small" /> : <PlayArrow fontSize="small" />}
+                                            </IconButton>
+                                            <IconButton size="small" sx={{ color: '#fff' }} onClick={() => { if (videoRef.current) videoRef.current.muted = !videoRef.current.muted; }}>
+                                                <VolumeUp fontSize="small" />
+                                            </IconButton>
+                                            <Typography variant="caption" sx={{ color: '#fff', ml: 0.5 }}>
+                                                {formatTime(currentTime)} / {formatTime(duration)}
+                                            </Typography>
+                                        </Stack>
+                                        <Stack direction="row" alignItems="center" spacing={0.25}>
+                                            <IconButton size="small" sx={{ color: '#fff' }}><Subtitles fontSize="small" /></IconButton>
+                                            <IconButton size="small" sx={{ color: '#fff' }}><Settings fontSize="small" /></IconButton>
+                                            <IconButton size="small" sx={{ color: '#fff' }} onClick={() => videoRef.current?.requestFullscreen?.()}><Fullscreen fontSize="small" /></IconButton>
+                                        </Stack>
                                     </Box>
                                 </Box>
-                            )}
-                        </Box>
-
-                        {/* Controls */}
-                        <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, bgcolor: 'rgba(0,0,0,0.8)', p: 1.5 }}>
-                            <Slider
-                                value={(currentTime / duration) * 100}
-                                onChange={(_, v) => setCurrentTime((v / 100) * duration)}
-                                sx={{
-                                    color: colors.primary,
-                                    height: 4,
-                                    p: 0,
-                                    mb: 1,
-                                    '& .MuiSlider-thumb': { width: 12, height: 12, '&:hover': { boxShadow: 'none' } },
-                                    '& .MuiSlider-rail': { bgcolor: 'rgba(255,255,255,0.3)' },
-                                }}
-                            />
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <Stack direction="row" alignItems="center" spacing={0.5}>
-                                    <IconButton size="small" sx={{ color: '#fff' }} onClick={() => setIsPlaying(!isPlaying)}>
-                                        {isPlaying ? <Pause fontSize="small" /> : <PlayArrow fontSize="small" />}
-                                    </IconButton>
-                                    <IconButton size="small" sx={{ color: '#fff' }}>
-                                        <VolumeUp fontSize="small" />
-                                    </IconButton>
-                                    <Typography variant="caption" sx={{ color: '#fff', ml: 0.5 }}>
-                                        {formatTime(currentTime)} / {formatTime(duration)}
-                                    </Typography>
-                                </Stack>
-                                <Stack direction="row" alignItems="center" spacing={0.25}>
-                                    <IconButton size="small" sx={{ color: '#fff' }}><Subtitles fontSize="small" /></IconButton>
-                                    <IconButton size="small" sx={{ color: '#fff' }}><Settings fontSize="small" /></IconButton>
-                                    <IconButton size="small" sx={{ color: '#fff' }}><Fullscreen fontSize="small" /></IconButton>
-                                </Stack>
-                            </Box>
-                        </Box>
+                            </>
+                        )}
                     </Box>
 
                     {/* Lesson header + nav */}

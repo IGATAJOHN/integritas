@@ -166,7 +166,7 @@ const normalizeCourse = (course = {}) => {
         image,
         topics: categoryNames,
         topic: categoryNames[0] || '',
-        trailerUrl: toTrimmedString(
+        trailerUrl: getImageUrl(
             course.trailer_url ||
             course.preview_video_url ||
             course.intro_video_url

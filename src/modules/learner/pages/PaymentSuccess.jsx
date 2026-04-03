@@ -286,8 +286,15 @@ const PaymentSuccess = () => {
                     <Button
                         variant="contained"
                         onClick={() => {
-                            const courseId = enrollment?.course_id || course?.courseId;
-                            navigate(courseId ? `/explore/lesson/${courseId}` : '/explore');
+                            const courseId =
+                                enrollment?.course_id ||
+                                enrollment?.course?.id ||
+                                enrollment?.courseId ||
+                                course?.courseId ||
+                                course?.id ||
+                                sessionStorage.getItem('pending_course_id');
+                            sessionStorage.removeItem('pending_course_id');
+                            navigate(courseId ? `/explore/lesson/${courseId}` : '/learner');
                         }}
                         startIcon={<CheckCircle sx={{ fontSize: 20 }} />}
                         sx={{

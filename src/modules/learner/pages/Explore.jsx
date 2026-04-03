@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../../contexts';
 import {
     Alert,
     Box,
@@ -30,7 +29,6 @@ import {
 } from '@mui/icons-material';
 import CourseCard from '../components/CourseCard';
 import { courseCatalogService } from '../services';
-import { learnerEnrollmentService } from '../services';
 
 const SORT_OPTIONS = ['Most Popular', 'Newest', 'Highest Rated', 'Price: Low to High'];
 
@@ -53,7 +51,6 @@ const mapSortBy = (value) => {
 
 const Explore = () => {
     const navigate = useNavigate();
-    const { isAuthenticated } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
     const [sortBy, setSortBy] = useState('Most Popular');
     const [activeTopic, setActiveTopic] = useState('All Topics');
@@ -114,19 +111,19 @@ const Explore = () => {
                 if (minimumRating > 0) rows = rows.filter((c) => Number(c.rating || 0) >= minimumRating);
                 setCourses(rows);
 
-                // Fetch access info for all courses if authenticated (non-blocking)
-                if (isAuthenticated && rows.length > 0) {
-                    Promise.allSettled(rows.map((c) => learnerEnrollmentService.getCourseAccess(c.id)))
-                        .then((results) => {
+                // Fetch essential courses list to label badges (non-blocking, works for all users)
+                if (rows.length > 0) {
+                    courseCatalogService.listEssentialCourses({ per_page: 100 })
+                        .then((essentialRes) => {
                             if (!active) return;
+                            const essentialIds = new Set((essentialRes.data || []).map((c) => c.id));
                             const map = {};
-                            results.forEach((r, i) => {
-                                if (r.status === 'fulfilled' && r.value) {
-                                    map[rows[i].id] = r.value;
-                                }
+                            rows.forEach((c) => {
+                                map[c.id] = { is_essential: essentialIds.has(c.id) };
                             });
                             setAccessMap(map);
-                        });
+                        })
+                        .catch(() => {});
                 }
 
                 // Set featured course once from the first batch of results.

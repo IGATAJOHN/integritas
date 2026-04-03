@@ -1,5 +1,5 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
-import { NotFound, LandingPage, LoginPage, SignupPage, VerifyPage, ForgotPasswordPage, InviteAcceptPage } from '../pages';
+import { NotFound, LandingPage, AboutUsPage, PartnersPage, LoginPage, SignupPage, VerifyPage, ForgotPasswordPage, InviteAcceptPage } from '../pages';
 import { adminRoutes } from '../modules/admin';
 import { tutorRoutes } from '../modules/tutor';
 import { learnerRoutes } from '../modules/learner';
@@ -19,6 +19,14 @@ const router = createBrowserRouter([
     {
         path: '/',
         element: <LandingPage />,
+    },
+    {
+        path: '/about-us',
+        element: <AboutUsPage />,
+    },
+    {
+        path: '/partners',
+        element: <PartnersPage />,
     },
     {
         path: '/login',

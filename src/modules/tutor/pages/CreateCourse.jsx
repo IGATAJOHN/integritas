@@ -419,10 +419,9 @@ const CreateCourse = () => {
                         const lesson = module.lessons[j];
                         await tutorLessonService.createLesson(moduleId, {
                             title: lesson.title,
-                            type: lesson.type || 'text',
+                            type: lesson.type || 'article',
                             content: lesson.content || '',
-                            duration: lesson.duration || 0,
-                            position: j + 1,
+                            duration_minutes: lesson.duration_minutes || lesson.duration || 0,
                         });
                     }
                 }
