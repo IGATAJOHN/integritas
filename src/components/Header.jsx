@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
     Box,
@@ -16,6 +16,7 @@ import {
 import { LightMode, DarkMode, Menu, Close } from '@mui/icons-material';
 import { useThemeMode } from '../contexts';
 import logo from '../assets/images/GGH_logo.png';
+import { useAuth } from '../contexts';
 
 const Header = () => {
     const navItems = [
@@ -26,6 +27,8 @@ const Header = () => {
     const { mode, toggleThemeMode, isDark } = useThemeMode();
     const theme = useTheme();
     const [mobileOpen, setMobileOpen] = useState(false);
+    const { isAuthenticated } = useAuth();
+    
 
     const handleDrawerToggle = () => {
         setMobileOpen(!mobileOpen);
@@ -147,6 +150,22 @@ const Header = () => {
                 >
                     Sign Up
                 </Button>
+                {!isAuthenticated && (
+                    <Button
+                        component={Link}
+                        to="/login"
+                        variant="contained"
+                        sx={{
+                            bgcolor: 'rgba(17, 82, 212, 1)',
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            borderRadius: 1,
+                            px: 3
+                        }}
+                    >
+                        Log in
+                    </Button>
+                )}
             </Stack>
 
             {/* Theme Toggle in Drawer */}

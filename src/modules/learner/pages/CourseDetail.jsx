@@ -47,6 +47,7 @@ import { alpha } from '@mui/material/styles';
 import logo from '../../../assets/images/GGH_logo.png';
 import Footer from '../../../components/Footer';
 import { courseCatalogService, learnerEnrollmentService } from '../services';
+import Header from '../../../components/Header';
 
 const colors = {
     bg: '#0B0F19',
@@ -288,94 +289,8 @@ const CourseDetail = () => {
 
     return (
         <Box sx={{ bgcolor: colors.bg, color: colors.text, minHeight: '100vh' }}>
-            {/* Header */}
-            <Box component="header" sx={{
-                bgcolor: colors.paper,
-                px: { xs: 2, md: '40px' },
-                py: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                borderBottom: `1px solid ${colors.border}`,
-                position: 'sticky',
-                top: 0,
-                zIndex: 100
-            }}>
-                <Stack direction="row" alignItems="center" spacing={{ xs: 2, sm: 3, md: 4 }}>
-                    <Stack direction="row" alignItems="center" spacing={1.5} component={Link} to="/" sx={{ textDecoration: 'none', color: colors.text }}>
-                        <Box component="img" src={logo} alt="Integritas Hub Logo" sx={{ width: 32, height: 32, objectFit: 'contain' }} />
-                        <Typography variant="subtitle1" sx={{ fontWeight: 700, display: { xs: 'none', sm: 'block' } }}>Integritas Hub</Typography>
-                    </Stack>
-
-                    <Stack direction="row" spacing={3} sx={{ display: { xs: 'none', md: 'flex' } }}>
-                        {['Courses', 'Community', 'Resources', 'About'].map((link) => (
-                            <Typography
-                                key={link}
-                                component={Link}
-                                to={`/${link.toLowerCase()}`}
-                                sx={{
-                                    color: colors.textSecondary,
-                                    textDecoration: 'none',
-                                    fontSize: '0.9rem',
-                                    fontWeight: 500,
-                                    '&:hover': { color: colors.text }
-                                }}
-                            >
-                                {link}
-                            </Typography>
-                        ))}
-                    </Stack>
-                </Stack>
-
-                <Stack direction="row" alignItems="center" spacing={2}>
-                    <Box sx={{
-                        bgcolor: colors.card,
-                        borderRadius: 1,
-                        px: 2,
-                        display: { xs: 'none', sm: 'flex' },
-                        alignItems: 'center',
-                        gap: 1,
-                        width: '260px',
-                        height: '40px'
-                    }}>
-                        <SearchIcon sx={{ color: colors.textSecondary, fontSize: 20 }} />
-                        <InputBase
-                            placeholder="Search courses"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            sx={{
-                                color: colors.text,
-                                fontSize: '0.9rem',
-                                width: '100%',
-                                '& input': {
-                                    border: 'none',
-                                    outline: 'none',
-                                    '&:focus': {
-                                        border: 'none',
-                                        outline: 'none'
-                                    }
-                                }
-                            }}
-                        />
-                    </Box>
-                    {!isAuthenticated && (
-                        <Button
-                            component={Link}
-                            to="/login"
-                            variant="contained"
-                            sx={{
-                                bgcolor: colors.primary,
-                                textTransform: 'none',
-                                fontWeight: 600,
-                                borderRadius: 1,
-                                px: 3
-                            }}
-                        >
-                            Log in
-                        </Button>
-                    )}
-                </Stack>
-            </Box>
+            
+            <Header/>
 
             {/* Main Content */}
             <Box sx={{
