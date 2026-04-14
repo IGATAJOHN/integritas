@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
     Box,
@@ -151,6 +151,33 @@ const CourseDetail = () => {
     const [courseData, setCourseData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    const curriculumSummary = useMemo(() => {
+        const modules = courseData?.modules || [];
+        const moduleCount = modules.length;
+        let lessonCount = 0;
+        let totalMinutes = 0;
+        modules.forEach((m) => {
+            const lessons = Array.isArray(m.lessons) ? m.lessons : [];
+            lessonCount += m.lessons_count ?? lessons.length;
+            if (typeof m.duration_minutes === 'number') {
+                totalMinutes += m.duration_minutes;
+            } else {
+                totalMinutes += lessons.reduce((sum, l) => sum + (Number(l.duration_minutes) || 0), 0);
+            }
+        });
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        const durationLabel = totalMinutes > 0
+            ? (hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`)
+            : null;
+        const parts = [
+            `${moduleCount} ${moduleCount === 1 ? 'Module' : 'Modules'}`,
+            `${lessonCount} ${lessonCount === 1 ? 'Lesson' : 'Lessons'}`,
+        ];
+        if (durationLabel) parts.push(`${durationLabel} total length`);
+        return parts.join(' • ');
+    }, [courseData]);
     const [enrolling, setEnrolling] = useState(false);
     const [enrollError, setEnrollError] = useState(null);
     const [accessInfo, setAccessInfo] = useState(null);
@@ -432,7 +459,7 @@ const CourseDetail = () => {
                                 <Stack direction="row" justifyContent="space-between" alignItems="baseline" sx={{ mb: 3 }}>
                                     <Typography variant="h5" sx={{ fontWeight: 700 }}>Course content</Typography>
                                     <Typography sx={{ color: colors.textSecondary, fontSize: '0.875rem', fontWeight: 500 }}>
-                                        5 Modules • 24 Lessons • 12h 30m total length
+                                        {curriculumSummary}
                                     </Typography>
                                 </Stack>
 
@@ -463,7 +490,7 @@ const CourseDetail = () => {
                                                 <Box>
                                                     <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', mb: 0.5 }}>{module.title}</Typography>
                                                     <Typography sx={{ color: colors.textSecondary, fontSize: '0.8rem' }}>
-                                                        {module.lessons_count ?? module.lessons ?? 0} Lessons
+                                                        {module.lessons_count ?? (Array.isArray(module.lessons) ? module.lessons.length : module.lessons) ?? 0} Lessons
                                                         {module.duration_minutes ? ` • ${module.duration_minutes}m` : module.duration ? ` • ${module.duration}` : ''}
                                                     </Typography>
                                                 </Box>
@@ -573,7 +600,7 @@ const CourseDetail = () => {
                         {activeTab === 1 && (
                             <Box>
                                 <Typography sx={{ color: colors.textSecondary, mb: 3 }}>
-                                    5 Modules • 24 Lessons • 12h 30m total length
+                                    {curriculumSummary}
                                 </Typography>
                                 {courseData.modules.map((module) => (
                                     <Accordion
@@ -592,7 +619,7 @@ const CourseDetail = () => {
                                             <Box>
                                                 <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', mb: 0.5 }}>{module.title}</Typography>
                                                 <Typography sx={{ color: colors.textSecondary, fontSize: '0.8rem' }}>
-                                                    {module.lessons} Lessons • {module.duration}
+                                                    {module.lessons_count ?? (Array.isArray(module.lessons) ? module.lessons.length : module.lessons) ?? 0} Lessons • {module.duration}
                                                 </Typography>
                                             </Box>
                                         </AccordionSummary>
@@ -762,7 +789,7 @@ const CourseDetail = () => {
                                     </Button>
                                 )}
 
-                                <Button
+                                {/* <Button
                                     fullWidth
                                     variant="outlined"
                                     sx={{
@@ -777,7 +804,7 @@ const CourseDetail = () => {
                                     }}
                                 >
                                     Download Syllabus
-                                </Button>
+                                </Button> */}
 
                                 {/* Course Details */}
                                 <Stack spacing={1.5}>

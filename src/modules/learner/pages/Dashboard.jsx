@@ -229,7 +229,7 @@ const LearnerDashboard = () => {
                                 <Button
                                     variant="contained"
                                     startIcon={<PlayArrow />}
-                                    onClick={() => navigate(`/learner/my-enrollments`)}
+                                    onClick={() => navigate(`/explore/enrollments`)}
                                     sx={{ borderRadius: 2, px: 3 }}
                                 >
                                     Resume Course
@@ -247,7 +247,7 @@ const LearnerDashboard = () => {
                     <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
                         Enroll in a course to start your learning journey.
                     </Typography>
-                    <Button variant="contained" onClick={() => navigate('/learner/explore')} sx={{ borderRadius: 2 }}>
+                    <Button variant="contained" onClick={() => navigate('/explore')} sx={{ borderRadius: 2 }}>
                         Explore Courses
                     </Button>
                 </Card>
@@ -264,7 +264,7 @@ const LearnerDashboard = () => {
                             <Typography variant="h6" sx={{ fontWeight: 700, color: theme.palette.text.primary }}>
                                 Active Courses
                             </Typography>
-                            <Button size="small" sx={{ textTransform: 'none', color: '#3B82F6' }} onClick={() => navigate('/learner/my-enrollments')}>View All</Button>
+                            <Button size="small" sx={{ textTransform: 'none', color: '#3B82F6' }} onClick={() => navigate('/explore/enrollments')}>View All</Button>
                         </Box>
                         {activeCourses.length === 0 ? (
                             <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
@@ -386,7 +386,11 @@ const LearnerDashboard = () => {
                                                     variant="outlined"
                                                     fullWidth
                                                     size="small"
-                                                    onClick={() => navigate(`/explore/course/${course.id}`)}
+                                                    disabled={!String(course?.id || '').trim()}
+                                                    onClick={() => {
+                                                        const id = String(course?.id || '').trim();
+                                                        if (id) navigate(`/explore/course/${id}`);
+                                                    }}
                                                     sx={{
                                                         borderColor: 'rgba(255, 255, 255, 0.1)',
                                                         color: theme.palette.text.primary,
