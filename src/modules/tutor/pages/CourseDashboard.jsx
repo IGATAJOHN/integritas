@@ -56,7 +56,9 @@ import { formatCurrency, getImageUrl } from '../../../utils';
 import { tutorModuleService } from '../services/moduleService';
 import { tutorLessonService } from '../services/lessonService';
 import { tutorQuestionService } from '../services/questionService';
-import { modalStyle, textFieldStyle, selectStyle, selectMenuProps } from '../../../styles/formStyles';
+import { modalStyle, textFieldStyle, selectStyle, selectMenuProps, scrollableModalBody } from '../../../styles/formStyles';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 
 /**
  * @param {string} type 
@@ -90,8 +92,9 @@ const CourseDashboard = () => {
     const [moduleDescription, setModuleDescription] = useState('');
     const [lessonModalOpen, setLessonModalOpen] = useState(false);
     const [lessonTitle, setLessonTitle] = useState('');
-    const [lessonType, setLessonType] = useState('video');
-    const [lessonDuration, setLessonDuration] = useState(0);
+    const [lessonVideoUrl, setLessonVideoUrl] = useState('');
+    const [lessonDurationHours, setLessonDurationHours] = useState(0);
+    const [lessonDurationMinutes, setLessonDurationMinutes] = useState(0);
     const [lessonContent, setLessonContent] = useState('');
     const [lessonFileName, setLessonFileName] = useState('');
     const [lessonFile, setLessonFile] = useState(null);
@@ -407,86 +410,43 @@ const CourseDashboard = () => {
             return;
         }
 
-        if (!lessonType) {
-            setSnackbar({ open: true, message: 'Please select a lesson type', severity: 'error' });
+        const plainContent = String(lessonContent).replace(/<(.|\n)*?>/g, '').trim();
+        if (!plainContent) {
+            setSnackbar({ open: true, message: 'Please provide lesson content', severity: 'error' });
             return;
         }
 
-        // Type-specific validation
-        if (lessonType === 'article') {
-            if (!String(lessonContent).trim()) {
-                setSnackbar({ open: true, message: 'Please provide article content', severity: 'error' });
-                return;
-            }
+        const videoUrl = String(lessonVideoUrl).trim();
+        const hasVideoUrl = /^https?:\/\//.test(videoUrl);
+        if (videoUrl && !hasVideoUrl) {
+            setSnackbar({ open: true, message: 'Video URL must start with http:// or https://', severity: 'error' });
+            return;
         }
 
-        if (lessonType === 'video') {
-            const hasUrl = /^https?:\/\//.test(String(lessonContent).trim());
-            const hasFile = !!lessonFile;
-            if (!hasUrl && !hasFile) {
-                setSnackbar({ open: true, message: 'Upload a video file or paste a video URL', severity: 'error' });
-                return;
-            }
-        }
-
-        if (lessonType === 'assignment') {
-            if (!lessonFile) {
-                setSnackbar({ open: true, message: 'Please upload a file', severity: 'error' });
-                return;
-            }
-        }
+        const totalMinutes = (parseInt(lessonDurationHours) || 0) * 60 + (parseInt(lessonDurationMinutes) || 0);
 
         try {
             setActionLoading(true);
 
-            // API type values: video | article | quiz | assignment
-            const apiType = lessonType || 'article';
-            const videoUrl = lessonType === 'video' ? String(lessonContent).trim() : '';
-            const hasVideoUrl = /^https?:\/\//.test(videoUrl);
-
+            const apiType = 'video';
             let created;
 
-            if (lessonType === 'video' && lessonFile) {
-                // Video file upload — send as multipart/form-data on the create endpoint
+            if (lessonFile) {
                 const fd = new FormData();
                 fd.append('title', trimmedTitle);
                 fd.append('type', apiType);
                 fd.append('video_file', lessonFile);
-                if (lessonDuration) fd.append('duration_minutes', String(parseInt(lessonDuration) || 0));
+                fd.append('content', lessonContent);
+                if (totalMinutes) fd.append('duration_minutes', String(totalMinutes));
                 created = await tutorLessonService.createLessonMultipart(selectedModuleForLesson, fd);
             } else {
-                // JSON payload for all other cases
-                const payload = { title: trimmedTitle, type: apiType };
-                if (lessonDuration) payload.duration_minutes = parseInt(lessonDuration) || 0;
-
-                if (apiType === 'article') {
-                    payload.content = lessonContent.trim();
-                } else if (apiType === 'video' && hasVideoUrl) {
-                    payload.video_url = videoUrl;
-                } else if (apiType === 'quiz') {
-                    try {
-                        const parsed = JSON.parse(lessonContent);
-                        if (parsed && typeof parsed === 'object') payload.settings = parsed;
-                    } catch (e) { /* ignore */ }
-                } else if (apiType === 'assignment') {
-                    payload.summary = lessonFileName || '';
-                }
-
+                const payload = { title: trimmedTitle, type: apiType, content: lessonContent };
+                if (totalMinutes) payload.duration_minutes = totalMinutes;
+                if (hasVideoUrl) payload.video_url = videoUrl;
                 created = await tutorLessonService.createLesson(selectedModuleForLesson, payload);
             }
 
             console.debug('Lesson create response:', created);
-
-            // Upload file for assignment type (separate media endpoint)
-            if (apiType === 'assignment' && lessonFile && created?.id) {
-                try {
-                    const formData = new FormData();
-                    formData.append('file', lessonFile);
-                    await tutorLessonService.uploadLessonMedia(created.id, formData);
-                } catch (uploadErr) {
-                    console.warn('Assignment file upload failed:', uploadErr);
-                }
-            }
 
             // Refresh module lessons after creation
             try {
@@ -515,8 +475,9 @@ const CourseDashboard = () => {
             setLessonModalOpen(false);
             setSelectedModuleForLesson(null);
             setLessonTitle('');
-            setLessonType('video');
-            setLessonDuration(0);
+            setLessonVideoUrl('');
+            setLessonDurationHours(0);
+            setLessonDurationMinutes(0);
             setLessonContent('');
             setLessonFileName('');
             setLessonFile(null);
@@ -802,7 +763,17 @@ const CourseDashboard = () => {
                                                 <Button
                                                     fullWidth
                                                     startIcon={<Add />}
-                                                    onClick={() => { setSelectedModuleForLesson(mod.id); setLessonTitle(''); setLessonContent(''); setLessonModalOpen(true); }}
+                                                    onClick={() => {
+                                                        setSelectedModuleForLesson(mod.id);
+                                                        setLessonTitle('');
+                                                        setLessonContent('');
+                                                        setLessonVideoUrl('');
+                                                        setLessonFile(null);
+                                                        setLessonFileName('');
+                                                        setLessonDurationHours(0);
+                                                        setLessonDurationMinutes(0);
+                                                        setLessonModalOpen(true);
+                                                    }}
                                                     sx={{
                                                         mt: 1,
                                                         color: '#3B82F6',
@@ -1159,12 +1130,12 @@ const CourseDashboard = () => {
 
             {/* Lesson Modal */}
             <Modal open={lessonModalOpen} onClose={() => setLessonModalOpen(false)}>
-                <Box sx={modalStyle}>
-                    <Box sx={{ background: 'linear-gradient(135deg, #1152D4 0%, #0D42AF 100%)', p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box sx={{ ...modalStyle, width: { xs: '95vw', sm: '90vw', md: 900 }, maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+                    <Box sx={{ background: 'linear-gradient(135deg, #1152D4 0%, #0D42AF 100%)', p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
                         <Typography sx={{ color: '#fff', fontWeight: 600 }}>Add Lesson</Typography>
                         <IconButton onClick={() => setLessonModalOpen(false)} sx={{ color: '#fff' }}><Close /></IconButton>
                     </Box>
-                    <Box sx={{ p: 3 }}>
+                    <Box sx={{ p: 3, overflowY: 'auto', flex: 1, ...scrollableModalBody }}>
                         <Stack spacing={2}>
                             <Box>
                                 <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1 }}>Lesson Title</Typography>
@@ -1176,169 +1147,153 @@ const CourseDashboard = () => {
                                     sx={textFieldStyle}
                                 />
                             </Box>
-                            <Box>
-                                <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1 }}>Lesson Type</Typography>
-                                <Select
-                                    fullWidth
-                                    value={lessonType}
-                                    onChange={(e) => setLessonType(e.target.value)}
-                                    sx={selectStyle}
-                                    MenuProps={selectMenuProps}
-                                >
-                                    <MenuItem value="video">Video</MenuItem>
-                                    <MenuItem value="article">Text / Article</MenuItem>
-                                    <MenuItem value="quiz">Quiz</MenuItem>
-                                    <MenuItem value="assignment">File Attachment</MenuItem>
-                                </Select>
-                            </Box>
-
-                            {/* Content based on type */}
-                            {lessonType === 'video' && (
-                                <Box>
-                                    <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1 }}>Upload Video</Typography>
-                                    <input
-                                        type="file"
-                                        accept="video/*"
-                                        style={{ display: 'none' }}
-                                        id="lesson-video-upload"
-                                        onChange={(e) => {
-                                            const file = e.target.files[0];
-                                            if (file) {
-                                                setLessonFile(file);
-                                                setLessonFileName(file.name);
-                                                setLessonContent('');
-                                            }
-                                        }}
-                                    />
-                                    <label htmlFor="lesson-video-upload">
-                                        <Box
-                                            sx={{
-                                                bgcolor: '#1E293B',
-                                                border: (lessonFile || lessonFileName) ? '2px solid #10B981' : '2px dashed #374151',
-                                                borderRadius: 2,
-                                                p: 3,
-                                                textAlign: 'center',
-                                                cursor: 'pointer',
-                                                '&:hover': { borderColor: '#1152D4' },
-                                            }}
-                                        >
-                                            {(lessonFile || lessonFileName) ? (
-                                                <Stack alignItems="center" spacing={1}>
-                                                    <PlayCircleOutline sx={{ fontSize: 36, color: '#10B981' }} />
-                                                    <Typography sx={{ color: '#fff', fontSize: '0.85rem' }}>
-                                                        {lessonFileName}
-                                                    </Typography>
-                                                    <Typography sx={{ color: '#6B7280', fontSize: '0.75rem' }}>
-                                                        Click to change
-                                                    </Typography>
-                                                </Stack>
-                                            ) : (
-                                                <Stack alignItems="center" spacing={1}>
-                                                    <CloudUpload sx={{ fontSize: 36, color: '#6B7280' }} />
-                                                    <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem' }}>
-                                                        Click to upload video
-                                                    </Typography>
-                                                    <Typography sx={{ color: '#6B7280', fontSize: '0.7rem' }}>
-                                                        MP4, WebM, MOV (max. 500MB)
-                                                    </Typography>
-                                                </Stack>
-                                            )}
-                                        </Box>
-                                    </label>
-                                    <Typography sx={{ color: '#6B7280', fontSize: '0.75rem', textAlign: 'center', my: 1 }}>— or —</Typography>
-                                    <TextField
-                                        fullWidth
-                                        placeholder="Paste a video URL (https://...)"
-                                        value={lessonContent}
-                                        onChange={(e) => {
-                                            setLessonContent(e.target.value);
-                                            if (e.target.value) { setLessonFile(null); setLessonFileName(''); }
-                                        }}
-                                        sx={textFieldStyle}
-                                        slotProps={{ htmlInput: { maxLength: 2048 } }}
-                                    />
-                                </Box>
-                            )}
-
-                            {lessonType === 'article' && (
-                                <Box>
-                                    <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1 }}>Article Content</Typography>
-                                    <TextField
-                                        fullWidth
-                                        multiline
-                                        rows={6}
-                                        placeholder="Write your lesson content here..."
-                                        value={lessonContent}
-                                        onChange={(e) => setLessonContent(e.target.value)}
-                                        sx={textFieldStyle}
-                                    />
-                                </Box>
-                            )}
-
-                            {lessonType === 'assignment' && (
-                                <Box>
-                                    <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1 }}>Upload File</Typography>
-                                    <input
-                                        type="file"
-                                        accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip"
-                                        style={{ display: 'none' }}
-                                        id="lesson-file-upload"
-                                        onChange={(e) => {
-                                            const file = e.target.files[0];
-                                            if (file) {
-                                                setLessonFile(file);
-                                                setLessonFileName(file.name);
-                                                setLessonContent('');
-                                            }
-                                        }}
-                                    />
-                                    <label htmlFor="lesson-file-upload">
-                                        <Box
-                                            sx={{
-                                                bgcolor: '#1E293B',
-                                                border: (lessonFile || lessonFileName) ? '2px solid #10B981' : '2px dashed #374151',
-                                                borderRadius: 2,
-                                                p: 3,
-                                                textAlign: 'center',
-                                                cursor: 'pointer',
-                                                '&:hover': { borderColor: '#1152D4' },
-                                            }}
-                                        >
-                                            {(lessonFile || lessonFileName) ? (
-                                                <Stack alignItems="center" spacing={1}>
-                                                    <AttachFile sx={{ fontSize: 36, color: '#10B981' }} />
-                                                    <Typography sx={{ color: '#fff', fontSize: '0.85rem' }}>
-                                                        {lessonFileName}
-                                                    </Typography>
-                                                    <Typography sx={{ color: '#6B7280', fontSize: '0.75rem' }}>
-                                                        Click to change
-                                                    </Typography>
-                                                </Stack>
-                                            ) : (
-                                                <Stack alignItems="center" spacing={1}>
-                                                    <CloudUpload sx={{ fontSize: 36, color: '#6B7280' }} />
-                                                    <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem' }}>
-                                                        Click to upload file
-                                                    </Typography>
-                                                    <Typography sx={{ color: '#6B7280', fontSize: '0.7rem' }}>
-                                                        PDF, DOC, PPT, XLS, ZIP
-                                                    </Typography>
-                                                </Stack>
-                                            )}
-                                        </Box>
-                                    </label>
-                                </Box>
-                            )}
 
                             <Box>
-                                <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1 }}>Duration (minutes)</Typography>
+                                <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                                    <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem' }}>Video</Typography>
+                                    <Chip label="Optional" size="small" sx={{ bgcolor: 'rgba(156, 163, 175, 0.15)', color: '#9CA3AF', fontSize: '0.7rem', height: 20 }} />
+                                </Stack>
+                                <input
+                                    type="file"
+                                    accept="video/*"
+                                    style={{ display: 'none' }}
+                                    id="lesson-video-upload"
+                                    onChange={(e) => {
+                                        const file = e.target.files[0];
+                                        if (file) {
+                                            setLessonFile(file);
+                                            setLessonFileName(file.name);
+                                            setLessonVideoUrl('');
+                                        }
+                                    }}
+                                />
+                                <label htmlFor="lesson-video-upload">
+                                    <Box
+                                        sx={{
+                                            bgcolor: '#1E293B',
+                                            border: (lessonFile || lessonFileName) ? '2px solid #10B981' : '2px dashed #374151',
+                                            borderRadius: 2,
+                                            p: 3,
+                                            textAlign: 'center',
+                                            cursor: 'pointer',
+                                            '&:hover': { borderColor: '#1152D4' },
+                                        }}
+                                    >
+                                        {(lessonFile || lessonFileName) ? (
+                                            <Stack alignItems="center" spacing={1}>
+                                                <PlayCircleOutline sx={{ fontSize: 36, color: '#10B981' }} />
+                                                <Typography sx={{ color: '#fff', fontSize: '0.85rem' }}>
+                                                    {lessonFileName}
+                                                </Typography>
+                                                <Typography sx={{ color: '#6B7280', fontSize: '0.75rem' }}>
+                                                    Click to change
+                                                </Typography>
+                                            </Stack>
+                                        ) : (
+                                            <Stack alignItems="center" spacing={1}>
+                                                <CloudUpload sx={{ fontSize: 36, color: '#6B7280' }} />
+                                                <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem' }}>
+                                                    Click to upload video
+                                                </Typography>
+                                                <Typography sx={{ color: '#6B7280', fontSize: '0.7rem' }}>
+                                                    MP4, WebM, MOV (max. 500MB)
+                                                </Typography>
+                                            </Stack>
+                                        )}
+                                    </Box>
+                                </label>
+                                <Typography sx={{ color: '#6B7280', fontSize: '0.75rem', textAlign: 'center', my: 1 }}>— or —</Typography>
                                 <TextField
                                     fullWidth
-                                    type="number"
-                                    value={lessonDuration}
-                                    onChange={(e) => setLessonDuration(parseInt(e.target.value) || 0)}
+                                    placeholder="Paste a video URL (https://...)"
+                                    value={lessonVideoUrl}
+                                    onChange={(e) => {
+                                        setLessonVideoUrl(e.target.value);
+                                        if (e.target.value) { setLessonFile(null); setLessonFileName(''); }
+                                    }}
                                     sx={textFieldStyle}
+                                    slotProps={{ htmlInput: { maxLength: 2048 } }}
                                 />
+                            </Box>
+
+                            <Box>
+                                <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1 }}>Lesson Content</Typography>
+                                <Box
+                                    sx={{
+                                        bgcolor: '#1E293B',
+                                        borderRadius: 1.5,
+                                        border: '1px solid #374151',
+                                        '& .ql-toolbar': {
+                                            borderTopLeftRadius: 6,
+                                            borderTopRightRadius: 6,
+                                            borderColor: '#374151',
+                                            bgcolor: '#111827',
+                                        },
+                                        '& .ql-container': {
+                                            borderBottomLeftRadius: 6,
+                                            borderBottomRightRadius: 6,
+                                            borderColor: '#374151',
+                                            minHeight: 220,
+                                            fontSize: '0.9rem',
+                                        },
+                                        '& .ql-editor': { color: '#FFFFFF', minHeight: 220 },
+                                        '& .ql-editor.ql-blank::before': { color: '#6B7280', fontStyle: 'normal' },
+                                        '& .ql-stroke': { stroke: '#9CA3AF' },
+                                        '& .ql-fill': { fill: '#9CA3AF' },
+                                        '& .ql-picker-label': { color: '#9CA3AF' },
+                                    }}
+                                >
+                                    <ReactQuill
+                                        theme="snow"
+                                        value={lessonContent}
+                                        onChange={setLessonContent}
+                                        placeholder="Write your lesson content here..."
+                                        modules={{
+                                            toolbar: [
+                                                [{ 'header': [1, 2, 3, false] }],
+                                                ['bold', 'italic', 'underline', 'strike'],
+                                                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                                                ['link', 'blockquote', 'code-block'],
+                                                ['clean']
+                                            ],
+                                        }}
+                                    />
+                                </Box>
+                            </Box>
+
+                            <Box>
+                                <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1 }}>Duration</Typography>
+                                <Stack direction="row" spacing={2} alignItems="center">
+                                    <TextField
+                                        type="number"
+                                        label="Hours"
+                                        value={lessonDurationHours === 0 ? '' : lessonDurationHours}
+                                        onFocus={(e) => e.target.select()}
+                                        onChange={(e) => {
+                                            const raw = e.target.value;
+                                            if (raw === '') { setLessonDurationHours(0); return; }
+                                            const v = Math.max(0, parseInt(raw) || 0);
+                                            setLessonDurationHours(v);
+                                        }}
+                                        slotProps={{ htmlInput: { min: 0, max: 23, placeholder: '0' } }}
+                                        sx={{ ...textFieldStyle, width: 140, '& .MuiInputLabel-root': { color: '#9CA3AF' } }}
+                                    />
+                                    <Typography sx={{ color: '#6B7280', fontSize: '1.25rem', fontWeight: 600 }}>:</Typography>
+                                    <TextField
+                                        type="number"
+                                        label="Minutes"
+                                        value={lessonDurationMinutes === 0 ? '' : lessonDurationMinutes}
+                                        onFocus={(e) => e.target.select()}
+                                        onChange={(e) => {
+                                            const raw = e.target.value;
+                                            if (raw === '') { setLessonDurationMinutes(0); return; }
+                                            const v = Math.min(59, Math.max(0, parseInt(raw) || 0));
+                                            setLessonDurationMinutes(v);
+                                        }}
+                                        slotProps={{ htmlInput: { min: 0, max: 59, placeholder: '0' } }}
+                                        sx={{ ...textFieldStyle, width: 140, '& .MuiInputLabel-root': { color: '#9CA3AF' } }}
+                                    />
+                                </Stack>
                             </Box>
                         </Stack>
                         <Stack direction="row" justifyContent="flex-end" spacing={2} sx={{ mt: 3 }}>
