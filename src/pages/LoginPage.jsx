@@ -16,7 +16,7 @@ import {
     LockOutlined,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts';
-import { getDashboardRoute } from '../utils';
+import { getDashboardRoute, isReturnToAllowedForUser } from '../utils';
 import logo from '../assets/images/GGH_logo.png';
 import icon from '../assets/images/GGH_icon.png';
 
@@ -67,7 +67,8 @@ const LoginPage = () => {
 
             const dashboardRoute = getDashboardRoute(userData || userRole);
             const returnTo = location.state?.from;
-            navigate(returnTo || dashboardRoute, { replace: true });
+            const target = isReturnToAllowedForUser(returnTo, userData) ? returnTo : dashboardRoute;
+            navigate(target, { replace: true });
         } catch (err) {
             console.error('Login error:', err);
             setError(err?.message || 'Login failed. Please check your credentials and try again.');

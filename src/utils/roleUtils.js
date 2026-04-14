@@ -106,6 +106,21 @@ export const getPrimaryRole = (user) => {
     return null;
 };
 
+export const isReturnToAllowedForUser = (returnTo, user) => {
+    if (!returnTo) return false;
+    const pathname = typeof returnTo === 'string' ? returnTo : returnTo?.pathname;
+    if (!pathname) return false;
+
+    const primaryRole = getPrimaryRole(user);
+
+    if (pathname.startsWith('/admin')) return primaryRole === 'admin';
+    if (pathname.startsWith('/tutor')) return primaryRole === 'tutor';
+    if (pathname.startsWith('/learner/organization') || pathname.startsWith('/org')) {
+        return primaryRole === 'organization';
+    }
+    return true;
+};
+
 export const getDashboardRoute = (userOrRole) => {
     if (typeof userOrRole === 'string') {
         const normalized = normalizeWithAlias(userOrRole);

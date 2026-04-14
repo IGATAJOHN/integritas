@@ -156,4 +156,5 @@ export {
     getOrganizationRole,
     hasOrganizationAccess,
     canManageOrganization,
+    isReturnToAllowedForUser,
 } from './roleUtils';

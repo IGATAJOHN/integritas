@@ -9,6 +9,7 @@ import {
     ReviewerManagement,
     CourseManagement,
     EssentialCourseManagement,
+    CreateEssentialCourse,
     AdminLessonsByModule,
     CategoryManagement,
     KycReview,
@@ -59,6 +60,10 @@ const adminRoutes = {
                 {
                     path: 'essential-courses',
                     element: <EssentialCourseManagement />,
+                },
+                {
+                    path: 'essential-courses/create',
+                    element: <CreateEssentialCourse />,
                 },
                 {
                     path: 'courses',
