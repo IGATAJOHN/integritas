@@ -47,6 +47,7 @@ import { alpha } from '@mui/material/styles';
 import logo from '../../../assets/images/GGH_logo.png';
 import Footer from '../../../components/Footer';
 import { courseCatalogService, learnerEnrollmentService } from '../services';
+import { apiService } from '../../../services/api';
 import Header from '../../../components/Header';
 
 const colors = {
@@ -237,6 +238,29 @@ const CourseDetail = () => {
                             ? raw.target_audience
                             : [],
                     });
+
+                    // Fetch lessons for modules that don't already include them
+                    const rawModules = Array.isArray(raw.modules) ? raw.modules : [];
+                    const modulesMissingLessons = rawModules.filter(
+                        (m) => !Array.isArray(m.lessons) || m.lessons.length === 0
+                    );
+                    if (modulesMissingLessons.length > 0) {
+                        Promise.all(rawModules.map(async (m) => {
+                            if (Array.isArray(m.lessons) && m.lessons.length > 0) return m;
+                            try {
+                                const lessonsRes = await apiService.get(`/lms/modules/${m.id}/lessons`);
+                                const rawLessons = Array.isArray(lessonsRes?.data)
+                                    ? lessonsRes.data
+                                    : Array.isArray(lessonsRes) ? lessonsRes : [];
+                                return { ...m, lessons: rawLessons };
+                            } catch {
+                                return { ...m, lessons: [] };
+                            }
+                        })).then((modulesWithLessons) => {
+                            if (!active) return;
+                            setCourseData((prev) => prev ? { ...prev, modules: modulesWithLessons } : prev);
+                        });
+                    }
                 } else {
                     setError('Course not found');
                 }
@@ -495,10 +519,37 @@ const CourseDetail = () => {
                                                     </Typography>
                                                 </Box>
                                             </AccordionSummary>
-                                            <AccordionDetails sx={{ px: 3, pb: 3 }}>
-                                                <Typography sx={{ color: colors.textSecondary, fontSize: '0.875rem' }}>
-                                                    Lesson content will be displayed here...
-                                                </Typography>
+                                            <AccordionDetails sx={{ px: 3, pb: 3, pt: 0 }}>
+                                                {Array.isArray(module.lessons) && module.lessons.length > 0 ? (
+                                                    <Stack spacing={1.5}>
+                                                        {module.lessons.map((lesson, idx) => {
+                                                            const lessonTitle = lesson.title || lesson.name || 'Untitled Lesson';
+                                                            const lessonDuration = lesson.duration_minutes ?? lesson.duration;
+                                                            return (
+                                                                <Stack
+                                                                    key={lesson.id ?? `${module.id}-lesson-${idx}`}
+                                                                    direction="row"
+                                                                    alignItems="center"
+                                                                    spacing={1.5}
+                                                                >
+                                                                    <PlayIcon sx={{ color: colors.textSecondary, fontSize: '1.1rem' }} />
+                                                                    <Typography sx={{ flex: 1, fontSize: '0.875rem', color: colors.text }}>
+                                                                        {lessonTitle}
+                                                                    </Typography>
+                                                                    {lessonDuration ? (
+                                                                        <Typography sx={{ color: colors.textSecondary, fontSize: '0.8rem' }}>
+                                                                            {lessonDuration}m
+                                                                        </Typography>
+                                                                    ) : null}
+                                                                </Stack>
+                                                            );
+                                                        })}
+                                                    </Stack>
+                                                ) : (
+                                                    <Typography sx={{ color: colors.textSecondary, fontSize: '0.875rem' }}>
+                                                        Lessons will be available soon.
+                                                    </Typography>
+                                                )}
                                             </AccordionDetails>
                                         </Accordion>
                                     ))}
@@ -623,8 +674,35 @@ const CourseDetail = () => {
                                                 </Typography>
                                             </Box>
                                         </AccordionSummary>
-                                        <AccordionDetails sx={{ px: 3, pb: 3 }}>
-                                            <Typography sx={{ color: colors.textSecondary }}>Lesson content...</Typography>
+                                        <AccordionDetails sx={{ px: 3, pb: 3, pt: 0 }}>
+                                            {Array.isArray(module.lessons) && module.lessons.length > 0 ? (
+                                                <Stack spacing={1.5}>
+                                                    {module.lessons.map((lesson, idx) => {
+                                                        const lessonTitle = lesson.title || lesson.name || 'Untitled Lesson';
+                                                        const lessonDuration = lesson.duration_minutes ?? lesson.duration;
+                                                        return (
+                                                            <Stack
+                                                                key={lesson.id ?? `${module.id}-lesson-${idx}`}
+                                                                direction="row"
+                                                                alignItems="center"
+                                                                spacing={1.5}
+                                                            >
+                                                                <PlayIcon sx={{ color: colors.textSecondary, fontSize: '1.1rem' }} />
+                                                                <Typography sx={{ flex: 1, fontSize: '0.875rem', color: colors.text }}>
+                                                                    {lessonTitle}
+                                                                </Typography>
+                                                                {lessonDuration ? (
+                                                                    <Typography sx={{ color: colors.textSecondary, fontSize: '0.8rem' }}>
+                                                                        {lessonDuration}m
+                                                                    </Typography>
+                                                                ) : null}
+                                                            </Stack>
+                                                        );
+                                                    })}
+                                                </Stack>
+                                            ) : (
+                                                <Typography sx={{ color: colors.textSecondary }}>Lessons will be available soon.</Typography>
+                                            )}
                                         </AccordionDetails>
                                     </Accordion>
                                 ))}
