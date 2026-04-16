@@ -16,7 +16,7 @@ const LearnerLayout = () => {
         { path: '/explore/courses', label: 'Courses', icon: <MyLearningIcon /> },
         { path: '/explore/progress', label: 'Progress', icon: <AchievementsIcon /> },
         { path: '/explore/community', label: 'Community', icon: <SchoolIcon /> },
-        { path: '/explore/settings', label: 'Settings', icon: <SettingsIcon /> },
+        // { path: '/explore/settings', label: 'Settings', icon: <SettingsIcon /> }, // hidden until implemented
     ];
 
     return (

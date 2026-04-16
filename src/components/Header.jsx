@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
     Box,
     Stack,
@@ -26,8 +26,9 @@ const Header = () => {
 ];
     const { mode, toggleThemeMode, isDark } = useThemeMode();
     const theme = useTheme();
+    const navigate = useNavigate();
     const [mobileOpen, setMobileOpen] = useState(false);
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, user } = useAuth();
     
 
     const handleDrawerToggle = () => {
@@ -113,58 +114,61 @@ const Header = () => {
 
             {/* Action Buttons */}
             <Stack spacing={2} sx={{ p: 3 }}>
-                <Button
-                    component={Link}
-                    to="/login"
-                    onClick={handleDrawerToggle}
-                    fullWidth
-                    sx={{
-                        bgcolor: isDark ? '#282E39' : '#F1F5F9',
-                        '&:hover': {
-                            bgcolor: isDark ? '#374151' : '#E2E8F0',
-                        },
-                        textTransform: 'none',
-                        fontWeight: 600,
-                        color: isDark ? '#FFFFFF' : '#1E293B',
-                        borderRadius: '10px',
-                        py: 1.5,
-                    }}
-                >
-                    Login
-                </Button>
-                <Button
-                    component={Link}
-                    to="/signup"
-                    onClick={handleDrawerToggle}
-                    variant="contained"
-                    fullWidth
-                    sx={{
-                        bgcolor: 'rgba(17, 82, 212, 1)',
-                        '&:hover': { bgcolor: 'rgba(13, 65, 170, 1)' },
-                        textTransform: 'none',
-                        fontWeight: 600,
-                        borderRadius: '10px',
-                        color: '#FFFFFF',
-                        py: 1.5,
-                    }}
-                >
-                    Sign Up
-                </Button>
-                {!isAuthenticated && (
+                {isAuthenticated ? (
                     <Button
-                        component={Link}
-                        to="/login"
+                        onClick={() => { handleDrawerToggle(); navigate('/learner'); }}
                         variant="contained"
+                        fullWidth
                         sx={{
                             bgcolor: 'rgba(17, 82, 212, 1)',
+                            '&:hover': { bgcolor: 'rgba(13, 65, 170, 1)' },
                             textTransform: 'none',
                             fontWeight: 600,
-                            borderRadius: 1,
-                            px: 3
+                            borderRadius: '10px',
+                            color: '#FFFFFF',
+                            py: 1.5,
                         }}
                     >
-                        Log in
+                        Go to Dashboard
                     </Button>
+                ) : (
+                    <>
+                        <Button
+                            component={Link}
+                            to="/login"
+                            onClick={handleDrawerToggle}
+                            fullWidth
+                            sx={{
+                                bgcolor: isDark ? '#282E39' : '#F1F5F9',
+                                '&:hover': { bgcolor: isDark ? '#374151' : '#E2E8F0' },
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                color: isDark ? '#FFFFFF' : '#1E293B',
+                                borderRadius: '10px',
+                                py: 1.5,
+                            }}
+                        >
+                            Login
+                        </Button>
+                        <Button
+                            component={Link}
+                            to="/signup"
+                            onClick={handleDrawerToggle}
+                            variant="contained"
+                            fullWidth
+                            sx={{
+                                bgcolor: 'rgba(17, 82, 212, 1)',
+                                '&:hover': { bgcolor: 'rgba(13, 65, 170, 1)' },
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                borderRadius: '10px',
+                                color: '#FFFFFF',
+                                py: 1.5,
+                            }}
+                        >
+                            Sign Up
+                        </Button>
+                    </>
                 )}
             </Stack>
 
@@ -282,37 +286,54 @@ const Header = () => {
 
                             {/* Actions */}
                             <Stack direction="row" spacing={2} alignItems="center">
-                                <Button
-                                    component={Link}
-                                    to="/login"
-                                    sx={{
-                                        bgcolor: isDark ? '#282E39' : '#F1F5F9',
-                                        '&:hover': {
-                                            bgcolor: isDark ? '#374151' : '#E2E8F0',
-                                        },
-                                        textTransform: 'none',
-                                        fontWeight: 600,
-                                        color: isDark ? '#FFFFFF' : '#1E293B',
-                                        borderRadius: '10px',
-                                    }}
-                                >
-                                    Login
-                                </Button>
-                                <Button
-                                    component={Link}
-                                    to="/signup"
-                                    variant="contained"
-                                    sx={{
-                                        bgcolor: 'rgba(17, 82, 212, 1)',
-                                        '&:hover': { bgcolor: 'rgba(13, 65, 170, 1)', color: '#FFFFFF' },
-                                        textTransform: 'none',
-                                        fontWeight: 600,
-                                        borderRadius: '10px',
-                                        color: '#FFFFFF',
-                                    }}
-                                >
-                                    Sign Up
-                                </Button>
+                                {isAuthenticated ? (
+                                    <Button
+                                        onClick={() => navigate('/learner')}
+                                        variant="contained"
+                                        sx={{
+                                            bgcolor: 'rgba(17, 82, 212, 1)',
+                                            '&:hover': { bgcolor: 'rgba(13, 65, 170, 1)' },
+                                            textTransform: 'none',
+                                            fontWeight: 600,
+                                            borderRadius: '10px',
+                                            color: '#FFFFFF',
+                                        }}
+                                    >
+                                        Go to Dashboard
+                                    </Button>
+                                ) : (
+                                    <>
+                                        <Button
+                                            component={Link}
+                                            to="/login"
+                                            sx={{
+                                                bgcolor: isDark ? '#282E39' : '#F1F5F9',
+                                                '&:hover': { bgcolor: isDark ? '#374151' : '#E2E8F0' },
+                                                textTransform: 'none',
+                                                fontWeight: 600,
+                                                color: isDark ? '#FFFFFF' : '#1E293B',
+                                                borderRadius: '10px',
+                                            }}
+                                        >
+                                            Login
+                                        </Button>
+                                        <Button
+                                            component={Link}
+                                            to="/signup"
+                                            variant="contained"
+                                            sx={{
+                                                bgcolor: 'rgba(17, 82, 212, 1)',
+                                                '&:hover': { bgcolor: 'rgba(13, 65, 170, 1)', color: '#FFFFFF' },
+                                                textTransform: 'none',
+                                                fontWeight: 600,
+                                                borderRadius: '10px',
+                                                color: '#FFFFFF',
+                                            }}
+                                        >
+                                            Sign Up
+                                        </Button>
+                                    </>
+                                )}
                             </Stack>
                         </Stack>
 

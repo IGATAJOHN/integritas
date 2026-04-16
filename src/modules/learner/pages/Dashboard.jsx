@@ -178,18 +178,26 @@ const LearnerDashboard = () => {
                                 sx={{
                                     width: { xs: '100%', md: '35%' },
                                     minHeight: { xs: 200, md: 'auto' },
-                                    backgroundImage: continueLearning.image ? `url(${continueLearning.image})` : 'none',
-                                    bgcolor: continueLearning.image ? 'transparent' : alpha(theme.palette.primary.main, 0.1),
-                                    backgroundSize: 'cover',
-                                    backgroundPosition: 'center',
+                                    bgcolor: '#111827',
                                     position: 'relative',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
+                                    overflow: 'hidden',
                                 }}
                             >
-                                {continueLearning.image && <Box sx={{ position: 'absolute', inset: 0, bgcolor: 'rgba(0,0,0,0.3)' }} />}
-                                {!continueLearning.image && <School sx={{ fontSize: 64, color: theme.palette.primary.main, opacity: 0.5 }} />}
+                                {continueLearning.image ? (
+                                    <Box
+                                        component="img"
+                                        src={continueLearning.image}
+                                        alt={continueLearning.title}
+                                        onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling.style.display = 'flex'; }}
+                                        sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                                    />
+                                ) : null}
+                                <Box sx={{ display: continueLearning.image ? 'none' : 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', minHeight: { xs: 200, md: 'auto' } }}>
+                                    <School sx={{ fontSize: 64, color: 'rgba(255,255,255,0.15)' }} />
+                                </Box>
                             </Box>
 
                             {/* Course Details */}
@@ -288,9 +296,9 @@ const LearnerDashboard = () => {
                                                 <Avatar
                                                     variant="rounded"
                                                     src={course.image}
-                                                    sx={{ width: 60, height: 60, bgcolor: alpha(theme.palette.primary.main, 0.1) }}
+                                                    sx={{ width: 60, height: 60, bgcolor: '#111827' }}
                                                 >
-                                                    <School sx={{ color: theme.palette.primary.main }} />
+                                                    <School sx={{ color: 'rgba(255,255,255,0.15)' }} />
                                                 </Avatar>
                                                 <Box sx={{ flexGrow: 1 }}>
                                                     <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.2, mb: 0.5 }}>
@@ -349,16 +357,26 @@ const LearnerDashboard = () => {
                                             <Box
                                                 sx={{
                                                     height: 100,
-                                                    backgroundImage: course.image ? `url(${course.image})` : 'none',
-                                                    bgcolor: course.image ? 'transparent' : alpha(theme.palette.primary.main, 0.1),
-                                                    backgroundSize: 'cover',
-                                                    backgroundPosition: 'center',
+                                                    bgcolor: '#111827',
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
+                                                    overflow: 'hidden',
+                                                    position: 'relative',
                                                 }}
                                             >
-                                                {!course.image && <School sx={{ fontSize: 36, color: theme.palette.primary.main, opacity: 0.5 }} />}
+                                                {course.image ? (
+                                                    <Box
+                                                        component="img"
+                                                        src={course.image}
+                                                        alt={course.title}
+                                                        onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling.style.display = 'flex'; }}
+                                                        sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                                                    />
+                                                ) : null}
+                                                <Box sx={{ display: course.image ? 'none' : 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
+                                                    <School sx={{ fontSize: 36, color: 'rgba(255,255,255,0.15)' }} />
+                                                </Box>
                                             </Box>
                                             <CardContent sx={{ p: 2 }}>
                                                 <Stack direction="row" spacing={1} sx={{ mb: 1 }}>

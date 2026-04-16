@@ -20,6 +20,7 @@ import {
     Menu as MenuIcon,
     LightMode,
     DarkMode,
+    Logout as LogoutIcon,
 } from '@mui/icons-material';
 import { useAuth, useThemeMode } from '../../../contexts';
 import logo from '../../../assets/images/GGH_icon.png';
@@ -189,8 +190,8 @@ const LearnerNavbar = ({ onMobileMenuToggle }) => {
                     {isDark ? <LightMode fontSize="small" /> : <DarkMode fontSize="small" />}
                 </IconButton>
 
-                {/* Notifications */}
-                <IconButton
+                {/* Notifications — hidden until implemented */}
+                {/* <IconButton
                     sx={{
                         bgcolor: colors.card,
                         color: colors.text,
@@ -201,7 +202,7 @@ const LearnerNavbar = ({ onMobileMenuToggle }) => {
                     <Badge badgeContent={3} color="error">
                         <BellIcon fontSize="small" />
                     </Badge>
-                </IconButton>
+                </IconButton> */}
 
                 {/* Profile Menu or Login Button */}
                 {isAuthenticated ? (
@@ -257,32 +258,42 @@ const LearnerNavbar = ({ onMobileMenuToggle }) => {
                     anchorEl={profileAnchor}
                     open={Boolean(profileAnchor)}
                     onClose={() => setProfileAnchor(null)}
+                    transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                    anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
                     PaperProps={{
                         sx: {
                             bgcolor: colors.paper,
                             color: colors.text,
                             border: `1px solid ${colors.border}`,
-                            mt: 1
+                            borderRadius: 2,
+                            mt: 1,
+                            minWidth: 240,
+                            boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+                            overflow: 'visible',
                         }
                     }}
                 >
-                    <MenuItem onClick={() => { setProfileAnchor(null); navigate('/profile'); }}>
-                        My Profile
-                    </MenuItem>
-                    <MenuItem onClick={() => { setProfileAnchor(null); navigate('/settings'); }}>
-                        Settings
-                    </MenuItem>
-                    <MenuItem onClick={async () => { 
-                        setProfileAnchor(null); 
-                        try {
-                            await logout();
-                            navigate('/login');
-                        } catch (error) {
-                            console.error('Logout error:', error);
-                            navigate('/login');
-                        }
-                    }}>
-                        Logout
+                    <MenuItem
+                        onClick={async () => {
+                            setProfileAnchor(null);
+                            try {
+                                await logout();
+                                navigate('/login');
+                            } catch (error) {
+                                console.error('Logout error:', error);
+                                navigate('/login');
+                            }
+                        }}
+                        sx={{
+                            gap: 1.5,
+                            color: '#EF4444',
+                            fontSize: '0.875rem',
+                            fontWeight: 500,
+                            '&:hover': { bgcolor: 'rgba(239,68,68,0.08)' }
+                        }}
+                    >
+                        <LogoutIcon fontSize="small" />
+                        Sign out
                     </MenuItem>
                 </Menu>
             </Stack>

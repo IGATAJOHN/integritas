@@ -208,7 +208,7 @@ const LandingPage = () => {
                             </Button>
                             <Button
                                 component={Link}
-                                to="/demo"
+                                to="#"
                                 variant="outlined"
                                 size="large"
                                 sx={{
@@ -469,9 +469,27 @@ const LandingPage = () => {
                             ))}
                         </Stack>
                     ) : essentialCourses.length === 0 ? (
-                        <Typography sx={{ color: colors.textMuted, textAlign: 'center', py: 4 }}>
-                            No essential courses available at this time.
-                        </Typography>
+                        <Box sx={{ textAlign: 'center', py: 6 }}>
+                            <Typography sx={{ color: colors.textMuted, mb: 2 }}>
+                                No essential courses available at this time.
+                            </Typography>
+                            <Button
+                                component={Link}
+                                to="/explore/courses"
+                                variant="outlined"
+                                endIcon={<ArrowForward />}
+                                sx={{
+                                    borderColor: colors.primary,
+                                    color: colors.primary,
+                                    textTransform: 'none',
+                                    fontWeight: 600,
+                                    borderRadius: '10px',
+                                    '&:hover': { bgcolor: colors.primaryLight },
+                                }}
+                            >
+                                Browse All Courses
+                            </Button>
+                        </Box>
                     ) : (
                         <Stack
                             direction={{ xs: 'column', md: 'row' }}
@@ -506,18 +524,21 @@ const LandingPage = () => {
                                                     height="200"
                                                     image={course.image}
                                                     alt={course.title}
+                                                    onError={(e) => {
+                                                        e.currentTarget.style.display = 'none';
+                                                        e.currentTarget.nextElementSibling.style.display = 'flex';
+                                                    }}
                                                 />
-                                            ) : (
-                                                <Box sx={{
-                                                    height: 200,
-                                                    bgcolor: colors.primaryLight,
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                }}>
-                                                    <School sx={{ fontSize: 64, color: colors.primary, opacity: 0.5 }} />
-                                                </Box>
-                                            )}
+                                            ) : null}
+                                            <Box sx={{
+                                                height: 200,
+                                                bgcolor: '#111827',
+                                                display: course.image ? 'none' : 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                            }}>
+                                                <School sx={{ fontSize: 64, color: 'rgba(255,255,255,0.15)' }} />
+                                            </Box>
                                             {course.duration && course.duration !== 'TBD' && (
                                                 <Box
                                                     sx={{

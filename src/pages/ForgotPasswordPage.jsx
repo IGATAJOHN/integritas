@@ -208,7 +208,7 @@ const ForgotPasswordPage = () => {
                 <Stack direction="row" spacing={3}>
                     <Typography
                         component={Link}
-                        to="/support"
+                        to="/contact"
                         sx={{
                             fontSize: '0.875rem',
                             color: '#9CA3AF',
@@ -220,7 +220,7 @@ const ForgotPasswordPage = () => {
                     </Typography>
                     <Typography
                         component={Link}
-                        to="/privacy"
+                        to="/"
                         sx={{
                             fontSize: '0.875rem',
                             color: '#9CA3AF',
@@ -754,7 +754,7 @@ const ForgotPasswordPage = () => {
             >
                 <Typography
                     component={Link}
-                    to="/help"
+                    to="/contact"
                     sx={{
                         fontSize: '0.875rem',
                         color: '#6B7280',

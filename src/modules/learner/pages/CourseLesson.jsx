@@ -654,6 +654,40 @@ const CourseLesson = () => {
                     })()}
                 </Box>
 
+                {/* Course completion CTA — shown when on the last lesson */}
+                {!nextLesson && currentLesson && (
+                    <Box sx={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 300,
+                        bgcolor: 'rgba(16,185,129,0.12)',
+                        borderTop: '1px solid rgba(16,185,129,0.3)',
+                        px: 4,
+                        py: 2,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 2,
+                        flexWrap: 'wrap',
+                    }}>
+                        <Stack direction="row" alignItems="center" spacing={1.5}>
+                            <CheckCircle sx={{ color: colors.success, fontSize: 22 }} />
+                            <Typography sx={{ color: colors.text, fontWeight: 600, fontSize: '0.95rem' }}>
+                                You've reached the last lesson!
+                            </Typography>
+                        </Stack>
+                        <Button
+                            variant="contained"
+                            startIcon={<ArrowBack />}
+                            onClick={() => navigate(`/explore/course/${courseId}`)}
+                            sx={{ bgcolor: colors.success, '&:hover': { bgcolor: '#059669' }, textTransform: 'none', fontWeight: 600 }}
+                        >
+                            Back to Course Overview
+                        </Button>
+                    </Box>
+                )}
+
                 {/* RIGHT PANEL — course details + time remaining */}
                 <Box sx={{
                     width: 300,

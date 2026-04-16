@@ -17,7 +17,7 @@ import {
     CreditCardOutlined as CreditCard
 } from '@mui/icons-material';
 import logo from '../../../assets/images/GGH_logo.png';
-import { learnerEnrollmentService } from '../services';
+import { learnerEnrollmentService, courseCatalogService } from '../services';
 
 const formatDate = (dateStr) => {
     if (!dateStr) return new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -32,10 +32,25 @@ const PaymentSuccess = () => {
     const [verifying, setVerifying] = useState(false);
     const [verifyError, setVerifyError] = useState(null);
     const [enrollment, setEnrollment] = useState(location.state?.enrollment || null);
-    const [course] = useState(location.state?.course || {});
+    const [course, setCourse] = useState(location.state?.course || {});
 
     const trxref = searchParams.get('trxref');
     const reference = searchParams.get('reference');
+
+    const fetchCourseIfMissing = async (enrollmentResult) => {
+        if (enrollmentResult?.course?.title) return; // already have details
+        const courseId = enrollmentResult?.course_id || enrollmentResult?.course?.id;
+        if (!courseId) return;
+        try {
+            const data = await courseCatalogService.getCourseById(courseId);
+            setCourse((prev) => ({
+                ...prev,
+                title: data?.title || prev.title,
+                instructor: data?.instructor || prev.instructor,
+                courseId,
+            }));
+        } catch (_) { /* best-effort */ }
+    };
 
     useEffect(() => {
         // New flow: /payment/success?reference=ENR_... (enrollment callback)
@@ -46,6 +61,7 @@ const PaymentSuccess = () => {
                 try {
                     const result = await learnerEnrollmentService.verifyPaymentStatus(reference);
                     setEnrollment(result);
+                    await fetchCourseIfMissing(result);
                 } catch (err) {
                     setVerifyError('Payment verification failed. Your enrollment may still be active — check My Enrollments.');
                 } finally {
@@ -62,6 +78,7 @@ const PaymentSuccess = () => {
                 try {
                     const result = await learnerEnrollmentService.verifyPayment({ trxref, reference });
                     setEnrollment(result);
+                    await fetchCourseIfMissing(result);
                 } catch (err) {
                     setVerifyError('Payment verification failed. Your enrollment may still be active — check My Enrollments.');
                 } finally {

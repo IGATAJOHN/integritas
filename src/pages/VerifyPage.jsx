@@ -139,7 +139,7 @@ const VerifyPage = () => {
                 <Stack direction="row" spacing={3}>
                     <Typography
                         component={Link}
-                        to="/support"
+                        to="/contact"
                         sx={{
                             fontSize: '0.875rem',
                             color: '#9CA3AF',
@@ -151,7 +151,7 @@ const VerifyPage = () => {
                     </Typography>
                     <Typography
                         component={Link}
-                        to="/privacy"
+                        to="/"
                         sx={{
                             fontSize: '0.875rem',
                             color: '#9CA3AF',
@@ -323,7 +323,7 @@ const VerifyPage = () => {
             >
                 <Typography
                     component={Link}
-                    to="/help"
+                    to="/contact"
                     sx={{
                         fontSize: '0.875rem',
                         color: '#6B7280',
@@ -335,7 +335,7 @@ const VerifyPage = () => {
                 </Typography>
                 <Typography
                     component={Link}
-                    to="/change-email"
+                    to="/login"
                     sx={{
                         fontSize: '0.875rem',
                         color: '#6B7280',

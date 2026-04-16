@@ -59,8 +59,8 @@ const LearnerSidebar = ({ onClose }) => {
                 { label: 'Reports', path: '/learner/organization/reports' },
             ],
         },
-        { label: 'Achievements', icon: <AchievementsIcon />, path: '/achievements', private: true },
-        { label: 'Resources', icon: <ResourcesIcon />, path: '/resources' },
+        // { label: 'Achievements', icon: <AchievementsIcon />, path: '/achievements', private: true }, // hidden until implemented
+        // { label: 'Resources', icon: <ResourcesIcon />, path: '/resources' }, // hidden until implemented
     ];
 
     const displayMenuItems = isAuthenticated 
@@ -68,7 +68,7 @@ const LearnerSidebar = ({ onClose }) => {
         : menuItems.filter(item => !item.private);
 
     const bottomMenuItems = [
-        { label: 'Settings', icon: <SettingsIcon />, path: '/settings' },
+        // { label: 'Settings', icon: <SettingsIcon />, path: '/settings' }, // hidden until implemented
     ];
 
     const isActiveLink = (path) => {

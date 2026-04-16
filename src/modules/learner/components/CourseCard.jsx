@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Box,
@@ -17,10 +17,7 @@ import {
 
 const CourseCard = ({ course, colors, access }) => {
     const navigate = useNavigate();
-    const fallbackImage = useMemo(
-        () => 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450"><rect width="100%" height="100%" fill="%23111827"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%239CA3AF" font-size="28">Course Image</text></svg>',
-        []
-    );
+    const [imageFailed, setImageFailed] = useState(false);
 
     const safeCoursePathId = String(course?.id || '').trim();
     const safeLevel = String(course?.level || 'Unspecified');
@@ -30,7 +27,8 @@ const CourseCard = ({ course, colors, access }) => {
     const safeRating = Number(course?.rating || 0).toFixed(1);
     const safeReviews = Number(course?.reviews || 0);
     const safeDuration = String(course?.duration || 'TBD');
-    const safeImage = String(course?.image || '').trim() || fallbackImage;
+    const rawImage = String(course?.image || '').trim();
+    const showImage = Boolean(rawImage) && !imageFailed;
 
     const getLevelColor = (level) => {
         switch (level) {
@@ -69,20 +67,31 @@ const CourseCard = ({ course, colors, access }) => {
                 height: 200,
                 background: 'linear-gradient(135deg, rgba(20, 30, 48, 1) 0%, rgba(36, 59, 85, 0.8) 100%)'
             }}>
-                <CardMedia
-                    component="img"
-                    image={safeImage}
-                    alt={safeTitle}
-                    onError={(event) => {
-                        event.currentTarget.src = fallbackImage;
-                    }}
-                    sx={{
-                        height: '100%',
+                {showImage ? (
+                    <CardMedia
+                        component="img"
+                        image={rawImage}
+                        alt={safeTitle}
+                        onError={() => setImageFailed(true)}
+                        sx={{
+                            height: '100%',
+                            width: '100%',
+                            objectFit: 'cover',
+                            opacity: 0.9
+                        }}
+                    />
+                ) : (
+                    <Box sx={{
                         width: '100%',
-                        objectFit: 'cover',
-                        opacity: 0.9
-                    }}
-                />
+                        height: '100%',
+                        bgcolor: '#111827',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}>
+                        <SchoolIcon sx={{ fontSize: 56, color: 'rgba(255,255,255,0.15)' }} />
+                    </Box>
+                )}
                 {/* Level Badge */}
                 <Box sx={{
                     position: 'absolute',

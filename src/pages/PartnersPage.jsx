@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
     Box,
     Container,
@@ -13,6 +13,7 @@ import {
 import {
     Handshake,
     ArrowForward,
+    ArrowBack as ArrowBackIcon,
     Business,
     AccountBalance,
     School,
@@ -50,24 +51,28 @@ const partnerCategories = [
         color: 'rgba(17, 82, 212, 1)',
         bgColor: 'rgba(17, 82, 212, 0.1)',
         label: 'Government Agencies',
+        typeKey: 'Government Agency',
     },
     {
         icon: <School sx={{ fontSize: 26 }} />,
         color: '#0891B2',
         bgColor: 'rgba(8, 145, 178, 0.1)',
         label: 'Academic Institutions',
+        typeKey: 'Academic Institution',
     },
     {
         icon: <Business sx={{ fontSize: 26 }} />,
         color: '#7C3AED',
         bgColor: 'rgba(124, 58, 237, 0.1)',
         label: 'Private Sector',
+        typeKey: 'Private Sector',
     },
     {
         icon: <Public sx={{ fontSize: 26 }} />,
         color: '#059669',
         bgColor: 'rgba(5, 150, 105, 0.1)',
         label: 'International Bodies',
+        typeKey: 'International Body',
     },
 ];
 
@@ -163,6 +168,12 @@ const stats = [
 const PartnersPage = () => {
     const { isDark } = useThemeMode();
     const colors = getColors(isDark);
+    const navigate = useNavigate();
+    const [activeCategory, setActiveCategory] = useState(null);
+
+    const filteredPartners = activeCategory
+        ? partners.filter((p) => p.type === activeCategory)
+        : partners;
 
     return (
         <Box sx={{ bgcolor: colors.bgDark, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -306,44 +317,50 @@ const PartnersPage = () => {
                         </Typography>
                     </Box>
                     <Grid container spacing={3} justifyContent="center">
-                        {partnerCategories.map((cat) => (
-                            <Grid size={{ xs: 12, sm: 6, md: 3 }} key={cat.label}>
-                                <Box
-                                    sx={{
-                                        bgcolor: colors.bgCard,
-                                        border: `1px solid ${colors.border}`,
-                                        borderRadius: 3,
-                                        p: 4,
-                                        textAlign: 'center',
-                                        transition: 'all 0.3s',
-                                        '&:hover': { borderColor: colors.borderLight, transform: 'translateY(-4px)' },
-                                    }}
-                                >
-                                    <Avatar
+                        {partnerCategories.map((cat) => {
+                            const isActive = activeCategory === cat.typeKey;
+                            return (
+                                <Grid size={{ xs: 12, sm: 6, md: 3 }} key={cat.label}>
+                                    <Box
+                                        onClick={() => setActiveCategory(isActive ? null : cat.typeKey)}
                                         sx={{
-                                            bgcolor: cat.bgColor,
-                                            color: cat.color,
-                                            width: 64,
-                                            height: 64,
-                                            mx: 'auto',
-                                            mb: 2,
-                                            borderRadius: 2,
+                                            bgcolor: isActive ? cat.bgColor : colors.bgCard,
+                                            border: `2px solid ${isActive ? cat.color : colors.border}`,
+                                            borderRadius: 3,
+                                            p: 4,
+                                            textAlign: 'center',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.3s',
+                                            '&:hover': { borderColor: cat.color, transform: 'translateY(-4px)' },
                                         }}
                                     >
-                                        {cat.icon}
-                                    </Avatar>
-                                    <Typography sx={{ fontWeight: 700, color: colors.textWhite, fontSize: '1rem' }}>
-                                        {cat.label}
-                                    </Typography>
-                                </Box>
-                            </Grid>
-                        ))}
+                                        <Avatar
+                                            sx={{
+                                                bgcolor: isActive ? cat.color : cat.bgColor,
+                                                color: isActive ? '#fff' : cat.color,
+                                                width: 64,
+                                                height: 64,
+                                                mx: 'auto',
+                                                mb: 2,
+                                                borderRadius: 2,
+                                                transition: 'all 0.3s',
+                                            }}
+                                        >
+                                            {cat.icon}
+                                        </Avatar>
+                                        <Typography sx={{ fontWeight: 700, color: isActive ? cat.color : colors.textWhite, fontSize: '1rem' }}>
+                                            {cat.label}
+                                        </Typography>
+                                    </Box>
+                                </Grid>
+                            );
+                        })}
                     </Grid>
                 </Container>
             </Box>
 
             {/* Featured Partners */}
-            {/* <Box sx={{ py: { xs: 8, md: 12 }, borderBottom: `1px solid ${colors.border}` }}>
+            <Box sx={{ py: { xs: 8, md: 12 }, borderBottom: `1px solid ${colors.border}` }}>
                 <Container maxWidth="lg">
                     <Box sx={{ textAlign: 'center', mb: 8 }}>
                         <Typography
@@ -356,11 +373,22 @@ const PartnersPage = () => {
                             variant="h3"
                             sx={{ fontWeight: 800, color: colors.textWhite, fontSize: { xs: '1.75rem', md: '2.25rem' } }}
                         >
-                            Featured Partners
+                            {activeCategory
+                                ? partnerCategories.find((c) => c.typeKey === activeCategory)?.label
+                                : 'Featured Partners'}
                         </Typography>
+                        {activeCategory && (
+                            <Button
+                                size="small"
+                                onClick={() => setActiveCategory(null)}
+                                sx={{ mt: 1.5, color: colors.textMuted, textTransform: 'none', fontSize: '0.8rem' }}
+                            >
+                                Clear filter
+                            </Button>
+                        )}
                     </Box>
                     <Grid container spacing={3}>
-                        {partners.map((partner) => (
+                        {filteredPartners.map((partner) => (
                             <Grid size={{ xs: 12, sm: 6, md: 4 }} key={partner.name}>
                                 <Box
                                     sx={{
@@ -417,9 +445,16 @@ const PartnersPage = () => {
                                 </Box>
                             </Grid>
                         ))}
+                        {filteredPartners.length === 0 && (
+                            <Grid size={{ xs: 12 }}>
+                                <Typography sx={{ color: colors.textMuted, textAlign: 'center', py: 4 }}>
+                                    No partners found for this category.
+                                </Typography>
+                            </Grid>
+                        )}
                     </Grid>
                 </Container>
-            </Box> */}
+            </Box>
 
             {/* Partnership Benefits */}
             <Box sx={{ py: { xs: 8, md: 12 }, bgcolor: colors.bgDarker, borderBottom: `1px solid ${colors.border}` }}>

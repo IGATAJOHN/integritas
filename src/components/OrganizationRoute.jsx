@@ -33,7 +33,7 @@ const OrganizationRoute = ({ children }) => {
     }
 
     if (!hasOrganizationAccess(user)) {
-        return <Navigate to="/org/create" replace />;
+        return <Navigate to="/learner" replace />;
     }
 
     return children;

@@ -145,8 +145,7 @@ const SignupPage = () => {
                 user_type: role, 
             });
 
-            const dashboardRoute = getDashboardRoute(userData || role);
-            navigate(dashboardRoute);
+            navigate('/verify');
         } catch (err) {
             console.error(err);
             setError(err?.message || 'Registration failed. Please try again.');

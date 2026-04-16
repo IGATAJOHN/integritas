@@ -19,6 +19,7 @@ import {
     Typography,
 } from '@mui/material';
 import {
+    ArrowBack as ArrowBackIcon,
     Close as CloseIcon,
     FilterList as FilterIcon,
     OpenInNew as OpenInNewIcon,
@@ -29,6 +30,7 @@ import {
 } from '@mui/icons-material';
 import CourseCard from '../components/CourseCard';
 import { courseCatalogService } from '../services';
+import Header from '../../../components/Header';
 
 const SORT_OPTIONS = ['Most Popular', 'Newest', 'Highest Rated', 'Price: Low to High'];
 
@@ -210,6 +212,7 @@ const Explore = () => {
 
     return (
         <Box sx={{ bgcolor: colors.bg, color: colors.text, minHeight: '100%' }}>
+            <Header />
             <Drawer open={isFilterOpen} onClose={() => setIsFilterOpen(false)} PaperProps={{ sx: { width: 280, p: 3, bgcolor: colors.paper } }}>
                 <Stack direction="row" justifyContent="space-between" sx={{ mb: 2 }}>
                     <Typography sx={{ color: colors.text, fontWeight: 700 }}>Filters</Typography>

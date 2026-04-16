@@ -478,6 +478,21 @@ const CourseDetail = () => {
                                     </>
                                 )}
 
+                                {/* Course Image Banner */}
+                                {hasCourseImage ? (
+                                    <Box
+                                        component="img"
+                                        src={courseData.image}
+                                        alt={courseData.title}
+                                        sx={{ width: '100%', height: { xs: 180, md: 260 }, objectFit: 'cover', borderRadius: 2, mb: 4 }}
+                                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                    />
+                                ) : (
+                                    <Box sx={{ width: '100%', height: { xs: 180, md: 260 }, bgcolor: '#111827', borderRadius: 2, mb: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <SchoolIcon sx={{ fontSize: 72, color: 'rgba(255,255,255,0.1)' }} />
+                                    </Box>
+                                )}
+
                                 {/* Curriculum Summary */}
                                 {/* Course Content Header & Summary */}
                                 <Stack direction="row" justifyContent="space-between" alignItems="baseline" sx={{ mb: 3 }}>

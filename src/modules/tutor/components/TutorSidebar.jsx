@@ -51,8 +51,8 @@ const TutorSidebar = ({
             ]
         },
         // { path: '/tutor/analytics', label: 'Teacher Analytics', icon: <BarChartOutlined sx={{ fontSize: 22 }} /> },
-        { path: '/tutor/assignments', label: 'Assignments', icon: <AssignmentOutlined sx={{ fontSize: 22 }} /> },
-        { path: '/tutor/profile', label: 'Profile', icon: <PersonOutlined sx={{ fontSize: 22 }} /> },
+        // { path: '/tutor/assignments', label: 'Assignments', icon: <AssignmentOutlined sx={{ fontSize: 22 }} /> }, // hidden until implemented
+        // { path: '/tutor/profile', label: 'Profile', icon: <PersonOutlined sx={{ fontSize: 22 }} /> }, // hidden until implemented
     ];
 
     const isActive = (path) => {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
     Box,
     Container,
@@ -18,6 +18,7 @@ import {
     EmojiEvents,
     Public,
     ArrowForward,
+    ArrowBack as ArrowBackIcon,
     Lightbulb,
     Handshake,
     Security,
@@ -116,6 +117,7 @@ const team = [
 const AboutUsPage = () => {
     const { isDark } = useThemeMode();
     const colors = getColors(isDark);
+    const navigate = useNavigate();
 
     return (
         <Box sx={{ bgcolor: colors.bgDark, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>

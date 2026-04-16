@@ -117,6 +117,13 @@ const Checkout = () => {
                 gap: 2
             }}>
                 <Stack direction="row" alignItems="center" spacing={1.5}>
+                    <IconButton
+                        onClick={() => course.courseId ? navigate(`/explore/course/${course.courseId}`) : navigate(-1)}
+                        sx={{ color: 'rgba(255,255,255,0.6)', '&:hover': { color: '#fff', bgcolor: 'rgba(255,255,255,0.08)' } }}
+                        title="Back to course"
+                    >
+                        <ArrowBack fontSize="small" />
+                    </IconButton>
                     <Box
                         component="img"
                         src={logo}

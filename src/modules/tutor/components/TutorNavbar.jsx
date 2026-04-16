@@ -165,7 +165,8 @@ const DashboardNavbar = ({
                     </Box>
                 )}
 
-                <IconButton
+                {/* Notifications — hidden until implemented */}
+                {/* <IconButton
                     sx={{
                         color: '#6B7280',
                         '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' },
@@ -174,7 +175,7 @@ const DashboardNavbar = ({
                     <Badge badgeContent={notificationCount} color="error">
                         <NotificationsOutlined sx={{ fontSize: 24 }} />
                     </Badge>
-                </IconButton>
+                </IconButton> */}
 
                 <Avatar
                     src={user.avatar}

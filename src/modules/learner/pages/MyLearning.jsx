@@ -19,6 +19,7 @@ import {
     AccessTime,
     CheckCircle,
     Search,
+    School as SchoolIcon,
 } from '@mui/icons-material';
 import { learnerEnrollmentService } from '../services';
 
@@ -30,8 +31,6 @@ const normalizeStatus = (status) => {
     if (s === 'completed') return 'COMPLETED';
     return 'IN PROGRESS';
 };
-
-const fallbackImage = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450"><rect width="100%25" height="100%25" fill="%23111827"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" fill="%239CA3AF" font-size="28">Course Image</text></svg>';
 
 const MyLearning = () => {
     const navigate = useNavigate();
@@ -247,23 +246,39 @@ const MyLearning = () => {
                         const progress = Number(enrollment.progress_percent || 0);
                         const title = String(enrollment.course?.title || enrollment.course_title || 'Untitled Course');
                         const instructor = String(enrollment.course?.instructor || enrollment.instructor || 'Integritas Hub');
-                        const image = String(enrollment.course?.thumbnail_url || enrollment.course?.image || '').trim() || fallbackImage;
+                        const image = String(enrollment.course?.thumbnail_url || enrollment.course?.image || '').trim();
                         const courseId = enrollment.course_id || enrollment.course?.id;
 
                         return (
                             <Grid key={enrollment.id} size={{ xs: 12, sm: 6, xl: 4 }}>
                                 <Paper sx={{ bgcolor: '#1A2230', border: '1px solid #374151', borderRadius: 2, overflow: 'hidden', height: '100%', width: '100%', display: 'flex', flexDirection: 'column' }}>
-                                    <Box
-                                        component="img"
-                                        src={image}
-                                        alt={title}
-                                        onError={(e) => { e.currentTarget.src = fallbackImage; }}
-                                        sx={{
-                                            height: 158,
-                                            width: '100%',
-                                            objectFit: 'cover',
-                                        }}
-                                    />
+                                    {image ? (
+                                        <Box
+                                            component="img"
+                                            src={image}
+                                            alt={title}
+                                            onError={(e) => {
+                                                e.currentTarget.style.display = 'none';
+                                                const fallback = e.currentTarget.nextElementSibling;
+                                                if (fallback) fallback.style.display = 'flex';
+                                            }}
+                                            sx={{
+                                                height: 158,
+                                                width: '100%',
+                                                objectFit: 'cover',
+                                            }}
+                                        />
+                                    ) : null}
+                                    <Box sx={{
+                                        display: image ? 'none' : 'flex',
+                                        height: 158,
+                                        width: '100%',
+                                        bgcolor: '#111827',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}>
+                                        <SchoolIcon sx={{ fontSize: 56, color: 'rgba(255,255,255,0.15)' }} />
+                                    </Box>
 
                                     <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1.25, flex: 1 }}>
                                         <Stack direction="row" justifyContent="space-between" alignItems="center">
