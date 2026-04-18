@@ -13,7 +13,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../contexts';
 import { getDashboardRoute } from '../utils';
-import icon from '../assets/images/GGH_icon.png';
+import icon from '../assets/images/integritas_logo.png';
 
 const VerifyPage = () => {
     const { id, hash } = useParams();

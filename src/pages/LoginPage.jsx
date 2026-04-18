@@ -17,8 +17,8 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../contexts';
 import { getDashboardRoute, isReturnToAllowedForUser } from '../utils';
-import logo from '../assets/images/GGH_logo.png';
-import icon from '../assets/images/GGH_icon.png';
+import logo from '../assets/images/integritas_logo.jpg';
+import icon from '../assets/images/integritas_logo.jpg';
 
 const LoginPage = () => {
     const navigate = useNavigate();
@@ -127,7 +127,7 @@ const LoginPage = () => {
                         component="img"
                         src={logo}
                         alt="Integritas Hub Logo"
-                        sx={{ height: 100, width: 100, borderRadius: 2, mb: 2 }}
+                        sx={{ height: 120, width: 400, borderRadius: 2, mb: 2 }}
                     />
 
                     {/* Title */}
@@ -175,12 +175,12 @@ const LoginPage = () => {
                 <Box sx={{ maxWidth: 400, mx: 'auto', width: '100%', my: 'auto' }}>
                     {/* Logo and Title */}
                     <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
-                        <Box
+                        {/* <Box
                             component="img"
                             src={icon}
                             alt="Integritas Hub Logo"
-                            sx={{ height: 50, width: 50, }}
-                        />
+                            sx={{ height: 50, width: 500, }}
+                        /> */}
                         <Typography
                             sx={{
                                 fontSize: '1.2rem',

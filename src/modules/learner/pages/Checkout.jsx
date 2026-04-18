@@ -38,7 +38,7 @@ import {
     SupportAgentOutlined as SupportAgent,
     EmailOutlined as Email
 } from '@mui/icons-material';
-import logo from '../../../assets/images/GGH_logo.png';
+import logo from '../../../assets/images/integritas_logo.png';
 import { learnerEnrollmentService } from '../services';
 
 /**

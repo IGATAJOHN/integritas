@@ -24,8 +24,8 @@ import {
     CheckCircleOutline,
     HighlightOff,
 } from '@mui/icons-material';
-import logo from '../assets/images/GGH_logo.png';
-import icon from '../assets/images/GGH_icon.png';
+import logo from '../assets/images/integritas_logo.png';
+import icon from '../assets/images/integritas_logo.png';
 import { getDashboardRoute } from '../utils';
 
 const SignupPage = () => {

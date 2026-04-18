@@ -36,7 +36,7 @@ const Footer = () => {
                     spacing={2}
                 >
                     <Typography sx={{ fontSize: '0.875rem', color: colors.textDark }}>
-                        © {currentYear} Integritas Hub. All rights reserved.
+                        © {currentYear} Integritas Hub. All rights reserved. Brought to you by <b>Center for Fiscal Transparency and Public Integrity (CeFTPI)</b>
                     </Typography>
                     <Stack direction="row" spacing={4}>
                         {legalLinks.map((item) => (

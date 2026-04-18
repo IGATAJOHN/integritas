@@ -23,7 +23,7 @@ import {
     Logout as LogoutIcon,
 } from '@mui/icons-material';
 import { useAuth, useThemeMode } from '../../../contexts';
-import logo from '../../../assets/images/GGH_icon.png';
+import logo from '../../../assets/images/integritas_logo.jpg';
 
 const LearnerNavbar = ({ onMobileMenuToggle }) => {
     const theme = useTheme();

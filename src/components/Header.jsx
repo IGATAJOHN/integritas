@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import { LightMode, DarkMode, Menu, Close } from '@mui/icons-material';
 import { useThemeMode } from '../contexts';
-import logo from '../assets/images/GGH_logo.png';
+import logo from '../assets/images/integritas_logo.jpg';
 import { useAuth } from '../contexts';
 
 const Header = () => {
@@ -70,7 +70,7 @@ const Header = () => {
                         component="img"
                         src={logo}
                         alt="Integritas Hub Logo"
-                        sx={{ height: 32, width: 'auto' }}
+                        sx={{ height: 32, width: 40 }}
                     />
                     <span>Integritas Hub</span>
                 </Box>
@@ -233,14 +233,14 @@ const Header = () => {
                                 component="img"
                                 src={logo}
                                 alt="Integritas Hub Logo"
-                                sx={{ height: 36, width: 'auto' }}
+                                sx={{ height: "80px", width: 'auto' }}
                             />
-                            <Box
+                            {/* <Box
                                 component="span"
                                 sx={{ display: { xs: 'none', sm: 'inline' } }}
                             >
                                 Integritas Hub
-                            </Box>
+                            </Box> */}
                         </Box>
 
                         {/* Desktop Navigation */}

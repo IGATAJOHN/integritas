@@ -36,7 +36,7 @@ import {
     Person,
     ArrowBack
 } from '@mui/icons-material';
-import logo from '../../../assets/images/GGH_logo.png';
+import logo from '../../../assets/images/integritas_logo.png';
 
 /**
  * CourseLessonV2 Component

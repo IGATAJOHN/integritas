@@ -70,22 +70,20 @@ const LandingPage = () => {
     const features = [
         {
             icon: <School sx={{ fontSize: 28, color: colors.primary }} />,
-            title: 'Expert-Led Curriculum',
-            description: 'Courses taught by top government officials and policy experts with real-world experience in public sector challenges.',
+            title: 'Public Servants & Policy Makers',
+            description: 'Learn to enforce institutional accountability, protect the public purse, and deploy data-driven tools like the Transparency and Integrity Index (TII).',
         },
         {
             icon: <Verified sx={{ fontSize: 28, color: '#22D3EE' }} />,
-            title: 'Certified Accreditation',
-            description: 'Earn certifications recognized by government bodies, enhancing your credibility and career advancement opportunities.',
+            title: 'The Private Sector & Entrepreneurs',
+            description: 'Restore trust as your primary economic currency. Learn to build clean supply chains, honor contracts, and scale profitable businesses without paying kickbacks.',
         },
         {
             icon: <Analytics sx={{ fontSize: 28, color: '#818CF8' }} />,
-            title: 'Data-Driven Policy Tools',
-            description: 'Access cutting-edge tools for policy analysis, implementation monitoring, and data-driven decision making.',
+            title: 'The Youth Vanguard',
+            description: 'Survive the early-stage pressure cookers of campus life and the NYSC. Reject cybercrime, leverage ethical tech, and become the next generation of uncompromised leaders.',
         },
     ];
-
-
 
 
     const testimonial = {
@@ -162,10 +160,9 @@ const LandingPage = () => {
                                 color: colors.textWhite,
                             }}
                         >
-                            Empowering Public<br />
-                            Service Through<br />
+                            Anchoring a Future on<br />
                             <Box component="span" sx={{ color: 'rgba(17, 82, 212, 1)' }}>
-                                Excellence
+                                Integrity
                             </Box>
                         </Typography>
 
@@ -179,9 +176,7 @@ const LandingPage = () => {
                                 maxWidth: 450,
                             }}
                         >
-                            The premier learning platform for policy professionals,
-                            government officials, and civic leaders. Master the skills needed
-                            for modern governance.
+                            Nigeria's premier digital learning platform and "Trust Utility." Master the technical tools of transparency and the moral courage required to navigate the system with clean hands.
                         </Typography>
 
                         {/* Buttons */}
@@ -204,7 +199,7 @@ const LandingPage = () => {
                                     borderRadius: 2,
                                 }}
                             >
-                                Explore Courses
+                                Start the Foundational Track
                             </Button>
                             <Button
                                 component={Link}
@@ -266,6 +261,59 @@ const LandingPage = () => {
                         />
                     </Box>
                 </Box>
+            </Box>
+
+            {/* Core Philosophy Section */}
+            <Box
+                sx={{
+                    py: { xs: 8, md: 10 },
+                    px: { xs: 2, md: 4, lg: 6 },
+                    bgcolor: colors.bgCard,
+                    borderTop: `1px solid ${colors.border}`,
+                    borderBottom: `1px solid ${colors.border}`,
+                    textAlign: 'center',
+                }}
+            >
+                <Container maxWidth="md">
+                    <Typography
+                        sx={{
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.15em',
+                            color: 'rgba(17, 82, 212, 1)',
+                            mb: 2,
+                        }}
+                    >
+                        The Core Philosophy
+                    </Typography>
+                    <Typography
+                        variant="h2"
+                        sx={{
+                            fontSize: { xs: '1.75rem', md: '2.25rem' },
+                            fontWeight: 700,
+                            color: colors.textWhite,
+                            mb: 3,
+                            lineHeight: 1.3,
+                        }}
+                    >
+                        Transparency is the tool.{' '}
+                        <Box component="span" sx={{ color: 'rgba(17, 82, 212, 1)' }}>
+                            Integrity is the outcome.
+                        </Box>
+                    </Typography>
+                    <Typography
+                        sx={{
+                            fontSize: '1.0625rem',
+                            color: colors.textMuted,
+                            lineHeight: 1.8,
+                            maxWidth: 720,
+                            mx: 'auto',
+                        }}
+                    >
+                        In a landscape where the &ldquo;Nigerian Factor&rdquo; is often used as an excuse for compromise, technical skills alone are not enough. INTEGRITAS bridges rigorous compliance training with high-impact experiential mentorship. We transform public ethics from an abstract concept into a verifiable, professional standard.
+                    </Typography>
+                </Container>
             </Box>
 
             {/* Stats Bar */}
@@ -335,11 +383,11 @@ const LandingPage = () => {
                             color: colors.textWhite,
                         }}
                     >
-                        Why Choose Integritas Hub?
+                        Who Is This For?
                     </Typography>
                     <Typography
                         sx={{
-                            fontSize: '1.0625rem',
+                            fontSize: '1rem',
                             color: colors.textMuted,
                             lineHeight: 1.6,
                         }}

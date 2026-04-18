@@ -41,7 +41,7 @@ import {
     Subtitles,
     VolumeUp,
 } from '@mui/icons-material';
-import logo from '../../../assets/images/GGH_logo.png';
+import logo from '../../../assets/images/integritas_logo.png';
 import { courseCatalogService, learnerEnrollmentService } from '../services';
 import { apiService } from '../../../services/api';
 import { getImageUrl } from '../../../utils';
