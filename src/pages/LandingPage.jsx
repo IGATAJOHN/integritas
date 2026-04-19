@@ -176,7 +176,7 @@ const LandingPage = () => {
                                 maxWidth: 450,
                             }}
                         >
-                            Nigeria's premier digital learning platform and "Trust Utility." Master the technical tools of transparency and the moral courage required to navigate the system with clean hands.
+                           Nigeria's premier digital learning platform. Master the tools of transparency, the philosophy of accountability, and the dignity to lead without compromise.
                         </Typography>
 
                         {/* Buttons */}
