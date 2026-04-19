@@ -24,6 +24,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useThemeMode } from '../contexts';
 import { courseCatalogService } from '../modules/learner/services';
+import heroImage from "../assets/images/hero-screen.png"
 
 
 
@@ -250,7 +251,7 @@ const LandingPage = () => {
                     >
                         <Box
                             component="img"
-                            src="/src/assets/images/hero-screen.png"
+                            src={heroImage}
                             alt="Integritas Platform Dashboard"
                             sx={{
                                 width: '100%',
