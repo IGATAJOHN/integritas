@@ -133,7 +133,7 @@ const benefits = [
         color: '#22D3EE',
         bgColor: 'rgba(34, 211, 238, 0.1)',
         title: 'Co-Branded Certification',
-        description: 'Offer your learners certificates that carry both your institution\'s brand and Integritas Hub\'s accreditation.',
+        description: 'Offer your learners certificates that carry both your institution\'s brand and Integritas\'s accreditation.',
     },
     {
         icon: <Groups sx={{ fontSize: 28 }} />,

@@ -123,7 +123,7 @@ const VerifyPage = () => {
                     <Box
                         component="img"
                         src={icon}
-                        alt="Integritas Hub Logo"
+                        alt="Integritas Logo"
                         sx={{ height: 28, width: 28 }}
                     />
                     <Typography
@@ -133,7 +133,7 @@ const VerifyPage = () => {
                             color: '#FFFFFF',
                         }}
                     >
-                        Integritas Hub
+                        Integritas
                     </Typography>
                 </Stack>
                 <Stack direction="row" spacing={3}>

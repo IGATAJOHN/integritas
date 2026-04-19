@@ -17,8 +17,8 @@ const MainLayout = () => {
             <header className="main-header">
                 <div className="header-brand">
                     <Link to="/" className="brand-link" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-                        <img src={logo} alt="Integritas Hub Logo" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
-                        <h1>Integritas Hub Platform</h1>
+                        <img src={logo} alt="Integritas Logo" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
+                        <h1>Integritas Platform</h1>
                     </Link>
                 </div>
                 <nav className="main-nav">
@@ -42,7 +42,7 @@ const MainLayout = () => {
             </main>
 
             <footer className="main-footer">
-                <p>&copy; {new Date().getFullYear()} Integritas Hub Platform. All rights reserved.</p>
+                <p>&copy; {new Date().getFullYear()} Integritas Platform. All rights reserved.</p>
             </footer>
         </div>
     );

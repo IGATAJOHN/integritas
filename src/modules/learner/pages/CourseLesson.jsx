@@ -323,7 +323,7 @@ const CourseLesson = () => {
                 flexShrink: 0,
             }}>
                 <Stack direction="row" alignItems="center" spacing={2}>
-                    <Box component="img" src={logo} alt="Integritas Hub" sx={{ width: 30, height: 30, objectFit: 'contain' }} />
+                    <Box component="img" src={logo} alt="Integritas" sx={{ width: 30, height: 30, objectFit: 'contain' }} />
                     <Stack direction="row" alignItems="center" spacing={0.75} sx={{ color: colors.textSecondary, fontSize: '0.82rem' }}>
                         <Typography
                             variant="body2"

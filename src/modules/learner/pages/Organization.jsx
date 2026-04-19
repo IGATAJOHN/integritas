@@ -38,7 +38,7 @@ import {
 import { learnerOrganizationService } from '../services/organizationService';
 import OrganizationScopeToolbar from '../components/OrganizationScopeToolbar';
 
-const STORAGE_KEY = 'Integritas Hub_learner_selected_org_id';
+const STORAGE_KEY = 'Integritas_learner_selected_org_id';
 const ASSIGNMENT_TYPES = ['course', 'learning_path'];
 const ASSIGNMENT_STATUSES = ['assigned', 'in_progress', 'completed', 'revoked'];
 

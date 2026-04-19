@@ -13,11 +13,11 @@ const Settings = () => {
                 <Card title="General Settings">
                     <div className="setting-item">
                         <label>Site Name</label>
-                        <input type="text" defaultValue="Integritas Hub Platform" />
+                        <input type="text" defaultValue="Integritas Platform" />
                     </div>
                     <div className="setting-item">
                         <label>Contact Email</label>
-                        <input type="email" defaultValue="admin@Integritas Hub.com" />
+                        <input type="email" defaultValue="admin@Integritas.com" />
                     </div>
                 </Card>
 

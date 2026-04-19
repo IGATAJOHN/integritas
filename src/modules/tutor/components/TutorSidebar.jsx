@@ -100,7 +100,7 @@ const TutorSidebar = ({
                     <Box
                         component="img"
                         src="/src/assets/images/integritas_logo.png"
-                        alt="Integritas Hub Logo"
+                        alt="Integritas Logo"
                         sx={{ height: 50, width: 50 }}
                     />
                     <Box>
@@ -112,7 +112,7 @@ const TutorSidebar = ({
                                 lineHeight: 1.2,
                             }}
                         >
-                            Integritas Hub
+                            Integritas
                         </Typography>
                         <Typography
                             sx={{

@@ -228,7 +228,7 @@ const CourseDetail = () => {
                         learningObjectives,
                         modules: Array.isArray(raw.modules) ? raw.modules : [],
                         instructor: {
-                            name: readTutorName(tutorProfile) || data.instructor || 'Integritas Hub',
+                            name: readTutorName(tutorProfile) || data.instructor || 'Integritas',
                             title: readTutorValue(tutorProfile, 'headline', 'title', 'profession') || 'Course Instructor',
                             bio: readTutorValue(tutorProfile, 'bio') || '',
                         },

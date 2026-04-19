@@ -128,7 +128,7 @@ const normalizeCourse = (course = {}) => {
         course.author?.name ||
         course.organization?.name ||
         course.org?.name
-    ) || 'Integritas Hub';
+    ) || 'Integritas';
 
     const description =
         toTrimmedString(course.short_description) ||

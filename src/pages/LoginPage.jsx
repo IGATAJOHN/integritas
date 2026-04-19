@@ -126,7 +126,7 @@ const LoginPage = () => {
                     <Box
                         component="img"
                         src={logo}
-                        alt="Integritas Hub Logo"
+                        alt="Integritas Logo"
                         sx={{ height: 120, width: 400, borderRadius: 2, mb: 2 }}
                     />
 
@@ -178,7 +178,7 @@ const LoginPage = () => {
                         {/* <Box
                             component="img"
                             src={icon}
-                            alt="Integritas Hub Logo"
+                            alt="Integritas Logo"
                             sx={{ height: 50, width: 500, }}
                         /> */}
                         <Typography
@@ -188,7 +188,7 @@ const LoginPage = () => {
                                 color: '#FFFFFF',
                             }}
                         >
-                            Integritas Hub
+                            Integritas
                         </Typography>
                     </Stack>
 
@@ -437,7 +437,7 @@ const LoginPage = () => {
                         pt: 2,
                     }}
                 >
-                    © 2026 Integritas Hub. All rights reserved.
+                    © 2026 Integritas. All rights reserved.
                 </Typography>
             </Box>
         </Box>

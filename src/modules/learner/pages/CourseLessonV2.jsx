@@ -353,7 +353,7 @@ const CourseLessonV2 = () => {
                         <Box
                             component="img"
                             src={logo}
-                            alt="Integritas Hub"
+                            alt="Integritas"
                             sx={{ width: 32, height: 32, objectFit: 'contain', mr: 1 }}
                         />
                         <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>

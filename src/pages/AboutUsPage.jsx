@@ -171,7 +171,7 @@ const AboutUsPage = () => {
                             mb: 5,
                         }}
                     >
-                        Integritas Hub was founded with a singular mission: to bridge the gap between public sector potential and professional excellence through world-class, accessible education.
+                        Integritas was founded with a singular mission: to bridge the gap between public sector potential and professional excellence through world-class, accessible education.
                     </Typography>
                     <Button
                         component={Link}
@@ -222,202 +222,156 @@ const AboutUsPage = () => {
                 </Container>
             </Box>
 
-            {/* Mission & Vision */}
+            {/* Our Mission */}
             <Box sx={{ py: { xs: 8, md: 12 }, borderBottom: `1px solid ${colors.border}` }}>
-                <Container maxWidth="lg">
-                    <Grid container spacing={6} alignItems="center">
-                        <Grid size={{ xs: 12, md: 6 }}>
-                            <Typography
-                                variant="overline"
-                                sx={{ color: 'rgba(17, 82, 212, 1)', fontWeight: 700, letterSpacing: '0.15em', fontSize: '0.8rem' }}
-                            >
-                                Who We Are
-                            </Typography>
-                            <Typography
-                                variant="h3"
-                                sx={{ fontWeight: 800, color: colors.textWhite, fontSize: { xs: '1.75rem', md: '2.25rem' }, mt: 1, mb: 3, lineHeight: 1.3 }}
-                            >
-                                Our Mission
-                            </Typography>
-                            <Typography sx={{ color: colors.textMuted, lineHeight: 1.9, fontSize: '1rem', mb: 3 }}>
-                                At Integritas Hub, our mission is to equip public servants, institutional leaders, and government professionals with the knowledge, skills, and certifications they need to drive meaningful change in their communities and organizations.
-                            </Typography>
-                            <Typography sx={{ color: colors.textMuted, lineHeight: 1.9, fontSize: '1rem' }}>
-                                We believe that a well-trained public sector is the backbone of a thriving nation. Every course we design, every partnership we forge, and every certificate we issue is a step toward that vision of capable, accountable, and impactful governance.
-                            </Typography>
-                        </Grid>
-                        <Grid size={{ xs: 12, md: 6 }}>
-                            <Box
-                                sx={{
-                                    bgcolor: colors.bgCard,
-                                    border: `1px solid ${colors.border}`,
-                                    borderRadius: 3,
-                                    p: { xs: 3, md: 5 },
-                                }}
-                            >
-                                <Stack spacing={4}>
-                                    {[
-                                        {
-                                            icon: <School sx={{ color: 'rgba(17, 82, 212, 1)', fontSize: 28 }} />,
-                                            bg: 'rgba(17, 82, 212, 0.1)',
-                                            title: 'Expert-Led Learning',
-                                            desc: 'Every course is designed and delivered by practitioners with deep real-world experience in the public sector.',
-                                        },
-                                        {
-                                            icon: <EmojiEvents sx={{ color: '#FBBF24', fontSize: 28 }} />,
-                                            bg: 'rgba(251, 191, 36, 0.1)',
-                                            title: 'Recognized Certifications',
-                                            desc: 'Our certificates are recognized by government bodies and institutions across Africa.',
-                                        },
-                                        {
-                                            icon: <Public sx={{ color: '#34D399', fontSize: 28 }} />,
-                                            bg: 'rgba(52, 211, 153, 0.1)',
-                                            title: 'African Reach',
-                                            desc: 'Serving learners and institutions across Africa.',
-                                        },
-                                    ].map((item) => (
-                                        <Stack direction="row" spacing={2.5} alignItems="flex-start" key={item.title}>
-                                            <Avatar sx={{ bgcolor: item.bg, width: 52, height: 52, borderRadius: 2, flexShrink: 0 }}>
-                                                {item.icon}
-                                            </Avatar>
-                                            <Box>
-                                                <Typography sx={{ fontWeight: 700, color: colors.textWhite, mb: 0.5 }}>
-                                                    {item.title}
-                                                </Typography>
-                                                <Typography sx={{ color: colors.textMuted, fontSize: '0.9rem', lineHeight: 1.7 }}>
-                                                    {item.desc}
-                                                </Typography>
-                                            </Box>
-                                        </Stack>
-                                    ))}
-                                </Stack>
-                            </Box>
-                        </Grid>
-                    </Grid>
+                <Container maxWidth="md">
+                    <Typography
+                        variant="overline"
+                        sx={{ color: 'rgba(17, 82, 212, 1)', fontWeight: 700, letterSpacing: '0.15em', fontSize: '0.8rem', display: 'block', mb: 2 }}
+                    >
+                        Who We Are
+                    </Typography>
+
+                    {/* Block 1 */}
+                    <Typography
+                        variant="h3"
+                        sx={{ fontWeight: 800, color: colors.textWhite, fontSize: { xs: '1.5rem', md: '2rem' }, mb: 2, lineHeight: 1.3 }}
+                    >
+                        Our Mission: Rebuilding the Currency of Trust
+                    </Typography>
+                    <Typography sx={{ color: colors.textMuted, lineHeight: 1.9, fontSize: '1rem', mb: 2 }}>
+                        Nigeria does not suffer from a lack of talent, brilliance, or technical capability. We suffer from a systemic trust deficit. For too long, the &ldquo;Nigerian Factor&rdquo; has been used as an excuse to normalize compromise, corner-cutting, and institutional leakage.
+                    </Typography>
+                    <Typography sx={{ color: colors.textMuted, lineHeight: 1.9, fontSize: '1rem', mb: 6 }}>
+                        We are here to rewrite that narrative.
+                    </Typography>
+
+                    <Divider sx={{ borderColor: colors.border, mb: 6 }} />
+
+                    {/* Block 2 */}
+                    <Typography
+                        variant="h3"
+                        sx={{ fontWeight: 800, color: colors.textWhite, fontSize: { xs: '1.5rem', md: '2rem' }, mb: 2, lineHeight: 1.3 }}
+                    >
+                        Transparency is the Tool.{' '}
+                        <Box component="span" sx={{ color: 'rgba(17, 82, 212, 1)' }}>
+                            Integrity is the Outcome.
+                        </Box>
+                    </Typography>
+                    <Typography sx={{ color: colors.textMuted, lineHeight: 1.9, fontSize: '1rem', mb: 2 }}>
+                        Developed by the Center for Fiscal Transparency and Public Integrity (CeFTPI), INTEGRITAS is not just another e-learning site. It is a behavioral intervention and a verifiable &ldquo;Trust Utility.&rdquo;
+                    </Typography>
+                    <Typography sx={{ color: colors.textMuted, lineHeight: 1.9, fontSize: '1rem', mb: 6 }}>
+                        While existing programs teach the academic laws of compliance, we focus on the raw, human element of moral courage. We believe that transparency frameworks — like budgets, the FOI Act, and the TII — are merely instruments; they require individuals of uncompromised character to wield them effectively.
+                    </Typography>
+
+                    <Divider sx={{ borderColor: colors.border, mb: 6 }} />
+
+                    {/* Block 3 */}
+                    <Typography
+                        variant="h3"
+                        sx={{ fontWeight: 800, color: colors.textWhite, fontSize: { xs: '1.5rem', md: '2rem' }, mb: 2, lineHeight: 1.3 }}
+                    >
+                        Building the{' '}
+                        <Box component="span" sx={{ color: 'rgba(17, 82, 212, 1)' }}>
+                            Institutional Immune System
+                        </Box>
+                    </Typography>
+                    <Typography sx={{ color: colors.textMuted, lineHeight: 1.9, fontSize: '1rem', mb: 2 }}>
+                        We are building a new moral infrastructure for the nation. Through our rigorous 15-module Foundational Track and the Capstone Gateway Project, we are training a new breed of professionals — Integritas Associates.
+                    </Typography>
+                    <Typography sx={{ color: colors.textMuted, lineHeight: 1.9, fontSize: '1rem', mb: 6 }}>
+                        By deploying a critical mass of these certified professionals across the public service, the private sector, and the youth vanguard, we are creating a localised &ldquo;institutional immune system.&rdquo; This network will share the same ethical language and possess the courage to collectively resist, expose, and neutralize corruption from the inside out.
+                    </Typography>
+
+                    <Divider sx={{ borderColor: colors.border, mb: 6 }} />
+
+                    {/* Block 4 */}
+                    <Typography
+                        variant="h3"
+                        sx={{ fontWeight: 800, color: colors.textWhite, fontSize: { xs: '1.5rem', md: '2rem' }, mb: 2, lineHeight: 1.3 }}
+                    >
+                        Success Without Compromise{' '}
+                        <Box component="span" sx={{ color: 'rgba(17, 82, 212, 1)' }}>
+                            is Possible.
+                        </Box>
+                    </Typography>
+                    <Typography sx={{ color: colors.textMuted, lineHeight: 1.9, fontSize: '1rem', mb: 5 }}>
+                        For graduates who pass the Gateway Project, INTEGRITAS unlocks the Experta Class — a cinematic library of survival guides from vetted Nigerian leaders. These &ldquo;Integrity Icons&rdquo; provide the ultimate proof that you can reach the highest levels of government and enterprise in Nigeria without dirtying your hands.
+                    </Typography>
+                    
+
+                    <Divider sx={{ borderColor: colors.border, my: 6 }} />
+
+                    {/* Join the Vanguard */}
+                    <Typography
+                        variant="h3"
+                        sx={{ fontWeight: 800, color: colors.textWhite, fontSize: { xs: '1.5rem', md: '2rem' }, mb: 2, lineHeight: 1.3 }}
+                    >
+                        Join the{' '}
+                        <Box component="span" sx={{ color: 'rgba(17, 82, 212, 1)' }}>
+                            Vanguard
+                        </Box>
+                    </Typography>
+                    <Typography sx={{ color: colors.textMuted, lineHeight: 1.9, fontSize: '1rem', mb: 3 }}>
+                        Whether you are a university student navigating your first ethical dilemma, a civil servant protecting the public purse, or a corporate executive building a clean supply chain, this platform is your anchor.
+                    </Typography>
+                    <Typography
+                        sx={{
+                            color: colors.textWhite,
+                            fontSize: '1.125rem',
+                            fontWeight: 600,
+                            fontStyle: 'italic',
+                            mb: 4,
+                        }}
+                    >
+                        Are you ready to lead with clean hands?
+                    </Typography>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                        <Button
+                            component={Link}
+                            to="/explore"
+                            variant="contained"
+                            size="large"
+                            endIcon={<ArrowForward />}
+                            sx={{
+                                bgcolor: 'rgba(17, 82, 212, 1)',
+                                '&:hover': { bgcolor: 'rgba(13, 65, 170, 1)', color: '#FFFFFF' },
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                py: 1.5,
+                                px: 3,
+                                borderRadius: 2,
+                            }}
+                        >
+                            Start the Foundational Track
+                        </Button>
+                        <Button
+                            component={Link}
+                            to="/partners"
+                            variant="outlined"
+                            size="large"
+                            sx={{
+                                borderColor: colors.border,
+                                color: colors.textWhite,
+                                bgcolor: 'transparent',
+                                '&:hover': {
+                                    borderColor: 'rgba(255, 255, 255, 0.5)',
+                                    color: '#FFFFFF',
+                                    bgcolor: 'rgba(255, 255, 255, 0.1)',
+                                },
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                py: 1.5,
+                                px: 3,
+                                borderRadius: 2,
+                            }}
+                        >
+                            Partner as an Organization
+                        </Button>
+                    </Stack>
                 </Container>
             </Box>
-
-            {/* Values */}
-            <Box sx={{ py: { xs: 8, md: 12 }, bgcolor: colors.bgDarker, borderBottom: `1px solid ${colors.border}` }}>
-                <Container maxWidth="lg">
-                    <Box sx={{ textAlign: 'center', mb: 8 }}>
-                        <Typography
-                            variant="overline"
-                            sx={{ color: 'rgba(17, 82, 212, 1)', fontWeight: 700, letterSpacing: '0.15em', fontSize: '0.8rem', display: 'block', mb: 1.5 }}
-                        >
-                            What Drives Us
-                        </Typography>
-                        <Typography
-                            variant="h3"
-                            sx={{ fontWeight: 800, color: colors.textWhite, fontSize: { xs: '1.75rem', md: '2.25rem' } }}
-                        >
-                            Our Core Values
-                        </Typography>
-                    </Box>
-                    <Grid container spacing={3}>
-                        {values.map((val) => (
-                            <Grid size={{ xs: 12, sm: 6, md: 3 }} key={val.title}>
-                                <Box
-                                    sx={{
-                                        bgcolor: colors.bgCard,
-                                        border: `1px solid ${colors.border}`,
-                                        borderRadius: 3,
-                                        p: 3.5,
-                                        height: '100%',
-                                        transition: 'all 0.3s',
-                                        '&:hover': {
-                                            borderColor: colors.borderLight,
-                                            transform: 'translateY(-4px)',
-                                        },
-                                    }}
-                                >
-                                    <Avatar sx={{ bgcolor: val.bgColor, color: val.color, width: 56, height: 56, mb: 2.5, borderRadius: 2 }}>
-                                        {val.icon}
-                                    </Avatar>
-                                    <Typography sx={{ fontWeight: 700, color: colors.textWhite, mb: 1.25, fontSize: '1.05rem' }}>
-                                        {val.title}
-                                    </Typography>
-                                    <Typography sx={{ color: colors.textMuted, fontSize: '0.9rem', lineHeight: 1.75 }}>
-                                        {val.description}
-                                    </Typography>
-                                </Box>
-                            </Grid>
-                        ))}
-                    </Grid>
-                </Container>
-            </Box>
-
-            {/* Team */}
-            {/* <Box sx={{ py: { xs: 8, md: 12 }, borderBottom: `1px solid ${colors.border}` }}>
-                <Container maxWidth="lg">
-                    <Box sx={{ textAlign: 'center', mb: 8 }}>
-                        <Typography
-                            variant="overline"
-                            sx={{ color: 'rgba(17, 82, 212, 1)', fontWeight: 700, letterSpacing: '0.15em', fontSize: '0.8rem', display: 'block', mb: 1.5 }}
-                        >
-                            The People Behind the Platform
-                        </Typography>
-                        <Typography
-                            variant="h3"
-                            sx={{ fontWeight: 800, color: colors.textWhite, fontSize: { xs: '1.75rem', md: '2.25rem' } }}
-                        >
-                            Meet Our Team
-                        </Typography>
-                    </Box>
-                    <Grid container spacing={3} justifyContent="center">
-                        {team.map((member) => (
-                            <Grid item xs={12} sm={6} md={3} key={member.name}>
-                                <Box
-                                    sx={{
-                                        bgcolor: colors.bgCard,
-                                        border: `1px solid ${colors.border}`,
-                                        borderRadius: 3,
-                                        p: 3.5,
-                                        textAlign: 'center',
-                                        height: '100%',
-                                        transition: 'all 0.3s',
-                                        '&:hover': {
-                                            borderColor: colors.borderLight,
-                                            transform: 'translateY(-4px)',
-                                        },
-                                    }}
-                                >
-                                    <Avatar
-                                        sx={{
-                                            width: 72,
-                                            height: 72,
-                                            bgcolor: member.avatarColor,
-                                            fontSize: '1.4rem',
-                                            fontWeight: 700,
-                                            mx: 'auto',
-                                            mb: 2,
-                                        }}
-                                    >
-                                        {member.initials}
-                                    </Avatar>
-                                    <Typography sx={{ fontWeight: 700, color: colors.textWhite, mb: 0.5 }}>
-                                        {member.name}
-                                    </Typography>
-                                    <Typography
-                                        sx={{
-                                            color: 'rgba(17, 82, 212, 1)',
-                                            fontSize: '0.8rem',
-                                            fontWeight: 600,
-                                            mb: 1.5,
-                                        }}
-                                    >
-                                        {member.role}
-                                    </Typography>
-                                    <Divider sx={{ borderColor: colors.border, mb: 1.5 }} />
-                                    <Typography sx={{ color: colors.textMuted, fontSize: '0.875rem', lineHeight: 1.7 }}>
-                                        {member.bio}
-                                    </Typography>
-                                </Box>
-                            </Grid>
-                        ))}
-                    </Grid>
-                </Container>
-            </Box> */}
 
             {/* CTA */}
             <Box sx={{ py: { xs: 10, md: 14 }, textAlign: 'center', bgcolor: colors.bgDarker }}>
@@ -455,7 +409,7 @@ const AboutUsPage = () => {
                             mx: 'auto',
                         }}
                     >
-                        Join thousands of public servants and institutional leaders who are advancing their careers through Integritas Hub.
+                        Join thousands of public servants and institutional leaders who are advancing their careers through Integritas.
                     </Typography>
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="center">
                         <Button

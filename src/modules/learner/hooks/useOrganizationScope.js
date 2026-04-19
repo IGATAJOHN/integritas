@@ -6,7 +6,7 @@ import {
 import { useAuth } from '../../../contexts';
 import { organizationService } from '../services/organizationService';
 
-const KNOWN_ORGS_STORAGE_KEY = 'Integritas Hub_admin_known_orgs';
+const KNOWN_ORGS_STORAGE_KEY = 'Integritas_admin_known_orgs';
 
 const safeParse = (value, fallback) => {
     try {

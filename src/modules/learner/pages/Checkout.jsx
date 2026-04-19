@@ -127,7 +127,7 @@ const Checkout = () => {
                     <Box
                         component="img"
                         src={logo}
-                        alt="Integritas Hub"
+                        alt="Integritas"
                         sx={{ width: 32, height: 32, objectFit: 'contain' }}
                     />
                     <Typography variant="subtitle1" sx={{
@@ -135,7 +135,7 @@ const Checkout = () => {
                         color: '#fff',
                         display: { xs: 'none', sm: 'block' }
                     }}>
-                        Integritas Hub
+                        Integritas
                     </Typography>
                 </Stack>
 
@@ -466,7 +466,7 @@ const Checkout = () => {
                                         <InputBase
                                             readOnly
                                             fullWidth
-                                            value="Integritas Hub"
+                                            value="Integritas"
                                             startAdornment={<InputAdornment position="start"><Person sx={{ color: 'rgba(255,255,255,0.3)' }} /></InputAdornment>}
                                             sx={{
                                                 bgcolor: 'rgba(255,255,255,0.03)',
@@ -517,7 +517,7 @@ const Checkout = () => {
                                         <InputBase
                                             readOnly
                                             fullWidth
-                                            value="Integritas Hub-7832-XK9"
+                                            value="Integritas-7832-XK9"
                                             startAdornment={<InputAdornment position="start"><LocalOffer sx={{ color: 'rgba(255,255,255,0.3)' }} /></InputAdornment>}
                                             sx={{
                                                 bgcolor: 'rgba(255,255,255,0.03)',
@@ -741,7 +741,7 @@ const Checkout = () => {
                 alignItems: 'center'
             }}>
                 <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)' }}>
-                    © 2024 Integritas Hub. All rights reserved.
+                    © 2024 Integritas. All rights reserved.
                 </Typography>
 
                 <Stack direction="row" spacing={4}>

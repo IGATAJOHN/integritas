@@ -87,8 +87,8 @@ const LandingPage = () => {
 
 
     const testimonial = {
-        quote: "The Integritas Hub has transformed how our department approaches policy making. The rigorous curriculum and practical tools are unmatched in the field of public service education.",
-        name: 'CEO Integritas Hub',
+        quote: "The Integritas has transformed how our department approaches policy making. The rigorous curriculum and practical tools are unmatched in the field of public service education.",
+        name: 'CEO Integritas',
         title: 'Senior Policy adviser',
         avatar: '',
     };
@@ -251,7 +251,7 @@ const LandingPage = () => {
                         <Box
                             component="img"
                             src="/src/assets/images/hero-screen.png"
-                            alt="Integritas Hub Platform Dashboard"
+                            alt="Integritas Platform Dashboard"
                             sx={{
                                 width: '100%',
                                 maxWidth: 550,
@@ -462,6 +462,145 @@ const LandingPage = () => {
             </Box>
 
 
+            {/* The Learning Journey Section */}
+            <Box sx={{ py: { xs: 8, md: 12 }, px: { xs: 2, md: 4, lg: 6 }, bgcolor: colors.bgDarker }}>
+                <Container maxWidth="lg">
+                    {/* Section Header */}
+                    <Box sx={{ textAlign: 'center', mb: 8 }}>
+                        <Typography
+                            sx={{
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.15em',
+                                color: 'rgba(17, 82, 212, 1)',
+                                mb: 2,
+                            }}
+                        >
+                            How It Works
+                        </Typography>
+                        <Typography
+                            variant="h2"
+                            sx={{
+                                fontSize: { xs: '1.75rem', md: '2.25rem' },
+                                fontWeight: 700,
+                                color: colors.textWhite,
+                                lineHeight: 1.3,
+                            }}
+                        >
+                            The Learning Journey
+                        </Typography>
+                    </Box>
+
+                    {/* Steps */}
+                    <Stack
+                        direction={{ xs: 'column', md: 'row' }}
+                        spacing={{ xs: 4, md: 3 }}
+                        alignItems={{ xs: 'stretch', md: 'flex-start' }}
+                        sx={{ position: 'relative' }}
+                    >
+                        {[
+                            {
+                                step: '01',
+                                title: 'The Foundational Track',
+                                description: 'From navigating family pressures to surviving the political arena, master the 15 core modules that bridge international compliance standards with local realities.',
+                            },
+                            {
+                                step: '02',
+                                title: 'The Gateway Certification',
+                                description: 'Complete the INT 115 Capstone Project—your personal "Integritas Action Plan"—to prove your technical capability and moral conviction, earning your official certification as an Integritas Associate.',
+                            },
+                            {
+                                step: '03',
+                                title: 'Unlock the Experta Class',
+                                description: "Gain exclusive access to high-production, cinematic mentorship from vetted national leaders. These aren't lectures; they are raw survival guides from leaders who fought the system and won with clean hands.",
+                            },
+                        ].map((item) => (
+                            <Box key={item.step} sx={{ flex: 1, display: 'flex' }}>
+                                <Box
+                                    sx={{
+                                        bgcolor: colors.bgCard,
+                                        border: `1px solid ${colors.border}`,
+                                        borderRadius: 3,
+                                        p: { xs: 3, md: 4 },
+                                        width: '100%',
+                                        height:300,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        transition: 'all 0.3s',
+                                        '&:hover': {
+                                            borderColor: 'rgba(17, 82, 212, 0.5)',
+                                            transform: 'translateY(-4px)',
+                                        },
+                                    }}
+                                >
+                                    {/* Step number */}
+                                    <Box
+                                        sx={{
+                                            width: 56,
+                                            height: 56,
+                                            borderRadius: 2,
+                                            bgcolor: 'rgba(17, 82, 212, 0.12)',
+                                            border: '1px solid rgba(17, 82, 212, 0.3)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            mb: 3,
+                                        }}
+                                    >
+                                        <Typography
+                                            sx={{
+                                                fontSize: '1.125rem',
+                                                fontWeight: 800,
+                                                color: 'rgba(17, 82, 212, 1)',
+                                                letterSpacing: '0.05em',
+                                            }}
+                                        >
+                                            {item.step}
+                                        </Typography>
+                                    </Box>
+
+                                    {/* Title & subtitle */}
+                                    <Typography
+                                        sx={{
+                                            fontSize: '1.125rem',
+                                            fontWeight: 700,
+                                            color: colors.textWhite,
+                                            mb: 0.5,
+                                        }}
+                                    >
+                                        {item.title}
+                                    </Typography>
+                                    <Typography
+                                        sx={{
+                                            fontSize: '0.75rem',
+                                            fontWeight: 600,
+                                            color: 'rgba(17, 82, 212, 1)',
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '0.08em',
+                                            mb: 2,
+                                        }}
+                                    >
+                                        {item.subtitle}
+                                    </Typography>
+
+                                    {/* Description */}
+                                    <Typography
+                                        sx={{
+                                            fontSize: '0.9rem',
+                                            color: colors.textMuted,
+                                            lineHeight: 1.75,
+                                        }}
+                                    >
+                                        {item.description}
+                                    </Typography>
+                                </Box>
+                            </Box>
+                        ))}
+                    </Stack>
+                </Container>
+            </Box>
+
             {/* Essential Courses Section */}
             <Box sx={{ bgcolor: colors.bgDarker }}>
                 <Divider sx={{ borderColor: colors.border }} />
@@ -660,7 +799,7 @@ const LandingPage = () => {
                                                         {course.instructor ? course.instructor.split(' ').map(n => n[0]).join('') : 'IH'}
                                                     </Avatar>
                                                     <Typography sx={{ fontSize: '0.875rem', color: colors.textMuted }}>
-                                                        {course.instructor || 'Integritas Hub'}
+                                                        {course.instructor || 'Integritas'}
                                                     </Typography>
                                                 </Stack>
                                                 {course.price > 0 && (

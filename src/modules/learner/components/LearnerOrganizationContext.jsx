@@ -16,7 +16,7 @@ import { useAuth } from '../../../contexts';
 import { getOrganizationRole } from '../../../utils';
 import { selectMenuProps, selectStyle } from '../../../styles/formStyles';
 
-const STORAGE_KEY = 'Integritas Hub_learner_selected_org_id';
+const STORAGE_KEY = 'Integritas_learner_selected_org_id';
 
 const getOrganizationLabel = (organization) => {
     if (!organization) return '-';

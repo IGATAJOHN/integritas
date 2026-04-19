@@ -120,7 +120,7 @@ const PaymentSuccess = () => {
                     <Box
                         component="img"
                         src={logo}
-                        alt="Integritas Hub"
+                        alt="Integritas"
                         sx={{ width: 32, height: 32, objectFit: 'contain' }}
                     />
                     <Typography variant="subtitle1" sx={{
@@ -128,7 +128,7 @@ const PaymentSuccess = () => {
                         color: '#fff',
                         display: { xs: 'none', sm: 'block' }
                     }}>
-                        Integritas Hub
+                        Integritas
                     </Typography>
                 </Stack>
 
@@ -364,7 +364,7 @@ const PaymentSuccess = () => {
                 alignItems: 'center'
             }}>
                 <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>
-                    © 2024 Integritas Hub. All rights reserved.
+                    © 2024 Integritas. All rights reserved.
                 </Typography>
             </Box>
         </Box>

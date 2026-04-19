@@ -20,8 +20,9 @@ import { useAuth } from '../contexts';
 
 const Header = () => {
     const navItems = [
-    { label: 'Courses', to: '/explore' },
-    { label: 'About Us', to: '/about-us' },
+    { label: 'Home', to: '/' },
+    { label: 'Experta Class', to: '/explore' },
+    { label: 'The Vision', to: '/about-us' },
     { label: 'Partners', to: '/partners' },
 ];
     const { mode, toggleThemeMode, isDark } = useThemeMode();
@@ -69,10 +70,10 @@ const Header = () => {
                     <Box
                         component="img"
                         src={logo}
-                        alt="Integritas Hub Logo"
+                        alt="Integritas Logo"
                         sx={{ height: 32, width: 40 }}
                     />
-                    <span>Integritas Hub</span>
+                    <span>Integritas</span>
                 </Box>
                 <IconButton
                     onClick={handleDrawerToggle}
@@ -166,7 +167,7 @@ const Header = () => {
                                 py: 1.5,
                             }}
                         >
-                            Sign Up
+                            Become an Associate
                         </Button>
                     </>
                 )}
@@ -232,14 +233,14 @@ const Header = () => {
                             <Box
                                 component="img"
                                 src={logo}
-                                alt="Integritas Hub Logo"
+                                alt="Integritas Logo"
                                 sx={{ height: "80px", width: 'auto' }}
                             />
                             {/* <Box
                                 component="span"
                                 sx={{ display: { xs: 'none', sm: 'inline' } }}
                             >
-                                Integritas Hub
+                                Integritas
                             </Box> */}
                         </Box>
 
@@ -330,7 +331,7 @@ const Header = () => {
                                                 color: '#FFFFFF',
                                             }}
                                         >
-                                            Sign Up
+                                            Become an Associate
                                         </Button>
                                     </>
                                 )}

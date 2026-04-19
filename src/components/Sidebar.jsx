@@ -24,12 +24,12 @@ const Sidebar = ({ items = [], title = 'Dashboard', onLogout, mobileOpen, handle
                 <Box
                     component="img"
                     src={logo}
-                    alt="Integritas Hub"
+                    alt="Integritas"
                     sx={{ width: 40, height: 40, objectFit: 'contain' }}
                 />
                 <Box>
                     <Typography variant="subtitle1" sx={{ fontWeight: 200, lineHeight: 1.2, whiteSpace: 'nowrap' }}>
-                        Integritas Hub
+                        Integritas
                     </Typography>
                     <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>
                         {title}

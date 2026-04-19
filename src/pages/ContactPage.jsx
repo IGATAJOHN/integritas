@@ -183,7 +183,7 @@ const ContactPage = () => {
                         lineHeight: 1.7,
                     }}
                 >
-                    Interested in Integritas Hub for your organization? Our team is ready to help you
+                    Interested in Integritas for your organization? Our team is ready to help you
                     find the right solution for your public service training needs.
                 </Typography>
             </Box>

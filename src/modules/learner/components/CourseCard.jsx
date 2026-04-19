@@ -23,7 +23,7 @@ const CourseCard = ({ course, colors, access }) => {
     const safeLevel = String(course?.level || 'Unspecified');
     const safeTitle = String(course?.title || 'Untitled Course');
     const safeDescription = String(course?.description || 'No description available.');
-    const safeInstructor = String(course?.instructor || 'Integritas Hub');
+    const safeInstructor = String(course?.instructor || 'Integritas');
     const safeRating = Number(course?.rating || 0).toFixed(1);
     const safeReviews = Number(course?.reviews || 0);
     const safeDuration = String(course?.duration || 'TBD');

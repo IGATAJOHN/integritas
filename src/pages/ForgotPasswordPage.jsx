@@ -192,7 +192,7 @@ const ForgotPasswordPage = () => {
                     <Box
                         component="img"
                         src={icon}
-                        alt="Integritas Hub Logo"
+                        alt="Integritas Logo"
                         sx={{ height: 28, width: 28 }}
                     />
                     <Typography
@@ -202,7 +202,7 @@ const ForgotPasswordPage = () => {
                             color: '#FFFFFF',
                         }}
                     >
-                        Integritas Hub
+                        Integritas
                     </Typography>
                 </Stack>
                 <Stack direction="row" spacing={3}>
@@ -285,7 +285,7 @@ const ForgotPasswordPage = () => {
                         lineHeight: 1.6,
                     }}
                 >
-                    No worries. Enter the email address associated with your Integritas Hub account, and we'll send you a 6-digit OTP to reset your password.
+                    No worries. Enter the email address associated with your Integritas account, and we'll send you a 6-digit OTP to reset your password.
                 </Typography>
 
                 {/* Error Alert */}

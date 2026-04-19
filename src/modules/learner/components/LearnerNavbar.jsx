@@ -104,7 +104,7 @@ const LearnerNavbar = ({ onMobileMenuToggle }) => {
                     <Box
                         component="img"
                         src={logo}
-                        alt="Integritas Hub Logo"
+                        alt="Integritas Logo"
                         sx={{ width: 32, height: 32, objectFit: 'contain' }}
                     />
                     <Box sx={{ display: { xs: 'none', md: 'block' } }}>
@@ -112,7 +112,7 @@ const LearnerNavbar = ({ onMobileMenuToggle }) => {
                             variant="subtitle2"
                             sx={{ fontWeight: 700, color: colors.text, lineHeight: 1.2 }}
                         >
-                            Integritas Hub
+                            Integritas
                         </Typography>
                         <Typography
                             variant="caption"

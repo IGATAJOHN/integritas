@@ -12,7 +12,7 @@ const DashboardLayout = ({ sidebarItems = [], title = 'Dashboard' }) => {
             <aside className="dashboard-sidebar">
                 <div className="sidebar-header">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                        <img src={logo} alt="Integritas Hub Logo" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
+                        <img src={logo} alt="Integritas Logo" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
                         <h2 className="sidebar-title" style={{ margin: 0 }}>{title}</h2>
                     </div>
                     <button

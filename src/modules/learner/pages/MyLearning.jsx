@@ -245,7 +245,7 @@ const MyLearning = () => {
                         const status = normalizeStatus(enrollment.status);
                         const progress = Number(enrollment.progress_percent || 0);
                         const title = String(enrollment.course?.title || enrollment.course_title || 'Untitled Course');
-                        const instructor = String(enrollment.course?.instructor || enrollment.instructor || 'Integritas Hub');
+                        const instructor = String(enrollment.course?.instructor || enrollment.instructor || 'Integritas');
                         const image = String(enrollment.course?.thumbnail_url || enrollment.course?.image || '').trim();
                         const courseId = enrollment.course_id || enrollment.course?.id;
 

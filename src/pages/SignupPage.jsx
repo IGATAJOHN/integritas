@@ -282,7 +282,7 @@ const SignupPage = () => {
                     <Box
                         component="img"
                         src={logo}
-                        alt="Integritas Hub Logo"
+                        alt="Integritas Logo"
                         sx={{ height: 100, width: 100, borderRadius: 2, mb: 2 }}
                     />
 
@@ -331,13 +331,13 @@ const SignupPage = () => {
                         <Box
                             component="img"
                             src={icon}
-                            alt="Integritas Hub Logo"
+                            alt="Integritas Logo"
                             sx={{ height: 50, width: 50 }}
                         />
                         <Typography
                             sx={{ fontSize: '1.2rem', fontWeight: 600, color: '#FFFFFF' }}
                         >
-                            Integritas Hub
+                            Integritas
                         </Typography>
                     </Stack>
 
@@ -741,7 +741,7 @@ const SignupPage = () => {
                         pt: 2,
                     }}
                 >
-                    © 2026 Integritas Hub. All rights reserved.
+                    © 2026 Integritas. All rights reserved.
                 </Typography>
             </Box>
         </Box>
