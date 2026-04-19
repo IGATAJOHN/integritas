@@ -238,7 +238,7 @@ const PartnersPage = () => {
                             endIcon={<ArrowForward />}
                             sx={{
                                 bgcolor: 'rgba(17, 82, 212, 1)',
-                                '&:hover': { bgcolor: 'rgba(13, 65, 170, 1)' },
+                                '&:hover': { bgcolor: 'rgba(13, 65, 170, 1)', color: '#ffff'},
                                 textTransform: 'none',
                                 fontWeight: 600,
                                 borderRadius: 2,
@@ -262,7 +262,7 @@ const PartnersPage = () => {
                                 px: 4,
                                 py: 1.5,
                                 fontSize: '1rem',
-                                '&:hover': { borderColor: colors.textWhite, bgcolor: 'transparent' },
+                                '&:hover': { borderColor: colors.textWhite, color:'#fff', bgcolor: 'transparent' },
                             }}
                         >
                             View Courses

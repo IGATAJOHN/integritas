@@ -180,7 +180,7 @@ const AboutUsPage = () => {
                         endIcon={<ArrowForward />}
                         sx={{
                             bgcolor: 'rgba(17, 82, 212, 1)',
-                            '&:hover': { bgcolor: 'rgba(13, 65, 170, 1)' },
+                            '&:hover': { bgcolor: 'rgba(13, 65, 170, 1)', color:'#fff' },
                             textTransform: 'none',
                             fontWeight: 600,
                             borderRadius: 2,
@@ -419,7 +419,7 @@ const AboutUsPage = () => {
                             endIcon={<ArrowForward />}
                             sx={{
                                 bgcolor: 'rgba(17, 82, 212, 1)',
-                                '&:hover': { bgcolor: 'rgba(13, 65, 170, 1)' },
+                                '&:hover': { bgcolor: 'rgba(13, 65, 170, 1)', color:'#fff' },
                                 textTransform: 'none',
                                 fontWeight: 600,
                                 borderRadius: 2,
@@ -443,7 +443,7 @@ const AboutUsPage = () => {
                                 px: 4,
                                 py: 1.5,
                                 fontSize: '1rem',
-                                '&:hover': { borderColor: colors.textWhite, bgcolor: 'transparent' },
+                                '&:hover': { borderColor: colors.textWhite, color: colors.textWhite, bgcolor: 'transparent' },
                             }}
                         >
                             Create Free Account
