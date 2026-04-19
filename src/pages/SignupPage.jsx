@@ -24,7 +24,7 @@ import {
     CheckCircleOutline,
     HighlightOff,
 } from '@mui/icons-material';
-import logo from '../assets/images/integritas_logo.png';
+import logo from '../assets/images/integritas_logo.jpg';
 import icon from '../assets/images/integritas_logo.png';
 import { getDashboardRoute } from '../utils';
 
@@ -283,10 +283,10 @@ const SignupPage = () => {
                         component="img"
                         src={logo}
                         alt="Integritas Logo"
-                        sx={{ height: 100, width: 100, borderRadius: 2, mb: 2 }}
+                        sx={{ height: 120, width: 400, borderRadius: 2, mb: 2 }}
                     />
 
-                    <Typography
+                    {/* <Typography
                         variant="h4"
                         sx={{
                             color: '#FFFFFF',
@@ -296,9 +296,9 @@ const SignupPage = () => {
                         }}
                     >
                         Governance Reimagined
-                    </Typography>
+                    </Typography> */}
 
-                    <Typography
+                    {/* <Typography
                         sx={{
                             color: 'rgba(255, 255, 255, 0.7)',
                             fontSize: '0.875rem',
@@ -309,7 +309,7 @@ const SignupPage = () => {
                     >
                         Ensuring transparency, accountability, and secure access for all
                         governance professionals worldwide.
-                    </Typography>
+                    </Typography> */}
                 </Box>
             </Box>
 
@@ -328,12 +328,12 @@ const SignupPage = () => {
                 <Box sx={{ maxWidth: 420, mx: 'auto', width: '100%', my: 'auto' }}>
                     {/* Logo and Title */}
                     <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
-                        <Box
+                        {/* <Box
                             component="img"
                             src={icon}
                             alt="Integritas Logo"
                             sx={{ height: 50, width: 50 }}
-                        />
+                        /> */}
                         <Typography
                             sx={{ fontSize: '1.2rem', fontWeight: 600, color: '#FFFFFF' }}
                         >

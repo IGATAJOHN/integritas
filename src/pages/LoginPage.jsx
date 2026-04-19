@@ -131,7 +131,7 @@ const LoginPage = () => {
                     />
 
                     {/* Title */}
-                    <Typography
+                    {/* <Typography
                         variant="h4"
                         sx={{
                             color: '#FFFFFF',
@@ -141,10 +141,10 @@ const LoginPage = () => {
                         }}
                     >
                         Governance Reimagined
-                    </Typography>
+                    </Typography> */}
 
                     {/* Description */}
-                    <Typography
+                    {/* <Typography
                         sx={{
                             color: 'rgba(255, 255, 255, 0.7)',
                             fontSize: '0.875rem',
@@ -156,7 +156,7 @@ const LoginPage = () => {
                         Ensuring transparency, accountability, and secure
                         access for all governance professionals
                         worldwide.
-                    </Typography>
+                    </Typography> */}
                 </Box>
             </Box>
 

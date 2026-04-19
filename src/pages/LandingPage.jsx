@@ -121,7 +121,7 @@ const LandingPage = () => {
                     {/* Left Content */}
                     <Box sx={{ flex: '0 0 auto', maxWidth: { xs: '100%', lg: '45%' } }}>
                         {/* Badge */}
-                        <Box
+                        {/* <Box
                             sx={{
                                 bgcolor: 'rgba(17, 82, 212, 0.15)',
                                 color: 'rgba(17, 82, 212, 1)',
@@ -147,7 +147,7 @@ const LandingPage = () => {
                                 }}
                             />
                             New Courses Available
-                        </Box>
+                        </Box> */}
 
                         {/* Title */}
                         <Typography

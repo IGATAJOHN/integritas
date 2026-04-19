@@ -920,7 +920,7 @@ const CourseDetail = () => {
                             </CardContent>
 
                             {/* Money Back Guarantee - Card Footer */}
-                            <Box sx={{
+                            {/* <Box sx={{
                                 bgcolor: alpha(colors.textSecondary, 0.1),
                                 p: 1.5,
                                 textAlign: 'center',
@@ -929,7 +929,7 @@ const CourseDetail = () => {
                                 <Typography sx={{ color: colors.textSecondary, fontSize: '0.75rem' }}>
                                     30-Day Money-Back Guarantee
                                 </Typography>
-                            </Box>
+                            </Box> */}
                         </Card>
 
                         {/* Training For Card — only shown when API provides target_audience */}
