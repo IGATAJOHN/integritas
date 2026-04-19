@@ -494,7 +494,7 @@ const LandingPage = () => {
                         </Typography>
 
                         {/* Progression bar */}
-                        <Box sx={{ maxWidth: 480, mx: 'auto' }}>
+                        <Box sx={{ maxWidth: 600, mx: 'auto' }}>
                             <Stack direction="row" alignItems="center" spacing={0}>
                                 {['01', '02', '03'].map((n, i) => (
                                     <React.Fragment key={n}>
@@ -549,8 +549,8 @@ const LandingPage = () => {
                                     </React.Fragment>
                                 ))}
                             </Stack>
-                            <Stack direction="row" justifyContent="space-between" sx={{ mt: 1, px: 0.5 }}>
-                                {['Foundation', 'Certification', 'Experta'].map((label) => (
+                            <Stack direction="row" justifyContent="space-between" sx={{ mt: 1, px: -6, }}>
+                                {['The Foundational Track', 'The Gateway Certification', 'Unlock the Experta Class'].map((label) => (
                                     <Typography key={label} sx={{ fontSize: '0.65rem', color: colors.textDark, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                         {label}
                                     </Typography>
