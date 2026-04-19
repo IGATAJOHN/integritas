@@ -24,6 +24,7 @@ const LoginPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { login } = useAuth();
+    const currentyear = new Date().getFullYear();
     
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -40,6 +41,7 @@ const LoginPage = () => {
             [name]: value
         }));
     };
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -437,7 +439,7 @@ const LoginPage = () => {
                         pt: 2,
                     }}
                 >
-                    © 2026 Integritas. All rights reserved.
+                    © {currentyear} Integritas. All rights reserved.
                 </Typography>
             </Box>
         </Box>

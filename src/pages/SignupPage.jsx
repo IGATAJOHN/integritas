@@ -31,6 +31,7 @@ import { getDashboardRoute } from '../utils';
 const SignupPage = () => {
     const navigate = useNavigate();
     const { register } = useAuth();
+    const currentyear =new Date().getFullYear()
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -741,7 +742,7 @@ const SignupPage = () => {
                         pt: 2,
                     }}
                 >
-                    © 2026 Integritas. All rights reserved.
+                    © {currentyear} Integritas. All rights reserved.
                 </Typography>
             </Box>
         </Box>
