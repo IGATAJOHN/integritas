@@ -195,7 +195,7 @@ const AboutUsPage = () => {
             </Box>
 
             {/* Stats */}
-            <Box sx={{ py: 8, borderBottom: `1px solid ${colors.border}` }}>
+            {/* <Box sx={{ py: 8, borderBottom: `1px solid ${colors.border}` }}>
                 <Container maxWidth="lg">
                     <Grid container spacing={3} justifyContent="center">
                         {stats.map((stat) => (
@@ -220,155 +220,182 @@ const AboutUsPage = () => {
                         ))}
                     </Grid>
                 </Container>
-            </Box>
+            </Box> */}
 
             {/* Our Mission */}
             <Box sx={{ py: { xs: 8, md: 12 }, borderBottom: `1px solid ${colors.border}` }}>
-                <Container maxWidth="md">
-                    <Typography
-                        variant="overline"
-                        sx={{ color: 'rgba(17, 82, 212, 1)', fontWeight: 700, letterSpacing: '0.15em', fontSize: '0.8rem', display: 'block', mb: 2 }}
-                    >
-                        Who We Are
-                    </Typography>
+                <Container maxWidth="lg">
+                    {/* Section header */}
+                    <Box sx={{ textAlign: 'center', mb: 8 }}>
+                        <Typography
+                            variant="overline"
+                            sx={{ color: 'rgba(17, 82, 212, 1)', fontWeight: 700, letterSpacing: '0.15em', fontSize: '0.8rem', display: 'block', mb: 2 }}
+                        >
+                            Who We Are
+                        </Typography>
+                        <Typography
+                            variant="h2"
+                            sx={{ fontWeight: 800, color: colors.textWhite, fontSize: { xs: '2rem', md: '2.75rem' }, lineHeight: 1.2 }}
+                        >
+                            Our Mission
+                        </Typography>
+                    </Box>
 
-                    {/* Block 1 */}
-                    <Typography
-                        variant="h3"
-                        sx={{ fontWeight: 800, color: colors.textWhite, fontSize: { xs: '1.5rem', md: '2rem' }, mb: 2, lineHeight: 1.3 }}
-                    >
-                        Our Mission: Rebuilding the Currency of Trust
-                    </Typography>
-                    <Typography sx={{ color: colors.textMuted, lineHeight: 1.9, fontSize: '1rem', mb: 2 }}>
-                        Nigeria does not suffer from a lack of talent, brilliance, or technical capability. We suffer from a systemic trust deficit. For too long, the &ldquo;Nigerian Factor&rdquo; has been used as an excuse to normalize compromise, corner-cutting, and institutional leakage.
-                    </Typography>
-                    <Typography sx={{ color: colors.textMuted, lineHeight: 1.9, fontSize: '1rem', mb: 6 }}>
-                        We are here to rewrite that narrative.
-                    </Typography>
+                    <Stack spacing={0}>
+                        {[
+                            {
+                                num: '01',
+                                heading: <>Rebuilding the <Box component="span" sx={{ color: 'rgba(17, 82, 212, 1)' }}>Currency of Trust</Box></>,
+                                body: [
+                                    'Nigeria does not suffer from a lack of talent, brilliance, or technical capability. We suffer from a systemic trust deficit. For too long, the \u201cNigerian Factor\u201d has been used as an excuse to normalize compromise, corner-cutting, and institutional leakage.',
+                                    'We are here to rewrite that narrative.',
+                                ],
+                            },
+                            {
+                                num: '02',
+                                heading: <>Transparency is the Tool.{' '}<Box component="span" sx={{ color: 'rgba(17, 82, 212, 1)' }}>Integrity is the Outcome.</Box></>,
+                                body: [
+                                    'Developed by the Center for Fiscal Transparency and Public Integrity (CeFTPI), INTEGRITAS is not just another e-learning site. It is a behavioral intervention and a verifiable \u201cTrust Utility.\u201d',
+                                    'While existing programs teach the academic laws of compliance, we focus on the raw, human element of moral courage. We believe that transparency frameworks \u2014 like budgets, the FOI Act, and the TII \u2014 are merely instruments; they require individuals of uncompromised character to wield them effectively.',
+                                ],
+                            },
+                            {
+                                num: '03',
+                                heading: <>Building the{' '}<Box component="span" sx={{ color: 'rgba(17, 82, 212, 1)' }}>Institutional Immune System</Box></>,
+                                body: [
+                                    'We are building a new moral infrastructure for the nation. Through our rigorous 15-module Foundational Track and the Capstone Gateway Project, we are training a new breed of professionals \u2014 Integritas Associates.',
+                                    'By deploying a critical mass of these certified professionals across the public service, the private sector, and the youth vanguard, we are creating a localised \u201cinstitutional immune system.\u201d This network will share the same ethical language and possess the courage to collectively resist, expose, and neutralize corruption from the inside out.',
+                                ],
+                            },
+                            {
+                                num: '04',
+                                heading: <>Success Without Compromise{' '}<Box component="span" sx={{ color: 'rgba(17, 82, 212, 1)' }}>is Possible.</Box></>,
+                                body: [
+                                    'For graduates who pass the Gateway Project, INTEGRITAS unlocks the Experta Class \u2014 a cinematic library of survival guides from vetted Nigerian leaders. These \u201cIntegrity Icons\u201d provide the ultimate proof that you can reach the highest levels of government and enterprise in Nigeria without dirtying your hands.',
+                                ],
+                            },
+                        ].map((block, i) => (
+                            <Box
+                                key={block.num}
+                                sx={{
+                                    display: 'flex',
+                                    gap: { xs: 3, md: 6 },
+                                    py: { xs: 5, md: 7 },
+                                    borderBottom: i < 3 ? `1px solid ${colors.border}` : 'none',
+                                }}
+                            >
+                                {/* Number */}
+                                <Box sx={{ flexShrink: 0, pt: 0.5 }}>
+                                    <Typography
+                                        sx={{
+                                            fontSize: { xs: '1.5rem', md: '2rem' },
+                                            fontWeight: 800,
+                                            color: 'rgba(17, 82, 212, 0.25)',
+                                            lineHeight: 1,
+                                            fontVariantNumeric: 'tabular-nums',
+                                            letterSpacing: '-0.02em',
+                                            minWidth: { xs: 36, md: 52 },
+                                        }}
+                                    >
+                                        {block.num}
+                                    </Typography>
+                                </Box>
 
-                    <Divider sx={{ borderColor: colors.border, mb: 6 }} />
+                                {/* Content */}
+                                <Box sx={{ flex: 1 }}>
+                                    <Typography
+                                        variant="h3"
+                                        sx={{ fontWeight: 800, color: colors.textWhite, fontSize: { xs: '1.35rem', md: '1.75rem' }, mb: 3, lineHeight: 1.3 }}
+                                    >
+                                        {block.heading}
+                                    </Typography>
+                                    <Stack spacing={2}>
+                                        {block.body.map((para, j) => (
+                                            <Typography key={j} sx={{ color: colors.textMuted, lineHeight: 1.9, fontSize: '1rem' }}>
+                                                {para}
+                                            </Typography>
+                                        ))}
+                                    </Stack>
+                                </Box>
+                            </Box>
+                        ))}
 
-                    {/* Block 2 */}
-                    <Typography
-                        variant="h3"
-                        sx={{ fontWeight: 800, color: colors.textWhite, fontSize: { xs: '1.5rem', md: '2rem' }, mb: 2, lineHeight: 1.3 }}
-                    >
-                        Transparency is the Tool.{' '}
-                        <Box component="span" sx={{ color: 'rgba(17, 82, 212, 1)' }}>
-                            Integrity is the Outcome.
-                        </Box>
-                    </Typography>
-                    <Typography sx={{ color: colors.textMuted, lineHeight: 1.9, fontSize: '1rem', mb: 2 }}>
-                        Developed by the Center for Fiscal Transparency and Public Integrity (CeFTPI), INTEGRITAS is not just another e-learning site. It is a behavioral intervention and a verifiable &ldquo;Trust Utility.&rdquo;
-                    </Typography>
-                    <Typography sx={{ color: colors.textMuted, lineHeight: 1.9, fontSize: '1rem', mb: 6 }}>
-                        While existing programs teach the academic laws of compliance, we focus on the raw, human element of moral courage. We believe that transparency frameworks — like budgets, the FOI Act, and the TII — are merely instruments; they require individuals of uncompromised character to wield them effectively.
-                    </Typography>
-
-                    <Divider sx={{ borderColor: colors.border, mb: 6 }} />
-
-                    {/* Block 3 */}
-                    <Typography
-                        variant="h3"
-                        sx={{ fontWeight: 800, color: colors.textWhite, fontSize: { xs: '1.5rem', md: '2rem' }, mb: 2, lineHeight: 1.3 }}
-                    >
-                        Building the{' '}
-                        <Box component="span" sx={{ color: 'rgba(17, 82, 212, 1)' }}>
-                            Institutional Immune System
-                        </Box>
-                    </Typography>
-                    <Typography sx={{ color: colors.textMuted, lineHeight: 1.9, fontSize: '1rem', mb: 2 }}>
-                        We are building a new moral infrastructure for the nation. Through our rigorous 15-module Foundational Track and the Capstone Gateway Project, we are training a new breed of professionals — Integritas Associates.
-                    </Typography>
-                    <Typography sx={{ color: colors.textMuted, lineHeight: 1.9, fontSize: '1rem', mb: 6 }}>
-                        By deploying a critical mass of these certified professionals across the public service, the private sector, and the youth vanguard, we are creating a localised &ldquo;institutional immune system.&rdquo; This network will share the same ethical language and possess the courage to collectively resist, expose, and neutralize corruption from the inside out.
-                    </Typography>
-
-                    <Divider sx={{ borderColor: colors.border, mb: 6 }} />
-
-                    {/* Block 4 */}
-                    <Typography
-                        variant="h3"
-                        sx={{ fontWeight: 800, color: colors.textWhite, fontSize: { xs: '1.5rem', md: '2rem' }, mb: 2, lineHeight: 1.3 }}
-                    >
-                        Success Without Compromise{' '}
-                        <Box component="span" sx={{ color: 'rgba(17, 82, 212, 1)' }}>
-                            is Possible.
-                        </Box>
-                    </Typography>
-                    <Typography sx={{ color: colors.textMuted, lineHeight: 1.9, fontSize: '1rem', mb: 5 }}>
-                        For graduates who pass the Gateway Project, INTEGRITAS unlocks the Experta Class — a cinematic library of survival guides from vetted Nigerian leaders. These &ldquo;Integrity Icons&rdquo; provide the ultimate proof that you can reach the highest levels of government and enterprise in Nigeria without dirtying your hands.
-                    </Typography>
-                    
-
-                    <Divider sx={{ borderColor: colors.border, my: 6 }} />
-
-                    {/* Join the Vanguard */}
-                    <Typography
-                        variant="h3"
-                        sx={{ fontWeight: 800, color: colors.textWhite, fontSize: { xs: '1.5rem', md: '2rem' }, mb: 2, lineHeight: 1.3 }}
-                    >
-                        Join the{' '}
-                        <Box component="span" sx={{ color: 'rgba(17, 82, 212, 1)' }}>
-                            Vanguard
-                        </Box>
-                    </Typography>
-                    <Typography sx={{ color: colors.textMuted, lineHeight: 1.9, fontSize: '1rem', mb: 3 }}>
-                        Whether you are a university student navigating your first ethical dilemma, a civil servant protecting the public purse, or a corporate executive building a clean supply chain, this platform is your anchor.
-                    </Typography>
-                    <Typography
-                        sx={{
-                            color: colors.textWhite,
-                            fontSize: '1.125rem',
-                            fontWeight: 600,
-                            fontStyle: 'italic',
-                            mb: 4,
-                        }}
-                    >
-                        Are you ready to lead with clean hands?
-                    </Typography>
-                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                        <Button
-                            component={Link}
-                            to="/explore"
-                            variant="contained"
-                            size="large"
-                            endIcon={<ArrowForward />}
+                        {/* Join the Vanguard — CTA block */}
+                        <Box
                             sx={{
-                                bgcolor: 'rgba(17, 82, 212, 1)',
-                                '&:hover': { bgcolor: 'rgba(13, 65, 170, 1)', color: '#FFFFFF' },
-                                textTransform: 'none',
-                                fontWeight: 600,
-                                py: 1.5,
-                                px: 3,
+                                mt: 2,
+                                p: { xs: 4, md: 6 },
+                                bgcolor: colors.bgCard,
+                                border: `1px solid ${colors.border}`,
+                                borderLeft: '4px solid rgba(17, 82, 212, 1)',
                                 borderRadius: 2,
                             }}
                         >
-                            Start the Foundational Track
-                        </Button>
-                        <Button
-                            component={Link}
-                            to="/partners"
-                            variant="outlined"
-                            size="large"
-                            sx={{
-                                borderColor: colors.border,
-                                color: colors.textWhite,
-                                bgcolor: 'transparent',
-                                '&:hover': {
-                                    borderColor: 'rgba(255, 255, 255, 0.5)',
-                                    color: '#FFFFFF',
-                                    bgcolor: 'rgba(255, 255, 255, 0.1)',
-                                },
-                                textTransform: 'none',
-                                fontWeight: 600,
-                                py: 1.5,
-                                px: 3,
-                                borderRadius: 2,
-                            }}
-                        >
-                            Partner as an Organization
-                        </Button>
+                            <Typography
+                                variant="h3"
+                                sx={{ fontWeight: 800, color: colors.textWhite, fontSize: { xs: '1.35rem', md: '1.75rem' }, mb: 2, lineHeight: 1.3 }}
+                            >
+                                Join the{' '}
+                                <Box component="span" sx={{ color: 'rgba(17, 82, 212, 1)' }}>Vanguard</Box>
+                            </Typography>
+                            <Typography sx={{ color: colors.textMuted, lineHeight: 1.9, fontSize: '1rem', mb: 2 }}>
+                                Whether you are a university student navigating your first ethical dilemma, a civil servant protecting the public purse, or a corporate executive building a clean supply chain, this platform is your anchor.
+                            </Typography>
+                            <Typography
+                                sx={{
+                                    color: colors.textWhite,
+                                    fontSize: '1.05rem',
+                                    fontWeight: 600,
+                                    fontStyle: 'italic',
+                                    mb: 4,
+                                }}
+                            >
+                                Are you ready to lead with clean hands?
+                            </Typography>
+                            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                                <Button
+                                    component={Link}
+                                    to="/explore"
+                                    variant="contained"
+                                    size="large"
+                                    endIcon={<ArrowForward />}
+                                    sx={{
+                                        bgcolor: 'rgba(17, 82, 212, 1)',
+                                        '&:hover': { bgcolor: 'rgba(13, 65, 170, 1)', color: '#FFFFFF' },
+                                        textTransform: 'none',
+                                        fontWeight: 600,
+                                        py: 1.5,
+                                        px: 3,
+                                        borderRadius: 2,
+                                    }}
+                                >
+                                    Start the Foundational Track
+                                </Button>
+                                <Button
+                                    component={Link}
+                                    to="/partners"
+                                    variant="outlined"
+                                    size="large"
+                                    sx={{
+                                        borderColor: colors.border,
+                                        color: colors.textWhite,
+                                        bgcolor: 'transparent',
+                                        '&:hover': {
+                                            borderColor: 'rgba(255, 255, 255, 0.5)',
+                                            color: '#FFFFFF',
+                                            bgcolor: 'rgba(255, 255, 255, 0.1)',
+                                        },
+                                        textTransform: 'none',
+                                        fontWeight: 600,
+                                        py: 1.5,
+                                        px: 3,
+                                        borderRadius: 2,
+                                    }}
+                                >
+                                    Partner as an Organization
+                                </Button>
+                            </Stack>
+                        </Box>
                     </Stack>
                 </Container>
             </Box>

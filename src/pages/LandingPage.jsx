@@ -466,7 +466,7 @@ const LandingPage = () => {
             <Box sx={{ py: { xs: 8, md: 12 }, px: { xs: 2, md: 4, lg: 6 }, bgcolor: colors.bgDarker }}>
                 <Container maxWidth="lg">
                     {/* Section Header */}
-                    <Box sx={{ textAlign: 'center', mb: 8 }}>
+                    <Box sx={{ textAlign: 'center', mb: 6 }}>
                         <Typography
                             sx={{
                                 fontSize: '0.75rem',
@@ -486,10 +486,76 @@ const LandingPage = () => {
                                 fontWeight: 700,
                                 color: colors.textWhite,
                                 lineHeight: 1.3,
+                                mb: 4,
                             }}
                         >
                             The Learning Journey
                         </Typography>
+
+                        {/* Progression bar */}
+                        <Box sx={{ maxWidth: 480, mx: 'auto' }}>
+                            <Stack direction="row" alignItems="center" spacing={0}>
+                                {['01', '02', '03'].map((n, i) => (
+                                    <React.Fragment key={n}>
+                                        {/* Step dot */}
+                                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.75 }}>
+                                            <Box
+                                                sx={{
+                                                    width: 36,
+                                                    height: 36,
+                                                    borderRadius: '50%',
+                                                    bgcolor: 'rgba(17, 82, 212, 1)',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    flexShrink: 0,
+                                                }}
+                                            >
+                                                <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: '#fff' }}>
+                                                    {n}
+                                                </Typography>
+                                            </Box>
+                                        </Box>
+                                        {/* Connector */}
+                                        {i < 2 && (
+                                            <Box sx={{ flex: 1, position: 'relative', height: 2, bgcolor: colors.border, mx: 0 }}>
+                                                <Box
+                                                    sx={{
+                                                        position: 'absolute',
+                                                        left: 0,
+                                                        top: 0,
+                                                        height: '100%',
+                                                        width: '100%',
+                                                        bgcolor: 'rgba(17, 82, 212, 0.4)',
+                                                    }}
+                                                />
+                                                {/* Arrow head */}
+                                                <Box
+                                                    sx={{
+                                                        position: 'absolute',
+                                                        right: -6,
+                                                        top: '50%',
+                                                        transform: 'translateY(-50%)',
+                                                        width: 0,
+                                                        height: 0,
+                                                        borderTop: '5px solid transparent',
+                                                        borderBottom: '5px solid transparent',
+                                                        borderLeft: '7px solid rgba(17, 82, 212, 0.4)',
+                                                    }}
+                                                />
+                                            </Box>
+                                        )}
+                                    </React.Fragment>
+                                ))}
+                            </Stack>
+                            <Stack direction="row" justifyContent="space-between" sx={{ mt: 1, px: 0.5 }}>
+                                {['Foundation', 'Certification', 'Experta'].map((label) => (
+                                    <Typography key={label} sx={{ fontSize: '0.65rem', color: colors.textDark, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                        {label}
+                                    </Typography>
+                                ))}
+                            </Stack>
+                        </Box>
                     </Box>
 
                     {/* Steps */}
@@ -521,6 +587,7 @@ const LandingPage = () => {
                                     sx={{
                                         bgcolor: colors.bgCard,
                                         border: `1px solid ${colors.border}`,
+                                        borderTop: '3px solid rgba(17, 82, 212, 1)',
                                         borderRadius: 3,
                                         p: { xs: 3, md: 4 },
                                         width: '100%',
@@ -530,6 +597,7 @@ const LandingPage = () => {
                                         transition: 'all 0.3s',
                                         '&:hover': {
                                             borderColor: 'rgba(17, 82, 212, 0.5)',
+                                            borderTopColor: 'rgba(17, 82, 212, 1)',
                                             transform: 'translateY(-4px)',
                                         },
                                     }}
@@ -537,11 +605,10 @@ const LandingPage = () => {
                                     {/* Step number */}
                                     <Box
                                         sx={{
-                                            width: 56,
-                                            height: 56,
-                                            borderRadius: 2,
-                                            bgcolor: 'rgba(17, 82, 212, 0.12)',
-                                            border: '1px solid rgba(17, 82, 212, 0.3)',
+                                            width: 40,
+                                            height: 40,
+                                            borderRadius: '50%',
+                                            bgcolor: 'rgba(17, 82, 212, 1)',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
@@ -550,38 +617,25 @@ const LandingPage = () => {
                                     >
                                         <Typography
                                             sx={{
-                                                fontSize: '1.125rem',
+                                                fontSize: '0.875rem',
                                                 fontWeight: 800,
-                                                color: 'rgba(17, 82, 212, 1)',
-                                                letterSpacing: '0.05em',
+                                                color: '#FFFFFF',
                                             }}
                                         >
                                             {item.step}
                                         </Typography>
                                     </Box>
 
-                                    {/* Title & subtitle */}
+                                    {/* Title */}
                                     <Typography
                                         sx={{
                                             fontSize: '1.125rem',
                                             fontWeight: 700,
                                             color: colors.textWhite,
-                                            mb: 0.5,
-                                        }}
-                                    >
-                                        {item.title}
-                                    </Typography>
-                                    <Typography
-                                        sx={{
-                                            fontSize: '0.75rem',
-                                            fontWeight: 600,
-                                            color: 'rgba(17, 82, 212, 1)',
-                                            textTransform: 'uppercase',
-                                            letterSpacing: '0.08em',
                                             mb: 2,
                                         }}
                                     >
-                                        {item.subtitle}
+                                        {item.title}
                                     </Typography>
 
                                     {/* Description */}

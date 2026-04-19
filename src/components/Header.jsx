@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
     Box,
     Stack,
@@ -28,7 +28,11 @@ const Header = () => {
     const { mode, toggleThemeMode, isDark } = useThemeMode();
     const theme = useTheme();
     const navigate = useNavigate();
+    const location = useLocation();
     const [mobileOpen, setMobileOpen] = useState(false);
+
+    const isActive = (to) =>
+        to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
     const { isAuthenticated, user } = useAuth();
     
 
@@ -253,22 +257,43 @@ const Header = () => {
                         >
                             {/* Navigation */}
                             <Stack direction="row" spacing={4}>
-                                {navItems.map((item) => (
-                                    <Box
-                                        key={item.label}
-                                        component={Link}
-                                        to={item.to}
-                                        sx={{
-                                            color: isDark ? '#9CA3AF' : '#64748B',
-                                            textDecoration: 'none',
-                                            fontWeight: 500,
-                                            fontSize: '0.9375rem',
-                                            '&:hover': { color: isDark ? '#FFFFFF' : '#1E293B' },
-                                        }}
-                                    >
-                                        {item.label}
-                                    </Box>
-                                ))}
+                                {navItems.map((item) => {
+                                        const active = isActive(item.to);
+                                        return (
+                                            <Box
+                                                key={item.label}
+                                                component={Link}
+                                                to={item.to}
+                                                sx={{
+                                                    color: active
+                                                        ? 'rgba(17, 82, 212, 1)'
+                                                        : isDark ? '#9CA3AF' : '#64748B',
+                                                    textDecoration: 'none',
+                                                    fontWeight: active ? 700 : 500,
+                                                    fontSize: '0.9375rem',
+                                                    position: 'relative',
+                                                    pb: 0.5,
+                                                    '&::after': {
+                                                        content: '""',
+                                                        position: 'absolute',
+                                                        bottom: -2,
+                                                        left: 0,
+                                                        width: active ? '100%' : '0%',
+                                                        height: '2px',
+                                                        bgcolor: 'rgba(17, 82, 212, 1)',
+                                                        borderRadius: 1,
+                                                        transition: 'width 0.2s ease',
+                                                    },
+                                                    '&:hover': {
+                                                        color: 'rgba(17, 82, 212, 1)',
+                                                        '&::after': { width: '100%' },
+                                                    },
+                                                }}
+                                            >
+                                                {item.label}
+                                            </Box>
+                                        );
+                                    })}
                             </Stack>
 
                             {/* Theme Toggle */}
