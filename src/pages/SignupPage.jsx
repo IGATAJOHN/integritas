@@ -15,6 +15,8 @@ import {
     Alert,
     FormHelperText,
     Divider,
+    Checkbox,
+    FormControlLabel,
 } from '@mui/material';
 import {
     Visibility,
@@ -27,6 +29,7 @@ import {
 import logo from '../assets/images/integritas_logo.jpg';
 import icon from '../assets/images/integritas_logo.png';
 import { getDashboardRoute } from '../utils';
+import TermsCondition from '../assets/INTEGRITAS_Terms_and_Conditions.pdf';
 
 const SignupPage = () => {
     const navigate = useNavigate();
@@ -35,6 +38,7 @@ const SignupPage = () => {
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [agreed, setAgreed] = useState(false);
 
     const [showPassword, setShowPassword] = useState(false);
     const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false);
@@ -98,7 +102,8 @@ const SignupPage = () => {
         isNameValid &&
         isEmailValid &&
         requiredPasswordRulesPass &&
-        passwordsMatch;
+        passwordsMatch &&
+        agreed;
 
     const showConfirmValidation =
         touched.password_confirmation || formData.password_confirmation.length > 0;
@@ -680,6 +685,43 @@ const SignupPage = () => {
                                 )}
                             </Box>
                         </Box>
+
+                        {/* Acknowledgment */}
+                        <FormControlLabel
+                            sx={{ alignItems: 'flex-start', mb: 2 }}
+                            control={
+                                <Checkbox
+                                    checked={agreed}
+                                    onChange={(e) => setAgreed(e.target.checked)}
+                                    size="small"
+                                    sx={{
+                                        color: '#4B5563',
+                                        mt: '-2px',
+                                        '&.Mui-checked': { color: '#1152D4' },
+                                    }}
+                                />
+                            }
+                            label={
+                                <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF', lineHeight: 1.6 }}>
+                                    By clicking "I Agree," creating an account, Enterprise Licensing Agreement, you acknowledge that you have read, understood, and agreed to be bound by these{' '}
+                                    <Box
+                                        component="a"
+                                        href={TermsCondition}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        sx={{
+                                            color: '#3B82F6',
+                                            textDecoration: 'underline',
+                                            cursor: 'pointer',
+                                            '&:hover': { color: '#60A5FA' },
+                                        }}
+                                    >
+                                        Terms of Service and Privacy Policy
+                                    </Box>
+                                    .
+                                </Typography>
+                            }
+                        />
 
                         {/* Sign Up Button (disabled until valid) */}
                         <Button

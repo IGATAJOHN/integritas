@@ -12,24 +12,32 @@ import {
     ListItemButton,
     ListItemText,
     Divider,
+    Popper,
+    Paper,
+    Grow,
+    ClickAwayListener,
+    Collapse,
 } from '@mui/material';
-import { LightMode, DarkMode, Menu, Close } from '@mui/icons-material';
+import { LightMode, DarkMode, Menu, Close, ExpandMore, ExpandLess } from '@mui/icons-material';
 import { useThemeMode } from '../contexts';
 import logo from '../assets/images/integritas_logo.jpg';
 import { useAuth } from '../contexts';
 
 const Header = () => {
     const navItems = [
-    { label: 'Home', to: '/' },
-    { label: 'Experta Class', to: '/explore' },
-    { label: 'The Vision', to: '/about-us' },
-    { label: 'Partners', to: '/partners' },
-];
+        { label: 'Home', to: '/', children: [{ label: 'The Vision', to: '/about-us' }] },
+        { label: 'Experta Class', to: '/explore' },
+        { label: 'Foundational Courses', to: '/explore' },
+        { label: 'Partners', to: '/partners' },
+    ];
     const { mode, toggleThemeMode, isDark } = useThemeMode();
     const theme = useTheme();
     const navigate = useNavigate();
     const location = useLocation();
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [dropdownAnchor, setDropdownAnchor] = useState(null);
+    const [openDropdown, setOpenDropdown] = useState(null);
+    const [mobileExpanded, setMobileExpanded] = useState(null);
 
     const isActive = (to) =>
         to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
@@ -89,30 +97,63 @@ const Header = () => {
 
             {/* Navigation Links */}
             <List sx={{ py: 2 }}>
-                {navItems.map((item) => (
-                    <ListItem key={item.label} disablePadding>
-                        <ListItemButton
-                            component={Link}
-                            to={item.to}
-                            onClick={handleDrawerToggle}
-                            sx={{
-                                py: 1.5,
-                                px: 3,
-                                '&:hover': {
-                                    bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-                                },
-                            }}
-                        >
-                            <ListItemText
-                                primary={item.label}
-                                primaryTypographyProps={{
-                                    fontWeight: 500,
-                                    color: isDark ? '#9CA3AF' : '#64748B',
-                                }}
-                            />
-                        </ListItemButton>
-                    </ListItem>
-                ))}
+                {navItems.map((item) => {
+                    const hasChildren = item.children?.length > 0;
+                    const isExpanded = mobileExpanded === item.label;
+                    return (
+                        <React.Fragment key={item.label}>
+                            <ListItem disablePadding>
+                                <ListItemButton
+                                    component={hasChildren ? 'div' : Link}
+                                    to={hasChildren ? undefined : item.to}
+                                    onClick={() => {
+                                        if (hasChildren) {
+                                            setMobileExpanded(isExpanded ? null : item.label);
+                                        } else {
+                                            handleDrawerToggle();
+                                        }
+                                    }}
+                                    sx={{
+                                        py: 1.5,
+                                        px: 3,
+                                        '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' },
+                                    }}
+                                >
+                                    <ListItemText
+                                        primary={item.label}
+                                        primaryTypographyProps={{ fontWeight: 500, color: isDark ? '#9CA3AF' : '#64748B' }}
+                                    />
+                                    {hasChildren && (isExpanded ? <ExpandLess sx={{ color: isDark ? '#9CA3AF' : '#64748B' }} /> : <ExpandMore sx={{ color: isDark ? '#9CA3AF' : '#64748B' }} />)}
+                                </ListItemButton>
+                            </ListItem>
+                            {hasChildren && (
+                                <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+                                    <List disablePadding>
+                                        {item.children.map((child) => (
+                                            <ListItem key={child.label} disablePadding>
+                                                <ListItemButton
+                                                    component={Link}
+                                                    to={child.to}
+                                                    onClick={handleDrawerToggle}
+                                                    sx={{
+                                                        py: 1.25,
+                                                        pl: 5,
+                                                        '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' },
+                                                    }}
+                                                >
+                                                    <ListItemText
+                                                        primary={child.label}
+                                                        primaryTypographyProps={{ fontSize: '0.875rem', fontWeight: 500, color: isDark ? '#6B7280' : '#94A3B8' }}
+                                                    />
+                                                </ListItemButton>
+                                            </ListItem>
+                                        ))}
+                                    </List>
+                                </Collapse>
+                            )}
+                        </React.Fragment>
+                    );
+                })}
             </List>
 
             <Divider sx={{ borderColor: isDark ? '#282E39' : '#E2E8F0' }} />
@@ -258,42 +299,108 @@ const Header = () => {
                             {/* Navigation */}
                             <Stack direction="row" spacing={4}>
                                 {navItems.map((item) => {
-                                        const active = isActive(item.to);
+                                    const active = isActive(item.to);
+                                    const hasChildren = item.children?.length > 0;
+                                    const isOpen = openDropdown === item.label;
+
+                                    const linkSx = {
+                                        color: active ? 'rgba(17, 82, 212, 1)' : isDark ? '#9CA3AF' : '#64748B',
+                                        textDecoration: 'none',
+                                        fontWeight: active ? 700 : 500,
+                                        fontSize: '0.9375rem',
+                                        position: 'relative',
+                                        pb: 0.5,
+                                        cursor: 'pointer',
+                                        '&::after': {
+                                            content: '""',
+                                            position: 'absolute',
+                                            bottom: -2,
+                                            left: 0,
+                                            width: active ? '100%' : '0%',
+                                            height: '2px',
+                                            bgcolor: 'rgba(17, 82, 212, 1)',
+                                            borderRadius: 1,
+                                            transition: 'width 0.2s ease',
+                                        },
+                                        '&:hover': {
+                                            color: 'rgba(17, 82, 212, 1)',
+                                            '&::after': { width: '100%' },
+                                        },
+                                    };
+
+                                    if (!hasChildren) {
                                         return (
-                                            <Box
-                                                key={item.label}
-                                                component={Link}
-                                                to={item.to}
-                                                sx={{
-                                                    color: active
-                                                        ? 'rgba(17, 82, 212, 1)'
-                                                        : isDark ? '#9CA3AF' : '#64748B',
-                                                    textDecoration: 'none',
-                                                    fontWeight: active ? 700 : 500,
-                                                    fontSize: '0.9375rem',
-                                                    position: 'relative',
-                                                    pb: 0.5,
-                                                    '&::after': {
-                                                        content: '""',
-                                                        position: 'absolute',
-                                                        bottom: -2,
-                                                        left: 0,
-                                                        width: active ? '100%' : '0%',
-                                                        height: '2px',
-                                                        bgcolor: 'rgba(17, 82, 212, 1)',
-                                                        borderRadius: 1,
-                                                        transition: 'width 0.2s ease',
-                                                    },
-                                                    '&:hover': {
-                                                        color: 'rgba(17, 82, 212, 1)',
-                                                        '&::after': { width: '100%' },
-                                                    },
-                                                }}
-                                            >
+                                            <Box key={item.label} component={Link} to={item.to} sx={linkSx}>
                                                 {item.label}
                                             </Box>
                                         );
-                                    })}
+                                    }
+
+                                    return (
+                                        <ClickAwayListener key={item.label} onClickAway={() => setOpenDropdown(null)}>
+                                            <Box sx={{ position: 'relative' }}>
+                                                <Box
+                                                    sx={{ ...linkSx, display: 'inline-flex', alignItems: 'center', gap: 0.25 }}
+                                                    component={Link}
+                                                    to={item.to}
+                                                    onMouseEnter={(e) => { setDropdownAnchor(e.currentTarget); setOpenDropdown(item.label); }}
+                                                    onMouseLeave={() => setOpenDropdown(null)}
+                                                >
+                                                    {item.label}
+                                                    <ExpandMore sx={{ fontSize: 16 }} />
+                                                </Box>
+                                                <Popper
+                                                    open={isOpen}
+                                                    anchorEl={dropdownAnchor}
+                                                    placement="bottom-start"
+                                                    transition
+                                                    sx={{ zIndex: 200 }}
+                                                >
+                                                    {({ TransitionProps }) => (
+                                                        <Grow {...TransitionProps} timeout={150}>
+                                                            <Paper
+                                                                onMouseEnter={() => setOpenDropdown(item.label)}
+                                                                onMouseLeave={() => setOpenDropdown(null)}
+                                                                sx={{
+                                                                    mt: 1,
+                                                                    minWidth: 160,
+                                                                    bgcolor: isDark ? '#1E293B' : '#FFFFFF',
+                                                                    border: `1px solid ${isDark ? '#374151' : '#E2E8F0'}`,
+                                                                    borderRadius: 1.5,
+                                                                    boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                                                                    overflow: 'hidden',
+                                                                }}
+                                                            >
+                                                                {item.children.map((child) => (
+                                                                    <Box
+                                                                        key={child.label}
+                                                                        component={Link}
+                                                                        to={child.to}
+                                                                        sx={{
+                                                                            display: 'block',
+                                                                            px: 2,
+                                                                            py: 1.25,
+                                                                            fontSize: '0.875rem',
+                                                                            fontWeight: 500,
+                                                                            color: isDark ? '#9CA3AF' : '#64748B',
+                                                                            textDecoration: 'none',
+                                                                            '&:hover': {
+                                                                                bgcolor: isDark ? 'rgba(255,255,255,0.05)' : '#F8FAFC',
+                                                                                color: 'rgba(17, 82, 212, 1)',
+                                                                            },
+                                                                        }}
+                                                                    >
+                                                                        {child.label}
+                                                                    </Box>
+                                                                ))}
+                                                            </Paper>
+                                                        </Grow>
+                                                    )}
+                                                </Popper>
+                                            </Box>
+                                        </ClickAwayListener>
+                                    );
+                                })}
                             </Stack>
 
                             {/* Theme Toggle */}

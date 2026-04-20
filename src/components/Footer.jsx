@@ -7,6 +7,7 @@ import {
     Divider,
 } from '@mui/material';
 import { useThemeMode } from '../contexts';
+import TermsCondition from '../assets/INTEGRITAS_Terms_and_Conditions.pdf'
 
 const getColors = (isDark) => ({
     bgDarker: isDark ? '#080D19' : '#F8FAFC',
@@ -112,21 +113,21 @@ const Footer = () => {
                         © {currentYear} Integritas. All rights reserved.
                     </Typography>
                     <Stack direction="row" spacing={4}>
-                        {legalLinks.map((item) => (
-                            <Box
-                                key={item}
-                                component={Link}
-                                to={`/${item.toLowerCase().replace(' ', '-')}`}
-                                sx={{
-                                    color: colors.textDark,
-                                    textDecoration: 'none',
-                                    fontSize: '0.875rem',
-                                    '&:hover': { color: colors.textWhite },
-                                }}
-                            >
-                                {item}
-                            </Box>
-                        ))}
+                        <Box
+                            component="a"
+                            href={TermsCondition}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            sx={{
+                                color: '#3B82F6',
+                                fontSize: '0.875rem',
+                                // textDecoration: 'underline',
+                                cursor: 'pointer',
+                                '&:hover': { color: '#60A5FA' },
+                            }}
+                        >
+                            Terms of Service and Privacy Policy
+                        </Box>
                     </Stack>
                 </Stack>
             </Box>

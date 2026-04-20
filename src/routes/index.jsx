@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import { NotFound, LandingPage, AboutUsPage, PartnersPage, ContactPage, LoginPage, SignupPage, VerifyPage, ForgotPasswordPage, InviteAcceptPage } from '../pages';
 import { adminRoutes } from '../modules/admin';
 import { tutorRoutes } from '../modules/tutor';
@@ -6,6 +6,14 @@ import { learnerRoutes } from '../modules/learner';
 import ProtectedRoute from '../components/ProtectedRoute';
 import PublicRoute from '../components/PublicRoute';
 import OnboardingGuard from '../components/OnboardingGuard';
+import ScrollToTop from '../components/ScrollToTop';
+
+const RootLayout = () => (
+    <>
+        <ScrollToTop />
+        <Outlet />
+    </>
+);
 
 const PUBLIC_LEARNER_PATHS = [
     '/explore',
@@ -16,6 +24,9 @@ const PUBLIC_LEARNER_PATHS = [
 ];
 
 const router = createBrowserRouter([
+    {
+        element: <RootLayout />,
+        children: [
     {
         path: '/',
         element: <LandingPage />,
@@ -125,6 +136,8 @@ const router = createBrowserRouter([
     {
         path: '*',
         element: <NotFound />,
+    },
+        ],
     },
 ]);
 

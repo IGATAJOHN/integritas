@@ -916,7 +916,7 @@ const LandingPage = () => {
             </Box>
 
             {/* CTA Section */}
-            <Box
+            {/* <Box
                 sx={{
                     py: 10,
                     px: { xs: 2, md: 4, lg: 6 },
@@ -994,7 +994,7 @@ const LandingPage = () => {
                         </Typography>
                     </Box>
                 </Container>
-            </Box>
+            </Box> */}
 
 
 

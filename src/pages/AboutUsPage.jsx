@@ -124,7 +124,7 @@ const AboutUsPage = () => {
             <Header />
 
             {/* Hero */}
-            <Box
+            {/* <Box
                 sx={{
                     background: colors.heroGradient,
                     borderBottom: `1px solid ${colors.border}`,
@@ -192,7 +192,7 @@ const AboutUsPage = () => {
                         Explore Our Courses
                     </Button>
                 </Container>
-            </Box>
+            </Box> */}
 
             {/* Stats */}
             {/* <Box sx={{ py: 8, borderBottom: `1px solid ${colors.border}` }}>
