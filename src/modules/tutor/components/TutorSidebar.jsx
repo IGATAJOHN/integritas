@@ -101,7 +101,7 @@ const TutorSidebar = ({
                 >
                     <Box
                         component="img"
-                        src="/src/assets/images/integritas_logo.png"
+                        src="/src/assets/images/integritas_logo.jpg"
                         alt="Integritas Logo"
                         sx={{ height: 50, width: 50 }}
                     />

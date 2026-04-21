@@ -26,7 +26,7 @@ import {
     Person as PersonIcon
 } from '@mui/icons-material';
 import { useAuth } from '../contexts';
-import logo from '../assets/images/integritas_logo.png';
+import logo from '../assets/images/integritas_logo.jpg';
 import Sidebar from '../components/Sidebar';
 
 const drawerWidth = 260;

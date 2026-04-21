@@ -44,7 +44,7 @@ import {
 import { useAuth } from '../../../contexts';
 import { useLocation } from 'react-router-dom';
 import { alpha } from '@mui/material/styles';
-import logo from '../../../assets/images/integritas_logo.png';
+import logo from '../../../assets/images/integritas_logo.jpg';
 import Footer from '../../../components/Footer';
 import { courseCatalogService, learnerEnrollmentService } from '../services';
 import { apiService } from '../../../services/api';

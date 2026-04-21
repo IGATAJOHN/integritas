@@ -8,10 +8,10 @@ export const theme = {
         bgCardHover: '#1F2937',
 
         // Brand blue — used for buttons, active links, accents
-        brand: 'rgba(34, 197, 94, 1)',       
-        brandHover: 'rgba(22, 163, 74, 1)',   
-        brandMuted: 'rgba(34, 197, 94, 0.35)',
-        brandLight: 'rgba(34, 197, 94, 0.1)',
+        brand: '#178A83',
+        brandHover: '#126E68',
+        brandMuted: '#178A8359',  
+        brandLight: '#178A831A',  
 
         // Accent colors
         primary: '#10B981',      // Teal/Green

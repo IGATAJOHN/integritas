@@ -27,7 +27,7 @@ import {
     HighlightOff,
 } from '@mui/icons-material';
 import logo from '../assets/images/integritas_logo.jpg';
-import icon from '../assets/images/integritas_logo.png';
+import icon from '../assets/images/integritas_logo.jpg';
 import { getDashboardRoute } from '../utils';
 import TermsCondition from '../assets/INTEGRITAS_Terms_and_Conditions.pdf';
 import theme from '../styles/theme';

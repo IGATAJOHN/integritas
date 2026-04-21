@@ -16,7 +16,7 @@ import {
     CheckCircleOutlined as CheckCircle,
     CreditCardOutlined as CreditCard
 } from '@mui/icons-material';
-import logo from '../../../assets/images/integritas_logo.png';
+import logo from '../../../assets/images/integritas_logo.jpg';
 import { learnerEnrollmentService, courseCatalogService } from '../services';
 
 const formatDate = (dateStr) => {

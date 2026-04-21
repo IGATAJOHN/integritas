@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import logo from '../assets/images/integritas_logo.png';
+import logo from '../assets/images/integritas_logo.jpg';
 
 const MainLayout = () => {
     const location = useLocation();
