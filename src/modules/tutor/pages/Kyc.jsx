@@ -41,6 +41,8 @@ import { textFieldStyle, selectStyle, selectMenuProps, paperStyle } from '../../
 import { useAuth } from '../../../contexts/AuthContext';
 import { kycService } from '../services/kycService';
 import { CircularProgress, Backdrop } from '@mui/material';
+import theme from '../../../styles/theme';
+
 
 const steps = [
     { label: 'Step 1', sublabel: 'Personal Info', icon: PersonOutline },
@@ -554,7 +556,7 @@ const Kyc = () => {
                                 textAlign: 'center',
                                 bgcolor: 'rgba(255,255,255,0.02)',
                                 transition: 'all 0.2s',
-                                '&:hover': { borderColor: '#1152D4', bgcolor: 'rgba(17, 82, 212, 0.02)' }
+                                '&:hover': { borderColor: theme.colors.brand, bgcolor: 'rgba(17, 82, 212, 0.02)' }
                             }}
                         >
                             <input
@@ -567,14 +569,14 @@ const Kyc = () => {
                             />
                             <label htmlFor="id-front-upload">
                                 <Stack spacing={1} alignItems="center">
-                                    <CloudUploadOutlined sx={{ fontSize: 32, color: '#1152D4' }} />
+                                    <CloudUploadOutlined sx={{ fontSize: 32, color: theme.colors.brand }} />
                                     <Button
                                         variant="outlined"
                                         component="span"
                                         disabled={uploadingIdFront}
                                         sx={{
-                                            color: '#1152D4',
-                                            borderColor: '#1152D4',
+                                            color: theme.colors.brand,
+                                            borderColor: theme.colors.brand,
                                             textTransform: 'none',
                                             '&:hover': { borderColor: '#0D42AF', bgcolor: 'rgba(17, 82, 212, 0.05)' }
                                         }}
@@ -633,7 +635,7 @@ const Kyc = () => {
                                 textAlign: 'center',
                                 bgcolor: 'rgba(255,255,255,0.02)',
                                 transition: 'all 0.2s',
-                                '&:hover': { borderColor: '#1152D4', bgcolor: 'rgba(17, 82, 212, 0.02)' }
+                                '&:hover': { borderColor: theme.colors.brand, bgcolor: 'rgba(17, 82, 212, 0.02)' }
                             }}
                         >
                             <input
@@ -646,14 +648,14 @@ const Kyc = () => {
                             />
                             <label htmlFor="certificate-upload">
                                 <Stack spacing={1} alignItems="center">
-                                    <CloudUploadOutlined sx={{ fontSize: 32, color: '#1152D4' }} />
+                                    <CloudUploadOutlined sx={{ fontSize: 32, color: theme.colors.brand }} />
                                     <Button
                                         variant="outlined"
                                         component="span"
                                         disabled={uploadingCertificate}
                                         sx={{
-                                            color: '#1152D4',
-                                            borderColor: '#1152D4',
+                                            color: theme.colors.brand,
+                                            borderColor: theme.colors.brand,
                                             textTransform: 'none',
                                             '&:hover': { borderColor: '#0D42AF', bgcolor: 'rgba(17, 82, 212, 0.05)' }
                                         }}
@@ -678,7 +680,7 @@ const Kyc = () => {
             <Stack spacing={4}>
                 {/* Personal Summary */}
                 <Box>
-                    <Typography sx={{ color: '#1152D4', fontWeight: 600, fontSize: '0.9rem', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography sx={{ color: theme.colors.brand, fontWeight: 600, fontSize: '0.9rem', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
                         <PersonOutline sx={{ fontSize: 20 }} /> Personal Information
                     </Typography>
                     <Grid container spacing={3}>
@@ -707,7 +709,7 @@ const Kyc = () => {
 
                 {/* Expertise */}
                 <Box>
-                    <Typography sx={{ color: '#1152D4', fontWeight: 600, fontSize: '0.9rem', mb: 2 }}>Areas of Expertise</Typography>
+                    <Typography sx={{ color: theme.colors.brand, fontWeight: 600, fontSize: '0.9rem', mb: 2 }}>Areas of Expertise</Typography>
                     {formData.skills && formData.skills.length > 0 ? (
                         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                             {formData.skills.map(s => (
@@ -723,7 +725,7 @@ const Kyc = () => {
 
                 {/* Documents */}
                 <Box>
-                    <Typography sx={{ color: '#1152D4', fontWeight: 600, fontSize: '0.9rem', mb: 2 }}>Attached Documents</Typography>
+                    <Typography sx={{ color: theme.colors.brand, fontWeight: 600, fontSize: '0.9rem', mb: 2 }}>Attached Documents</Typography>
                     <Stack spacing={1}>
                         {idFrontFile && (
                             <Typography sx={{ color: '#fff', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -805,11 +807,11 @@ const Kyc = () => {
                                         py: 1.5,
                                         px: 2.5,
                                         borderRadius: '50px',
-                                        bgcolor: isActive ? '#1152D4' : 'transparent',
+                                        bgcolor: isActive ? theme.colors.brand : 'transparent',
                                         cursor: isCompleted ? 'pointer' : 'default',
                                         transition: 'all 0.2s ease',
                                         '&:hover': {
-                                            bgcolor: isCompleted && !isActive ? 'rgba(17, 82, 212, 0.15)' : isActive ? '#1152D4' : 'transparent',
+                                            bgcolor: isCompleted && !isActive ? 'rgba(17, 82, 212, 0.15)' : isActive ? theme.colors.brand : 'transparent',
                                         },
                                         flexShrink: 0,
                                     }}
@@ -927,7 +929,7 @@ const Kyc = () => {
                                 disabled={isReadOnly || (activeStep === 0 && !isStep1Valid()) || (activeStep === 1 && !isStep2Valid())}
                                 onClick={handleNext}
                                 endIcon={<ArrowForward />}
-                                sx={{ bgcolor: '#1152D4', '&:hover': { bgcolor: '#0D42AF' } }}
+                                sx={{ bgcolor: theme.colors.brand, '&:hover': { bgcolor: '#0D42AF' } }}
                             >
                                 Continue to {steps[activeStep + 1].sublabel}
                             </Button>

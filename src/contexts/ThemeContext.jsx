@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import theme from '../styles/theme';
+
 
 // Create the context
 const ThemeContext = createContext();
@@ -22,9 +24,9 @@ const getDesignTokens = (mode) => ({
             ? {
                 // Dark mode colors
                 primary: {
-                    main: 'rgba(17, 82, 212, 1)',
+                    main: theme.colors.brand,
                     light: 'rgba(17, 82, 212, 0.15)',
-                    dark: 'rgba(13, 65, 170, 1)',
+                    dark: theme.colors.brandHover,
                 },
                 background: {
                     default: '#0C1322',
@@ -42,9 +44,9 @@ const getDesignTokens = (mode) => ({
             : {
                 // Light mode colors
                 primary: {
-                    main: 'rgba(17, 82, 212, 1)',
-                    light: 'rgba(17, 82, 212, 0.1)',
-                    dark: 'rgba(13, 65, 170, 1)',
+                    main: theme.colors.brand,
+                    light: theme.colors.brandLight,
+                    dark: theme.colors.brandHover,
                 },
                 background: {
                     default: '#FFFFFF',

@@ -14,6 +14,8 @@ import {
 import { useAuth } from '../contexts';
 import { getDashboardRoute } from '../utils';
 import icon from '../assets/images/integritas_logo.png';
+import theme from '../styles/theme';
+
 
 const VerifyPage = () => {
     const { id, hash } = useParams();
@@ -169,7 +171,7 @@ const VerifyPage = () => {
                 sx={{
                     bgcolor: '#1A2230',
                     borderRadius: 3,
-                    borderTop: '4px solid #1152D4',
+                    borderTop: `4px solid ${theme.colors.brand}`,
                     p: { xs: 3, sm: 3.5, md: 4 },
                     maxWidth: 450,
                     width: '100%',
@@ -182,7 +184,7 @@ const VerifyPage = () => {
                     sx={{
                         width: 56,
                         height: 56,
-                        bgcolor: '#1152D4',
+                        bgcolor: theme.colors.brand,
                         borderRadius: 2,
                         display: 'flex',
                         alignItems: 'center',
@@ -268,7 +270,7 @@ const VerifyPage = () => {
                             disabled={isResending || timer > 0}
                             onClick={handleResend}
                             sx={{
-                                bgcolor: '#1152D4',
+                                bgcolor: theme.colors.brand,
                                 color: '#FFFFFF',
                                 py: 1.5,
                                 textTransform: 'none',
@@ -276,7 +278,7 @@ const VerifyPage = () => {
                                 fontSize: '0.9rem',
                                 borderRadius: 1.5,
                                 boxShadow: 'none',
-                                '&:hover': { bgcolor: '#0D41AA' },
+                                '&:hover': { bgcolor: theme.colors.brandHover },
                                 mb: 3,
                             }}
                         >

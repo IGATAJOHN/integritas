@@ -53,6 +53,8 @@ import { textFieldStyle, selectStyle, selectMenuProps, modalStyle, scrollableMod
 import { formatCurrency } from '../../../utils';
 import { categoryService } from '../../../services/categoryService';
 import { tutorCoursesService, tutorModuleService, tutorLessonService } from '../services';
+import theme from '../../../styles/theme';
+
 
 const steps = [
     { label: 'Step 1', sublabel: 'Basic Details', icon: DescriptionOutlined },
@@ -665,10 +667,10 @@ const CreateCourse = () => {
                                         fill: '#fff',
                                     },
                                     '& button.ql-active .ql-stroke': {
-                                        stroke: '#1152D4',
+                                        stroke: theme.colors.brand,
                                     },
                                     '& button.ql-active .ql-fill': {
-                                        fill: '#1152D4',
+                                        fill: theme.colors.brand,
                                     },
                                 },
                                 '& .ql-container': {
@@ -739,13 +741,13 @@ const CreateCourse = () => {
                             <Box
                                 sx={{
                                     bgcolor: '#1E293B',
-                                    border: courseData.thumbnail_url ? '2px solid #1152D4' : '2px dashed #374151',
+                                    border: courseData.thumbnail_url ? `2px solid ${theme.colors.brand}` : '2px dashed #374151',
                                     borderRadius: 2,
                                     p: courseData.thumbnail_url ? 0 : 4,
                                     textAlign: 'center',
                                     cursor: 'pointer',
                                     transition: 'border-color 0.2s',
-                                    '&:hover': { borderColor: '#1152D4' },
+                                    '&:hover': { borderColor: theme.colors.brand },
                                     overflow: 'hidden',
                                     minHeight: 150,
                                     display: 'flex',
@@ -794,8 +796,8 @@ const CreateCourse = () => {
                     {/* Tutor Tips */}
                     <Paper sx={{ bgcolor: '#1A2230', border: '1px solid #374151', borderRadius: 2, p: 2.5 }}>
                         <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
-                            <Info sx={{ color: '#1152D4', fontSize: 18 }} />
-                            <Typography sx={{ color: '#1152D4', fontWeight: 600, fontSize: '0.85rem' }}>
+                            <Info sx={{ color: theme.colors.brand, fontSize: 18 }} />
+                            <Typography sx={{ color: theme.colors.brand, fontWeight: 600, fontSize: '0.85rem' }}>
                                 Tutor Tips
                             </Typography>
                         </Stack>
@@ -827,7 +829,7 @@ const CreateCourse = () => {
                     variant="contained"
                     startIcon={<Add />}
                     onClick={() => { setEditingModule(null); setNewModule({ title: '', description: '' }); setModuleModalOpen(true); }}
-                    sx={{ bgcolor: '#1152D4', '&:hover': { bgcolor: '#0D42AF' } }}
+                    sx={{ bgcolor: theme.colors.brand, '&:hover': { bgcolor: '#0D42AF' } }}
                 >
                     Add Module
                 </Button>
@@ -846,7 +848,7 @@ const CreateCourse = () => {
                         variant="outlined"
                         startIcon={<Add />}
                         onClick={() => setModuleModalOpen(true)}
-                        sx={{ color: '#1152D4', borderColor: '#1152D4' }}
+                        sx={{ color: theme.colors.brand, borderColor: theme.colors.brand }}
                     >
                         Create First Module
                     </Button>
@@ -923,7 +925,7 @@ const CreateCourse = () => {
                                         variant="outlined"
                                         startIcon={<Add />}
                                         onClick={() => handleAddLesson(module.id)}
-                                        sx={{ mt: 1, color: '#1152D4', borderColor: '#374151', '&:hover': { borderColor: '#1152D4' } }}
+                                        sx={{ mt: 1, color: theme.colors.brand, borderColor: '#374151', '&:hover': { borderColor: theme.colors.brand } }}
                                     >
                                         Add Lesson
                                     </Button>
@@ -1007,7 +1009,7 @@ const CreateCourse = () => {
                                 variant="outlined"
                                 startIcon={<Add />}
                                 onClick={() => handleAddLesson(module.id)}
-                                sx={{ mt: 2, color: '#1152D4', borderColor: '#374151' }}
+                                sx={{ mt: 2, color: theme.colors.brand, borderColor: '#374151' }}
                             >
                                 Add Lesson to Module {mi + 1}
                             </Button>
@@ -1063,7 +1065,7 @@ const CreateCourse = () => {
                         <Typography sx={{ color: '#fff', fontWeight: 600, mb: 2 }}>Curriculum Summary</Typography>
                         <Stack direction="row" spacing={4}>
                             <Box sx={{ textAlign: 'center' }}>
-                                <Typography sx={{ color: '#1152D4', fontSize: '2rem', fontWeight: 700 }}>{modules.length}</Typography>
+                                <Typography sx={{ color: theme.colors.brand, fontSize: '2rem', fontWeight: 700 }}>{modules.length}</Typography>
                                 <Typography sx={{ color: '#6B7280', fontSize: '0.85rem' }}>Modules</Typography>
                             </Box>
                             <Box sx={{ textAlign: 'center' }}>
@@ -1103,7 +1105,7 @@ const CreateCourse = () => {
     if (loadingCourse) {
         return (
             <Box sx={{ p: 4, bgcolor: '#0C1322', minHeight: 'calc(100vh - 70px)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                <CircularProgress sx={{ color: '#1152D4' }} />
+                <CircularProgress sx={{ color: theme.colors.brand }} />
             </Box>
         );
     }
@@ -1166,11 +1168,11 @@ const CreateCourse = () => {
                                         py: 1.5,
                                         px: 2.5,
                                         borderRadius: '50px',
-                                        bgcolor: isActive ? '#1152D4' : 'transparent',
+                                        bgcolor: isActive ? theme.colors.brand : 'transparent',
                                         cursor: isCompleted ? 'pointer' : 'default',
                                         transition: 'all 0.2s ease',
                                         '&:hover': {
-                                            bgcolor: isCompleted && !isActive ? 'rgba(17, 82, 212, 0.15)' : isActive ? '#1152D4' : 'transparent',
+                                            bgcolor: isCompleted && !isActive ? 'rgba(17, 82, 212, 0.15)' : isActive ? theme.colors.brand : 'transparent',
                                         },
                                         flexShrink: 0,
                                     }}
@@ -1287,7 +1289,7 @@ const CreateCourse = () => {
                             onClick={handleNext}
                             endIcon={<ArrowForward />}
                             variant="contained"
-                            sx={{ bgcolor: '#1152D4', '&:hover': { bgcolor: '#0D42AF' } }}
+                            sx={{ bgcolor: theme.colors.brand, '&:hover': { bgcolor: '#0D42AF' } }}
                         >
                             Continue to {steps[activeStep + 1].sublabel}
                         </Button>
@@ -1308,7 +1310,7 @@ const CreateCourse = () => {
             {/* Module Modal */}
             <Modal open={moduleModalOpen} onClose={() => setModuleModalOpen(false)}>
                 <Box sx={modalStyle}>
-                    <Box sx={{ background: 'linear-gradient(135deg, #1152D4 0%, #0D42AF 100%)', p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Box sx={{ background: '${theme.colors.brand} 0%, ${theme.colors.brandHover} 100%)', p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Typography sx={{ color: '#fff', fontWeight: 600 }}>{editingModule ? 'Edit Module' : 'Add Module'}</Typography>
                         <IconButton onClick={() => setModuleModalOpen(false)} sx={{ color: '#fff' }}><Close /></IconButton>
                     </Box>
@@ -1342,7 +1344,7 @@ const CreateCourse = () => {
                             <Button
                                 variant="contained"
                                 onClick={editingModule ? handleUpdateModule : handleAddModule}
-                                sx={{ bgcolor: '#1152D4' }}
+                                sx={{ bgcolor: theme.colors.brand }}
                             >
                                 {editingModule ? 'Update' : 'Add Module'}
                             </Button>
@@ -1354,7 +1356,7 @@ const CreateCourse = () => {
             {/* Lesson Modal */}
             <Modal open={lessonModalOpen} onClose={() => setLessonModalOpen(false)}>
                 <Box sx={{ ...modalStyle, width: { xs: '95vw', sm: '90vw', md: 900 }, maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
-                    <Box sx={{ background: 'linear-gradient(135deg, #1152D4 0%, #0D42AF 100%)', p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+                    <Box sx={{ background: '${theme.colors.brand} 0%, ${theme.colors.brandHover} 100%)', p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
                         <Typography sx={{ color: '#fff', fontWeight: 600 }}>{editingLesson ? 'Edit Lesson' : 'Add Lesson'}</Typography>
                         <IconButton onClick={() => setLessonModalOpen(false)} sx={{ color: '#fff' }}><Close /></IconButton>
                     </Box>
@@ -1397,7 +1399,7 @@ const CreateCourse = () => {
                                             p: 3,
                                             textAlign: 'center',
                                             cursor: 'pointer',
-                                            '&:hover': { borderColor: '#1152D4' },
+                                            '&:hover': { borderColor: theme.colors.brand },
                                         }}
                                     >
                                         {(newLesson.videoFile || newLesson.fileName) ? (
@@ -1519,7 +1521,7 @@ const CreateCourse = () => {
                         </Stack>
                         <Stack direction="row" justifyContent="flex-end" spacing={2} sx={{ mt: 3 }}>
                             <Button onClick={() => setLessonModalOpen(false)} sx={{ color: '#9CA3AF' }}>Cancel</Button>
-                            <Button variant="contained" onClick={handleSaveLesson} sx={{ bgcolor: '#1152D4' }}>
+                            <Button variant="contained" onClick={handleSaveLesson} sx={{ bgcolor: theme.colors.brand }}>
                                 {editingLesson ? 'Update' : 'Add Lesson'}
                             </Button>
                         </Stack>
@@ -1571,7 +1573,7 @@ const CreateCourse = () => {
                         zIndex: 9999,
                     }}
                 >
-                    <CircularProgress size={60} sx={{ color: '#1152D4', mb: 2 }} />
+                    <CircularProgress size={60} sx={{ color: theme.colors.brand, mb: 2 }} />
                     <Typography sx={{ color: '#fff', fontSize: '1.1rem' }}>
                         Creating your course...
                     </Typography>

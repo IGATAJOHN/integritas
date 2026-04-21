@@ -49,6 +49,8 @@ import {
     QuizOutlined,
     History,
 } from '@mui/icons-material';
+import theme from '../../../styles/theme';
+
 
 
 const CourseManagement = () => {
@@ -189,7 +191,7 @@ const CourseManagement = () => {
                                                         width: 40,
                                                         height: 40,
                                                         borderRadius: 1.5,
-                                                        bgcolor: '#1152D4',
+                                                        bgcolor: theme.colors.brand,
                                                         display: 'flex',
                                                         alignItems: 'center',
                                                         justifyContent: 'center',

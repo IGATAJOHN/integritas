@@ -22,6 +22,8 @@ import {
     School as SchoolIcon,
 } from '@mui/icons-material';
 import { learnerEnrollmentService } from '../services';
+import theme from '../../../styles/theme';
+
 
 const tabs = ['All Courses', 'In Progress', 'Completed', 'Certificates'];
 
@@ -115,7 +117,7 @@ const MyLearning = () => {
                     <Button
                         variant="contained"
                         onClick={() => navigate('/explore/courses')}
-                        sx={{ bgcolor: '#1152D4', textTransform: 'none', '&:hover': { bgcolor: '#0D42AF' } }}
+                        sx={{ bgcolor: theme.colors.brand, textTransform: 'none', '&:hover': { bgcolor: '#0D42AF' } }}
                     >
                         Explore Courses
                     </Button>
@@ -174,7 +176,7 @@ const MyLearning = () => {
                                     borderRadius: 1.5,
                                     px: 1.8,
                                     color: activeTab === tab ? '#fff' : '#9CA3AF',
-                                    bgcolor: activeTab === tab ? '#1152D4' : '#111827',
+                                    bgcolor: activeTab === tab ? theme.colors.brand : '#111827',
                                     border: activeTab === tab ? '1px solid #1D4ED8' : '1px solid #374151',
                                     '&:hover': {
                                         bgcolor: activeTab === tab ? '#0D42AF' : '#1F2937',
@@ -233,7 +235,7 @@ const MyLearning = () => {
                         <Button
                             variant="contained"
                             onClick={() => navigate('/explore/courses')}
-                            sx={{ bgcolor: '#1152D4', textTransform: 'none', '&:hover': { bgcolor: '#0D42AF' } }}
+                            sx={{ bgcolor: theme.colors.brand, textTransform: 'none', '&:hover': { bgcolor: '#0D42AF' } }}
                         >
                             Explore Courses
                         </Button>
@@ -321,7 +323,7 @@ const MyLearning = () => {
                                                         fullWidth
                                                         variant="contained"
                                                         onClick={() => courseId && navigate(`/explore/lesson/${courseId}`)}
-                                                        sx={{ bgcolor: '#1152D4', textTransform: 'none', '&:hover': { bgcolor: '#0D42AF' } }}
+                                                        sx={{ bgcolor: theme.colors.brand, textTransform: 'none', '&:hover': { bgcolor: '#0D42AF' } }}
                                                     >
                                                         Resume Course
                                                     </Button>

@@ -19,6 +19,8 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../contexts';
 import icon from '../assets/images/integritas_logo.png';
+import theme from '../styles/theme';
+
 
 const ForgotPasswordPage = () => {
     const navigate = useNavigate();
@@ -238,7 +240,7 @@ const ForgotPasswordPage = () => {
                 sx={{
                     bgcolor: '#1A2230',
                     borderRadius: 3,
-                    borderTop: '4px solid #1152D4',
+                    borderTop: `4px solid ${theme.colors.brand}`,
                     p: { xs: 3, sm: 3.5, md: 4 },
                     maxWidth: 450,
                     width: '100%',
@@ -251,7 +253,7 @@ const ForgotPasswordPage = () => {
                     sx={{
                         width: 56,
                         height: 56,
-                        bgcolor: '#1152D4',
+                        bgcolor: theme.colors.brand,
                         borderRadius: '50%',
                         display: 'flex',
                         alignItems: 'center',
@@ -343,7 +345,7 @@ const ForgotPasswordPage = () => {
                                             border: 'none',
                                         },
                                         '&.Mui-focused fieldset': {
-                                            border: '2px solid #1152D4',
+                                            border: `2px solid ${theme.colors.brand}`,
                                         },
                                     },
                                     '& .MuiInputBase-input': {
@@ -367,7 +369,7 @@ const ForgotPasswordPage = () => {
                             variant="contained"
                             disabled={!isValidEmail || isSubmitting}
                             sx={{
-                                bgcolor: '#1152D4',
+                                bgcolor: theme.colors.brand,
                                 color: '#FFFFFF',
                                 py: 1.5,
                                 textTransform: 'none',
@@ -376,8 +378,8 @@ const ForgotPasswordPage = () => {
                                 borderRadius: 1.5,
                                 boxShadow: 'none',
                                 '&:hover': {
-                                    bgcolor: '#0D41AA',
-                                    boxShadow: '0 4px 12px rgba(17, 82, 212, 0.3)',
+                                    bgcolor: theme.colors.brandHover,
+                                    boxShadow: theme.shadows.brandGlow,
                                 },
                                 '&:disabled': {
                                     bgcolor: '#374151',
@@ -462,7 +464,7 @@ const ForgotPasswordPage = () => {
                                                     border: 'none',
                                                 },
                                                 '&.Mui-focused fieldset': {
-                                                    border: '2px solid #1152D4',
+                                                    border: `2px solid ${theme.colors.brand}`,
                                                 },
                                             },
                                             '& .MuiInputBase-input': {
@@ -482,7 +484,7 @@ const ForgotPasswordPage = () => {
                                 disabled={!isOtpComplete || isVerifying}
                                 endIcon={<ArrowForward />}
                                 sx={{
-                                    bgcolor: '#1152D4',
+                                    bgcolor: theme.colors.brand,
                                     color: '#FFFFFF',
                                     py: 1.5,
                                     textTransform: 'none',
@@ -491,8 +493,8 @@ const ForgotPasswordPage = () => {
                                     borderRadius: 1.5,
                                     boxShadow: 'none',
                                     '&:hover': {
-                                        bgcolor: '#0D41AA',
-                                        boxShadow: '0 4px 12px rgba(17, 82, 212, 0.3)',
+                                        bgcolor: theme.colors.brandHover,
+                                        boxShadow: theme.shadows.brandGlow,
                                     },
                                     '&:disabled': {
                                         bgcolor: '#374151',
@@ -581,7 +583,7 @@ const ForgotPasswordPage = () => {
                                                 border: 'none',
                                             },
                                             '&.Mui-focused fieldset': {
-                                                border: '2px solid #1152D4',
+                                                border: `2px solid ${theme.colors.brand}`,
                                             },
                                         },
                                         '& .MuiInputBase-input': {
@@ -647,7 +649,7 @@ const ForgotPasswordPage = () => {
                                                 border: 'none',
                                             },
                                             '&.Mui-focused fieldset': {
-                                                border: '2px solid #1152D4',
+                                                border: `2px solid ${theme.colors.brand}`,
                                             },
                                         },
                                         '& .MuiInputBase-input': {
@@ -672,7 +674,7 @@ const ForgotPasswordPage = () => {
                                 disabled={!password || !passwordConfirmation || isResetting}
                                 endIcon={<ArrowForward />}
                                 sx={{
-                                    bgcolor: '#1152D4',
+                                    bgcolor: theme.colors.brand,
                                     color: '#FFFFFF',
                                     py: 1.5,
                                     textTransform: 'none',
@@ -681,8 +683,8 @@ const ForgotPasswordPage = () => {
                                     borderRadius: 1.5,
                                     boxShadow: 'none',
                                     '&:hover': {
-                                        bgcolor: '#0D41AA',
-                                        boxShadow: '0 4px 12px rgba(17, 82, 212, 0.3)',
+                                        bgcolor: theme.colors.brandHover,
+                                        boxShadow: theme.shadows.brandGlow,
                                     },
                                     '&:disabled': {
                                         bgcolor: '#374151',

@@ -25,6 +25,8 @@ import {
 import { useAuth } from '../../../contexts/AuthContext';
 import { tutorCoursesService, kycService } from '../services';
 import { getImageUrl } from '../../../utils';
+import theme from '../../../styles/theme';
+
 
 const getTimeAgo = (dateStr) => {
     if (!dateStr) return 'Recently';
@@ -460,7 +462,7 @@ const TutorDashboard = () => {
                                             size="small"
                                             variant="contained"
                                             sx={{
-                                                bgcolor: '#1152D4',
+                                                bgcolor: theme.colors.brand,
                                                 color: '#FFFFFF',
                                                 textTransform: 'none',
                                                 fontSize: '0.65rem',
@@ -468,7 +470,7 @@ const TutorDashboard = () => {
                                                 py: 0.5,
                                                 minWidth: 'auto',
                                                 ml: 1,
-                                                '&:hover': { bgcolor: '#0D41AA' },
+                                                '&:hover': { bgcolor: theme.colors.brandHover },
                                             }}
                                         >
                                             Grade Now →
@@ -493,13 +495,13 @@ const TutorDashboard = () => {
                         size="small"
                         onClick={() => navigate('/tutor/create-course')}
                         sx={{
-                            bgcolor: '#1152D4',
+                            bgcolor: theme.colors.brand,
                             color: '#FFFFFF',
                             textTransform: 'none',
                             fontSize: '0.75rem',
                             px: 2,
                             py: 0.75,
-                            '&:hover': { bgcolor: '#0D41AA' },
+                            '&:hover': { bgcolor: theme.colors.brandHover },
                         }}
                     >
                         Create New
@@ -634,7 +636,7 @@ const TutorDashboard = () => {
                                                     textTransform: 'none',
                                                     fontSize: '0.65rem',
                                                     py: 0.5,
-                                                    '&:hover': { borderColor: '#1152D4', bgcolor: 'rgba(17, 82, 212, 0.1)' },
+                                                    '&:hover': { borderColor: theme.colors.brand, bgcolor: theme.colors.brandLight },
                                                 }}
                                             >
                                                 {course.status === 'draft' ? 'Edit Draft' : 'Manage'}

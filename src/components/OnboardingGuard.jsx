@@ -3,6 +3,8 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts';
 import { Box, CircularProgress } from '@mui/material';
 import { hasOrganizationAccess } from '../utils';
+import theme from '../styles/theme';
+
 
 const OnboardingGuard = ({ children }) => {
     const { user, loading, needsEmailVerification, needsKyc, isKycComplete } = useAuth();
@@ -19,7 +21,7 @@ const OnboardingGuard = ({ children }) => {
                     bgcolor: '#0C1322',
                 }}
             >
-                <CircularProgress sx={{ color: '#1152D4' }} />
+                <CircularProgress sx={{ color: theme.colors.brand }} />
             </Box>
         );
     }

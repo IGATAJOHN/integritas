@@ -30,6 +30,8 @@ import logo from '../assets/images/integritas_logo.jpg';
 import icon from '../assets/images/integritas_logo.png';
 import { getDashboardRoute } from '../utils';
 import TermsCondition from '../assets/INTEGRITAS_Terms_and_Conditions.pdf';
+import theme from '../styles/theme';
+
 
 const SignupPage = () => {
     const navigate = useNavigate();
@@ -359,7 +361,7 @@ const SignupPage = () => {
                         >
                             Create Account
                         </Typography>
-                        <LockOutlined sx={{ color: '#1152D4', fontSize: 24 }} />
+                        <LockOutlined sx={{ color: theme.colors.brand, fontSize: 24 }} />
                     </Stack>
 
                     <Typography sx={{ color: '#9CA3AF', fontSize: '0.875rem', mb: 3 }}>
@@ -451,7 +453,7 @@ const SignupPage = () => {
                                         borderRadius: 1.5,
                                         '& fieldset': { borderColor: '#374151' },
                                         '&:hover fieldset': { borderColor: '#4B5563' },
-                                        '&.Mui-focused fieldset': { borderColor: '#1152D4' },
+                                        '&.Mui-focused fieldset': { borderColor: theme.colors.brand },
                                         '&.Mui-error fieldset': { borderColor: '#EF4444' },
                                     },
                                     '& .MuiInputBase-input': {
@@ -504,7 +506,7 @@ const SignupPage = () => {
                                         borderRadius: 1.5,
                                         '& fieldset': { borderColor: '#374151' },
                                         '&:hover fieldset': { borderColor: '#4B5563' },
-                                        '&.Mui-focused fieldset': { borderColor: '#1152D4' },
+                                        '&.Mui-focused fieldset': { borderColor: theme.colors.brand },
                                         '&.Mui-error fieldset': { borderColor: '#EF4444' },
                                     },
                                     '& .MuiInputBase-input': {
@@ -554,7 +556,7 @@ const SignupPage = () => {
                                         borderRadius: 1.5,
                                         '& fieldset': { borderColor: '#374151' },
                                         '&:hover fieldset': { borderColor: '#4B5563' },
-                                        '&.Mui-focused fieldset': { borderColor: '#1152D4' },
+                                        '&.Mui-focused fieldset': { borderColor: theme.colors.brand },
                                         '&.Mui-error fieldset': { borderColor: '#EF4444' },
                                     },
                                     '& .MuiInputBase-input': {
@@ -640,7 +642,7 @@ const SignupPage = () => {
                                         borderRadius: 1.5,
                                         '& fieldset': { borderColor: '#374151' },
                                         '&:hover fieldset': { borderColor: '#4B5563' },
-                                        '&.Mui-focused fieldset': { borderColor: '#1152D4' },
+                                        '&.Mui-focused fieldset': { borderColor: theme.colors.brand },
                                         '&.Mui-error fieldset': { borderColor: '#EF4444' },
                                     },
                                     '& .MuiInputBase-input': {
@@ -697,7 +699,7 @@ const SignupPage = () => {
                                     sx={{
                                         color: '#4B5563',
                                         mt: '-2px',
-                                        '&.Mui-checked': { color: '#1152D4' },
+                                        '&.Mui-checked': { color: theme.colors.brand },
                                     }}
                                 />
                             }
@@ -730,7 +732,7 @@ const SignupPage = () => {
                             variant="contained"
                             disabled={!canSubmit}
                             sx={{
-                                bgcolor: '#1152D4',
+                                bgcolor: theme.colors.brand,
                                 color: '#FFFFFF',
                                 py: 1.5,
                                 textTransform: 'none',
@@ -739,11 +741,11 @@ const SignupPage = () => {
                                 borderRadius: 1.5,
                                 boxShadow: 'none',
                                 '&:hover': {
-                                    bgcolor: '#0D41AA',
-                                    boxShadow: '0 4px 12px rgba(17, 82, 212, 0.3)',
+                                    bgcolor: theme.colors.brandHover,
+                                    boxShadow: theme.shadows.brandGlow,
                                 },
                                 '&.Mui-disabled': {
-                                    bgcolor: 'rgba(17, 82, 212, 0.35)',
+                                    bgcolor: theme.colors.brandMuted,
                                     color: 'rgba(255, 255, 255, 0.5)',
                                 },
                             }}

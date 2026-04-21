@@ -1,3 +1,4 @@
+import theme from './theme';
 export const textFieldStyle = {
     '& .MuiOutlinedInput-root': {
         bgcolor: '#1E293B',
@@ -9,7 +10,7 @@ export const textFieldStyle = {
             borderColor: '#4B5563',
         },
         '&.Mui-focused fieldset': {
-            borderColor: '#1152D4',
+            borderColor: theme.colors.brand,
         },
     },
     '& .MuiInputBase-input': {
@@ -35,7 +36,7 @@ export const selectStyle = {
         borderColor: '#4B5563',
     },
     '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-        borderColor: '#1152D4',
+        borderColor: theme.colors.brand,
     },
     '& .MuiSvgIcon-root': {
         color: '#9CA3AF'
@@ -115,7 +116,7 @@ export const searchInputStyle = {
 };
 
 export const primaryButtonStyle = {
-    bgcolor: '#1152D4',
+    bgcolor: theme.colors.brand,
     '&:hover': { bgcolor: '#0D42AF' },
     boxShadow: '0 4px 14px rgba(17, 82, 212, 0.4)',
 };

@@ -26,14 +26,16 @@ import {
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useThemeMode } from '../contexts';
+import theme from '../styles/theme';
+
 
 const getColors = (isDark) => ({
     bgDark: isDark ? '#0C1322' : '#FFFFFF',
     bgDarker: isDark ? '#080D19' : '#F8FAFC',
     bgCard: isDark ? '#111827' : '#FFFFFF',
-    primary: 'rgba(17, 82, 212, 1)',
-    primaryHover: 'rgba(13, 65, 170, 1)',
-    primaryLight: 'rgba(17, 82, 212, 0.1)',
+    primary: theme.colors.brand,
+    primaryHover: theme.colors.brandHover,
+    primaryLight: theme.colors.brandLight,
     textWhite: isDark ? '#FFFFFF' : '#1E293B',
     textLight: isDark ? '#F3F4F6' : '#334155',
     textMuted: isDark ? '#9CA3AF' : '#64748B',
@@ -76,8 +78,8 @@ const values = [
     },
     {
         icon: <Security sx={{ fontSize: 28 }} />,
-        color: 'rgba(17, 82, 212, 1)',
-        bgColor: 'rgba(17, 82, 212, 0.1)',
+        color: theme.colors.brand,
+        bgColor: theme.colors.brandLight,
         title: 'Excellence',
         description: 'We are committed to delivering world-class education that empowers public servants and institutional leaders to perform at their very best.',
     },
@@ -89,7 +91,7 @@ const team = [
         role: 'Co-Founder & Chief Executive Officer',
         bio: 'Former Director-General at the Federal Ministry of Finance with over 20 years of public sector experience.',
         initials: 'AO',
-        avatarColor: 'rgba(17, 82, 212, 1)',
+        avatarColor: theme.colors.brand,
     },
     {
         name: 'Emeka Chukwu',
@@ -136,7 +138,7 @@ const AboutUsPage = () => {
                     <Typography
                         variant="overline"
                         sx={{
-                            color: 'rgba(17, 82, 212, 1)',
+                            color: theme.colors.brand,
                             fontWeight: 700,
                             letterSpacing: '0.15em',
                             fontSize: '0.8rem',
@@ -157,7 +159,7 @@ const AboutUsPage = () => {
                         }}
                     >
                         Empowering Public Servants{' '}
-                        <Box component="span" sx={{ color: 'rgba(17, 82, 212, 1)' }}>
+                        <Box component="span" sx={{ color: theme.colors.brand }}>
                             Through Knowledge
                         </Box>
                     </Typography>
@@ -179,8 +181,8 @@ const AboutUsPage = () => {
                         variant="contained"
                         endIcon={<ArrowForward />}
                         sx={{
-                            bgcolor: 'rgba(17, 82, 212, 1)',
-                            '&:hover': { bgcolor: 'rgba(13, 65, 170, 1)', color:'#fff' },
+                            bgcolor: theme.colors.brand,
+                            '&:hover': { bgcolor: theme.colors.brandHover, color:'#fff' },
                             textTransform: 'none',
                             fontWeight: 600,
                             borderRadius: 2,
@@ -205,7 +207,7 @@ const AboutUsPage = () => {
                                         sx={{
                                             fontSize: { xs: '2rem', md: '2.75rem' },
                                             fontWeight: 800,
-                                            color: 'rgba(17, 82, 212, 1)',
+                                            color: theme.colors.brand,
                                             lineHeight: 1,
                                             mb: 0.5,
                                         }}
@@ -229,7 +231,7 @@ const AboutUsPage = () => {
                     <Box sx={{ textAlign: 'center', mb: 8 }}>
                         <Typography
                             variant="overline"
-                            sx={{ color: 'rgba(17, 82, 212, 1)', fontWeight: 700, letterSpacing: '0.15em', fontSize: '0.8rem', display: 'block', mb: 2 }}
+                            sx={{ color: theme.colors.brand, fontWeight: 700, letterSpacing: '0.15em', fontSize: '0.8rem', display: 'block', mb: 2 }}
                         >
                             Who We Are
                         </Typography>
@@ -245,7 +247,7 @@ const AboutUsPage = () => {
                         {[
                             {
                                 num: '01',
-                                heading: <>Rebuilding the <Box component="span" sx={{ color: 'rgba(17, 82, 212, 1)' }}>Currency of Trust</Box></>,
+                                heading: <>Rebuilding the <Box component="span" sx={{ color: theme.colors.brand }}>Currency of Trust</Box></>,
                                 body: [
                                     'Nigeria does not suffer from a lack of talent, brilliance, or technical capability. We suffer from a systemic trust deficit. For too long, the \u201cNigerian Factor\u201d has been used as an excuse to normalize compromise, corner-cutting, and institutional leakage.',
                                     'We are here to rewrite that narrative.',
@@ -253,7 +255,7 @@ const AboutUsPage = () => {
                             },
                             {
                                 num: '02',
-                                heading: <>Transparency is the Tool.{' '}<Box component="span" sx={{ color: 'rgba(17, 82, 212, 1)' }}>Integrity is the Outcome.</Box></>,
+                                heading: <>Transparency is the Tool.{' '}<Box component="span" sx={{ color: theme.colors.brand }}>Integrity is the Outcome.</Box></>,
                                 body: [
                                     'Developed by the Center for Fiscal Transparency and Public Integrity (CeFTPI), INTEGRITAS is not just another e-learning site. It is a behavioral intervention and a verifiable \u201cTrust Utility.\u201d',
                                     'While existing programs teach the academic laws of compliance, we focus on the raw, human element of moral courage. We believe that transparency frameworks \u2014 like budgets, the FOI Act, and the TII \u2014 are merely instruments; they require individuals of uncompromised character to wield them effectively.',
@@ -261,7 +263,7 @@ const AboutUsPage = () => {
                             },
                             {
                                 num: '03',
-                                heading: <>Building the{' '}<Box component="span" sx={{ color: 'rgba(17, 82, 212, 1)' }}>Institutional Immune System</Box></>,
+                                heading: <>Building the{' '}<Box component="span" sx={{ color: theme.colors.brand }}>Institutional Immune System</Box></>,
                                 body: [
                                     'We are building a new moral infrastructure for the nation. Through our rigorous 15-module Foundational Track and the Capstone Gateway Project, we are training a new breed of professionals \u2014 Integritas Associates.',
                                     'By deploying a critical mass of these certified professionals across the public service, the private sector, and the youth vanguard, we are creating a localised \u201cinstitutional immune system.\u201d This network will share the same ethical language and possess the courage to collectively resist, expose, and neutralize corruption from the inside out.',
@@ -269,7 +271,7 @@ const AboutUsPage = () => {
                             },
                             {
                                 num: '04',
-                                heading: <>Success Without Compromise{' '}<Box component="span" sx={{ color: 'rgba(17, 82, 212, 1)' }}>is Possible.</Box></>,
+                                heading: <>Success Without Compromise{' '}<Box component="span" sx={{ color: theme.colors.brand }}>is Possible.</Box></>,
                                 body: [
                                     'For graduates who pass the Gateway Project, INTEGRITAS unlocks the Experta Class \u2014 a cinematic library of survival guides from vetted Nigerian leaders. These \u201cIntegrity Icons\u201d provide the ultimate proof that you can reach the highest levels of government and enterprise in Nigeria without dirtying your hands.',
                                 ],
@@ -327,7 +329,7 @@ const AboutUsPage = () => {
                                 p: { xs: 4, md: 6 },
                                 bgcolor: colors.bgCard,
                                 border: `1px solid ${colors.border}`,
-                                borderLeft: '4px solid rgba(17, 82, 212, 1)',
+                                borderLeft: `4px solid ${theme.colors.brand}`,
                                 borderRadius: 2,
                             }}
                         >
@@ -336,7 +338,7 @@ const AboutUsPage = () => {
                                 sx={{ fontWeight: 800, color: colors.textWhite, fontSize: { xs: '1.35rem', md: '1.75rem' }, mb: 2, lineHeight: 1.3 }}
                             >
                                 Join the{' '}
-                                <Box component="span" sx={{ color: 'rgba(17, 82, 212, 1)' }}>Vanguard</Box>
+                                <Box component="span" sx={{ color: theme.colors.brand }}>Vanguard</Box>
                             </Typography>
                             <Typography sx={{ color: colors.textMuted, lineHeight: 1.9, fontSize: '1rem', mb: 2 }}>
                                 Whether you are a university student navigating your first ethical dilemma, a civil servant protecting the public purse, or a corporate executive building a clean supply chain, this platform is your anchor.
@@ -360,8 +362,8 @@ const AboutUsPage = () => {
                                     size="large"
                                     endIcon={<ArrowForward />}
                                     sx={{
-                                        bgcolor: 'rgba(17, 82, 212, 1)',
-                                        '&:hover': { bgcolor: 'rgba(13, 65, 170, 1)', color: '#FFFFFF' },
+                                        bgcolor: theme.colors.brand,
+                                        '&:hover': { bgcolor: theme.colors.brandHover, color: '#FFFFFF' },
                                         textTransform: 'none',
                                         fontWeight: 600,
                                         py: 1.5,
@@ -405,14 +407,14 @@ const AboutUsPage = () => {
                 <Container maxWidth="md">
                     <Avatar
                         sx={{
-                            bgcolor: 'rgba(17, 82, 212, 0.12)',
+                            bgcolor: theme.colors.brandLight,
                             width: 72,
                             height: 72,
                             mx: 'auto',
                             mb: 3,
                         }}
                     >
-                        <Groups sx={{ fontSize: 36, color: 'rgba(17, 82, 212, 1)' }} />
+                        <Groups sx={{ fontSize: 36, color: theme.colors.brand }} />
                     </Avatar>
                     <Typography
                         variant="h3"
@@ -445,8 +447,8 @@ const AboutUsPage = () => {
                             variant="contained"
                             endIcon={<ArrowForward />}
                             sx={{
-                                bgcolor: 'rgba(17, 82, 212, 1)',
-                                '&:hover': { bgcolor: 'rgba(13, 65, 170, 1)', color:'#fff' },
+                                bgcolor: theme.colors.brand,
+                                '&:hover': { bgcolor: theme.colors.brandHover, color:'#fff' },
                                 textTransform: 'none',
                                 fontWeight: 600,
                                 borderRadius: 2,

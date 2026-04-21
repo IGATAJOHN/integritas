@@ -32,6 +32,8 @@ import {
 import { adminCoursesService } from '../services';
 import { formatCurrency } from '../../../utils';
 import { modalStyle, textFieldStyle } from '../../../styles/formStyles';
+import theme from '../../../styles/theme';
+
 
 const CertificatePriceChanges = () => {
     const [loading, setLoading] = useState(true);
@@ -129,7 +131,7 @@ const CertificatePriceChanges = () => {
                     mb: 3,
                     '& .MuiTab-root': { color: '#9CA3AF', textTransform: 'none' },
                     '& .Mui-selected': { color: '#fff !important' },
-                    '& .MuiTabs-indicator': { bgcolor: '#1152D4' }
+                    '& .MuiTabs-indicator': { bgcolor: theme.colors.brand }
                 }}
             >
                 <Tab label="Pending" />

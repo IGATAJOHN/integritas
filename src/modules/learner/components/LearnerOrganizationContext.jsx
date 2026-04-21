@@ -15,6 +15,8 @@ import { Groups, School } from '@mui/icons-material';
 import { useAuth } from '../../../contexts';
 import { getOrganizationRole } from '../../../utils';
 import { selectMenuProps, selectStyle } from '../../../styles/formStyles';
+import theme from '../../../styles/theme';
+
 
 const STORAGE_KEY = 'Integritas_learner_selected_org_id';
 

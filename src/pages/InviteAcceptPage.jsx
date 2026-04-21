@@ -11,6 +11,8 @@ import {
     Typography,
 } from '@mui/material';
 import { apiService } from '../services/api';
+import theme from '../styles/theme';
+
 
 const INVITE_TOKEN_KEYS = ['token', 'invitation_token', 'invite_token'];
 
@@ -263,7 +265,7 @@ const InviteAcceptPage = () => {
                                 variant="contained"
                                 onClick={handleLoggedInAccept}
                                 disabled={loading || !token}
-                                sx={{ bgcolor: '#1152D4', textTransform: 'none', py: 1.2, '&:hover': { bgcolor: '#0E46B5' } }}
+                                sx={{ bgcolor: theme.colors.brand, textTransform: 'none', py: 1.2, '&:hover': { bgcolor: '#0E46B5' } }}
                             >
                                 {loading ? <CircularProgress size={22} sx={{ color: '#fff' }} /> : 'Accept Invite'}
                             </Button>
@@ -284,7 +286,7 @@ const InviteAcceptPage = () => {
                                             color: '#fff',
                                             '& fieldset': { borderColor: '#374151' },
                                             '&:hover fieldset': { borderColor: '#4B5563' },
-                                            '&.Mui-focused fieldset': { borderColor: '#1152D4' },
+                                            '&.Mui-focused fieldset': { borderColor: theme.colors.brand },
                                         },
                                         '& .MuiInputLabel-root': { color: '#9CA3AF' },
                                     }}
@@ -303,7 +305,7 @@ const InviteAcceptPage = () => {
                                             color: '#fff',
                                             '& fieldset': { borderColor: '#374151' },
                                             '&:hover fieldset': { borderColor: '#4B5563' },
-                                            '&.Mui-focused fieldset': { borderColor: '#1152D4' },
+                                            '&.Mui-focused fieldset': { borderColor: theme.colors.brand },
                                         },
                                         '& .MuiInputLabel-root': { color: '#9CA3AF' },
                                     }}
@@ -312,7 +314,7 @@ const InviteAcceptPage = () => {
                                     type="submit"
                                     variant="contained"
                                     disabled={loading || !token}
-                                    sx={{ bgcolor: '#1152D4', textTransform: 'none', py: 1.2, '&:hover': { bgcolor: '#0E46B5' } }}
+                                    sx={{ bgcolor: theme.colors.brand, textTransform: 'none', py: 1.2, '&:hover': { bgcolor: '#0E46B5' } }}
                                 >
                                     {loading ? <CircularProgress size={22} sx={{ color: '#fff' }} /> : 'Accept Invite'}
                                 </Button>

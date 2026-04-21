@@ -42,6 +42,8 @@ import {
 } from '@mui/icons-material';
 import { textFieldStyle, selectStyle, modalStyle } from '../../../styles/formStyles';
 import { staffService } from '../services/staffService';
+import theme from '../../../styles/theme';
+
 
 /**
  * StaffManagement Component
@@ -370,7 +372,7 @@ const StaffManagement = () => {
                         startIcon={<Add />}
                         onClick={() => handleOpenStaffModal()}
                         sx={{
-                            bgcolor: '#1152D4',
+                            bgcolor: theme.colors.brand,
                             '&:hover': { bgcolor: '#0D42AF' },
                             boxShadow: '0 4px 14px rgba(17, 82, 212, 0.4)'
                         }}
@@ -444,7 +446,7 @@ const StaffManagement = () => {
                         {loading ? (
                             <TableRow>
                                 <TableCell colSpan={5} align="center" sx={{ borderBottom: '1px solid #374151', py: 6 }}>
-                                    <CircularProgress size={40} sx={{ color: '#1152D4' }} />
+                                    <CircularProgress size={40} sx={{ color: theme.colors.brand }} />
                                     <Typography sx={{ color: '#9CA3AF', mt: 2 }}>Loading staff...</Typography>
                                 </TableCell>
                             </TableRow>
@@ -454,7 +456,7 @@ const StaffManagement = () => {
                                     <Alert severity="error" sx={{ bgcolor: 'transparent', justifyContent: 'center' }}>
                                         {error}
                                     </Alert>
-                                    <Button onClick={fetchStaff} sx={{ mt: 2, color: '#1152D4' }}>Try Again</Button>
+                                    <Button onClick={fetchStaff} sx={{ mt: 2, color: theme.colors.brand }}>Try Again</Button>
                                 </TableCell>
                             </TableRow>
                         ) : filteredStaff.length === 0 ? (
@@ -568,7 +570,7 @@ const StaffManagement = () => {
                 <Box sx={{ ...modalStyle, maxHeight: '90vh', overflowY: 'auto' }}>
                     {/* Modal Header */}
                     <Box sx={{
-                        background: 'linear-gradient(135deg, #1152D4 0%, #0D42AF 100%)',
+                        background: '${theme.colors.brand} 0%, ${theme.colors.brandHover} 100%)',
                         p: 3,
                         display: 'flex',
                         alignItems: 'center',
@@ -722,7 +724,7 @@ const StaffManagement = () => {
                                 onClick={handleSaveStaff}
                                 disabled={!formData.first_name.trim() || !formData.last_name.trim() || !formData.email.trim() || saving}
                                 sx={{
-                                    bgcolor: '#1152D4',
+                                    bgcolor: theme.colors.brand,
                                     py: 1.5,
                                     borderRadius: 1.5,
                                     fontWeight: 600,
@@ -752,7 +754,7 @@ const StaffManagement = () => {
                 }}>
                     {/* Modal Header */}
                     <Box sx={{
-                        background: 'linear-gradient(135deg, #1152D4 0%, #0D42AF 100%)',
+                        background: '${theme.colors.brand} 0%, ${theme.colors.brandHover} 100%)',
                         p: 3,
                         display: 'flex',
                         alignItems: 'center',
@@ -821,7 +823,7 @@ const StaffManagement = () => {
                                                             checked={newRolePrivileges.includes(privilege)}
                                                             onChange={() => handlePrivilegeToggle(privilege)}
                                                             size="small"
-                                                            sx={{ color: '#6B7280', '&.Mui-checked': { color: '#1152D4' } }}
+                                                            sx={{ color: '#6B7280', '&.Mui-checked': { color: theme.colors.brand } }}
                                                         />
                                                     }
                                                     label={<Typography variant="body2" sx={{ color: '#D1D5DB' }}>{privilege}</Typography>}
@@ -836,7 +838,7 @@ const StaffManagement = () => {
                                     onClick={handleAddRole}
                                     disabled={!newRoleName}
                                     sx={{
-                                        bgcolor: '#1152D4',
+                                        bgcolor: theme.colors.brand,
                                         py: 1.5,
                                         borderRadius: '8px',
                                         fontWeight: 600,
@@ -929,7 +931,7 @@ const StaffManagement = () => {
                         startIcon={<ContentCopy />}
                         onClick={handleCopyCredentials}
                         sx={{
-                            bgcolor: '#1152D4',
+                            bgcolor: theme.colors.brand,
                             '&:hover': { bgcolor: '#0D42AF' },
                         }}
                     >

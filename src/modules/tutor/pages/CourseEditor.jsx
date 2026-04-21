@@ -38,6 +38,8 @@ import {
     MoreVert,
     DragIndicator
 } from '@mui/icons-material';
+import theme from '../../../styles/theme';
+
 
 const CourseEditor = () => {
     const navigate = useNavigate();
@@ -133,7 +135,7 @@ const CourseEditor = () => {
     if (loading) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', bgcolor: '#080D19' }}>
-                <CircularProgress sx={{ color: '#1152D4' }} />
+                <CircularProgress sx={{ color: theme.colors.brand }} />
             </Box>
         );
     }
@@ -172,7 +174,7 @@ const CourseEditor = () => {
                         variant="contained"
                         onClick={handleSave}
                         endIcon={<RocketLaunch fontSize="small" />}
-                        sx={{ bgcolor: '#1152D4', textTransform: 'none', '&:hover': { bgcolor: '#0D42AF' } }}
+                        sx={{ bgcolor: theme.colors.brand, textTransform: 'none', '&:hover': { bgcolor: '#0D42AF' } }}
                     >
                         Publish Lesson
                     </Button>
@@ -382,8 +384,8 @@ const CourseEditor = () => {
                             <Box>
                                 <Typography variant="caption" sx={{ color: '#9CA3AF', fontWeight: 700, mb: 1, display: 'block' }}>TAGS</Typography>
                                 <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mb: 1 }}>
-                                    <Chip label="Governance" onDelete={() => { }} size="small" sx={{ bgcolor: '#1152D4', color: '#fff' }} />
-                                    <Chip label="Policy" onDelete={() => { }} size="small" sx={{ bgcolor: '#1152D4', color: '#fff' }} />
+                                    <Chip label="Governance" onDelete={() => { }} size="small" sx={{ bgcolor: theme.colors.brand, color: '#fff' }} />
+                                    <Chip label="Policy" onDelete={() => { }} size="small" sx={{ bgcolor: theme.colors.brand, color: '#fff' }} />
                                     {tags.map((tag, index) => (
                                         <Chip key={index} label={tag} onDelete={() => handleDeleteTag(tag)} size="small" sx={{ bgcolor: '#374151', color: '#fff' }} />
                                     ))}

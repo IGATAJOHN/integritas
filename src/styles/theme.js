@@ -7,6 +7,12 @@ export const theme = {
         bgCard: '#111827',
         bgCardHover: '#1F2937',
 
+        // Brand blue — used for buttons, active links, accents
+        brand: 'rgba(34, 197, 94, 1)',       
+        brandHover: 'rgba(22, 163, 74, 1)',   
+        brandMuted: 'rgba(34, 197, 94, 0.35)',
+        brandLight: 'rgba(34, 197, 94, 0.1)',
+
         // Accent colors
         primary: '#10B981',      // Teal/Green
         primaryHover: '#059669',
@@ -55,6 +61,7 @@ export const theme = {
         lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
         xl: '0 20px 25px -5px rgba(0, 0, 0, 0.25)',
         glow: '0 0 20px rgba(16, 185, 129, 0.3)',
+        brandGlow: '0 4px 12px rgba(17, 82, 212, 0.3)',
     },
 
     breakpoints: {

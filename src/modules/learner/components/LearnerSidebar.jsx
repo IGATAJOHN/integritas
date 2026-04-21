@@ -23,6 +23,8 @@ import {
     BusinessOutlined as OrganizationIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../../contexts';
+import theme from '../../../styles/theme';
+
 
 const LearnerSidebar = ({ onClose }) => {
     const navigate = useNavigate();
@@ -37,9 +39,9 @@ const LearnerSidebar = ({ onClose }) => {
         text: '#9CA3AF',
         textSecondary: '#6B7280',
         activeText: '#FFFFFF',
-        primary: '#1152D4',
-        primaryBg: '#1152D4',
-        hover: 'rgba(17, 82, 212, 0.1)',
+        primary: theme.colors.brand,
+        primaryBg: theme.colors.brand,
+        hover: theme.colors.brandLight,
         border: '#1F2937'
     };
 

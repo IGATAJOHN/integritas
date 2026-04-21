@@ -43,6 +43,8 @@ import {
 } from '@mui/icons-material';
 import { reviewerService } from '../services/reviewerService';
 import { textFieldStyle, modalStyle } from '../../../styles/formStyles';
+import theme from '../../../styles/theme';
+
 
 /**
  * ReviewerManagement Component
@@ -323,7 +325,7 @@ const ReviewerManagement = () => {
                         startIcon={<Add />}
                         onClick={handleOpenModal}
                         sx={{
-                            bgcolor: '#1152D4',
+                            bgcolor: theme.colors.brand,
                             '&:hover': { bgcolor: '#0D42AF' },
                             boxShadow: '0 4px 14px rgba(17, 82, 212, 0.4)'
                         }}

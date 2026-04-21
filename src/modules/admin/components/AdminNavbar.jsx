@@ -20,6 +20,8 @@ import {
     DarkMode,
 } from '@mui/icons-material';
 import { useThemeMode } from '../../../contexts';
+import theme from '../../../styles/theme';
+
 
 const AdminNavbar = ({
     onDrawerToggle = () => { },
@@ -128,7 +130,7 @@ const AdminNavbar = ({
                     sx={{
                         width: 40,
                         height: 40,
-                        bgcolor: '#1152D4',
+                        bgcolor: theme.colors.brand,
                         ml: 1,
                         cursor: 'pointer',
                         fontSize: '0.9rem',

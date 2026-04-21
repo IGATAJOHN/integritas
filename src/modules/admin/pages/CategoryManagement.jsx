@@ -34,6 +34,8 @@ import {
 } from '@mui/icons-material';
 import { textFieldStyle, modalStyle } from '../../../styles/formStyles';
 import { categoryService } from '../../../services';
+import theme from '../../../styles/theme';
+
 
 const CategoryManagement = () => {
     // State for categories data
@@ -240,7 +242,7 @@ const CategoryManagement = () => {
                         startIcon={<Add />}
                         onClick={() => handleOpenModal()}
                         sx={{
-                            bgcolor: '#1152D4',
+                            bgcolor: theme.colors.brand,
                             '&:hover': { bgcolor: '#0D42AF' },
                             boxShadow: '0 4px 14px rgba(17, 82, 212, 0.4)'
                         }}

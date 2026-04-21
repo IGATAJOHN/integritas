@@ -28,6 +28,8 @@ import {
     ExpandMore,
     LogoutOutlined,
 } from '@mui/icons-material';
+import theme from '../../../styles/theme';
+
 
 const DRAWER_WIDTH = 260;
 
@@ -165,9 +167,9 @@ const AdminSidebar = ({
                                         borderRadius: 1.5,
                                         py: 1.5,
                                         px: 2,
-                                        bgcolor: (item.path && isActive(item.path)) || (item.children && openSubmenu === item.label) ? '#1152D4' : 'transparent',
+                                        bgcolor: (item.path && isActive(item.path)) || (item.children && openSubmenu === item.label) ? theme.colors.brand : 'transparent',
                                         '&:hover': {
-                                            bgcolor: (item.path && isActive(item.path)) || (item.children && openSubmenu === item.label) ? '#1152D4' : 'rgba(17, 82, 212, 0.1)',
+                                            bgcolor: (item.path && isActive(item.path)) || (item.children && openSubmenu === item.label) ? theme.colors.brand : theme.colors.brandLight,
                                         },
                                         justifyContent: 'space-between'
                                     }}
@@ -216,7 +218,7 @@ const AdminSidebar = ({
                                                     primary={child.label}
                                                     primaryTypographyProps={{
                                                         fontSize: '0.85rem',
-                                                        color: isActive(child.path) ? '#1152D4' : '#9CA3AF',
+                                                        color: isActive(child.path) ? theme.colors.brand : '#9CA3AF',
                                                         fontWeight: isActive(child.path) ? 600 : 400,
                                                     }}
                                                 />

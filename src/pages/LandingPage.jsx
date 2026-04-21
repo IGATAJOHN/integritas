@@ -33,9 +33,9 @@ const getColors = (isDark) => ({
     bgDark: isDark ? '#0C1322' : '#FFFFFF',
     bgDarker: isDark ? '#080D19' : '#F8FAFC',
     bgCard: isDark ? '#111827' : '#FFFFFF',
-    primary: 'rgba(17, 82, 212, 1)',
-    primaryHover: 'rgba(13, 65, 170, 1)',
-    primaryLight: 'rgba(17, 82, 212, 0.1)',
+    primary: theme.colors.brand,
+    primaryHover: theme.colors.brandHover,
+    primaryLight: theme.colors.brandLight,
     textWhite: isDark ? '#FFFFFF' : '#1E293B',
     textLight: isDark ? '#F3F4F6' : '#334155',
     textMuted: isDark ? '#9CA3AF' : '#64748B',
@@ -47,6 +47,8 @@ const getColors = (isDark) => ({
         ? 'linear-gradient(135deg, rgba(40, 46, 57, 1) 0%, rgba(30, 35, 45, 1) 50%, rgba(20, 25, 35, 1) 100%)'
         : 'linear-gradient(135deg, #F8FAFC 0%, #EEF2FF 50%, #F0FDF4 100%)',
 });
+import theme from '../styles/theme';
+
 
 const LandingPage = () => {
     const { isDark } = useThemeMode();
@@ -125,7 +127,7 @@ const LandingPage = () => {
                         {/* <Box
                             sx={{
                                 bgcolor: 'rgba(17, 82, 212, 0.15)',
-                                color: 'rgba(17, 82, 212, 1)',
+                                color: theme.colors.brand,
                                 px: 2,
                                 py: 0.5,
                                 borderRadius: 50,
@@ -144,7 +146,7 @@ const LandingPage = () => {
                                     width: 10,
                                     height: 10,
                                     borderRadius: '50%',
-                                    bgcolor: 'rgba(17, 82, 212, 1)',
+                                    bgcolor: theme.colors.brand,
                                 }}
                             />
                             New Courses Available
@@ -162,7 +164,7 @@ const LandingPage = () => {
                             }}
                         >
                             Anchoring a Future on<br />
-                            <Box component="span" sx={{ color: 'rgba(17, 82, 212, 1)' }}>
+                            <Box component="span" sx={{ color: theme.colors.brand }}>
                                 Integrity
                             </Box>
                         </Typography>
@@ -189,9 +191,9 @@ const LandingPage = () => {
                                 size="large"
                                 endIcon={<ArrowForward />}
                                 sx={{
-                                    bgcolor: 'rgba(17, 82, 212, 1)',
+                                    bgcolor: theme.colors.brand,
                                     '&:hover': {
-                                        bgcolor: 'rgba(13, 65, 170, 1)', color: '#FFFFFF',
+                                        bgcolor: theme.colors.brandHover, color: '#FFFFFF',
                                     },
                                     textTransform: 'none',
                                     fontWeight: 600,
@@ -282,7 +284,7 @@ const LandingPage = () => {
                             fontWeight: 700,
                             textTransform: 'uppercase',
                             letterSpacing: '0.15em',
-                            color: 'rgba(17, 82, 212, 1)',
+                            color: theme.colors.brand,
                             mb: 2,
                         }}
                     >
@@ -299,7 +301,7 @@ const LandingPage = () => {
                         }}
                     >
                         Transparency is the tool.{' '}
-                        <Box component="span" sx={{ color: 'rgba(17, 82, 212, 1)' }}>
+                        <Box component="span" sx={{ color: theme.colors.brand }}>
                             Integrity is the outcome.
                         </Box>
                     </Typography>
@@ -474,7 +476,7 @@ const LandingPage = () => {
                                 fontWeight: 700,
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.15em',
-                                color: 'rgba(17, 82, 212, 1)',
+                                color: theme.colors.brand,
                                 mb: 2,
                             }}
                         >
@@ -505,7 +507,7 @@ const LandingPage = () => {
                                                     width: 36,
                                                     height: 36,
                                                     borderRadius: '50%',
-                                                    bgcolor: 'rgba(17, 82, 212, 1)',
+                                                    bgcolor: theme.colors.brand,
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
@@ -588,7 +590,7 @@ const LandingPage = () => {
                                     sx={{
                                         bgcolor: colors.bgCard,
                                         border: `1px solid ${colors.border}`,
-                                        borderTop: '3px solid rgba(17, 82, 212, 1)',
+                                        borderTop: `3px solid ${theme.colors.brand}`,
                                         borderRadius: 3,
                                         p: { xs: 3, md: 4 },
                                         width: '100%',
@@ -598,7 +600,7 @@ const LandingPage = () => {
                                         transition: 'all 0.3s',
                                         '&:hover': {
                                             borderColor: 'rgba(17, 82, 212, 0.5)',
-                                            borderTopColor: 'rgba(17, 82, 212, 1)',
+                                            borderTopColor: theme.colors.brand,
                                             transform: 'translateY(-4px)',
                                         },
                                     }}
@@ -609,7 +611,7 @@ const LandingPage = () => {
                                             width: 40,
                                             height: 40,
                                             borderRadius: '50%',
-                                            bgcolor: 'rgba(17, 82, 212, 1)',
+                                            bgcolor: theme.colors.brand,
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
@@ -920,7 +922,7 @@ const LandingPage = () => {
                 sx={{
                     py: 10,
                     px: { xs: 2, md: 4, lg: 6 },
-                    bgcolor: '#1152D4',
+                    bgcolor: theme.colors.brand,
                 }}
             >
                 <Container maxWidth="md">
@@ -952,7 +954,7 @@ const LandingPage = () => {
                                 size="large"
                                 sx={{
                                     bgcolor: '#FFFFFF',
-                                    color: '#1152D4',
+                                    color: theme.colors.brand,
                                     '&:hover': {
                                         bgcolor: '#E8EFFC',
                                         color: '#0D3FA8',

@@ -19,6 +19,8 @@ import { useAuth } from '../contexts';
 import { getDashboardRoute, isReturnToAllowedForUser } from '../utils';
 import logo from '../assets/images/integritas_logo.jpg';
 import icon from '../assets/images/integritas_logo.jpg';
+import theme from '../styles/theme';
+
 
 const LoginPage = () => {
     const navigate = useNavigate();
@@ -206,7 +208,7 @@ const LoginPage = () => {
                         >
                             Welcome back
                         </Typography>
-                        <LockOutlined sx={{ color: '#1152D4', fontSize: 24 }} />
+                        <LockOutlined sx={{ color: theme.colors.brand, fontSize: 24 }} />
                     </Stack>
 
                     {/* Subtitle */}
@@ -257,7 +259,7 @@ const LoginPage = () => {
                                             borderColor: '#4B5563',
                                         },
                                         '&.Mui-focused fieldset': {
-                                            borderColor: '#1152D4',
+                                            borderColor: theme.colors.brand,
                                         },
                                     },
                                     '& .MuiInputBase-input': {
@@ -344,7 +346,7 @@ const LoginPage = () => {
                                             borderColor: '#4B5563',
                                         },
                                         '&.Mui-focused fieldset': {
-                                            borderColor: '#1152D4',
+                                            borderColor: theme.colors.brand,
                                         },
                                     },
                                     '& .MuiInputBase-input': {
@@ -385,7 +387,7 @@ const LoginPage = () => {
                             variant="contained"
                             disabled={loading}
                             sx={{
-                                bgcolor: '#1152D4',
+                                bgcolor: theme.colors.brand,
                                 color: '#FFFFFF',
                                 py: 1.5,
                                 textTransform: 'none',
@@ -394,8 +396,8 @@ const LoginPage = () => {
                                 borderRadius: 1.5,
                                 boxShadow: 'none',
                                 '&:hover': {
-                                    bgcolor: '#0D41AA',
-                                    boxShadow: '0 4px 12px rgba(17, 82, 212, 0.3)',
+                                    bgcolor: theme.colors.brandHover,
+                                    boxShadow: theme.shadows.brandGlow,
                                 },
                                 '&:disabled': {
                                     bgcolor: '#374151',

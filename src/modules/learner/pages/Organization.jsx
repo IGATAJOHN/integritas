@@ -37,6 +37,8 @@ import {
 } from '../../../styles/formStyles';
 import { learnerOrganizationService } from '../services/organizationService';
 import OrganizationScopeToolbar from '../components/OrganizationScopeToolbar';
+import theme from '../../../styles/theme';
+
 
 const STORAGE_KEY = 'Integritas_learner_selected_org_id';
 const ASSIGNMENT_TYPES = ['course', 'learning_path'];
@@ -115,7 +117,7 @@ const StatCard = ({ title, value, subtitle, icon }) => (
                 <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '1.8rem', lineHeight: 1.1 }}>{value}</Typography>
                 <Typography sx={{ color: '#9CA3AF', fontSize: '0.78rem', mt: 1 }}>{subtitle}</Typography>
             </Box>
-            <Box sx={{ color: '#1152D4', opacity: 0.95 }}>{icon}</Box>
+            <Box sx={{ color: theme.colors.brand, opacity: 0.95 }}>{icon}</Box>
         </Stack>
     </Paper>
 );

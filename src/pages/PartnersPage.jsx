@@ -26,14 +26,16 @@ import {
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useThemeMode } from '../contexts';
+import theme from '../styles/theme';
+
 
 const getColors = (isDark) => ({
     bgDark: isDark ? '#0C1322' : '#FFFFFF',
     bgDarker: isDark ? '#080D19' : '#F8FAFC',
     bgCard: isDark ? '#111827' : '#FFFFFF',
-    primary: 'rgba(17, 82, 212, 1)',
-    primaryHover: 'rgba(13, 65, 170, 1)',
-    primaryLight: 'rgba(17, 82, 212, 0.1)',
+    primary: theme.colors.brand,
+    primaryHover: theme.colors.brandHover,
+    primaryLight: theme.colors.brandLight,
     textWhite: isDark ? '#FFFFFF' : '#1E293B',
     textLight: isDark ? '#F3F4F6' : '#334155',
     textMuted: isDark ? '#9CA3AF' : '#64748B',
@@ -48,8 +50,8 @@ const getColors = (isDark) => ({
 const partnerCategories = [
     {
         icon: <AccountBalance sx={{ fontSize: 26 }} />,
-        color: 'rgba(17, 82, 212, 1)',
-        bgColor: 'rgba(17, 82, 212, 0.1)',
+        color: theme.colors.brand,
+        bgColor: theme.colors.brandLight,
         label: 'Government Agencies',
         typeKey: 'Government Agency',
     },
@@ -83,7 +85,7 @@ const partners = [
         country: 'Nigeria',
         description: 'Collaborating on financial governance and public expenditure management programs for civil servants.',
         initials: 'FMF',
-        color: 'rgba(17, 82, 212, 1)',
+        color: theme.colors.brand,
     },
     {
         name: 'University of Lagos',
@@ -144,8 +146,8 @@ const benefits = [
     },
     {
         icon: <TrendingUp sx={{ fontSize: 28 }} />,
-        color: 'rgba(17, 82, 212, 1)',
-        bgColor: 'rgba(17, 82, 212, 0.1)',
+        color: theme.colors.brand,
+        bgColor: theme.colors.brandLight,
         title: 'Analytics & Reporting',
         description: 'Real-time dashboards and progress reports so your organization can track and measure learning outcomes.',
     },
@@ -192,7 +194,7 @@ const PartnersPage = () => {
                     <Typography
                         variant="overline"
                         sx={{
-                            color: 'rgba(17, 82, 212, 1)',
+                            color: theme.colors.brand,
                             fontWeight: 700,
                             letterSpacing: '0.15em',
                             fontSize: '0.8rem',
@@ -213,7 +215,7 @@ const PartnersPage = () => {
                         }}
                     >
                         Our{' '}
-                        <Box component="span" sx={{ color: 'rgba(17, 82, 212, 1)' }}>
+                        <Box component="span" sx={{ color: theme.colors.brand }}>
                             Partners
                         </Box>{' '}
                         &amp; Collaborators
@@ -237,8 +239,8 @@ const PartnersPage = () => {
                             variant="contained"
                             endIcon={<ArrowForward />}
                             sx={{
-                                bgcolor: 'rgba(17, 82, 212, 1)',
-                                '&:hover': { bgcolor: 'rgba(13, 65, 170, 1)', color: '#ffff'},
+                                bgcolor: theme.colors.brand,
+                                '&:hover': { bgcolor: theme.colors.brandHover, color: '#ffff'},
                                 textTransform: 'none',
                                 fontWeight: 600,
                                 borderRadius: 2,
@@ -282,7 +284,7 @@ const PartnersPage = () => {
                                         sx={{
                                             fontSize: { xs: '2rem', md: '2.75rem' },
                                             fontWeight: 800,
-                                            color: 'rgba(17, 82, 212, 1)',
+                                            color: theme.colors.brand,
                                             lineHeight: 1,
                                             mb: 0.5,
                                         }}
@@ -305,7 +307,7 @@ const PartnersPage = () => {
                     <Box sx={{ textAlign: 'center', mb: 7 }}>
                         <Typography
                             variant="overline"
-                            sx={{ color: 'rgba(17, 82, 212, 1)', fontWeight: 700, letterSpacing: '0.15em', fontSize: '0.8rem', display: 'block', mb: 1.5 }}
+                            sx={{ color: theme.colors.brand, fontWeight: 700, letterSpacing: '0.15em', fontSize: '0.8rem', display: 'block', mb: 1.5 }}
                         >
                             Who We Work With
                         </Typography>
@@ -365,7 +367,7 @@ const PartnersPage = () => {
                     <Box sx={{ textAlign: 'center', mb: 8 }}>
                         <Typography
                             variant="overline"
-                            sx={{ color: 'rgba(17, 82, 212, 1)', fontWeight: 700, letterSpacing: '0.15em', fontSize: '0.8rem', display: 'block', mb: 1.5 }}
+                            sx={{ color: theme.colors.brand, fontWeight: 700, letterSpacing: '0.15em', fontSize: '0.8rem', display: 'block', mb: 1.5 }}
                         >
                             Trusted By
                         </Typography>
@@ -426,8 +428,8 @@ const PartnersPage = () => {
                                                     label={partner.type}
                                                     size="small"
                                                     sx={{
-                                                        bgcolor: 'rgba(17, 82, 212, 0.12)',
-                                                        color: 'rgba(17, 82, 212, 1)',
+                                                        bgcolor: theme.colors.brandLight,
+                                                        color: theme.colors.brand,
                                                         fontWeight: 600,
                                                         fontSize: '0.68rem',
                                                         height: 20,
@@ -462,7 +464,7 @@ const PartnersPage = () => {
                     <Box sx={{ textAlign: 'center', mb: 8 }}>
                         <Typography
                             variant="overline"
-                            sx={{ color: 'rgba(17, 82, 212, 1)', fontWeight: 700, letterSpacing: '0.15em', fontSize: '0.8rem', display: 'block', mb: 1.5 }}
+                            sx={{ color: theme.colors.brand, fontWeight: 700, letterSpacing: '0.15em', fontSize: '0.8rem', display: 'block', mb: 1.5 }}
                         >
                             Why Partner With Us
                         </Typography>
@@ -527,14 +529,14 @@ const PartnersPage = () => {
                 <Container maxWidth="md">
                     <Avatar
                         sx={{
-                            bgcolor: 'rgba(17, 82, 212, 0.12)',
+                            bgcolor: theme.colors.brandLight,
                             width: 72,
                             height: 72,
                             mx: 'auto',
                             mb: 3,
                         }}
                     >
-                        <Handshake sx={{ fontSize: 36, color: 'rgba(17, 82, 212, 1)' }} />
+                        <Handshake sx={{ fontSize: 36, color: theme.colors.brand }} />
                     </Avatar>
                     <Typography
                         variant="h3"
@@ -547,7 +549,7 @@ const PartnersPage = () => {
                         }}
                     >
                         Let's Build Something{' '}
-                        <Box component="span" sx={{ color: 'rgba(17, 82, 212, 1)' }}>
+                        <Box component="span" sx={{ color: theme.colors.brand }}>
                             Meaningful Together
                         </Box>
                     </Typography>
@@ -570,8 +572,8 @@ const PartnersPage = () => {
                             variant="contained"
                             endIcon={<ArrowForward />}
                             sx={{
-                                bgcolor: 'rgba(17, 82, 212, 1)',
-                                '&:hover': { bgcolor: 'rgba(13, 65, 170, 1)' },
+                                bgcolor: theme.colors.brand,
+                                '&:hover': { bgcolor: theme.colors.brandHover },
                                 textTransform: 'none',
                                 fontWeight: 600,
                                 borderRadius: 2,

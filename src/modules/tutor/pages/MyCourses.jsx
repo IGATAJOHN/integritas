@@ -34,6 +34,8 @@ import {
     History,
 } from '@mui/icons-material';
 import { formatCurrency, getImageUrl } from '../../../utils';
+import theme from '../../../styles/theme';
+
 
 /**
  * My Courses Page - Lists all courses created by the tutor
@@ -174,7 +176,7 @@ const MyCourses = () => {
                     startIcon={<Add />}
                     onClick={() => navigate('/tutor/create-course')}
                     sx={{
-                        bgcolor: '#1152D4',
+                        bgcolor: theme.colors.brand,
                         '&:hover': { bgcolor: '#0D42AF' },
                         boxShadow: '0 4px 14px rgba(17, 82, 212, 0.4)'
                     }}
@@ -218,7 +220,7 @@ const MyCourses = () => {
             {/* Course Cards Grid */}
             {loading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 8, width: '100%' }}>
-                    <CircularProgress sx={{ color: '#1152D4' }} />
+                    <CircularProgress sx={{ color: theme.colors.brand }} />
                 </Box>
             ) : error ? (
                 <Box sx={{ textAlign: 'center', py: 8, width: '100%' }}>
@@ -248,7 +250,7 @@ const MyCourses = () => {
                                         flexDirection: 'column',
                                         transition: 'border-color 0.2s, transform 0.2s',
                                         '&:hover': {
-                                            borderColor: '#1152D4',
+                                            borderColor: theme.colors.brand,
                                             transform: 'translateY(-2px)',
                                         },
                                     }}
@@ -261,7 +263,7 @@ const MyCourses = () => {
                                                     width: 44,
                                                     height: 44,
                                                     borderRadius: 1.5,
-                                                    bgcolor: '#1152D4',
+                                                    bgcolor: theme.colors.brand,
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
@@ -420,7 +422,7 @@ const MyCourses = () => {
                             startIcon={<Add />}
                             onClick={() => navigate('/tutor/create-course')}
                             sx={{
-                                bgcolor: '#1152D4',
+                                bgcolor: theme.colors.brand,
                                 '&:hover': { bgcolor: '#0D42AF' },
                             }}
                         >

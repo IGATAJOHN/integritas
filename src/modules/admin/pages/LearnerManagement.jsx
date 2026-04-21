@@ -31,6 +31,8 @@ import {
     Person,
 } from '@mui/icons-material';
 import { userService } from '../../../services/api';
+import theme from '../../../styles/theme';
+
 
 /**
  * LearnerManagement Component
@@ -242,7 +244,7 @@ const LearnerManagement = () => {
                         {loading ? (
                             <TableRow>
                                 <TableCell colSpan={5} align="center" sx={{ borderBottom: '1px solid #374151', py: 6 }}>
-                                    <CircularProgress size={40} sx={{ color: '#1152D4' }} />
+                                    <CircularProgress size={40} sx={{ color: theme.colors.brand }} />
                                     <Typography sx={{ color: '#9CA3AF', mt: 2 }}>Loading learners...</Typography>
                                 </TableCell>
                             </TableRow>
@@ -252,7 +254,7 @@ const LearnerManagement = () => {
                                     <Alert severity="error" sx={{ bgcolor: 'transparent', justifyContent: 'center' }}>
                                         {error}
                                     </Alert>
-                                    <Button onClick={fetchLearners} sx={{ mt: 2, color: '#1152D4' }}>Try Again</Button>
+                                    <Button onClick={fetchLearners} sx={{ mt: 2, color: theme.colors.brand }}>Try Again</Button>
                                 </TableCell>
                             </TableRow>
                         ) : filteredLearners.length === 0 ? (
@@ -271,7 +273,7 @@ const LearnerManagement = () => {
                                 <TableRow key={user.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                                     <TableCell sx={{ color: '#fff', borderBottom: '1px solid #374151' }}>
                                         <Stack direction="row" alignItems="center" spacing={2}>
-                                            <Avatar sx={{ width: 40, height: 40, bgcolor: '#1152D4', fontSize: '0.9rem' }}>
+                                            <Avatar sx={{ width: 40, height: 40, bgcolor: theme.colors.brand, fontSize: '0.9rem' }}>
                                                 {user.name?.split(' ').map(n => n[0]).join('') || '?'}
                                             </Avatar>
                                             <Box>
@@ -286,7 +288,7 @@ const LearnerManagement = () => {
                                     </TableCell>
                                     <TableCell sx={{ borderBottom: '1px solid #374151' }}>
                                         <Stack direction="row" alignItems="center" spacing={1}>
-                                            <School sx={{ color: '#1152D4', fontSize: 18 }} />
+                                            <School sx={{ color: theme.colors.brand, fontSize: 18 }} />
                                             <Typography variant="body2" sx={{ color: '#fff', fontWeight: 600 }}>
                                                 {user.enrollments_count ?? user.enrolledCourses ?? 0}
                                             </Typography>

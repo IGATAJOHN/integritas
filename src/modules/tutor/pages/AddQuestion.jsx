@@ -35,6 +35,8 @@ import { tutorQuestionService } from '../services/questionService';
 import { tutorLessonService } from '../services/lessonService';
 import { tutorCoursesService } from '../services/courseService';
 import { textFieldStyle, selectStyle, selectMenuProps, paperStyle, primaryButtonStyle } from '../../../styles/formStyles';
+import theme from '../../../styles/theme';
+
 
 const AddQuestion = () => {
     const { courseId, moduleId, lessonId } = useParams();
@@ -237,7 +239,7 @@ const AddQuestion = () => {
     if (loading) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', bgcolor: '#080D19' }}>
-                <CircularProgress sx={{ color: '#1152D4' }} />
+                <CircularProgress sx={{ color: theme.colors.brand }} />
             </Box>
         );
     }
@@ -268,7 +270,7 @@ const AddQuestion = () => {
                     variant="contained"
                     startIcon={<CheckCircle />}
                     onClick={handleBack}
-                    sx={{ bgcolor: '#1152D4', textTransform: 'none', '&:hover': { bgcolor: '#0D42AF' } }}
+                    sx={{ bgcolor: theme.colors.brand, textTransform: 'none', '&:hover': { bgcolor: '#0D42AF' } }}
                 >
                     Done
                 </Button>
@@ -316,13 +318,13 @@ const AddQuestion = () => {
                                             ...paperStyle,
                                             p: 2,
                                             cursor: 'pointer',
-                                            borderColor: editingQuestionId === q.id ? '#1152D4' : '#374151',
-                                            boxShadow: editingQuestionId === q.id ? '0 0 0 1px #1152D4' : 'none',
-                                            bgcolor: draggedQuestion === q.id ? '#1E293B' : (editingQuestionId === q.id ? 'rgba(17, 82, 212, 0.1)' : '#1A2230'),
+                                            borderColor: editingQuestionId === q.id ? theme.colors.brand : '#374151',
+                                            boxShadow: editingQuestionId === q.id ? `0 0 0 1px ${theme.colors.brand}` : 'none',
+                                            bgcolor: draggedQuestion === q.id ? '#1E293B' : (editingQuestionId === q.id ? theme.colors.brandLight : '#1A2230'),
                                             opacity: draggedQuestion === q.id ? 0.5 : 1,
                                             transition: 'all 0.2s',
                                             '&:hover': {
-                                                borderColor: '#1152D4',
+                                                borderColor: theme.colors.brand,
                                                 bgcolor: 'rgba(17, 82, 212, 0.05)'
                                             }
                                         }}
@@ -463,7 +465,7 @@ const AddQuestion = () => {
                                                             height: 24,
                                                             borderRadius: '50%',
                                                             border: '2px solid',
-                                                            borderColor: correctAnswerIndex === idx ? '#1152D4' : '#374151',
+                                                            borderColor: correctAnswerIndex === idx ? theme.colors.brand : '#374151',
                                                             display: 'flex',
                                                             alignItems: 'center',
                                                             justifyContent: 'center',
@@ -473,7 +475,7 @@ const AddQuestion = () => {
                                                             transition: 'all 0.2s'
                                                         }}
                                                     >
-                                                        {correctAnswerIndex === idx && <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#1152D4' }} />}
+                                                        {correctAnswerIndex === idx && <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: theme.colors.brand }} />}
                                                     </Box>
                                                     <TextField
                                                         fullWidth

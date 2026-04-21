@@ -18,6 +18,8 @@ const getColors = (isDark) => ({
     pill: isDark ? '#111827' : '#FFFFFF',
     pillBorder: isDark ? '#1F2937' : '#E2E8F0',
 });
+import theme from '../styles/theme';
+
 
 const partners = [
     { name: 'NLGII', full: 'Nigeria Local Government Integrity and Index' },
@@ -75,7 +77,7 @@ const Footer = () => {
                                     // transition: 'all 0.2s',
                                     '&:hover': {
                                         borderColor: 'rgba(17, 82, 212, 0.5)',
-                                        color: 'rgba(17, 82, 212, 1)',
+                                        color: theme.colors.brand,
                                     },
                                 }}
                             >

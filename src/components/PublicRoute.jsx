@@ -3,6 +3,8 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts';
 import { Box, CircularProgress } from '@mui/material';
 import { getDashboardRoute } from '../utils';
+import theme from '../styles/theme';
+
 
 const PublicRoute = ({ children }) => {
     const { isAuthenticated, loading, user } = useAuth();
@@ -19,7 +21,7 @@ const PublicRoute = ({ children }) => {
                     bgcolor: '#0C1322',
                 }}
             >
-                <CircularProgress sx={{ color: '#1152D4' }} />
+                <CircularProgress sx={{ color: theme.colors.brand }} />
             </Box>
         );
     }

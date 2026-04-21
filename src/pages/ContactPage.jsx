@@ -20,14 +20,16 @@ import {
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useThemeMode } from '../contexts';
+import theme from '../styles/theme';
+
 
 const getColors = (isDark) => ({
     bgDark: isDark ? '#0C1322' : '#FFFFFF',
     bgDarker: isDark ? '#080D19' : '#F8FAFC',
     bgCard: isDark ? '#111827' : '#FFFFFF',
-    primary: 'rgba(17, 82, 212, 1)',
-    primaryHover: 'rgba(13, 65, 170, 1)',
-    primaryLight: 'rgba(17, 82, 212, 0.1)',
+    primary: theme.colors.brand,
+    primaryHover: theme.colors.brandHover,
+    primaryLight: theme.colors.brandLight,
     textWhite: isDark ? '#FFFFFF' : '#1E293B',
     textLight: isDark ? '#F3F4F6' : '#334155',
     textMuted: isDark ? '#9CA3AF' : '#64748B',

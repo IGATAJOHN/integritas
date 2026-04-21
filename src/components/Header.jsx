@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import appTheme from '../styles/theme';
 import {
     Box,
     Stack,
@@ -166,8 +167,8 @@ const Header = () => {
                         variant="contained"
                         fullWidth
                         sx={{
-                            bgcolor: 'rgba(17, 82, 212, 1)',
-                            '&:hover': { bgcolor: 'rgba(13, 65, 170, 1)' },
+                            bgcolor: appTheme.colors.brand,
+                            '&:hover': { bgcolor: appTheme.colors.brandHover },
                             textTransform: 'none',
                             fontWeight: 600,
                             borderRadius: '10px',
@@ -203,8 +204,8 @@ const Header = () => {
                             variant="contained"
                             fullWidth
                             sx={{
-                                bgcolor: 'rgba(17, 82, 212, 1)',
-                                '&:hover': { bgcolor: 'rgba(13, 65, 170, 1)' },
+                                bgcolor: appTheme.colors.brand,
+                                '&:hover': { bgcolor: appTheme.colors.brandHover },
                                 textTransform: 'none',
                                 fontWeight: 600,
                                 borderRadius: '10px',
@@ -304,7 +305,7 @@ const Header = () => {
                                     const isOpen = openDropdown === item.label;
 
                                     const linkSx = {
-                                        color: active ? 'rgba(17, 82, 212, 1)' : isDark ? '#9CA3AF' : '#64748B',
+                                        color: active ? appTheme.colors.brand : isDark ? '#9CA3AF' : '#64748B',
                                         textDecoration: 'none',
                                         fontWeight: active ? 700 : 500,
                                         fontSize: '0.9375rem',
@@ -318,12 +319,12 @@ const Header = () => {
                                             left: 0,
                                             width: active ? '100%' : '0%',
                                             height: '2px',
-                                            bgcolor: 'rgba(17, 82, 212, 1)',
+                                            bgcolor: appTheme.colors.brand,
                                             borderRadius: 1,
                                             transition: 'width 0.2s ease',
                                         },
                                         '&:hover': {
-                                            color: 'rgba(17, 82, 212, 1)',
+                                            color: appTheme.colors.brand,
                                             '&::after': { width: '100%' },
                                         },
                                     };
@@ -386,7 +387,7 @@ const Header = () => {
                                                                             textDecoration: 'none',
                                                                             '&:hover': {
                                                                                 bgcolor: isDark ? 'rgba(255,255,255,0.05)' : '#F8FAFC',
-                                                                                color: 'rgba(17, 82, 212, 1)',
+                                                                                color: appTheme.colors.brand,
                                                                             },
                                                                         }}
                                                                     >
@@ -424,8 +425,8 @@ const Header = () => {
                                         onClick={() => navigate('/learner')}
                                         variant="contained"
                                         sx={{
-                                            bgcolor: 'rgba(17, 82, 212, 1)',
-                                            '&:hover': { bgcolor: 'rgba(13, 65, 170, 1)' },
+                                            bgcolor: appTheme.colors.brand,
+                                            '&:hover': { bgcolor: appTheme.colors.brandHover },
                                             textTransform: 'none',
                                             fontWeight: 600,
                                             borderRadius: '10px',
@@ -455,8 +456,8 @@ const Header = () => {
                                             to="/signup"
                                             variant="contained"
                                             sx={{
-                                                bgcolor: 'rgba(17, 82, 212, 1)',
-                                                '&:hover': { bgcolor: 'rgba(13, 65, 170, 1)', color: '#FFFFFF' },
+                                                bgcolor: appTheme.colors.brand,
+                                                '&:hover': { bgcolor: appTheme.colors.brandHover, color: '#FFFFFF' },
                                                 textTransform: 'none',
                                                 fontWeight: 600,
                                                 borderRadius: '10px',

@@ -49,6 +49,8 @@ import {
     tableHeaderCellStyle,
     textFieldStyle,
 } from '../../../styles/formStyles';
+import theme from '../../../styles/theme';
+
 
 const KYC_DOC_TYPES = ['id_front', 'id_back', 'certificate', 'utility_bill', 'passport'];
 const ID_TYPE_OPTIONS = ['nin', 'passport', 'driver_license', 'national_id', 'voter_card', 'bvn'];
@@ -501,7 +503,7 @@ const TutorManagement = () => {
                                     <TableRow key={tutor.id}>
                                         <TableCell sx={tableBodyCellStyle}>
                                             <Stack direction="row" alignItems="center" spacing={1.5}>
-                                                <Avatar sx={{ bgcolor: '#1152D4', width: 36, height: 36 }}>
+                                                <Avatar sx={{ bgcolor: theme.colors.brand, width: 36, height: 36 }}>
                                                     {(tutor._name || '?').charAt(0).toUpperCase()}
                                                 </Avatar>
                                                 <Typography sx={{ color: '#fff', fontWeight: 600 }}>{tutor._name}</Typography>

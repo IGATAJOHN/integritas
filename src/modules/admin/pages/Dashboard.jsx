@@ -28,6 +28,8 @@ import {
 } from '@mui/icons-material';
 import { optionAdminService } from '../services/optionAdminService';
 import { adminService } from '../services/adminService';
+import theme from '../../../styles/theme';
+
 
 // Initial stats data for admin dashboard (will be updated with live data)
 const initialStatsData = [
@@ -364,14 +366,14 @@ const AdminDashboard = () => {
                                     series={[{
                                         data: chartData,
                                         area: true,
-                                        color: '#1152D4',
+                                        color: theme.colors.brand,
                                         showMark: false,
                                         curve: 'natural',
                                     }]}
                                     sx={{
                                         '& .MuiLineElement-root': {
                                             strokeWidth: 2.5,
-                                            stroke: '#1152D4',
+                                            stroke: theme.colors.brand,
                                         },
                                         '& .MuiAreaElement-root': {
                                             fill: 'url(#adminAreaGradient)',
@@ -387,9 +389,9 @@ const AdminDashboard = () => {
                                 >
                                     <defs>
                                         <linearGradient id="adminAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%" stopColor="#1152D4" stopOpacity={0.4} />
-                                            <stop offset="50%" stopColor="#1152D4" stopOpacity={0.15} />
-                                            <stop offset="100%" stopColor="#1152D4" stopOpacity={0} />
+                                            <stop offset="0%" stopColor={theme.colors.brand} stopOpacity={0.4} />
+                                            <stop offset="50%" stopColor={theme.colors.brand} stopOpacity={0.15} />
+                                            <stop offset="100%" stopColor={theme.colors.brand} stopOpacity={0} />
                                         </linearGradient>
                                     </defs>
                                 </LineChart>
@@ -525,13 +527,13 @@ const AdminDashboard = () => {
                                 startIcon={<PersonAdd sx={{ fontSize: 16 }} />}
                                 size="small"
                                 sx={{
-                                    bgcolor: '#1152D4',
+                                    bgcolor: theme.colors.brand,
                                     color: '#FFFFFF',
                                     textTransform: 'none',
                                     fontSize: '0.75rem',
                                     px: 2,
                                     py: 0.75,
-                                    '&:hover': { bgcolor: '#0D41AA' },
+                                    '&:hover': { bgcolor: theme.colors.brandHover },
                                 }}
                             >
                                 Add User
@@ -561,7 +563,7 @@ const AdminDashboard = () => {
                                             sx={{
                                                 width: 40,
                                                 height: 40,
-                                                bgcolor: '#1152D4',
+                                                bgcolor: theme.colors.brand,
                                                 fontSize: '0.9rem',
                                             }}
                                         >

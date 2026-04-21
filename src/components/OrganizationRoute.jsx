@@ -3,6 +3,8 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { Box, CircularProgress } from '@mui/material';
 import { useAuth } from '../contexts';
 import { hasOrganizationAccess } from '../utils';
+import theme from '../styles/theme';
+
 
 const OrganizationRoute = ({ children }) => {
     const { isAuthenticated, loading, user } = useAuth();
@@ -19,7 +21,7 @@ const OrganizationRoute = ({ children }) => {
                     bgcolor: '#0C1322',
                 }}
             >
-                <CircularProgress sx={{ color: '#1152D4' }} />
+                <CircularProgress sx={{ color: theme.colors.brand }} />
             </Box>
         );
     }

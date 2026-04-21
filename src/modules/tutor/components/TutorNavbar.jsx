@@ -22,6 +22,8 @@ import {
     DarkMode,
 } from '@mui/icons-material';
 import { useThemeMode } from '../../../contexts';
+import theme from '../../../styles/theme';
+
 
 const DashboardNavbar = ({
     title = 'Dashboard',
@@ -182,7 +184,7 @@ const DashboardNavbar = ({
                     sx={{
                         width: 40,
                         height: 40,
-                        bgcolor: '#1152D4',
+                        bgcolor: theme.colors.brand,
                         cursor: 'pointer',
                         fontSize: '0.9rem',
                         fontWeight: 600,
