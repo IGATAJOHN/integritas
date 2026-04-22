@@ -31,18 +31,10 @@ import {
 import CourseCard from '../components/CourseCard';
 import { courseCatalogService } from '../services';
 import Header from '../../../components/Header';
+import { useThemeMode } from '../../../contexts';
+import appTheme from '../../../styles/theme';
 
 const SORT_OPTIONS = ['Most Popular', 'Newest', 'Highest Rated', 'Price: Low to High'];
-
-const colors = {
-    bg: '#080D19',
-    paper: '#0C1322',
-    card: 'rgba(28, 31, 39, 1)',
-    text: '#FFFFFF',
-    textSecondary: '#94A3B8',
-    primary: '#2563EB',
-    warning: '#F59E0B',
-};
 
 const mapSortBy = (value) => {
     if (value === 'Newest') return 'newest';
@@ -51,8 +43,26 @@ const mapSortBy = (value) => {
     return 'popular';
 };
 
-const Explore = () => {
+const PAGE_TITLES = {
+    foundational: { heading: 'Foundational Courses', sub: 'Core governance and policy foundations.' },
+    experta: { heading: 'Experta Class', sub: 'Advanced expert-level governance courses.' },
+    default: { heading: 'Explore Courses', sub: 'Discover governance and policy courses.' },
+};
+
+const Explore = ({ type }) => {
     const navigate = useNavigate();
+    const { isDark } = useThemeMode();
+
+    const colors = {
+        bg: isDark ? '#080D19' : '#F1F5F9',
+        paper: isDark ? '#0C1322' : '#FFFFFF',
+        card: isDark ? 'rgba(28, 31, 39, 1)' : '#FFFFFF',
+        text: isDark ? '#FFFFFF' : '#1E293B',
+        textSecondary: isDark ? '#94A3B8' : '#64748B',
+        primary: appTheme.colors.brand,
+        warning: '#F59E0B',
+        border: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+    };
     const [searchTerm, setSearchTerm] = useState('');
     const [sortBy, setSortBy] = useState('Most Popular');
     const [activeTopic, setActiveTopic] = useState('All Topics');
@@ -98,13 +108,18 @@ const Explore = () => {
                     ? undefined
                     : activeTopic.toLowerCase().replace(/\s+/g, '-');
 
-                const response = await courseCatalogService.listCourses({
+                const fetchParams = {
                     q: searchTerm.trim() || undefined,
-                    category: selectedCategory,
                     level: selectedLevels[0] || undefined,
                     sort: mapSortBy(sortBy),
                     per_page: 30,
-                });
+                };
+
+                const response = type === 'foundational'
+                    ? await courseCatalogService.listFoundationalCourses(fetchParams)
+                    : type === 'experta'
+                        ? await courseCatalogService.listExpertiaCourses(fetchParams)
+                        : await courseCatalogService.listCourses({ ...fetchParams, category: selectedCategory });
 
                 if (!active) return;
 
@@ -203,7 +218,7 @@ const Explore = () => {
             <Stack direction="row" spacing={0.5}>
                 {[1, 2, 3, 4, 5].map((star) => (
                     <IconButton key={star} onClick={() => setMinimumRating((prev) => (prev === star ? 0 : star))} sx={{ p: 0.5 }}>
-                        <StarIcon sx={{ color: star <= minimumRating ? colors.warning : 'rgba(255,255,255,0.2)' }} />
+                        <StarIcon sx={{ color: star <= minimumRating ? colors.warning : colors.border }} />
                     </IconButton>
                 ))}
             </Stack>
@@ -213,7 +228,7 @@ const Explore = () => {
     return (
         <Box sx={{ bgcolor: colors.bg, color: colors.text, minHeight: '100%' }}>
             <Header />
-            <Drawer open={isFilterOpen} onClose={() => setIsFilterOpen(false)} PaperProps={{ sx: { width: 280, p: 3, bgcolor: colors.paper } }}>
+            <Drawer open={isFilterOpen} onClose={() => setIsFilterOpen(false)} PaperProps={{ sx: { width: 280, p: 3, bgcolor: colors.paper, color: colors.text } }}>
                 <Stack direction="row" justifyContent="space-between" sx={{ mb: 2 }}>
                     <Typography sx={{ color: colors.text, fontWeight: 700 }}>Filters</Typography>
                     <IconButton onClick={() => setIsFilterOpen(false)} sx={{ color: colors.text }}><CloseIcon /></IconButton>
@@ -223,7 +238,7 @@ const Explore = () => {
 
             <Box sx={{ display: 'flex' }}>
                 {/* Sidebar filters — desktop */}
-                <Box sx={{ width: 280, p: 3, bgcolor: colors.paper, borderRight: '1px solid rgba(255,255,255,0.05)', display: { xs: 'none', md: 'block' } }}>
+                <Box sx={{ width: 280, p: 3, bgcolor: colors.paper, borderRight: `1px solid ${colors.border}`, display: { xs: 'none', md: 'block' } }}>
                     {renderFilters()}
                 </Box>
 
@@ -231,7 +246,7 @@ const Explore = () => {
                     {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
                     {/* Featured Course Banner */}
-                    <Card sx={{ bgcolor: colors.card, p: 3, mb: 3, border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <Card sx={{ bgcolor: colors.card, p: 3, mb: 3, border: `1px solid ${colors.border}` }}>
                         {!featuredCourse && loading ? (
                             <Stack direction="row" spacing={1.5} alignItems="center">
                                 <CircularProgress size={20} />
@@ -261,7 +276,7 @@ const Explore = () => {
                                             onClick={() => window.open(featuredCourse?.trailerUrl, '_blank', 'noopener,noreferrer')}
                                             disabled={!featuredCourse?.trailerUrl}
                                             endIcon={<OpenInNewIcon />}
-                                            sx={{ textTransform: 'none', color: colors.text, borderColor: 'rgba(255,255,255,0.18)' }}
+                                            sx={{ textTransform: 'none', color: colors.text, borderColor: colors.border }}
                                         >
                                             Watch Trailer
                                         </Button>
@@ -287,8 +302,8 @@ const Explore = () => {
                     {/* Heading + Search + Sort */}
                     <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'center' }} spacing={2} sx={{ mb: 2 }}>
                         <Box>
-                            <Typography variant="h5" sx={{ color: colors.text, fontWeight: 800 }}>Explore Courses</Typography>
-                            <Typography sx={{ color: colors.textSecondary, fontSize: '0.9rem' }}>Discover governance and policy courses.</Typography>
+                            <Typography variant="h5" sx={{ color: colors.text, fontWeight: 800 }}>{(PAGE_TITLES[type] || PAGE_TITLES.default).heading}</Typography>
+                            <Typography sx={{ color: colors.textSecondary, fontSize: '0.9rem' }}>{(PAGE_TITLES[type] || PAGE_TITLES.default).sub}</Typography>
                         </Box>
                         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
                             <Box sx={{ bgcolor: colors.card, px: 1.5, borderRadius: 2, display: 'flex', alignItems: 'center', minWidth: 260 }}>
@@ -303,13 +318,13 @@ const Explore = () => {
                             <Button
                                 onClick={(e) => setSortAnchorEl(e.currentTarget)}
                                 startIcon={<SortIcon />}
-                                sx={{ color: colors.text, border: '1px solid rgba(255,255,255,0.2)', textTransform: 'none' }}
+                                sx={{ color: colors.text, border: `1px solid ${colors.border}`, textTransform: 'none' }}
                             >
                                 {sortBy}
                             </Button>
                             <IconButton
                                 onClick={() => setIsFilterOpen(true)}
-                                sx={{ display: { xs: 'inline-flex', md: 'none' }, color: colors.text, border: '1px solid rgba(255,255,255,0.2)' }}
+                                sx={{ display: { xs: 'inline-flex', md: 'none' }, color: colors.text, border: `1px solid ${colors.border}` }}
                             >
                                 <FilterIcon />
                             </IconButton>
@@ -350,7 +365,7 @@ const Explore = () => {
                             <CircularProgress />
                         </Box>
                     ) : courses.length === 0 ? (
-                        <Box sx={{ p: 4, textAlign: 'center', border: '1px dashed rgba(255,255,255,0.2)', borderRadius: 2 }}>
+                        <Box sx={{ p: 4, textAlign: 'center', border: `1px dashed ${colors.border}`, borderRadius: 2 }}>
                             <Typography sx={{ color: colors.text, fontWeight: 600 }}>No courses found</Typography>
                             <Typography sx={{ color: colors.textSecondary, fontSize: '0.9rem' }}>Try another search or filter.</Typography>
                         </Box>

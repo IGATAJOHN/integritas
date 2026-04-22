@@ -49,21 +49,8 @@ import Footer from '../../../components/Footer';
 import { courseCatalogService, learnerEnrollmentService } from '../services';
 import { apiService } from '../../../services/api';
 import Header from '../../../components/Header';
-
-const colors = {
-    bg: '#0B0F19',
-    paper: '#111827',
-    card: '#1A1F2E',
-    cardHover: '#232936',
-    primary: '#2563EB',
-    accent: '#3B82F6',
-    text: '#FFFFFF',
-    textSecondary: '#9CA3AF',
-    border: 'rgba(255, 255, 255, 0.08)',
-    success: '#10B981',
-    warning: '#F59E0B',
-    error: '#EF4444'
-};
+import { useThemeMode } from '../../../contexts';
+import appTheme from '../../../styles/theme';
 
 const resolveTutorProfile = (course = {}) => {
     const listFields = [
@@ -145,6 +132,22 @@ const CourseDetail = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { isAuthenticated } = useAuth();
+    const { isDark } = useThemeMode();
+
+    const colors = {
+        bg: isDark ? '#0B0F19' : '#F8FAFC',
+        paper: isDark ? '#111827' : '#FFFFFF',
+        card: isDark ? '#1A1F2E' : '#FFFFFF',
+        cardHover: isDark ? '#232936' : '#F1F5F9',
+        primary: appTheme.colors.brand,
+        accent: appTheme.colors.brand,
+        text: isDark ? '#FFFFFF' : '#1E293B',
+        textSecondary: isDark ? '#9CA3AF' : '#64748B',
+        border: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+        success: '#10B981',
+        warning: '#F59E0B',
+        error: '#EF4444',
+    };
     const [activeTab, setActiveTab] = useState(0);
     const [expandedModule, setExpandedModule] = useState('module-1');
     const [searchQuery, setSearchQuery] = useState('');
@@ -223,7 +226,7 @@ const CourseDetail = () => {
                         reviewCount: data.reviews || 0,
                         image: data.image || raw.thumbnail_url || raw.banner_url || '',
                         tags: Array.isArray(raw.tags) && raw.tags.length > 0
-                            ? raw.tags.map(t => ({ label: t.name || t, icon: VerifiedIcon, iconColor: '#3B82F6', bgColor: '#374151' }))
+                            ? raw.tags.map(t => ({ label: t.name || t, icon: VerifiedIcon, iconColor: appTheme.colors.brand, bgColor: '#374151' }))
                             : [],
                         learningObjectives,
                         modules: Array.isArray(raw.modules) ? raw.modules : [],
@@ -488,7 +491,7 @@ const CourseDetail = () => {
                                         onError={(e) => { e.currentTarget.style.display = 'none'; }}
                                     />
                                 ) : (
-                                    <Box sx={{ width: '100%', height: { xs: 180, md: 260 }, bgcolor: '#111827', borderRadius: 2, mb: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Box sx={{ width: '100%', height: { xs: 180, md: 260 }, bgcolor: isDark ? '#111827' : '#E2E8F0', borderRadius: 2, mb: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         <SchoolIcon sx={{ fontSize: 72, color: 'rgba(255,255,255,0.1)' }} />
                                     </Box>
                                 )}
@@ -784,13 +787,13 @@ const CourseDetail = () => {
                                         />
                                         <Box
                                             className="img-fallback"
-                                            sx={{ display: 'none', width: '100%', height: 180, bgcolor: '#111827', alignItems: 'center', justifyContent: 'center' }}
+                                            sx={{ display: 'none', width: '100%', height: 180, bgcolor: isDark ? '#111827' : '#E2E8F0', alignItems: 'center', justifyContent: 'center' }}
                                         >
                                             <SchoolIcon sx={{ fontSize: 56, color: 'rgba(255,255,255,0.15)' }} />
                                         </Box>
                                     </>
                                 ) : (
-                                    <Box sx={{ width: '100%', height: 180, bgcolor: '#111827', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Box sx={{ width: '100%', height: 180, bgcolor: isDark ? '#111827' : '#E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         <SchoolIcon sx={{ fontSize: 56, color: 'rgba(255,255,255,0.15)' }} />
                                     </Box>
                                 )}

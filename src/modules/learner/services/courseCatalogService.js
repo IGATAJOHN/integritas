@@ -316,6 +316,34 @@ export const courseCatalogService = {
         return courseCatalogService.listCourses({ per_page: limit, sort: 'popular', status: 'published' });
     },
 
+    listFoundationalCourses: async ({ per_page = 30, page, sort } = {}) => {
+        const query = buildQuery({ per_page, page });
+        const res = await apiService.get(`/lms/courses/foundational${query}`);
+        const normalized = unwrapList(res);
+        return {
+            data: sortCourses(
+                (normalized.data || []).map((item) => normalizeCourse(item)).filter((item) => item.id),
+                sort
+            ),
+            meta: normalized.meta || {},
+            links: normalized.links || {},
+        };
+    },
+
+    listExpertiaCourses: async ({ per_page = 30, page, sort } = {}) => {
+        const query = buildQuery({ per_page, page });
+        const res = await apiService.get(`/lms/courses/expertia${query}`);
+        const normalized = unwrapList(res);
+        return {
+            data: sortCourses(
+                (normalized.data || []).map((item) => normalizeCourse(item)).filter((item) => item.id),
+                sort
+            ),
+            meta: normalized.meta || {},
+            links: normalized.links || {},
+        };
+    },
+
     listEssentialCourses: async ({ per_page = 20, page, status } = {}) => {
         const query = buildQuery({ per_page, page, status });
         const res = await apiService.get(`/lms/courses/essential${query}`);

@@ -26,6 +26,14 @@ export const learnerRoutes = [
         element: <Explore />,
     },
     {
+        path: '/explore/foundational',
+        element: <Explore type="foundational" />,
+    },
+    {
+        path: '/explore/experta',
+        element: <Explore type="experta" />,
+    },
+    {
         element: <ModernLearnerLayout />,
         children: [
             {
