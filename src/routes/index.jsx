@@ -19,6 +19,8 @@ const PUBLIC_LEARNER_PATHS = [
     '/explore',
     '/explore/courses',
     '/explore/course/:courseId',
+    '/explore/foundational',
+    '/explore/experta',
     '/payment-success',
     '/payment/success',
 ];
