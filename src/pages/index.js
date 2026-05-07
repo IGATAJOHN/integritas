@@ -8,3 +8,4 @@ export { default as VerifyPage } from './VerifyPage';
 export { default as ForgotPasswordPage } from './ForgotPasswordPage';
 export { default as InviteAcceptPage } from './InviteAcceptPage';
 export { default as ContactPage } from './ContactPage';
+export { default as DonatePage } from './DonatePage';

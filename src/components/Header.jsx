@@ -28,7 +28,7 @@ const Header = () => {
     const navItems = [
         { label: 'Home', to: '/', children: [{ label: 'The Vision', to: '/about-us' }] },
         { label: 'Foundational Courses', to: '/explore/foundational' },
-        { label: 'Experta Class', to: '/explore/experta' },
+        { label: 'Exemplar Class', to: '/explore/experta' },
         { label: 'Partners', to: '/partners' },
     ];
     const { mode, toggleThemeMode, isDark } = useThemeMode();

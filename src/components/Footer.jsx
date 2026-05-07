@@ -22,7 +22,10 @@ import theme from '../styles/theme';
 
 
 const partners = [
-    { name: 'NLGII', full: 'Nigeria Local Government Integrity and Index' },
+    { name: 'Counter Fraud', full: '' },
+    { name: 'Intelligence', full: '' },
+    { name: 'Center for Fiscal Transparency', full: '' },
+    { name: 'Public Integrity', full: '' },
 ];
 
 const Footer = () => {
@@ -66,15 +69,15 @@ const Footer = () => {
                                 sx={{
                                     px: 3,
                                     py: 1,
-                                    // borderRadius: 50,
-                                    // border: `1px solid ${colors.pillBorder}`,
-                                    // bgcolor: colors.pill,
-                                    // fontSize: '0.8rem',
-                                    // fontWeight: 700,
+                                    borderRadius: 50,
+                                    border: `1px solid ${colors.pillBorder}`,
+                                    bgcolor: colors.pill,
+                                    fontSize: '0.8rem',
+                                    fontWeight: 700,
                                     // color: colors.textMuted,
-                                    // letterSpacing: '0.05em',
-                                    // cursor: 'default',
-                                    // transition: 'all 0.2s',
+                                    letterSpacing: '0.05em',
+                                    cursor: 'default',
+                                    transition: 'all 0.2s',
                                     '&:hover': {
                                         borderColor: 'rgba(17, 82, 212, 0.5)',
                                         color: theme.colors.brand,

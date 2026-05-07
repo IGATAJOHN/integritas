@@ -19,6 +19,7 @@ import {
     Analytics,
     ArrowForward,
     FormatQuote,
+    VolunteerActivism,
 } from '@mui/icons-material';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -179,7 +180,7 @@ const LandingPage = () => {
                                 maxWidth: 450,
                             }}
                         >
-                           Nigeria's premier digital learning platform. Master the tools of transparency, the philosophy of accountability, and the dignity to lead without compromise.
+                           Nigeria's premier digital learning platform. Master the tools of transparency, the philosophy of accountability, and the dignity to act without compromise.
                         </Typography>
 
                         {/* Buttons */}
@@ -320,7 +321,7 @@ const LandingPage = () => {
             </Box>
 
             {/* Stats Bar */}
-            <Box
+            {/* <Box
                 sx={{
                     bgcolor: colors.bgDarker,
                     borderTop: `1px solid ${colors.border}`,
@@ -371,7 +372,7 @@ const LandingPage = () => {
                         </Box>
                     ))}
                 </Stack>
-            </Box>
+            </Box> */}
 
 
             {/* Why Choose Section */}
@@ -395,8 +396,8 @@ const LandingPage = () => {
                             lineHeight: 1.6,
                         }}
                     >
-                        Designed for the unique challenges of the public sector, our platform combines
-                        academic rigor with practical application.
+                        Designed for the unique challenges of the public and private sector, 
+                        our platform combines technical rigor with practical application to build a resilient future
                     </Typography>
                 </Box>
 
@@ -552,7 +553,7 @@ const LandingPage = () => {
                                 ))}
                             </Stack>
                             <Stack direction="row" justifyContent="space-between" sx={{ mt: 1, px: -6, }}>
-                                {['The Foundational Track', 'The Gateway Certification', 'Unlock the Experta Class'].map((label) => (
+                                {['The Foundational Track', 'The Gateway Certification', 'Unlock the Exemplar Class'].map((label) => (
                                     <Typography key={label} sx={{ fontSize: '0.65rem', color: colors.textDark, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                         {label}
                                     </Typography>
@@ -581,7 +582,7 @@ const LandingPage = () => {
                             },
                             {
                                 step: '03',
-                                title: 'Unlock the Experta Class',
+                                title: 'Unlock the Exemplar Class',
                                 description: "Gain exclusive access to high-production, cinematic mentorship from vetted national leaders. These aren't lectures; they are raw survival guides from leaders who fought the system and won with clean hands.",
                             },
                         ].map((item) => (
@@ -917,56 +918,110 @@ const LandingPage = () => {
                 </Container>
             </Box>
 
-            {/* CTA Section */}
-            {/* <Box
+            {/* Donation CTA Section */}
+            <Box
                 sx={{
-                    py: 10,
+                    py: { xs: 8, md: 10 },
                     px: { xs: 2, md: 4, lg: 6 },
-                    bgcolor: theme.colors.brand,
+                    bgcolor: colors.bgDarker,
+                    borderTop: `1px solid ${colors.border}`,
                 }}
             >
-                <Container maxWidth="md">
-                    <Box sx={{ textAlign: 'center' }}>
-                        <Typography
-                            variant="h2"
-                            sx={{
-                                fontSize: { xs: '1.75rem', md: '2.25rem' },
-                                fontWeight: 700,
-                                mb: 2,
-                                color: '#FFFFFF',
-                            }}
-                        >
-                            Ready to Elevate Your Public Service Career?
-                        </Typography>
-                        <Typography sx={{ fontSize: '1.125rem', color: 'rgba(255,255,255,0.9)', mb: 4 }}>
-                            Join thousands of governance professionals accessing world-class education today.
-                        </Typography>
+                <Container maxWidth="lg">
+                    <Box
+                        sx={{
+                            bgcolor: colors.bgCard,
+                            border: `1px solid ${colors.border}`,
+                            borderRadius: 3,
+                            p: { xs: 3, md: 5 },
+                            display: 'flex',
+                            flexDirection: { xs: 'column', md: 'row' },
+                            alignItems: { xs: 'flex-start', md: 'center' },
+                            justifyContent: 'space-between',
+                            gap: 4,
+                        }}
+                    >
+                        <Stack direction="row" spacing={2.5} alignItems="flex-start" sx={{ maxWidth: 680 }}>
+                            <Box
+                                sx={{
+                                    width: 52,
+                                    height: 52,
+                                    borderRadius: 2,
+                                    bgcolor: colors.primaryLight,
+                                    color: colors.primary,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    flexShrink: 0,
+                                }}
+                            >
+                                <VolunteerActivism sx={{ fontSize: 28 }} />
+                            </Box>
+                            <Box>
+                                <Typography
+                                    sx={{
+                                        fontSize: '0.75rem',
+                                        fontWeight: 700,
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.15em',
+                                        color: theme.colors.brand,
+                                        mb: 1.5,
+                                    }}
+                                >
+                                    Support the Mission
+                                </Typography>
+                                <Typography
+                                    variant="h2"
+                                    sx={{
+                                        fontSize: { xs: '1.75rem', md: '2.25rem' },
+                                        fontWeight: 700,
+                                        mb: 2,
+                                        color: colors.textWhite,
+                                        lineHeight: 1.25,
+                                    }}
+                                >
+                                    Help Build a Culture of Integrity
+                                </Typography>
+                                <Typography
+                                    sx={{
+                                        fontSize: '1rem',
+                                        color: colors.textMuted,
+                                        lineHeight: 1.8,
+                                    }}
+                                >
+                                    Your donation helps expand access to civic education, practical mentorship,
+                                    and learning tools for young leaders, public servants, and communities
+                                    committed to accountable leadership.
+                                </Typography>
+                            </Box>
+                        </Stack>
+
                         <Stack
-                            direction={{ xs: 'column', sm: 'row' }}
+                            direction={{ xs: 'column', sm: 'row', md: 'column', lg: 'row' }}
                             spacing={2}
-                            justifyContent="center"
-                            sx={{ mb: 3 }}
+                            sx={{ width: { xs: '100%', md: 'auto' }, flexShrink: 0 }}
                         >
                             <Button
                                 component={Link}
-                                to="/signup"
+                                to="/donate"
                                 variant="contained"
                                 size="large"
+                                endIcon={<ArrowForward />}
                                 sx={{
-                                    bgcolor: '#FFFFFF',
-                                    color: theme.colors.brand,
+                                    bgcolor: theme.colors.brand,
                                     '&:hover': {
-                                        bgcolor: '#E8EFFC',
-                                        color: '#0D3FA8',
+                                        bgcolor: theme.colors.brandHover,
+                                        color: '#FFFFFF',
                                     },
                                     textTransform: 'none',
                                     fontWeight: 600,
                                     py: 1.5,
-                                    px: 4,
+                                    px: 3,
                                     borderRadius: 2,
+                                    whiteSpace: 'nowrap',
                                 }}
                             >
-                                Get Started Now
+                                Make a Donation
                             </Button>
                             <Button
                                 component={Link}
@@ -974,29 +1029,27 @@ const LandingPage = () => {
                                 variant="outlined"
                                 size="large"
                                 sx={{
-                                    borderColor: 'rgba(255,255,255,0.5)',
-                                    color: '#FFFFFF',
+                                    borderColor: colors.borderLight,
+                                    color: colors.textWhite,
                                     '&:hover': {
-                                        borderColor: '#FFFFFF',
-                                        bgcolor: 'rgba(255,255,255,0.15)',
-                                        color: '#FFFFFF',
+                                        borderColor: theme.colors.brand,
+                                        bgcolor: colors.primaryLight,
+                                        color: colors.textWhite,
                                     },
                                     textTransform: 'none',
                                     fontWeight: 600,
                                     py: 1.5,
-                                    px: 4,
+                                    px: 3,
                                     borderRadius: 2,
+                                    whiteSpace: 'nowrap',
                                 }}
                             >
-                                Contact Sales
+                                Contact Us
                             </Button>
                         </Stack>
-                        <Typography sx={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.7)' }}>
-                            free account with government employess with .gov email
-                        </Typography>
                     </Box>
                 </Container>
-            </Box> */}
+            </Box>
 
 
 

@@ -273,7 +273,7 @@ const AboutUsPage = () => {
                                 num: '04',
                                 heading: <>Success Without Compromise{' '}<Box component="span" sx={{ color: theme.colors.brand }}>is Possible.</Box></>,
                                 body: [
-                                    'For graduates who pass the Gateway Project, INTEGRITAS unlocks the Experta Class \u2014 a cinematic library of survival guides from vetted Nigerian leaders. These \u201cIntegrity Icons\u201d provide the ultimate proof that you can reach the highest levels of government and enterprise in Nigeria without dirtying your hands.',
+                                    'For graduates who pass the Gateway Project, INTEGRITAS unlocks the Exemplar Class \u2014 a cinematic library of survival guides from vetted Nigerian leaders. These \u201cIntegrity Icons\u201d provide the ultimate proof that you can reach the highest levels of government and enterprise in Nigeria without dirtying your hands.',
                                 ],
                             },
                         ].map((block, i) => (

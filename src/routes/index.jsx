@@ -1,5 +1,5 @@
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
-import { NotFound, LandingPage, AboutUsPage, PartnersPage, ContactPage, LoginPage, SignupPage, VerifyPage, ForgotPasswordPage, InviteAcceptPage } from '../pages';
+import { NotFound, LandingPage, AboutUsPage, PartnersPage, ContactPage, DonatePage, LoginPage, SignupPage, VerifyPage, ForgotPasswordPage, InviteAcceptPage } from '../pages';
 import { adminRoutes } from '../modules/admin';
 import { tutorRoutes } from '../modules/tutor';
 import { learnerRoutes } from '../modules/learner';
@@ -44,6 +44,10 @@ const router = createBrowserRouter([
     {
         path: '/contact',
         element: <ContactPage />,
+    },
+    {
+        path: '/donate',
+        element: <DonatePage />,
     },
     {
         path: '/login',

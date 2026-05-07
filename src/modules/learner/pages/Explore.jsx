@@ -45,7 +45,7 @@ const mapSortBy = (value) => {
 
 const PAGE_TITLES = {
     foundational: { heading: 'Foundational Courses', sub: 'Core governance and policy foundations.' },
-    experta: { heading: 'Experta Class', sub: 'Advanced expert-level governance courses.' },
+    experta: { heading: 'Exemplar Class', sub: 'Advanced expert-level governance courses.' },
     default: { heading: 'Explore Courses', sub: 'Discover governance and policy courses.' },
 };
 
