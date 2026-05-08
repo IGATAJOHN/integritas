@@ -684,19 +684,19 @@ const Kyc = () => {
                         <PersonOutline sx={{ fontSize: 20 }} /> Personal Information
                     </Typography>
                     <Grid container spacing={3}>
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <Typography sx={{ color: '#6B7280', fontSize: '0.75rem', mb: 0.5 }}>Full Name</Typography>
                             <Typography sx={{ color: '#fff' }}>{user?.name || 'Tutor User'}</Typography>
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <Typography sx={{ color: '#6B7280', fontSize: '0.75rem', mb: 0.5 }}>Phone Number</Typography>
                             <Typography sx={{ color: '#fff' }}>{formData.phone || '-'}</Typography>
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <Typography sx={{ color: '#6B7280', fontSize: '0.75rem', mb: 0.5 }}>Education</Typography>
                             <Typography sx={{ color: '#fff' }}>{formData.highest_education || '-'}</Typography>
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <Typography sx={{ color: '#6B7280', fontSize: '0.75rem', mb: 0.5 }}>Location</Typography>
                             <Typography sx={{ color: '#fff' }}>
                                 {formData.city && `${formData.city}, `}{formData.state && `${formData.state}, `}{formData.country}

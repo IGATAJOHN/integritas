@@ -97,14 +97,14 @@ const LessonStatsPage = () => {
                     )}
 
                     <Grid container spacing={2} sx={{ mb: 4 }}>
-                        <Grid item xs={12} sm={6} md={4}>
+                        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                             <StatCard
                                 icon={<GroupOutlined />}
                                 label="Enrolled Learners"
                                 value={stats?.enrolled_count ?? stats?.learners_total ?? 0}
                             />
                         </Grid>
-                        <Grid item xs={12} sm={6} md={4}>
+                        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                             <StatCard
                                 icon={<CheckCircleOutlined />}
                                 label="Completed"
@@ -112,7 +112,7 @@ const LessonStatsPage = () => {
                                 sublabel={`${completionPct.toFixed(1)}% of enrolled`}
                             />
                         </Grid>
-                        <Grid item xs={12} sm={6} md={4}>
+                        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                             <StatCard
                                 icon={<QuizOutlined />}
                                 label="CBT Pass Rate"

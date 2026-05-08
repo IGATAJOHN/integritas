@@ -591,7 +591,7 @@ const StaffManagement = () => {
                     <Box sx={{ p: 3 }}>
                         <Stack spacing={2.5}>
                             <Grid container spacing={2}>
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#E5E7EB', mb: 0.75 }}>
                                         First Name *
                                     </Typography>
@@ -603,7 +603,7 @@ const StaffManagement = () => {
                                         sx={textFieldStyle}
                                     />
                                 </Grid>
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#E5E7EB', mb: 0.75 }}>
                                         Last Name *
                                     </Typography>
@@ -632,7 +632,7 @@ const StaffManagement = () => {
                             </Box>
 
                             <Grid container spacing={2}>
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#E5E7EB', mb: 0.75 }}>
                                         Phone
                                     </Typography>
@@ -644,7 +644,7 @@ const StaffManagement = () => {
                                         sx={textFieldStyle}
                                     />
                                 </Grid>
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#E5E7EB', mb: 0.75 }}>
                                         Gender
                                     </Typography>
@@ -663,7 +663,7 @@ const StaffManagement = () => {
                             </Grid>
 
                             <Grid container spacing={2}>
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#E5E7EB', mb: 0.75 }}>
                                         Department
                                     </Typography>
@@ -675,7 +675,7 @@ const StaffManagement = () => {
                                         sx={textFieldStyle}
                                     />
                                 </Grid>
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#E5E7EB', mb: 0.75 }}>
                                         Job Title
                                     </Typography>
@@ -690,7 +690,7 @@ const StaffManagement = () => {
                             </Grid>
 
                             <Grid container spacing={2}>
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#E5E7EB', mb: 0.75 }}>
                                         Staff Number
                                     </Typography>
@@ -702,7 +702,7 @@ const StaffManagement = () => {
                                         sx={textFieldStyle}
                                     />
                                 </Grid>
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#E5E7EB', mb: 0.75 }}>
                                         Status
                                     </Typography>
@@ -816,7 +816,7 @@ const StaffManagement = () => {
                                     </Typography>
                                     <Grid container spacing={1}>
                                         {PRIVILEGES.map((privilege) => (
-                                            <Grid item xs={6} key={privilege}>
+                                            <Grid size={{ xs: 6 }} key={privilege}>
                                                 <FormControlLabel
                                                     control={
                                                         <Checkbox

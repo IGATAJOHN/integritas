@@ -428,16 +428,16 @@ const Organization = () => {
             ) : (
                 <>
                     <Grid container spacing={2} sx={{ mb: 2.5 }}>
-                        <Grid item xs={12} sm={6} lg={3}>
+                        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
                             <StatCard title="Pending Invitations" value={totals.invitations} subtitle="Invitation records." icon={<GroupAdd sx={{ fontSize: 34 }} />} />
                         </Grid>
-                        <Grid item xs={12} sm={6} lg={3}>
+                        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
                             <StatCard title="Learning Paths" value={totals.learningPaths} subtitle="Paths in org." icon={<Route sx={{ fontSize: 34 }} />} />
                         </Grid>
-                        <Grid item xs={12} sm={6} lg={3}>
+                        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
                             <StatCard title="Assignments" value={totals.assignments} subtitle="Organization assignments." icon={<AssignmentTurnedIn sx={{ fontSize: 34 }} />} />
                         </Grid>
-                        <Grid item xs={12} sm={6} lg={3}>
+                        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
                             <StatCard title="My Assignments" value={totals.myAssignments} subtitle="Your assignments." icon={<QueryStats sx={{ fontSize: 34 }} />} />
                         </Grid>
                     </Grid>

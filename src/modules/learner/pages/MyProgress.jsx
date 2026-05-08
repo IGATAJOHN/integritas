@@ -134,7 +134,7 @@ const MyProgress = () => {
             {/* Stats Cards */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 {stats.map((stat, index) => (
-                    <Grid item xs={12} sm={6} md={3} key={index}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }} key={index}>
                         <Card sx={{
                             bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : '#fff',
                             borderRadius: 3,
@@ -167,7 +167,7 @@ const MyProgress = () => {
 
             <Grid container spacing={4}>
                 {/* Left Column */}
-                <Grid item xs={12} lg={8}>
+                <Grid size={{ xs: 12, lg: 8 }}>
                     {/* Weekly Activity Chart */}
                     <Card sx={{
                         bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : '#fff',
@@ -302,7 +302,7 @@ const MyProgress = () => {
                 </Grid>
 
                 {/* Right Column */}
-                <Grid item xs={12} lg={4}>
+                <Grid size={{ xs: 12, lg: 4 }}>
                     {/* Skills Mastery */}
                     <Card sx={{
                         bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : '#fff',
@@ -361,7 +361,7 @@ const MyProgress = () => {
 
                             <Grid container spacing={2}>
                                 {badges.map((badge, index) => (
-                                    <Grid item xs={4} key={index}>
+                                    <Grid size={{ xs: 4 }} key={index}>
                                         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 1 }}>
                                             <Box sx={{
                                                 width: 56,

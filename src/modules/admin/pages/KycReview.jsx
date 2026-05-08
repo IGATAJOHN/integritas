@@ -209,7 +209,7 @@ const KycReview = () => {
             >
                 <Grid container spacing={3}>
                     {/* Header Item */}
-                    <Grid item xs={12}>
+                    <Grid size={{ xs: 12 }}>
                         <Stack direction="row" alignItems="center" spacing={2}>
                             <IconButton
                                 onClick={handleBackToList}
@@ -257,7 +257,7 @@ const KycReview = () => {
                     </Grid>
 
                     {/* Top Section: Comprehensive Information Card */}
-                    <Grid item xs={12}>
+                    <Grid size={{ xs: 12 }}>
                         <Paper
                             sx={{
                                 p: { xs: 3, md: 4 },
@@ -355,7 +355,7 @@ const KycReview = () => {
                                     { label: 'Residential Address', value: kycData.address, icon: <AddressIcon />, fullWidth: true },
                                     { label: 'Highest Education', value: kycData.highest_education, icon: <EducationIcon />, fullWidth: true },
                                 ].map((item, idx) => (
-                                    <Grid item xs={12} sm={item.fullWidth ? 12 : 6} key={idx}>
+                                    <Grid size={{ xs: 12, sm: item.fullWidth ? 12 : 6 }} key={idx}>
                                         <Box
                                             sx={{
                                                 p: 2,
@@ -390,7 +390,7 @@ const KycReview = () => {
                                     </Grid>
                                 ))}
 
-                                <Grid item xs={12}>
+                                <Grid size={{ xs: 12 }}>
                                     <Box
                                         sx={{
                                             p: 2,
@@ -432,7 +432,7 @@ const KycReview = () => {
                                     </Box>
                                 </Grid>
 
-                                <Grid item xs={12}>
+                                <Grid size={{ xs: 12 }}>
                                     <Box
                                         sx={{
                                             p: 2.5,
@@ -465,7 +465,7 @@ const KycReview = () => {
                     </Grid>
 
                     {/* Bottom Section: Side-by-Side Action Cards */}
-                    <Grid item xs={12} lg={6}>
+                    <Grid size={{ xs: 12, lg: 6 }}>
                         {/* Review Status Card */}
                         <Paper
                             sx={{
@@ -597,7 +597,7 @@ const KycReview = () => {
                         </Paper>
                     </Grid>
 
-                    <Grid item xs={12} lg={6}>
+                    <Grid size={{ xs: 12, lg: 6 }}>
                         {/* Documents Card */}
                         <Paper
                             sx={{

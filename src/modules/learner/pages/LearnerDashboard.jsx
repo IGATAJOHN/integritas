@@ -160,7 +160,7 @@ const LearnerDashboard = () => {
             {/* Content Grid */}
             <Grid container spacing={4}>
                 {/* Continue Learning Section - Full Width */}
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                     <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
                         Continue Learning
                     </Typography>
@@ -261,7 +261,7 @@ const LearnerDashboard = () => {
                 </Grid>
 
                 {/* Left Column - Main Content */}
-                <Grid item xs={12} lg={9}>
+                <Grid size={{ xs: 12, lg: 9 }}>
 
                     {/* Active Courses */}
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -271,7 +271,7 @@ const LearnerDashboard = () => {
 
                     <Grid container spacing={3} sx={{ mb: 5, display: 'flex', flexWrap: 'nowrap' }}>
                         {activeCourses.map(course => (
-                            <Grid item xs={6} md={6} key={course.id}>
+                            <Grid size={{ xs: 6, md: 6 }} key={course.id}>
                                 <ActiveCourseCard course={course} />
                             </Grid>
                         ))}
@@ -281,7 +281,7 @@ const LearnerDashboard = () => {
                     <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Recommended for You</Typography>
                     <Grid container spacing={2} justifyContent="space-between">
                         {recommendedCourses.map(course => (
-                            <Grid item xs={12} md={5} key={course.id}>
+                            <Grid size={{ xs: 12, md: 5 }} key={course.id}>
                                 <RecommendedCourseCard course={course} />
                             </Grid>
                         ))}
@@ -289,7 +289,7 @@ const LearnerDashboard = () => {
                 </Grid>
 
                 {/* Right Column - Sidebar */}
-                <Grid item xs={12} lg={3}>
+                <Grid size={{ xs: 12, lg: 3 }}>
 
                     {/* Achievements Widget */}
                     <Box sx={{ mb: 4, width: '295px' }}>

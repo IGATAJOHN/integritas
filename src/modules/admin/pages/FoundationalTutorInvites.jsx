@@ -21,6 +21,7 @@ import {
     Tooltip,
     Divider,
     Grid,
+    Autocomplete,
 } from '@mui/material';
 import {
     PersonAddAlt1,
@@ -65,6 +66,12 @@ const FoundationalTutorInvites = () => {
 
     const [dialogOpen, setDialogOpen] = useState(false);
     const [form, setForm] = useState({ email: '', name: '' });
+    const [selectedTutor, setSelectedTutor] = useState(null);
+
+    // Autocomplete options for the invite dialog (existing platform tutors)
+    const [tutorOptions, setTutorOptions] = useState([]);
+    const [tutorOptionsLoading, setTutorOptionsLoading] = useState(false);
+    const [tutorOptionsInput, setTutorOptionsInput] = useState('');
 
     const refresh = async () => {
         try {
@@ -98,6 +105,30 @@ const FoundationalTutorInvites = () => {
         return () => clearTimeout(t);
     }, [searchInput]);
 
+    // Fetch tutor options for the invite autocomplete (debounced).
+    useEffect(() => {
+        if (!dialogOpen) return undefined;
+        let cancelled = false;
+        setTutorOptionsLoading(true);
+        const t = setTimeout(async () => {
+            try {
+                const res = await adminFoundationalTutorService.listTutors({
+                    q: tutorOptionsInput || undefined,
+                    per_page: 25,
+                });
+                if (!cancelled) setTutorOptions(res?.data || []);
+            } catch (_err) {
+                if (!cancelled) setTutorOptions([]);
+            } finally {
+                if (!cancelled) setTutorOptionsLoading(false);
+            }
+        }, 250);
+        return () => {
+            cancelled = true;
+            clearTimeout(t);
+        };
+    }, [dialogOpen, tutorOptionsInput]);
+
     const handleCreate = async (e) => {
         e.preventDefault();
         const email = form.email.trim();
@@ -117,6 +148,8 @@ const FoundationalTutorInvites = () => {
             setSuccess(`Invitation email sent to ${email}.`);
             setDialogOpen(false);
             setForm({ email: '', name: '' });
+            setSelectedTutor(null);
+            setTutorOptionsInput('');
             setTab('invites');
             await refresh();
         } catch (err) {
@@ -198,7 +231,7 @@ const FoundationalTutorInvites = () => {
 
             {/* Stat cards */}
             <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                     <Paper variant="outlined" sx={{ p: 2.5 }}>
                         <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 600 }}>
                             Active Tutors
@@ -206,7 +239,7 @@ const FoundationalTutorInvites = () => {
                         <Typography variant="h4" sx={{ fontWeight: 700 }}>{stats.tutors}</Typography>
                     </Paper>
                 </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                     <Paper variant="outlined" sx={{ p: 2.5 }}>
                         <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 600 }}>
                             Pending Invites
@@ -214,7 +247,7 @@ const FoundationalTutorInvites = () => {
                         <Typography variant="h4" sx={{ fontWeight: 700 }}>{stats.pending}</Typography>
                     </Paper>
                 </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                     <Paper variant="outlined" sx={{ p: 2.5 }}>
                         <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 600 }}>
                             Accepted Invites
@@ -287,7 +320,11 @@ const FoundationalTutorInvites = () => {
             {/* Invite dialog */}
             <Dialog
                 open={dialogOpen}
-                onClose={() => setDialogOpen(false)}
+                onClose={() => {
+                    setDialogOpen(false);
+                    setSelectedTutor(null);
+                    setTutorOptionsInput('');
+                }}
                 maxWidth="sm"
                 fullWidth
                 disableRestoreFocus
@@ -301,22 +338,115 @@ const FoundationalTutorInvites = () => {
                         <Box>
                             <Typography sx={{ fontWeight: 700 }}>Invite Foundational Tutor</Typography>
                             <Typography variant="caption" color="text.secondary">
-                                We'll email a one-time link to set their password and bio.
+                                Pick someone already on the platform, or type a new email to invite.
                             </Typography>
                         </Box>
                     </Stack>
                 </DialogTitle>
                 <DialogContent dividers>
                     <Stack spacing={2.5} sx={{ mt: 0.5 }}>
+                        <Autocomplete
+                            freeSolo
+                            value={selectedTutor}
+                            inputValue={tutorOptionsInput}
+                            onInputChange={(_e, value, reason) => {
+                                setTutorOptionsInput(value);
+                                if (reason === 'input') {
+                                    // Treat free-text typing as a possible new email entry.
+                                    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) {
+                                        setForm((prev) => ({ ...prev, email: value.trim() }));
+                                    }
+                                }
+                            }}
+                            onChange={(_e, value) => {
+                                if (value && typeof value === 'object') {
+                                    setSelectedTutor(value);
+                                    setForm({
+                                        name: value.name || '',
+                                        email: value.email || '',
+                                    });
+                                } else if (typeof value === 'string') {
+                                    // User typed a fresh string and pressed Enter
+                                    setSelectedTutor(null);
+                                    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) {
+                                        setForm((prev) => ({ ...prev, email: value.trim() }));
+                                    }
+                                } else {
+                                    setSelectedTutor(null);
+                                }
+                            }}
+                            options={tutorOptions}
+                            loading={tutorOptionsLoading}
+                            getOptionLabel={(option) => {
+                                if (typeof option === 'string') return option;
+                                return option?.email || option?.name || '';
+                            }}
+                            isOptionEqualToValue={(option, value) =>
+                                option?.id != null && value?.id != null && option.id === value.id
+                            }
+                            renderOption={(props, option) => (
+                                <Box component="li" {...props} key={option.id}>
+                                    <Avatar
+                                        src={option.avatar_url || option.photo_url}
+                                        sx={{ width: 32, height: 32, mr: 1.5, bgcolor: 'primary.light', color: 'primary.contrastText', fontSize: '0.85rem' }}
+                                    >
+                                        {initials(option.name)}
+                                    </Avatar>
+                                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                            {option.name || option.email}
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary">
+                                            {option.email}
+                                            {option.type ? ` · ${option.type}` : ''}
+                                        </Typography>
+                                    </Box>
+                                </Box>
+                            )}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    label="Search existing tutors or enter email"
+                                    autoFocus
+                                    placeholder="Type a name, email, or pick from the list"
+                                    InputProps={{
+                                        ...params.InputProps,
+                                        endAdornment: (
+                                            <>
+                                                {tutorOptionsLoading ? <CircularProgress size={16} /> : null}
+                                                {params.InputProps.endAdornment}
+                                            </>
+                                        ),
+                                    }}
+                                />
+                            )}
+                        />
+
+                        {/* Inline status + form fields — no extra borders */}
+                        {(selectedTutor || form.email || form.name) && (
+                            <Stack direction="row" alignItems="center" spacing={1.5} sx={{ pl: 0.25 }}>
+                                <Avatar
+                                    src={selectedTutor?.avatar_url || selectedTutor?.photo_url}
+                                    sx={{ width: 36, height: 36, bgcolor: 'primary.light', color: 'primary.contrastText', fontSize: '0.85rem' }}
+                                >
+                                    {initials(form.name || selectedTutor?.name || form.email)}
+                                </Avatar>
+                                <Chip
+                                    size="small"
+                                    label={selectedTutor ? 'Existing tutor — invite will be sent' : 'New invite'}
+                                    color={selectedTutor ? 'success' : 'primary'}
+                                    variant="outlined"
+                                />
+                            </Stack>
+                        )}
+
                         <TextField
                             label="Full Name"
                             value={form.name}
                             onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
                             fullWidth
-                            autoFocus
                             required
                             inputProps={{ maxLength: 120 }}
-                            helperText="As it should appear on their profile."
                         />
                         <TextField
                             label="Email Address"
@@ -326,12 +456,20 @@ const FoundationalTutorInvites = () => {
                             fullWidth
                             required
                             inputProps={{ maxLength: 255 }}
-                            helperText="Used to send the invite and as their login."
+                            helperText="The invite link is sent to this email."
                         />
                     </Stack>
                 </DialogContent>
                 <DialogActions sx={{ px: 3, py: 2 }}>
-                    <Button onClick={() => setDialogOpen(false)} disabled={busy} sx={{ textTransform: 'none' }}>
+                    <Button
+                        onClick={() => {
+                            setDialogOpen(false);
+                            setSelectedTutor(null);
+                            setTutorOptionsInput('');
+                        }}
+                        disabled={busy}
+                        sx={{ textTransform: 'none' }}
+                    >
                         Cancel
                     </Button>
                     <Button type="submit" variant="contained" disabled={busy} sx={{ textTransform: 'none' }}>

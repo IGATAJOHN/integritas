@@ -72,7 +72,7 @@ const Earnings = () => {
             ) : (
                 <>
                     <Grid container spacing={2} sx={{ mb: 4 }}>
-                        <Grid item xs={12} sm={4}>
+                        <Grid size={{ xs: 12, sm: 4 }}>
                             <Paper variant="outlined" sx={{ p: 2.5 }}>
                                 <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 600 }}>
                                     Total Earned
@@ -82,7 +82,7 @@ const Earnings = () => {
                                 </Typography>
                             </Paper>
                         </Grid>
-                        <Grid item xs={12} sm={4}>
+                        <Grid size={{ xs: 12, sm: 4 }}>
                             <Paper variant="outlined" sx={{ p: 2.5 }}>
                                 <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 600 }}>
                                     Available Balance
@@ -92,7 +92,7 @@ const Earnings = () => {
                                 </Typography>
                             </Paper>
                         </Grid>
-                        <Grid item xs={12} sm={4}>
+                        <Grid size={{ xs: 12, sm: 4 }}>
                             <Paper variant="outlined" sx={{ p: 2.5 }}>
                                 <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 600 }}>
                                     Pending Payout
