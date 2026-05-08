@@ -11,6 +11,7 @@ import {
     Stack,
     Divider,
     Avatar,
+    IconButton,
     Skeleton,
 } from '@mui/material';
 import {
@@ -20,13 +21,16 @@ import {
     ArrowForward,
     FormatQuote,
     VolunteerActivism,
+    ChevronLeft,
+    ChevronRight,
 } from '@mui/icons-material';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useThemeMode } from '../contexts';
 import { courseCatalogService } from '../modules/learner/services';
-import heroImage from "../assets/images/hero-screen.png"
 
+import heroImage from "../assets/images/hero-screen.png"
+import theme from '../styles/theme';
 
 
 // Theme-aware colors function
@@ -48,7 +52,6 @@ const getColors = (isDark) => ({
         ? 'linear-gradient(135deg, rgba(40, 46, 57, 1) 0%, rgba(30, 35, 45, 1) 50%, rgba(20, 25, 35, 1) 100%)'
         : 'linear-gradient(135deg, #F8FAFC 0%, #EEF2FF 50%, #F0FDF4 100%)',
 });
-import theme from '../styles/theme';
 
 
 const LandingPage = () => {
@@ -91,12 +94,30 @@ const LandingPage = () => {
     ];
 
 
-    const testimonial = {
-        quote: "Umar has eloquently, even if not intentionally, argued for a fourth arm of government-the Integrity arm. We need strong institutions led by people with character.",
-        name: 'Kole Shettima',
-        title: 'Country Director, MacArthur Foundation, Nigeria',
-        avatar: '',
-    };
+    const testimonials = [
+        {
+            quote: "The Integritas has transformed how our department approaches policy making. The rigorous curriculum and practical tools are unmatched in the field of public service education.",
+            name: 'CEO Integritas',
+            title: 'Senior Policy adviser',
+            avatar: '',
+        },
+        {
+            quote: "Umar has eloquently, even if not intentionally, argued for a fourth arm of government-the Integrity arm. We need strong institutions led by people with character.",
+            name: ' Kole Shettima,',
+            title: 'Country Director, MacArthur Foundation, Nigeria',
+            avatar: '',
+        },
+    ];
+
+    const [testiIndex, setTestiIndex] = useState(0);
+
+    useEffect(() => {
+        if (!testimonials || testimonials.length <= 1) return;
+        const t = setInterval(() => {
+            setTestiIndex((p) => (p + 1) % testimonials.length);
+        }, 6000);
+        return () => clearInterval(t);
+    }, [testimonials.length]);
 
     return (
         <Box sx={{ minHeight: '100vh', bgcolor: colors.bgDark, color: colors.textWhite }}>
@@ -113,159 +134,140 @@ const LandingPage = () => {
                     overflow: 'hidden',
                 }}
             >
-                <Box
-                    sx={{
-                        display: 'flex',
-                        flexDirection: { xs: 'column', lg: 'row' },
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: { xs: 4, lg: 6 },
+                <Container maxWidth="xl">
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            flexDirection: { xs: 'column', lg: 'row' },
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: 6,
+                        }}
+                    >
+                        {/* Left Content */}
+                        <Box sx={{ flex: '0 0 auto', maxWidth: { xs: '100%', lg: '45%' } }}>
+                            {/* Title */}
+                            <Typography
+                                variant="h1"
+                                sx={{
+                                    fontSize: { xs: '2.5rem', md: '3.5rem' },
+                                    fontWeight: 800,
+                                    lineHeight: 1.1,
+                                    mb: 3,
+                                    color: colors.textWhite,
+                                }}
+                            >
+                                Anchoring a Future on
+                                <br />
+                                <Box component="span" sx={{ color: theme.colors.brand }}>
+                                    Integrity
+                                </Box>
+                            </Typography>
 
-                    }}
-                >
-                    {/* Left Content */}
-                    <Box sx={{ flex: '0 0 auto', maxWidth: { xs: '100%', lg: '45%' } }}>
-                        {/* Badge */}
-                        {/* <Box
+                            {/* Description */}
+                            <Typography
+                                sx={{
+                                    fontSize: '1.125rem',
+                                    color: colors.textMuted,
+                                    lineHeight: 1.7,
+                                    mb: 4,
+                                    maxWidth: 450,
+                                }}
+                            >
+                                Nigeria's premier digital learning platform. Master the tools
+                                of transparency, the philosophy of accountability, and the
+                                dignity to act without compromise.
+                            </Typography>
+
+                            {/* Buttons */}
+                            <Stack
+                                direction={{ xs: 'column', sm: 'row' }}
+                                spacing={2}
+                                sx={{ mb: 4 }}
+                            >
+                                <Button
+                                    component={Link}
+                                    to="/explore"
+                                    variant="contained"
+                                    size="large"
+                                    endIcon={<ArrowForward />}
+                                    sx={{
+                                        bgcolor: theme.colors.brand,
+                                        '&:hover': {
+                                            bgcolor: theme.colors.brandHover,
+                                            color: '#FFFFFF',
+                                        },
+                                        textTransform: 'none',
+                                        fontWeight: 600,
+                                        py: 1.5,
+                                        px: 3,
+                                        borderRadius: 2,
+                                    }}
+                                >
+                                    Start the Foundational Track
+                                </Button>
+
+                                <Button
+                                    component={Link}
+                                    to="#"
+                                    variant="outlined"
+                                    size="large"
+                                    sx={{
+                                        borderColor: colors.border,
+                                        color: colors.textWhite,
+                                        bgcolor: 'transparent',
+                                        '&:hover': {
+                                            borderColor: 'rgba(255, 255, 255, 0.5)',
+                                            color: '#FFFFFF',
+                                            bgcolor: 'rgba(255, 255, 255, 0.1)',
+                                        },
+                                        textTransform: 'none',
+                                        fontWeight: 600,
+                                        py: 1.5,
+                                        px: 3,
+                                        borderRadius: 2,
+                                    }}
+                                >
+                                    View Syllabus
+                                </Button>
+                            </Stack>
+
+                            {/* Trust text */}
+                            <Typography
+                                sx={{
+                                    fontSize: '0.75rem',
+                                    color: colors.textDark,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.1em',
+                                    fontWeight: 500,
+                                }}
+                            >
+                                Trusted by officials from
+                            </Typography>
+                        </Box>
+
+                        {/* Right - Hero Image */}
+                        <Box
                             sx={{
-                                bgcolor: 'rgba(17, 82, 212, 0.15)',
-                                color: theme.colors.brand,
-                                px: 2,
-                                py: 0.5,
-                                borderRadius: 50,
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 1,
-                                fontSize: '0.75rem',
-                                fontWeight: 600,
-                                mb: 3,
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.05em',
+                                flex: '0 0 auto',
+                                maxWidth: { xs: '100%', lg: '50%' },
+                                display: { xs: 'none', lg: 'block' },
                             }}
                         >
                             <Box
+                                component="img"
+                                src={heroImage}
+                                alt="Integritas Platform Dashboard"
                                 sx={{
-                                    width: 10,
-                                    height: 10,
-                                    borderRadius: '50%',
-                                    bgcolor: theme.colors.brand,
+                                    width: '100%',
+                                    maxWidth: 550,
+                                    height: 'auto',
+                                    borderRadius: 2,
                                 }}
                             />
-                            New Courses Available
-                        </Box> */}
-
-                        {/* Title */}
-                        <Typography
-                            variant="h1"
-                            sx={{
-                                fontSize: { xs: '2.5rem', md: '3.5rem' },
-                                fontWeight: 800,
-                                lineHeight: 1.1,
-                                mb: 3,
-                                color: colors.textWhite,
-                            }}
-                        >
-                            Anchoring a Future on<br />
-                            <Box component="span" sx={{ color: theme.colors.brand }}>
-                                Integrity
-                            </Box>
-                        </Typography>
-
-                        {/* Description */}
-                        <Typography
-                            sx={{
-                                fontSize: '1.125rem',
-                                color: colors.textMuted,
-                                lineHeight: 1.7,
-                                mb: 4,
-                                maxWidth: 450,
-                            }}
-                        >
-                           Nigeria's premier digital learning platform. Master the tools of transparency, the philosophy of accountability, and the dignity to act without compromise.
-                        </Typography>
-
-                        {/* Buttons */}
-                        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 4 }}>
-                            <Button
-                                component={Link}
-                                to="/explore"
-                                variant="contained"
-                                size="large"
-                                endIcon={<ArrowForward />}
-                                sx={{
-                                    bgcolor: theme.colors.brand,
-                                    '&:hover': {
-                                        bgcolor: theme.colors.brandHover, color: '#FFFFFF',
-                                    },
-                                    textTransform: 'none',
-                                    fontWeight: 600,
-                                    py: 1.5,
-                                    px: 3,
-                                    borderRadius: 2,
-                                }}
-                            >
-                                Start the Foundational Track
-                            </Button>
-                            <Button
-                                component={Link}
-                                to="#"
-                                variant="outlined"
-                                size="large"
-                                sx={{
-                                    borderColor: colors.border,
-                                    color: colors.textWhite,
-                                    bgcolor: 'transparent',
-                                    '&:hover': {
-                                        borderColor: 'rgba(255, 255, 255, 0.5)',
-                                        color: '#FFFFFF',
-                                        bgcolor: 'rgba(255, 255, 255, 0.1)',
-                                    },
-                                    textTransform: 'none',
-                                    fontWeight: 600,
-                                    py: 1.5,
-                                    px: 3,
-                                    borderRadius: 2,
-                                }}
-                            >
-                                View Syllabus
-                            </Button>
-                        </Stack>
-
-                        {/* Trust text */}
-                        <Typography
-                            sx={{
-                                fontSize: '0.75rem',
-                                color: colors.textDark,
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.1em',
-                                fontWeight: 500,
-                            }}
-                        >
-                            Trusted by officials from
-                        </Typography>
+                        </Box>
                     </Box>
-
-                    {/* Right - Hero Image */}
-                    <Box
-                        sx={{
-                            flex: '0 0 auto',
-                            maxWidth: { xs: '100%', lg: '50%' },
-                            display: { xs: 'none', lg: 'block' },
-                        }}
-                    >
-                        <Box
-                            component="img"
-                            src={heroImage}
-                            alt="Integritas Platform Dashboard"
-                            sx={{
-                                width: '100%',
-                                maxWidth: 550,
-                                height: 'auto',
-                                borderRadius: 2,
-                            }}
-                        />
-                    </Box>
-                </Box>
+                </Container>
             </Box>
 
             {/* Core Philosophy Section */}
@@ -883,41 +885,241 @@ const LandingPage = () => {
             </Box>
 
 
+            {/* Testimonial Section (sliding) */}
             {/* Testimonial Section */}
+<Box
+    sx={{
+        py: { xs: 8, md: 12 },
+        px: { xs: 2, md: 4 },
+        bgcolor: colors.bgDark,
+        overflow: 'hidden',
+    }}
+>
+    <Container maxWidth="lg">
+        <Box sx={{ textAlign: 'center', mb: 6 }}>
+            <Typography
+                sx={{
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.15em',
+                    color: theme.colors.brand,
+                    mb: 2,
+                }}
+            >
+                Testimonials
+            </Typography>
 
-            <Box sx={{ py: 10 }}>
-                <Container maxWidth="md">
-                    <Box sx={{ textAlign: 'center' }}>
-                        <FormatQuote sx={{ fontSize: '3rem', color: colors.primary, mb: 3 }} />
-                        <Typography
+            <Typography
+                variant="h2"
+                sx={{
+                    fontSize: { xs: '1.8rem', md: '2.5rem' },
+                    fontWeight: 700,
+                    color: colors.textWhite,
+                }}
+            >
+                What People Are Saying
+            </Typography>
+        </Box>
+
+        <Box
+            sx={{
+                position: 'relative',
+                maxWidth: 900,
+                mx: 'auto',
+            }}
+        >
+            {/* Slider */}
+            <Box
+                sx={{
+                    overflow: 'hidden',
+                    borderRadius: 4,
+                }}
+            >
+                <Box
+                    sx={{
+                        display: 'flex',
+                        width: `${testimonials.length * 100}%`,
+                        transform: `translateX(-${testiIndex * (100 / testimonials.length)}%)`,
+                        transition: 'transform 0.6s cubic-bezier(0.22, 1, 0.36, 1)',
+                    }}
+                >
+                    {testimonials.map((t, i) => (
+                        <Box
+                            key={i}
                             sx={{
-                                fontSize: '1.375rem',
-                                color: colors.textLight,
-                                lineHeight: 1.7,
-                                fontStyle: 'italic',
-                                mb: 4,
+                                width: `${100 / testimonials.length}%`,
+                                px: { xs: 1, md: 2 },
+                                flexShrink: 0,
                             }}
                         >
-                            "{testimonial.quote}"
-                        </Typography>
-                        <Stack direction="column" alignItems="center" spacing={1.5}>
-                            <Avatar
-                                src={testimonial.avatar}
-                                alt={testimonial.name}
-                                sx={{ width: 56, height: 56 }}
-                            />
-                            <Box>
-                                <Typography sx={{ fontWeight: 600, color: colors.textWhite }}>
-                                    {testimonial.name}
-                                </Typography>
-                                <Typography sx={{ fontSize: '0.875rem', color: colors.textMuted }}>
-                                    {testimonial.title}
-                                </Typography>
-                            </Box>
-                        </Stack>
-                    </Box>
-                </Container>
+                            <Card
+                                sx={{
+                                    bgcolor: colors.bgCard,
+                                    border: `1px solid ${colors.border}`,
+                                    borderRadius: 4,
+                                    p: { xs: 3, md: 5 },
+                                    minHeight: 320,
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    justifyContent: 'space-between',
+                                }}
+                            >
+                                <Box>
+                                    <FormatQuote
+                                        sx={{
+                                            fontSize: 50,
+                                            color: colors.primary,
+                                            mb: 3,
+                                        }}
+                                    />
+
+                                    <Typography
+                                        sx={{
+                                            fontSize: {
+                                                xs: '1rem',
+                                                md: '1.2rem',
+                                            },
+                                            lineHeight: 1.9,
+                                            color: colors.textLight,
+                                            fontStyle: 'italic',
+                                        }}
+                                    >
+                                        "{t.quote}"
+                                    </Typography>
+                                </Box>
+
+                                <Stack
+                                    direction="row"
+                                    spacing={2}
+                                    alignItems="center"
+                                    sx={{ mt: 4 }}
+                                >
+                                    {t.avatar ? (
+                                        <Avatar
+                                            src={t.avatar}
+                                            alt={t.name}
+                                            sx={{
+                                                width: 56,
+                                                height: 56,
+                                            }}
+                                        />
+                                    ) : (
+                                        <Avatar
+                                            sx={{
+                                                width: 56,
+                                                height: 56,
+                                                bgcolor: colors.primary,
+                                                fontWeight: 700,
+                                            }}
+                                        >
+                                            {t.name
+                                                ?.split(' ')
+                                                .map((n) => n[0])
+                                                .join('')
+                                                .slice(0, 2)}
+                                        </Avatar>
+                                    )}
+
+                                    <Box>
+                                        <Typography
+                                            sx={{
+                                                fontWeight: 700,
+                                                color: colors.textWhite,
+                                            }}
+                                        >
+                                            {t.name}
+                                        </Typography>
+
+                                        <Typography
+                                            sx={{
+                                                fontSize: '0.9rem',
+                                                color: colors.textMuted,
+                                            }}
+                                        >
+                                            {t.title}
+                                        </Typography>
+                                    </Box>
+                                </Stack>
+                            </Card>
+                        </Box>
+                    ))}
+                </Box>
             </Box>
+
+            {/* Navigation */}
+            <IconButton
+                onClick={() =>
+                    setTestiIndex(
+                        (prev) =>
+                            (prev - 1 + testimonials.length) %
+                            testimonials.length
+                    )
+                }
+                sx={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: { xs: -10, md: -25 },
+                    transform: 'translateY(-50%)',
+                    bgcolor: colors.bgCard,
+                    border: `1px solid ${colors.border}`,
+                    '&:hover': {
+                        bgcolor: colors.bgCard,
+                    },
+                }}
+            >
+                <ChevronLeft sx={{ color: colors.textWhite }} />
+            </IconButton>
+
+            <IconButton
+                onClick={() =>
+                    setTestiIndex(
+                        (prev) => (prev + 1) % testimonials.length
+                    )
+                }
+                sx={{
+                    position: 'absolute',
+                    top: '50%',
+                    right: { xs: -10, md: -25 },
+                    transform: 'translateY(-50%)',
+                    bgcolor: colors.bgCard,
+                    border: `1px solid ${colors.border}`,
+                    '&:hover': {
+                        bgcolor: colors.bgCard,
+                    },
+                }}
+            >
+                <ChevronRight sx={{ color: colors.textWhite }} />
+            </IconButton>
+
+            {/* Dots */}
+            <Stack
+                direction="row"
+                spacing={1.5}
+                justifyContent="center"
+                sx={{ mt: 4 }}
+            >
+                {testimonials.map((_, i) => (
+                    <Box
+                        key={i}
+                        onClick={() => setTestiIndex(i)}
+                        sx={{
+                            width: i === testiIndex ? 28 : 10,
+                            height: 10,
+                            borderRadius: 999,
+                            bgcolor:
+                                i === testiIndex
+                                    ? colors.primary
+                                    : colors.border,
+                            transition: 'all 0.3s ease',
+                            cursor: 'pointer',
+                        }}
+                    />
+                ))}
+            </Stack>
+        </Box>
+    </Container>
+</Box>
 
             {/* Donation CTA Section */}
             <Box
