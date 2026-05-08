@@ -1,252 +1,132 @@
 /**
- * Enrollment Service for Learner Module
- * 
- * Handles all API calls related to course enrollment and progress tracking.
- * This service is used by learners to enroll in courses, track progress,
- * and request certificates upon completion.
- * 
- * API Base: /lms/courses/{id}/* and /lms/my-enrollments
+ * Enrolment & Payments — wired to the new Integritas backend.
+ *
+ * Course enrolment is a two-step flow:
+ *   1. POST /enrolment/initiate { course_slug, idempotency_key } -> { authorization_url, reference }
+ *   2. POST /enrolment/verify   { reference }                    -> { enrolment, status }
+ *
+ * Lesson/module/course completion is no longer a client-side concern; the backend
+ * marks completion automatically when the corresponding CBT attempt is submitted
+ * with a passing score. Helpers for that live in cbtService.js.
  */
 
-import { apiService } from "../../../services/api";
+import { apiService, newIdempotencyKey } from "../../../services/api";
 
-// --- Response Normalization Helpers ---
+const unwrap = (res) => (res && res.data ? res.data : res);
 
-/**
- * Normalizes an enrollment object from response.
- */
-const unwrapEnrollment = (res) => {
-    if (!res) return null;
-    return res.data ? res.data : res;
-};
-
-/**
- * Normalizes a list response to { data, meta, links }.
- */
 const unwrapList = (res) => {
     if (!res) return { data: [], meta: {}, links: {} };
+    if (Array.isArray(res)) return { data: res, meta: {}, links: {} };
     return {
         data: res.data || [],
         meta: res.meta || {},
-        links: res.links || {}
+        links: res.links || {},
     };
 };
 
-/**
- * For actions that might return data or just { success: true }.
- */
-const okOrData = (res) => {
-    if (!res) return { success: true };
-    if (res.data || res.id) return unwrapEnrollment(res);
-    return { success: true };
+const buildQuery = (params = {}) => {
+    const search = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+        if (value === undefined || value === null || value === '') return;
+        search.append(key, String(value));
+    });
+    const query = search.toString();
+    return query ? `?${query}` : '';
 };
-
-// --- Enrollment Service Exports ---
 
 export const learnerEnrollmentService = {
     /**
-     * Check course access for the authenticated user
-     * GET /lms/courses/{id}/access
-     *
-     * @param {string} courseId
-     * @returns {Promise<{course_id, is_essential, can_access, pay_type, message}>}
+     * POST /enrolment/initiate
+     * Returns { authorization_url, reference, ... }; redirect the user to the URL.
      */
-    getCourseAccess: async (courseId) => {
-        const res = await apiService.get(`/lms/courses/${courseId}/access`);
-        return res?.data ? res.data : res;
+    initiateEnrolment: async (courseSlug, { idempotencyKey } = {}) => {
+        const key = idempotencyKey || newIdempotencyKey();
+        const res = await apiService.post(
+            '/enrolment/initiate',
+            { course_slug: courseSlug, idempotency_key: key },
+            { idempotencyKey: key }
+        );
+        return unwrap(res);
     },
 
     /**
-     * Enroll in a course
-     * POST /lms/courses/{id}/enroll
-     *
-     * @param {string|number} courseId - The course ID to enroll in
-     * @returns {Promise<Object>} - Enrollment data (may include payment_url for paid courses)
+     * POST /enrolment/verify
+     * Called from the Paystack return page with the reference from query string.
      */
-    enrollInCourse: async (courseId) => {
-        const res = await apiService.post(`/lms/courses/${courseId}/enroll`);
-        return unwrapEnrollment(res);
+    verifyEnrolment: async (reference) => {
+        const res = await apiService.post('/enrolment/verify', { reference });
+        return unwrap(res);
     },
 
     /**
-     * Enroll in an essential course
-     * POST /lms/essential/enroll
-     *
-     * @param {string|number} courseId - The course ID to enroll in
-     * @returns {Promise<Object>} - Enrollment data (may include payment_url for paid courses)
+     * POST /learner/expert-courses/{slug}/enrol
+     * Free enrolment path for tutor-listed expert courses.
      */
-    enrollInEssentialCourse: async (courseId) => {
-        const res = await apiService.post('/lms/essential/enroll', { course_id: courseId });
-        return unwrapEnrollment(res);
+    enrolFreeExpertCourse: async (courseSlug) => {
+        const res = await apiService.post(`/learner/expert-courses/${encodeURIComponent(courseSlug)}/enrol`);
+        return unwrap(res);
     },
 
     /**
-     * Get paginated list of enrollments with optional filters
-     * GET /lms/enrollments
-     *
-     * @param {Object} options - Query options
-     * @param {string} [options.user_id] - Filter by user UUID
-     * @param {string} [options.course_id] - Filter by course UUID
-     * @param {string} [options.status] - Filter by enrollment status
-     * @param {number} [options.per_page] - Items per page
-     * @param {number} [options.page] - Page number
-     * @returns {Promise<{data: Array, meta: Object, links: Object}>}
+     * GET /me/enrolments — authenticated learner's enrolments
      */
-    getEnrollments: async ({ user_id, course_id, status, per_page = 20, page } = {}) => {
-        const params = new URLSearchParams();
-        if (user_id) params.append('user_id', user_id);
-        if (course_id) params.append('course_id', course_id);
-        if (status) params.append('status', status);
-        if (per_page) params.append('per_page', per_page);
-        if (page) params.append('page', page);
-        const qs = params.toString();
-        const res = await apiService.get(`/lms/enrollments${qs ? `?${qs}` : ''}`);
+    getMyEnrolments: async ({ page, per_page = 20, status } = {}) => {
+        const query = buildQuery({ page, per_page, status });
+        const res = await apiService.get(`/me/enrolments${query}`);
         return unwrapList(res);
     },
 
     /**
-     * Verify a payment after Paystack redirect
-     * GET /payments/verify?trxref=...&reference=...
-     *
-     * @param {Object} params
-     * @param {string} params.trxref - Transaction reference from Paystack
-     * @param {string} params.reference - Payment reference
-     * @returns {Promise<Object>} - Verification result with enrollment data
+     * GET /me/transactions — payment history
      */
-    verifyPayment: async ({ trxref, reference }) => {
-        const res = await apiService.get(`/payments/verify?trxref=${trxref}&reference=${reference}`);
-        return res?.data ? res.data : res;
-    },
-
-    /**
-     * Verify payment status after enrollment payment callback
-     * GET /payments/verify-status?reference=ENR_...
-     *
-     * Called when the backend redirects to /payment/success?reference=...
-     *
-     * @param {string} reference - The enrollment payment reference (e.g. ENR_17749600101498)
-     * @returns {Promise<Object>} - Verification result with enrollment/payment status
-     */
-    verifyPaymentStatus: async (reference) => {
-        const res = await apiService.get(`/payments/verify-status?reference=${encodeURIComponent(reference)}`);
-        return res?.data ? res.data : res;
-    },
-
-    /**
-     * Get the authenticated learner's enrolled courses
-     * GET /lms/my/courses/enrolled
-     *
-     * @param {Object} options
-     * @param {number} [options.per_page]
-     * @param {number} [options.page]
-     * @returns {Promise<{data: Array, meta: Object, links: Object}>}
-     */
-    getMyEnrolledCourses: async ({ per_page = 50, page } = {}) => {
-        const params = new URLSearchParams();
-        if (per_page) params.append('per_page', per_page);
-        if (page) params.append('page', page);
-        const qs = params.toString();
-        const res = await apiService.get(`/lms/my/courses/enrolled${qs ? `?${qs}` : ''}`);
+    getMyTransactions: async ({ page, per_page = 20 } = {}) => {
+        const query = buildQuery({ page, per_page });
+        const res = await apiService.get(`/me/transactions${query}`);
         return unwrapList(res);
     },
 
     /**
-     * @deprecated Use getEnrollments instead
+     * GET /learner/courses/{slug}/progress
      */
-    getMyEnrollments: async ({ page, per_page = 20, status } = {}) => {
-        const params = new URLSearchParams();
-        if (page) params.append('page', page);
-        if (per_page) params.append('per_page', per_page);
-        if (status) params.append('status', status);
-        const queryString = params.toString();
-        const endpoint = queryString ? `/lms/enrollments?${queryString}` : '/lms/enrollments';
-        const res = await apiService.get(endpoint);
-        return unwrapList(res);
+    getCourseProgress: async (courseSlug) => {
+        const res = await apiService.get(`/learner/courses/${encodeURIComponent(courseSlug)}/progress`);
+        return unwrap(res);
     },
 
-    /**
-     * Unenroll from a course
-     * POST /lms/courses/{id}/unenroll
-     * 
-     * @param {string|number} courseId - The course ID to unenroll from
-     * @returns {Promise<{success: boolean}>}
-     */
-    unenrollFromCourse: async (courseId) => {
-        const res = await apiService.post(`/lms/courses/${courseId}/unenroll`);
-        return { success: true, ...res };
-    },
+    // -------------------------------------------------------------------
+    // Backwards-compatible aliases used by existing pages. Resolve to the
+    // new endpoints above so we don't have to touch every call site at once.
+    // -------------------------------------------------------------------
+
+    enrollInCourse: async (courseSlugOrId) => learnerEnrollmentService.initiateEnrolment(courseSlugOrId),
+    getEnrollments: async (opts) => learnerEnrollmentService.getMyEnrolments(opts),
+    getMyEnrolledCourses: async (opts) => learnerEnrollmentService.getMyEnrolments(opts),
 
     /**
-     * Check enrollment status for a specific course
-     * GET /lms/courses/{id}/enrollment-status
-     * 
-     * @param {string|number} courseId - The course ID
-     * @returns {Promise<Object>} - Enrollment status data
+     * Replaces the legacy /payments/verify-status?reference=ENR_... call.
      */
-    getEnrollmentStatus: async (courseId) => {
-        const res = await apiService.get(`/lms/courses/${courseId}/enrollment-status`);
-        return unwrapEnrollment(res);
-    },
+    verifyPaymentStatus: async (reference) => learnerEnrollmentService.verifyEnrolment(reference),
+    verifyPayment: async ({ reference }) => learnerEnrollmentService.verifyEnrolment(reference),
+    getEnrollmentStatus: async (courseSlug) => learnerEnrollmentService.getCourseProgress(courseSlug),
+    getCompletionStatus: async (courseSlug) => learnerEnrollmentService.getCourseProgress(courseSlug),
+
+    // Lesson / module / course completion is now driven server-side by CBT
+    // submissions. These helpers stay as no-ops to keep callers compiling
+    // until their pages are migrated to read progress from the server.
+    completeLesson: async () => ({ success: true, deprecated: true }),
+    completeModule: async () => ({ success: true, deprecated: true }),
+    completeCourse: async () => ({ success: true, deprecated: true }),
+    unenrollFromCourse: async () => ({ success: false, message: 'Unenroll is not supported on the new backend.' }),
 
     /**
-     * Mark a lesson as completed
-     * POST /lms/lessons/{id}/complete
-     * 
-     * @param {string|number} lessonId - The lesson ID
-     * @returns {Promise<Object>} - Completion data
+     * Legacy single-call certificate request — replaced by the new certificate
+     * service (see certificateService.js). Left here as a thin shim that
+     * returns the existing certificate record for the course if any.
      */
-    completeLesson: async (lessonId) => {
-        const res = await apiService.post(`/lms/lessons/${lessonId}/complete`);
-        return okOrData(res);
-    },
-
-    /**
-     * Mark a module as completed
-     * POST /lms/modules/{id}/complete
-     * 
-     * @param {string|number} moduleId - The module ID
-     * @returns {Promise<Object>} - Completion data
-     */
-    completeModule: async (moduleId) => {
-        const res = await apiService.post(`/lms/modules/${moduleId}/complete`);
-        return okOrData(res);
-    },
-
-    /**
-     * Mark a course as completed
-     * POST /lms/courses/{id}/complete
-     * 
-     * @param {string|number} courseId - The course ID
-     * @returns {Promise<Object>} - Completion data
-     */
-    completeCourse: async (courseId) => {
-        const res = await apiService.post(`/lms/courses/${courseId}/complete`);
-        return okOrData(res);
-    },
-
-    /**
-     * Request a certificate for a completed course
-     * POST /lms/courses/{id}/certificate
-     * 
-     * @param {string|number} courseId - The course ID
-     * @returns {Promise<Object>} - Certificate data (may include URL or status)
-     */
-    requestCertificate: async (courseId) => {
-        const res = await apiService.post(`/lms/courses/${courseId}/certificate`);
-        return unwrapEnrollment(res);
-    },
-
-    /**
-     * Get completion status for a specific course
-     * GET /lms/courses/{id}/completion-status
-     * 
-     * @param {string|number} courseId - The course ID
-     * @returns {Promise<Object>} - Completion status with progress data
-     */
-    getCompletionStatus: async (courseId) => {
-        const res = await apiService.get(`/lms/courses/${courseId}/completion-status`);
-        return unwrapEnrollment(res);
-    },
+    requestCertificate: async () => ({
+        success: false,
+        message: 'Use the Certificates page to pay and download.',
+    }),
 };
 
 export default learnerEnrollmentService;

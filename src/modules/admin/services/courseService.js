@@ -1,201 +1,241 @@
-import { apiService } from "../../../services/api";
+/**
+ * Admin Course / Module / Lesson / Materials / CBT Service
+ * Wired to the new Integritas backend (/admin/* endpoints).
+ */
 
-// --- Response Normalization Helpers ---
+import { apiService, authFetch } from "../../../services/api";
 
-const unwrapCourse = (res) => {
-    if (!res) return null;
-    return res.data ? res.data : res;
-};
+const unwrap = (res) => (res && res.data ? res.data : res);
 
 const unwrapList = (res) => {
     if (!res) return { data: [], meta: {}, links: {} };
+    if (Array.isArray(res)) return { data: res, meta: {}, links: {} };
     return {
         data: res.data || [],
         meta: res.meta || {},
-        links: res.links || {}
+        links: res.links || {},
     };
 };
 
-// --- Exports ---
+const buildQuery = (params = {}) => {
+    const search = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+        if (value === undefined || value === null || value === '') return;
+        search.append(key, String(value));
+    });
+    const query = search.toString();
+    return query ? `?${query}` : '';
+};
 
 export const adminCoursesService = {
-    // A) LIST COURSES (Admin view)
-    listCourses: async ({
-        page,
-        per_page = 20,
-        q,
-        status,
-        level,
-        language,
-        with_categories = 1,
-        with_tutor = 1,
-        with_audit = 1
-    } = {}) => {
-        const params = new URLSearchParams();
-        if (page) params.append('page', page);
-        if (per_page) params.append('per_page', per_page);
-        if (q) params.append('q', q);
-        if (status) params.append('status', status);
-        if (level) params.append('level', level);
-        if (language) params.append('language', language);
-        if (with_categories) params.append('with_categories', with_categories);
-        if (with_tutor) params.append('with_tutor', with_tutor);
-        if (with_audit) params.append('with_audit', with_audit);
-
-        const res = await apiService.get(`/lms/courses?${params.toString()}`);
+    // ===== COURSES =====
+    listCourses: async ({ page, per_page = 20, q, status, level, language, track } = {}) => {
+        const query = buildQuery({ page, per_page, q, status, level, language, track });
+        const res = await apiService.get(`/admin/courses${query}`);
         return unwrapList(res);
     },
 
-    // D) SHOW COURSE DETAIL
-    // Using this for admin preview/review purposes
     getCourseDetail: async (courseId) => {
-        const res = await apiService.get(`/lms/courses/${courseId}`);
-        return unwrapCourse(res);
+        const res = await apiService.get(`/admin/courses/${encodeURIComponent(courseId)}`);
+        return unwrap(res);
     },
 
-    // D-1) GET COURSE MODULES
-    getCourseModules: async (courseId) => {
-        const res = await apiService.get(`/lms/courses/${courseId}/modules?with_lessons=1`);
-        // If response is a list object (data, meta), return data array
-        return res.data || res || [];
+    createCourse: async (payload) => {
+        const res = await apiService.post('/admin/courses', payload);
+        return unwrap(res);
     },
 
-    // A-1) APPROVE COURSE (Admin specific)
-    approveCourse: async (courseId) => {
-        const res = await apiService.post(`/lms/courses/${courseId}/approve`);
-        return unwrapCourse(res);
-    },
-
-    // L) REJECT COURSE (Admin specific)
-    rejectCourse: async (courseId, reason) => {
-        const res = await apiService.post(`/lms/courses/${courseId}/reject`, { reason });
-        // Return normalized course if returned, else success
-        if (res && (res.data || res.id)) {
-            return unwrapCourse(res);
-        }
-        return { success: true };
-    },
-
-    // K) UPDATE COURSE (Admin override)
     updateCourse: async (courseId, payload) => {
-        const res = await apiService.put(`/lms/courses/${courseId}`, payload);
-        return unwrapCourse(res);
+        const res = await apiService.patch(`/admin/courses/${encodeURIComponent(courseId)}`, payload);
+        return unwrap(res);
     },
 
-    // M) DELETE COURSE (Admin override/hard delete if needed)
     deleteCourse: async (courseId) => {
-        const res = await apiService.delete(`/lms/courses/${courseId}`);
-        return { success: true, ...res };
+        const res = await apiService.delete(`/admin/courses/${encodeURIComponent(courseId)}`);
+        return { success: true, ...(res || {}) };
     },
 
-    // N) CERTIFICATE PRICE CHANGES
-    listPriceChanges: async ({ status = 'pending', page, per_page = 20, with_course = 1 } = {}) => {
-        const params = new URLSearchParams();
-        if (status) params.append('status', status);
-        if (page) params.append('page', page);
-        if (per_page) params.append('per_page', per_page);
-        if (with_course) params.append('with_course', with_course);
-        const res = await apiService.get(`/lms/certificate-price-changes?${params.toString()}`);
-        return res; // Usually contains current_page, data, etc.
+    publishCourse: async (courseId) => {
+        const res = await apiService.post(`/admin/courses/${encodeURIComponent(courseId)}/publish`);
+        return unwrap(res);
     },
 
-    approvePriceChange: async (changeId) => {
-        const res = await apiService.post(`/lms/certificate-price-changes/${changeId}/approve`);
-        return res;
+    unpublishCourse: async (courseId) => {
+        const res = await apiService.post(`/admin/courses/${encodeURIComponent(courseId)}/unpublish`);
+        return unwrap(res);
     },
 
-    rejectPriceChange: async (changeId, rejection_reason) => {
-        const res = await apiService.post(`/lms/certificate-price-changes/${changeId}/reject`, { rejection_reason });
-        return res;
+    // ===== MODULES =====
+    getCourseModules: async (courseId) => {
+        // Modules are typically returned within the course detail; this is a
+        // convenience helper for callers that only need the module list.
+        const detail = await adminCoursesService.getCourseDetail(courseId);
+        return detail?.modules || [];
     },
 
-    // ============ MODULE MANAGEMENT ============
-
-    /**
-     * Create a new module for a course
-     * POST /lms/courses/{courseId}/modules
-     */
     createModule: async (courseId, payload) => {
-        const res = await apiService.post(`/lms/courses/${courseId}/modules`, payload);
-        return unwrapCourse(res);
+        const res = await apiService.post(
+            `/admin/courses/${encodeURIComponent(courseId)}/modules`,
+            payload
+        );
+        return unwrap(res);
     },
 
-    /**
-     * Update a module
-     * PUT /lms/modules/{moduleId}
-     */
+    reorderModules: async (courseId, orderedIds) => {
+        const res = await apiService.post(
+            `/admin/courses/${encodeURIComponent(courseId)}/modules/reorder`,
+            { ordered_ids: orderedIds }
+        );
+        return unwrap(res);
+    },
+
     updateModule: async (moduleId, payload) => {
-        const res = await apiService.put(`/lms/modules/${moduleId}`, payload);
-        return unwrapCourse(res);
+        const res = await apiService.patch(`/admin/modules/${encodeURIComponent(moduleId)}`, payload);
+        return unwrap(res);
     },
 
-    /**
-     * Delete a module
-     * DELETE /lms/modules/{moduleId}
-     */
     deleteModule: async (moduleId) => {
-        const res = await apiService.delete(`/lms/modules/${moduleId}`);
-        return { success: true, ...res };
+        const res = await apiService.delete(`/admin/modules/${encodeURIComponent(moduleId)}`);
+        return { success: true, ...(res || {}) };
     },
 
-    // ============ LESSON MANAGEMENT ============
-
+    // ===== LESSONS =====
     listLessons: async (moduleId) => {
-        const res = await apiService.get(`/lms/modules/${moduleId}/lessons`);
-        return unwrapList(res);
+        const res = await apiService.get(`/admin/modules/${encodeURIComponent(moduleId)}`);
+        const data = unwrap(res);
+        return { data: data?.lessons || [], meta: {}, links: {} };
     },
 
     createLesson: async (moduleId, payload) => {
-        const res = await apiService.post(`/lms/modules/${moduleId}/lessons`, payload);
-        return unwrapCourse(res);
+        const res = await apiService.post(
+            `/admin/modules/${encodeURIComponent(moduleId)}/lessons`,
+            payload
+        );
+        return unwrap(res);
+    },
+
+    reorderLessons: async (moduleId, orderedIds) => {
+        const res = await apiService.post(
+            `/admin/modules/${encodeURIComponent(moduleId)}/lessons/reorder`,
+            { ordered_ids: orderedIds }
+        );
+        return unwrap(res);
+    },
+
+    getLesson: async (lessonId) => {
+        const res = await apiService.get(`/admin/lessons/${encodeURIComponent(lessonId)}`);
+        return unwrap(res);
+    },
+
+    updateLesson: async (lessonId, payload) => {
+        const res = await apiService.patch(`/admin/lessons/${encodeURIComponent(lessonId)}`, payload);
+        return unwrap(res);
     },
 
     deleteLesson: async (lessonId) => {
-        const res = await apiService.delete(`/lms/lessons/${lessonId}`);
-        return { success: true, ...res };
+        const res = await apiService.delete(`/admin/lessons/${encodeURIComponent(lessonId)}`);
+        return { success: true, ...(res || {}) };
     },
 
-    publishLesson: async (moduleId, lessonId) => {
-        const res = await apiService.post(`/lms/modules/${moduleId}/lessons/${lessonId}/publish`);
-        return unwrapCourse(res);
+    publishLesson: async (lessonId) => {
+        const res = await apiService.post(`/admin/lessons/${encodeURIComponent(lessonId)}/publish`);
+        return unwrap(res);
     },
 
-    unpublishLesson: async (moduleId, lessonId) => {
-        const res = await apiService.post(`/lms/modules/${moduleId}/lessons/${lessonId}/unpublish`);
-        return unwrapCourse(res);
+    unpublishLesson: async (lessonId) => {
+        const res = await apiService.post(`/admin/lessons/${encodeURIComponent(lessonId)}/unpublish`);
+        return unwrap(res);
     },
 
-    uploadLessonMedia: async (lessonId, formData) => {
-        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
-        const user = localStorage.getItem('user');
-        const token = user ? JSON.parse(user).token : null;
-        const headers = { 'Accept': 'application/json' };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
+    /**
+     * Backwards-compatible signature: existing callers pass (moduleId, lessonId).
+     */
+    publishLessonInModule: async (_moduleId, lessonId) => adminCoursesService.publishLesson(lessonId),
+    unpublishLessonInModule: async (_moduleId, lessonId) => adminCoursesService.unpublishLesson(lessonId),
 
-        const response = await fetch(`${API_BASE_URL}/lms/lessons/${lessonId}/media`, {
+    /**
+     * Upload the lesson video. Backend: POST /admin/lessons/{id}/video (multipart)
+     * Accepts either a File or a FormData payload (existing callers send FormData).
+     */
+    uploadLessonMedia: async (lessonId, formDataOrFile, fieldName = 'video') => {
+        let body = formDataOrFile;
+        if (!(typeof FormData !== 'undefined' && formDataOrFile instanceof FormData)) {
+            body = new FormData();
+            body.append(fieldName, formDataOrFile);
+        }
+        const response = await authFetch(`/admin/lessons/${encodeURIComponent(lessonId)}/video`, {
             method: 'POST',
-            headers,
-            body: formData,
+            body,
         });
-
         if (!response.ok) {
             let msg = 'Upload failed';
-            try { const d = await response.json(); msg = d.message || msg; } catch (e) { }
+            try {
+                const d = await response.json();
+                msg = d.message || msg;
+            } catch (_e) {
+                /* ignore */
+            }
             throw new Error(msg);
         }
         if (response.status === 204) return null;
         return response.json();
     },
 
-    // ============ MODULE PUBLISH ============
-
-    publishModule: async (courseId, moduleId) => {
-        const res = await apiService.post(`/lms/courses/${courseId}/modules/${moduleId}/publish`);
-        return unwrapCourse(res);
+    // ===== MATERIALS =====
+    listMaterials: async (lessonId) => {
+        const res = await apiService.get(`/admin/lessons/${encodeURIComponent(lessonId)}/materials`);
+        return unwrapList(res);
     },
 
-    unpublishModule: async (courseId, moduleId) => {
-        const res = await apiService.post(`/lms/courses/${courseId}/modules/${moduleId}/unpublish`);
-        return unwrapCourse(res);
+    addMaterial: async (lessonId, file, { title } = {}) => {
+        const form = new FormData();
+        form.append('file', file);
+        if (title) form.append('title', title);
+        const res = await apiService.post(
+            `/admin/lessons/${encodeURIComponent(lessonId)}/materials`,
+            form
+        );
+        return unwrap(res);
     },
+
+    deleteMaterial: async (materialId) => {
+        const res = await apiService.delete(`/admin/materials/${encodeURIComponent(materialId)}`);
+        return { success: true, ...(res || {}) };
+    },
+
+    // ===== CBT QUESTIONS (per lesson version) =====
+    listCbtQuestions: async (lessonVersionId) => {
+        const res = await apiService.get(
+            `/admin/lesson-versions/${encodeURIComponent(lessonVersionId)}/cbt-questions`
+        );
+        return unwrapList(res);
+    },
+
+    addCbtQuestion: async (lessonVersionId, { question_text, options, correct_option }) => {
+        const res = await apiService.post(
+            `/admin/lesson-versions/${encodeURIComponent(lessonVersionId)}/cbt-questions`,
+            { question_text, options, correct_option: Number(correct_option) }
+        );
+        return unwrap(res);
+    },
+
+    deleteCbtQuestion: async (questionId) => {
+        const res = await apiService.delete(`/admin/cbt-questions/${encodeURIComponent(questionId)}`);
+        return { success: true, ...(res || {}) };
+    },
+
+    // ===== Legacy/no-op: Certificate price changes — endpoints not present in
+    // the new backend. Existing UI page calls these; surface a no-op so the
+    // page renders without throwing.
+    listPriceChanges: async () => ({ data: [], meta: {}, links: {} }),
+    approvePriceChange: async () => ({ success: false, message: 'Not supported on the new backend.' }),
+    rejectPriceChange: async () => ({ success: false, message: 'Not supported on the new backend.' }),
+    approveCourse: async (courseId) => adminCoursesService.publishCourse(courseId),
+    rejectCourse: async (courseId) => adminCoursesService.unpublishCourse(courseId),
+
+    // Module publish/unpublish helpers (legacy callers)
+    publishModule: async (_courseId, moduleId) =>
+        adminCoursesService.updateModule(moduleId, { is_published: true }),
+    unpublishModule: async (_courseId, moduleId) =>
+        adminCoursesService.updateModule(moduleId, { is_published: false }),
 };

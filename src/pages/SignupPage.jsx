@@ -50,6 +50,7 @@ const SignupPage = () => {
     const [touched, setTouched] = useState({
         name: false,
         email: false,
+        phone: false,
         password: false,
         password_confirmation: false,
     });
@@ -57,6 +58,7 @@ const SignupPage = () => {
     const [formData, setFormData] = useState({
         name: '',
         email: '',
+        phone: '',
         password: '',
         password_confirmation: '',
     });
@@ -98,11 +100,13 @@ const SignupPage = () => {
 
     const isNameValid = formData.name.trim().length >= 2;
     const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim());
+    const isPhoneValid = /^[+\d][\d\s\-()]{6,}$/.test(formData.phone.trim());
 
     const canSubmit =
         !loading &&
         isNameValid &&
         isEmailValid &&
+        isPhoneValid &&
         requiredPasswordRulesPass &&
         passwordsMatch &&
         agreed;
@@ -117,6 +121,7 @@ const SignupPage = () => {
         setTouched({
             name: true,
             email: true,
+            phone: true,
             password: true,
             password_confirmation: true,
         });
@@ -128,6 +133,11 @@ const SignupPage = () => {
 
         if (!isEmailValid) {
             setError('Please enter a valid email address.');
+            return;
+        }
+
+        if (!isPhoneValid) {
+            setError('Please enter a valid phone number.');
             return;
         }
 
@@ -147,10 +157,11 @@ const SignupPage = () => {
             const userData = await register({
                 name: formData.name.trim(),
                 email: formData.email.trim(),
+                phone: formData.phone.trim(),
                 password: formData.password,
                 password_confirmation: formData.password_confirmation,
-                role: role,
-                user_type: role, 
+                role: role === 'tutor' ? 'expert_tutor' : 'learner',
+                user_type: role === 'tutor' ? 'expert_tutor' : 'learner',
             });
 
             navigate('/verify');
@@ -495,6 +506,58 @@ const SignupPage = () => {
                                 helperText={
                                     touched.email && !isEmailValid
                                         ? 'Please enter a valid email address.'
+                                        : ' '
+                                }
+                                FormHelperTextProps={{
+                                    sx: { color: '#FCA5A5', m: 0, mt: 0.75 },
+                                }}
+                                sx={{
+                                    '& .MuiOutlinedInput-root': {
+                                        bgcolor: '#1E293B',
+                                        borderRadius: 1.5,
+                                        '& fieldset': { borderColor: '#374151' },
+                                        '&:hover fieldset': { borderColor: '#4B5563' },
+                                        '&.Mui-focused fieldset': { borderColor: theme.colors.brand },
+                                        '&.Mui-error fieldset': { borderColor: '#EF4444' },
+                                    },
+                                    '& .MuiInputBase-input': {
+                                        py: 1.25,
+                                        fontSize: '0.875rem',
+                                        color: '#FFFFFF',
+                                        border: 'none',
+                                        '&::placeholder': { color: '#9CA3AF', opacity: 1 },
+                                    },
+                                }}
+                            />
+                        </Box>
+
+                        {/* Phone Field */}
+                        <Box sx={{ mb: 0.5 }}>
+                            <Typography
+                                sx={{
+                                    fontSize: '0.875rem',
+                                    fontWeight: 500,
+                                    color: '#E5E7EB',
+                                    mb: 0.75,
+                                }}
+                            >
+                                Phone Number
+                            </Typography>
+                            <TextField
+                                fullWidth
+                                name="phone"
+                                type="tel"
+                                placeholder="+234 801 234 5678"
+                                value={formData.phone}
+                                onChange={handleInputChange}
+                                onBlur={() => markTouched('phone')}
+                                disabled={loading}
+                                size="small"
+                                autoComplete="tel"
+                                error={touched.phone && !isPhoneValid}
+                                helperText={
+                                    touched.phone && !isPhoneValid
+                                        ? 'Please enter a valid phone number.'
                                         : ' '
                                 }
                                 FormHelperTextProps={{

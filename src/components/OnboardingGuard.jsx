@@ -2,7 +2,7 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts';
 import { Box, CircularProgress } from '@mui/material';
-import { hasOrganizationAccess } from '../utils';
+import { hasOrganizationAccess, isFoundationalTutor } from '../utils';
 import theme from '../styles/theme';
 
 
@@ -41,13 +41,16 @@ const OnboardingGuard = ({ children }) => {
     }
     const isTutorRoute = location.pathname.startsWith('/tutor');
     const isKycPage = location.pathname === '/tutor/kyc';
+    // Foundational tutors are admin-vouched and skip KYC entirely.
+    const requiresKyc = !isFoundationalTutor(user);
+
     if (isTutorRoute && isKycPage) {
-        if (isKycComplete()) {
+        if (!requiresKyc || isKycComplete()) {
             return <Navigate to="/tutor" replace />;
         }
     }
 
-    if (isTutorRoute && !isKycPage && needsKyc()) {
+    if (isTutorRoute && !isKycPage && requiresKyc && needsKyc()) {
         return <Navigate to="/tutor/kyc" replace />;
     }
 

@@ -267,7 +267,7 @@ const VerifyPage = () => {
                         <Button
                             fullWidth
                             variant="contained"
-                            disabled={isResending || timer > 0}
+                            disabled={isResending || timer > 0 || !user?.token}
                             onClick={handleResend}
                             sx={{
                                 bgcolor: theme.colors.brand,
@@ -279,11 +279,16 @@ const VerifyPage = () => {
                                 borderRadius: 1.5,
                                 boxShadow: 'none',
                                 '&:hover': { bgcolor: theme.colors.brandHover },
-                                mb: 3,
+                                mb: 1,
                             }}
                         >
                             {isResending ? 'Sending...' : timer > 0 ? `Resend email in ${formatTime(timer)}` : 'Resend Verification Email'}
                         </Button>
+                        {!user?.token && (
+                            <Typography sx={{ color: '#9CA3AF', fontSize: '0.75rem', mb: 3 }}>
+                                Log in first to resend the verification email.
+                            </Typography>
+                        )}
                     </>
                 )}
 
@@ -336,12 +341,19 @@ const VerifyPage = () => {
                     Need help?
                 </Typography>
                 <Typography
-                    component={Link}
-                    to="/login"
+                    onClick={async () => {
+                        try {
+                            await logout();
+                        } catch (_e) {
+                            /* ignore — we just need to clear session */
+                        }
+                        navigate('/signup');
+                    }}
                     sx={{
                         fontSize: '0.875rem',
                         color: '#6B7280',
                         textDecoration: 'none',
+                        cursor: 'pointer',
                         '&:hover': { color: '#9CA3AF' },
                     }}
                 >

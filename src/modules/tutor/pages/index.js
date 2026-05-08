@@ -6,4 +6,8 @@ export { default as Kyc } from './Kyc';
 export { default as CourseEditor } from './CourseEditor';
 export { default as CourseDashboard } from './CourseDashboard';
 export { default as AddQuestion } from './AddQuestion';
+export { default as AssignedLessons } from './AssignedLessons';
+export { default as LessonStatsPage } from './LessonStatsPage';
+export { default as BankingDetails } from './BankingDetails';
+export { default as Earnings } from './Earnings';
 

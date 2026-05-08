@@ -22,9 +22,13 @@ import {
     BarChartOutlined,
     AssignmentOutlined,
     PersonOutlined,
+    MenuBookOutlined,
+    AccountBalanceOutlined,
+    PaymentsOutlined,
     ExpandLess,
     ExpandMore,
 } from '@mui/icons-material';
+import { isExpertTutor } from '../../../utils';
 import { useAuth } from '../../../contexts';
 import appTheme from '../../../styles/theme';
 
@@ -40,21 +44,18 @@ const TutorSidebar = ({
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const [openSubmenu, setOpenSubmenu] = React.useState('');
-    const { logout } = useAuth();
+    const { logout, user } = useAuth();
+    const showExpertOnly = isExpertTutor(user);
 
     const navItems = [
         { path: '/tutor', label: 'Dashboard', icon: <DashboardOutlined sx={{ fontSize: 22 }} /> },
-        {
-            label: 'Courses',
-            icon: <SchoolOutlined sx={{ fontSize: 22 }} />,
-            children: [
-                { path: '/tutor/courses', label: 'My Courses' },
-                { path: '/tutor/create-course', label: 'Create Course' },
+        { path: '/tutor/lessons', label: 'Assigned Lessons', icon: <MenuBookOutlined sx={{ fontSize: 22 }} /> },
+        ...(showExpertOnly
+            ? [
+                { path: '/tutor/banking', label: 'Banking', icon: <AccountBalanceOutlined sx={{ fontSize: 22 }} /> },
+                { path: '/tutor/earnings', label: 'Earnings', icon: <PaymentsOutlined sx={{ fontSize: 22 }} /> },
             ]
-        },
-        // { path: '/tutor/analytics', label: 'Teacher Analytics', icon: <BarChartOutlined sx={{ fontSize: 22 }} /> },
-        // { path: '/tutor/assignments', label: 'Assignments', icon: <AssignmentOutlined sx={{ fontSize: 22 }} /> }, // hidden until implemented
-        // { path: '/tutor/profile', label: 'Profile', icon: <PersonOutlined sx={{ fontSize: 22 }} /> }, // hidden until implemented
+            : []),
     ];
 
     const isActive = (path) => {

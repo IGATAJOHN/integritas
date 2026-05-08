@@ -159,11 +159,10 @@ const buildQueryString = (params = {}) => {
 
 export const optionAdminService = {
     // -------- Tutors by Admin --------
-    listTutors: async ({ q, per_page = 20, page } = {}) => {
-        const query = buildQueryString({ q, per_page, page });
-        const res = await apiService.get(`/option/admin/tutors${query}`);
-        return unwrapList(res, ['tutors']);
-    },
+    // The /option/admin/* namespace doesn't exist on the new backend.
+    // Return an empty list so any dashboard widget calling this stops 404-ing.
+    // The real tutor management list lives in TutorManagement.jsx via /users.
+    listTutors: async () => ({ data: [], meta: {}, links: {} }),
 
     getTutorById: async (tutorId) => {
         const res = await apiService.get(`/option/admin/tutors/${tutorId}`);

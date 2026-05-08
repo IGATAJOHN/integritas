@@ -64,6 +64,7 @@ const Checkout = () => {
         : stateData.instructor?.name || '—';
     const course = {
         courseId: stateData.courseId || null,
+        courseSlug: stateData.courseSlug || stateData.slug || null,
         title: stateData.title || 'Course Enrollment',
         instructor: instructorName,
         level: stateData.level || '—',
@@ -76,21 +77,29 @@ const Checkout = () => {
     const total = course.price + course.tax + course.fee;
 
     const handleCompletePurchase = async () => {
-        if (!course.courseId) {
+        const slugOrId = course.courseSlug || course.courseId;
+        if (!slugOrId) {
             setEnrollError('Course information is missing. Please go back and try again.');
             return;
         }
         setEnrolling(true);
         setEnrollError(null);
         try {
-            const result = await learnerEnrollmentService.enrollInCourse(course.courseId);
-            if (result?.payment_url) {
-                window.location.href = result.payment_url;
+            const result = await learnerEnrollmentService.initiateEnrolment(slugOrId);
+            const url = result?.authorization_url || result?.payment_url;
+            if (url) {
+                // Persist reference so the return page can verify it even if Paystack
+                // doesn't pass it back via query string.
+                if (result?.reference) {
+                    sessionStorage.setItem('pending_enrolment_reference', result.reference);
+                }
+                window.location.href = url;
             } else {
-                navigate('/payment-success', { state: { enrollment: result, course } });
+                // Free / instant enrolment path
+                navigate('/enrolment/return', { state: { enrolment: result, course } });
             }
         } catch (err) {
-            const message = err?.message || 'Enrollment failed. Please try again.';
+            const message = err?.message || 'Enrolment failed. Please try again.';
             setEnrollError(message);
         } finally {
             setEnrolling(false);

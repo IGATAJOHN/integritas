@@ -6,11 +6,33 @@ const ROLE_ALIASES = {
     'super-admin': 'admin',
     superadmin: 'admin',
     student: 'learner',
+    foundational_tutor: 'tutor',
+    'foundational-tutor': 'tutor',
+    expert_tutor: 'tutor',
+    'expert-tutor': 'tutor',
     org_owner: 'owner',
     org_admin: 'organization_admin',
     org_manager: 'manager',
     org_staff: 'staff',
 };
+
+export const TUTOR_VARIANTS = {
+    FOUNDATIONAL: 'foundational_tutor',
+    EXPERT: 'expert_tutor',
+};
+
+export const getTutorVariant = (user) => {
+    const candidates = [user?.role, user?.userType, ...(Array.isArray(user?.roles) ? user.roles.map((r) => r?.name || r) : [])];
+    for (const candidate of candidates) {
+        const normalized = String(candidate || '').trim().toLowerCase();
+        if (normalized === 'foundational_tutor' || normalized === 'foundational-tutor') return TUTOR_VARIANTS.FOUNDATIONAL;
+        if (normalized === 'expert_tutor' || normalized === 'expert-tutor') return TUTOR_VARIANTS.EXPERT;
+    }
+    return null;
+};
+
+export const isFoundationalTutor = (user) => getTutorVariant(user) === TUTOR_VARIANTS.FOUNDATIONAL;
+export const isExpertTutor = (user) => getTutorVariant(user) === TUTOR_VARIANTS.EXPERT;
 
 const ORG_ROLE_SET = new Set([
     'owner',
@@ -25,6 +47,7 @@ const ORG_ROLE_SET = new Set([
 const LEARNER_ROLE_SET = new Set(['learner']);
 const TUTOR_ROLE_SET = new Set(['tutor']);
 const ADMIN_ROLE_SET = new Set(['admin']);
+const SUPPORT_ROLE_SET = new Set(['support']);
 
 const normalizeWithAlias = (value) => {
     const normalized = normalizeRoleName(value);
@@ -92,6 +115,7 @@ export const getPrimaryRole = (user) => {
     const explicit = normalizeWithAlias(user?.role || user?.userType);
 
     if (ADMIN_ROLE_SET.has(explicit)) return 'admin';
+    if (SUPPORT_ROLE_SET.has(explicit)) return 'support';
     if (getOrganizationRole(user)) return 'organization';
     if (ORG_ROLE_SET.has(explicit)) return 'organization';
     if (TUTOR_ROLE_SET.has(explicit)) return 'tutor';
@@ -99,6 +123,7 @@ export const getPrimaryRole = (user) => {
 
     const roleNames = pluckRoleNames(user);
     if (roleNames.some((role) => ADMIN_ROLE_SET.has(role))) return 'admin';
+    if (roleNames.some((role) => SUPPORT_ROLE_SET.has(role))) return 'support';
     if (getOrganizationRole(user)) return 'organization';
     if (roleNames.some((role) => TUTOR_ROLE_SET.has(role))) return 'tutor';
     if (roleNames.some((role) => LEARNER_ROLE_SET.has(role))) return 'learner';
@@ -113,7 +138,12 @@ export const isReturnToAllowedForUser = (returnTo, user) => {
 
     const primaryRole = getPrimaryRole(user);
 
-    if (pathname.startsWith('/admin')) return primaryRole === 'admin';
+    // Never bounce a logged-in user back to onboarding pages.
+    if (pathname === '/verify' || pathname.startsWith('/verify/')) return false;
+    if (pathname === '/login' || pathname === '/signup') return false;
+    if (pathname === '/forgot-password' || pathname === '/reset-password') return false;
+
+    if (pathname.startsWith('/admin')) return primaryRole === 'admin' || primaryRole === 'support';
     if (pathname.startsWith('/tutor')) return primaryRole === 'tutor';
     if (pathname.startsWith('/learner/organization') || pathname.startsWith('/org')) {
         return primaryRole === 'organization';
@@ -125,6 +155,7 @@ export const getDashboardRoute = (userOrRole) => {
     if (typeof userOrRole === 'string') {
         const normalized = normalizeWithAlias(userOrRole);
         if (normalized === 'admin') return '/admin';
+        if (normalized === 'support') return '/admin';
         if (normalized === 'organization') return '/learner/organization';
         if (ORG_ROLE_SET.has(normalized)) return '/learner/organization';
         if (normalized === 'tutor') return '/tutor';
@@ -134,6 +165,7 @@ export const getDashboardRoute = (userOrRole) => {
 
     const primaryRole = getPrimaryRole(userOrRole);
     if (primaryRole === 'admin') return '/admin';
+    if (primaryRole === 'support') return '/admin';
     if (primaryRole === 'organization') return '/learner/organization';
     if (primaryRole === 'tutor') return '/tutor';
     return '/learner';

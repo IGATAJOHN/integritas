@@ -8,13 +8,14 @@ import {
     TutorManagement,
     ReviewerManagement,
     CourseManagement,
-    EssentialCourseManagement,
-    CreateEssentialCourse,
     AdminLessonsByModule,
     CategoryManagement,
     KycReview,
     AdminCourseDetail,
-    CertificatePriceChanges,
+    ProjectReview,
+    ProjectGradePage,
+    FoundationalTutorInvites,
+    AdminTransactions,
 } from './pages';
 
 const adminRoutes = {
@@ -55,15 +56,7 @@ const adminRoutes = {
             children: [
                 {
                     index: true,
-                    element: <Navigate to="essential-courses" replace />,
-                },
-                {
-                    path: 'essential-courses',
-                    element: <EssentialCourseManagement />,
-                },
-                {
-                    path: 'essential-courses/create',
-                    element: <CreateEssentialCourse />,
+                    element: <Navigate to="courses" replace />,
                 },
                 {
                     path: 'courses',
@@ -85,10 +78,6 @@ const adminRoutes = {
                     path: 'categories',
                     element: <CategoryManagement />,
                 },
-                {
-                    path: 'price-changes',
-                    element: <CertificatePriceChanges />,
-                },
             ],
         },
         {
@@ -98,6 +87,22 @@ const adminRoutes = {
         {
             path: 'kycreview',
             element: <KycReview />,
+        },
+        {
+            path: 'project-submissions',
+            element: <ProjectReview />,
+        },
+        {
+            path: 'project-submissions/:id',
+            element: <ProjectGradePage />,
+        },
+        {
+            path: 'foundational-tutors',
+            element: <FoundationalTutorInvites />,
+        },
+        {
+            path: 'transactions',
+            element: <AdminTransactions />,
         },
     ],
 };

@@ -18,15 +18,19 @@ const unwrapList = (res) => {
 
 export const adminService = {
 
-    getDashboard: async () => {
-        const res = await apiService.get('/admin/dashboard');
-        return unwrapData(res);
-    },
+    // The new backend does not expose dashboard / stats endpoints. Return
+    // empty placeholders so the UI can render without 404s; replace once
+    // analytics endpoints exist.
+    getDashboard: async () => ({}),
 
-    getStats: async () => {
-        const res = await apiService.get('/admin/stats');
-        return unwrapData(res);
-    },
+    getStats: async () => ({
+        total_users: 0,
+        total_learners: 0,
+        total_tutors: 0,
+        total_courses: 0,
+        total_enrolments: 0,
+        revenue: 0,
+    }),
 
     listTutors: async ({ page, per_page = 20, status } = {}) => {
         const params = new URLSearchParams();
@@ -118,17 +122,10 @@ export const adminService = {
 
     // ============ STUDENT MANAGEMENT ============
 
-    listStudents: async ({ page, per_page = 20, q } = {}) => {
-        const params = new URLSearchParams();
-        if (page) params.append('page', page);
-        if (per_page) params.append('per_page', per_page);
-        if (q) params.append('q', q);
-
-        const queryString = params.toString();
-        const endpoint = queryString ? `/admin/students?${queryString}` : '/admin/students';
-        const res = await apiService.get(endpoint);
-        return unwrapList(res);
-    },
+    // /admin/students isn't on the new backend — return empty list so the
+    // dashboard renders. LearnerManagement.jsx already uses the /users endpoint
+    // with role filter for the actual learner CRUD page.
+    listStudents: async () => ({ data: [], meta: {}, links: {} }),
 
     getStudentById: async (studentId) => {
         const res = await apiService.get(`/admin/students/${studentId}`);

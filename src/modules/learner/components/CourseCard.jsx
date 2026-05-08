@@ -130,20 +130,26 @@ const CourseCard = ({ course, colors, access }) => {
                         fontWeight: 700,
                         letterSpacing: '0.4px',
                         backdropFilter: 'blur(8px)',
-                        ...(access.is_essential
+                        ...(access.track === 'foundational'
                             ? {
-                                bgcolor: 'rgba(245, 158, 11, 0.85)',
+                                bgcolor: 'rgba(16, 185, 129, 0.85)',
                                 color: '#fff',
-                                border: '1px solid rgba(245, 158, 11, 0.6)',
+                                border: '1px solid rgba(16, 185, 129, 0.6)',
                             }
-                            : {
-                                bgcolor: 'rgba(16, 185, 129, 0.8)',
-                                color: '#fff',
-                                border: '1px solid rgba(16, 185, 129, 0.5)',
-                            }
+                            : access.track === 'expert'
+                                ? {
+                                    bgcolor: 'rgba(168, 85, 247, 0.85)',
+                                    color: '#fff',
+                                    border: '1px solid rgba(168, 85, 247, 0.6)',
+                                }
+                                : {
+                                    bgcolor: 'rgba(156, 163, 175, 0.7)',
+                                    color: '#fff',
+                                    border: '1px solid rgba(156, 163, 175, 0.5)',
+                                }
                         )
                     }}>
-                        {access.is_essential ? 'Essential' : 'Standard'}
+                        {access.track === 'foundational' ? 'Foundational' : access.track === 'expert' ? 'Expert' : 'Course'}
                     </Box>
                 )}
             </Box>

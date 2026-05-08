@@ -59,7 +59,8 @@ const LandingPage = () => {
     const [coursesLoading, setCoursesLoading] = useState(true);
 
     useEffect(() => {
-        courseCatalogService.listEssentialCourses({ per_page: 3, status: 'published' })
+        // Show a small mix of foundational + featured courses on the landing page.
+        courseCatalogService.listCourses({ per_page: 3, sort: 'popular' })
             .then(res => setEssentialCourses(res.data || []))
             .catch(() => setEssentialCourses([]))
             .finally(() => setCoursesLoading(false));

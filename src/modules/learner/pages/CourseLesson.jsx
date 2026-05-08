@@ -42,7 +42,7 @@ import {
     VolumeUp,
 } from '@mui/icons-material';
 import logo from '../../../assets/images/integritas_logo.jpg';
-import { courseCatalogService, learnerEnrollmentService } from '../services';
+import { courseCatalogService, learnerEnrollmentService, learnerLessonService } from '../services';
 import { apiService } from '../../../services/api';
 import { getImageUrl } from '../../../utils';
 import { getVideoUrl } from '../../../utils';
@@ -91,6 +91,10 @@ const CourseLesson = () => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
+
+    // Bunny CDN signed playback URL — re-fetched when the lesson changes.
+    const [signedPlaybackUrl, setSignedPlaybackUrl] = useState('');
+    const lastReportedPosition = useRef(0);
 
     const initialLessonLoaded = useRef(false);
 
@@ -212,14 +216,49 @@ const CourseLesson = () => {
         return () => { active = false; };
     }, [selectedLessonId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+    // When currentLesson changes, fetch a fresh Bunny CDN signed URL.
+    useEffect(() => {
+        let cancelled = false;
+        setSignedPlaybackUrl('');
+        const slug = currentLesson?.slug;
+        if (!slug) return undefined;
+
+        learnerLessonService
+            .getPlaybackUrl(slug)
+            .then((res) => {
+                if (cancelled) return;
+                const url = res?.url || res?.playback_url || res?.video_url || '';
+                if (url) setSignedPlaybackUrl(url);
+            })
+            .catch(() => {});
+
+        return () => {
+            cancelled = true;
+        };
+    }, [currentLesson?.slug]);
+
     // When currentLesson changes, force the native <video> element to reload the new src.
-    // React only updates the src attribute — the browser won't load the new source unless .load() is called.
     useEffect(() => {
         if (!videoRef.current || !currentLesson) return;
-        const src = getVideoUrl(currentLesson.video_url || currentLesson.video || '');
+        const src = signedPlaybackUrl || getVideoUrl(currentLesson.video_url || currentLesson.video || '');
         if (!src || /youtube\.com|youtu\.be|vimeo\.com/.test(src)) return;
         videoRef.current.load();
-    }, [currentLesson]);
+    }, [currentLesson, signedPlaybackUrl]);
+
+    // Throttled playback position reporting — at most once per ~10 seconds.
+    useEffect(() => {
+        const slug = currentLesson?.slug;
+        if (!slug) return undefined;
+        lastReportedPosition.current = 0;
+        const interval = setInterval(() => {
+            const v = videoRef.current;
+            if (!v || v.paused || !Number.isFinite(v.currentTime)) return;
+            if (Math.abs(v.currentTime - lastReportedPosition.current) < 9) return;
+            lastReportedPosition.current = v.currentTime;
+            learnerLessonService.reportPosition(slug, v.currentTime).catch(() => {});
+        }, 10000);
+        return () => clearInterval(interval);
+    }, [currentLesson?.slug]);
 
     const allLessons = useMemo(() => modules.flatMap((m) => m.lessons), [modules]);
     const currentIndex = useMemo(
@@ -268,7 +307,7 @@ const CourseLesson = () => {
         );
     }
 
-    const videoSrc = getVideoUrl(currentLesson?.video_url || currentLesson?.video || '');
+    const videoSrc = signedPlaybackUrl || getVideoUrl(currentLesson?.video_url || currentLesson?.video || '');
 
     const isYouTube = /youtube\.com|youtu\.be/.test(videoSrc);
     const isVimeo = /vimeo\.com/.test(videoSrc);
@@ -609,6 +648,15 @@ const CourseLesson = () => {
                             >
                                 Previous
                             </Button>
+                            {currentLesson?.slug && (
+                                <Button
+                                    variant="contained"
+                                    onClick={() => navigate(`/learner/lessons/${currentLesson.slug}/cbt`)}
+                                    sx={{ bgcolor: colors.success, textTransform: 'none', '&:hover': { bgcolor: '#059669' } }}
+                                >
+                                    Take Assessment
+                                </Button>
+                            )}
                             <Button
                                 variant="contained"
                                 endIcon={<ChevronRight />}

@@ -4,6 +4,41 @@ import { getOrganizationRole, getPrimaryRole } from '../utils';
 
 const AuthContext = createContext(null);
 
+/**
+ * Normalize whatever shape the backend returns for an auth call into
+ * `{ user, token }`. Handles all of:
+ *   - { user: {...}, token: "..." }
+ *   - { data: { user: {...}, token: "..." } }
+ *   - { data: {...userFields}, token: "..." }
+ *   - { data: {...userFields, token: "..."} }
+ *   - { ...userFields, token: "..." }
+ *   - { data: {...userFields} }                (e.g. /auth/me)
+ */
+const unwrapAuthPayload = (response) => {
+    if (!response || typeof response !== 'object') return { user: null, token: null };
+
+    // Flat shape with explicit user/token
+    if (response.user || response.token) {
+        return {
+            user: response.user || { ...response, user: undefined, token: undefined },
+            token: response.token || response.user?.token || null,
+        };
+    }
+
+    // Wrapped under `data`
+    if (response.data && typeof response.data === 'object') {
+        const inner = response.data;
+        const token = response.token || inner.token || null;
+        const user = inner.user
+            ? inner.user
+            : { ...inner, token: undefined };
+        return { user, token };
+    }
+
+    // Last resort: treat the response itself as the user.
+    return { user: response, token: response.token || null };
+};
+
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(() => {
         const storedUser = localStorage.getItem('user');
@@ -18,23 +53,17 @@ export const AuthProvider = ({ children }) => {
             if (storedUser) {
                 try {
                     const parsed = JSON.parse(storedUser);
-                    // If we have a token, call /auth/me to get fresh user data
                     if (parsed.token) {
-                        const data = await authService.getCurrentUser();
-                        const userData = data.user || data;
-
-                        // Preserve token from storage
-                        userData.token = parsed.token;
+                        const response = await authService.getCurrentUser();
+                        const { user: fresh } = unwrapAuthPayload(response);
+                        const userData = { ...(fresh || {}), token: parsed.token };
                         userData.role = pickRole(userData) || userData.role;
 
                         // Preserve kyc_status from stored user if /auth/me doesn't return it.
-                        // Without this, every page refresh strips kyc_status and forces approved
-                        // tutors through the KYC redirect loop.
                         if (!userData.kyc_status && parsed.kyc_status) {
                             userData.kyc_status = parsed.kyc_status;
                         }
 
-                        // Temporary bypass for testing: Force admin role for specific email
                         if (userData.email === 'admin@test.com') {
                             userData.role = 'admin';
                         }
@@ -42,11 +71,9 @@ export const AuthProvider = ({ children }) => {
                         setUser(userData);
                         localStorage.setItem('user', JSON.stringify(userData));
                     } else {
-                        // No token, just use stored user
                         setUser(parsed);
                     }
                 } catch (error) {
-                    // Token invalid or expired, clear storage
                     console.error('Failed to get current user:', error);
                     localStorage.removeItem('user');
                     setUser(null);
@@ -60,45 +87,26 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         try {
-            const data = await authService.login({ email, password });
-            const userData = data.user || data;
-            const token = data.token || userData?.token || null;
+            const response = await authService.login({ email, password });
+            if (!response) {
+                throw new Error('Login response was empty. Check that the API returned a token.');
+            }
+            const { user: loginUser, token } = unwrapAuthPayload(response);
 
             const baseUser = {
-                ...userData,
+                ...(loginUser || {}),
                 ...(token ? { token } : {}),
             };
             baseUser.role = pickRole(baseUser) || baseUser.role;
 
-            // Persist token before /auth/me so Authorization header is present on first login.
+            // The new backend's /auth/login response already contains the full
+            // user payload (id, roles, permissions, email_verified_at, ...).
+            // Skip the redundant /auth/me round-trip — it adds latency without
+            // adding information. /auth/me is still used by initializeAuth on
+            // page reload and by refreshUser when callers need fresh data.
             setUser(baseUser);
             localStorage.setItem('user', JSON.stringify(baseUser));
-
-            // If backend didn't return token, skip /auth/me refresh and use login response.
-            if (!token) {
-                return baseUser;
-            }
-
-            // After login, fetch fresh user data with roles and onboarding status.
-            try {
-                const currentUserData = await authService.getCurrentUser();
-                const freshUserData = currentUserData.user || currentUserData;
-                freshUserData.token = token;
-                freshUserData.role = pickRole(freshUserData) || freshUserData.role;
-
-                // Preserve kyc_status from login response if /auth/me doesn't return it
-                if (!freshUserData.kyc_status && baseUser.kyc_status) {
-                    freshUserData.kyc_status = baseUser.kyc_status;
-                }
-
-                setUser(freshUserData);
-                localStorage.setItem('user', JSON.stringify(freshUserData));
-                return freshUserData;
-            } catch (error) {
-                // If /auth/me fails, keep login response data already persisted above.
-                console.warn('Failed to fetch current user after login, using login response:', error);
-                return baseUser;
-            }
+            return baseUser;
         } catch (error) {
             console.error('Login failed:', error);
             throw error;
@@ -109,49 +117,63 @@ export const AuthProvider = ({ children }) => {
 
     const register = async (payload) => {
         try {
-            const data = await authService.register(payload);
+            const isTutorRole = String(payload?.role || payload?.user_type || '').toLowerCase().includes('tutor');
+            const response = isTutorRole
+                ? await authService.registerExpertTutor(payload)
+                : await authService.register(payload);
 
-            const baseUser = data.user || data;
-            const token = data.token;
+            if (!response) {
+                throw new Error('Registration response was empty.');
+            }
 
-            const storedUser = { ...baseUser, token };
+            let { user: registeredUser, token } = unwrapAuthPayload(response);
+            registeredUser = registeredUser || {};
+
+            // Backend doesn't return a token on /auth/register — log in
+            // immediately so the user lands on /verify with an authenticated
+            // session and can use "resend email".
+            if (!token && payload?.email && payload?.password) {
+                try {
+                    const loginResponse = await authService.login({
+                        email: payload.email,
+                        password: payload.password,
+                    });
+                    const { user: loginUser, token: loginToken } = unwrapAuthPayload(loginResponse);
+                    if (loginToken) token = loginToken;
+                    if (loginUser) registeredUser = { ...registeredUser, ...loginUser };
+                } catch (loginErr) {
+                    console.warn('Auto-login after registration failed:', loginErr);
+                }
+            }
+
+            const storedUser = { ...registeredUser, ...(token ? { token } : {}) };
             storedUser.role = pickRole(storedUser) || storedUser.role;
 
             setUser(storedUser);
-            localStorage.setItem("user", JSON.stringify(storedUser));
+            localStorage.setItem('user', JSON.stringify(storedUser));
+
+            if (!token) {
+                return storedUser;
+            }
 
             let finalUser = storedUser;
             try {
-                const current = await authService.getCurrentUser();
-                const fresh = current.user || current;
-                finalUser = { ...fresh, token };
+                const meResponse = await authService.getCurrentUser();
+                const { user: meUser } = unwrapAuthPayload(meResponse);
+                finalUser = { ...(meUser || {}), token };
                 finalUser.role = pickRole(finalUser) || storedUser.role;
 
-                if (finalUser.email === "admin@test.com") finalUser.role = "admin";
+                if (finalUser.email === 'admin@test.com') finalUser.role = 'admin';
 
                 setUser(finalUser);
-                localStorage.setItem("user", JSON.stringify(finalUser));
+                localStorage.setItem('user', JSON.stringify(finalUser));
             } catch (err) {
-                console.warn("Failed to fetch current user after registration, using register response:", err);
-            }
-
-            const verified =
-                finalUser?.email_verified === true ||
-                finalUser?.emailVerified === true ||
-                !!finalUser?.email_verified_at ||
-                !!finalUser?.emailVerifiedAt;
-
-            if (!verified) {
-                try {
-                    await authService.resendEmail();
-                } catch (emailError) {
-                    console.warn("Auto-resend of verification email failed:", emailError);
-                }
+                console.warn('Failed to fetch current user after registration, using register response:', err);
             }
 
             return finalUser;
         } catch (error) {
-            console.error("Registration failed:", error);
+            console.error('Registration failed:', error);
             throw error;
         }
     };
@@ -197,16 +219,15 @@ export const AuthProvider = ({ children }) => {
     // Refresh user data from /auth/me endpoint
     const refreshUser = async () => {
         try {
-            const data = await authService.getCurrentUser();
-            const userData = data.user || data;
+            const response = await authService.getCurrentUser();
+            const { user: meUser } = unwrapAuthPayload(response);
+            const userData = { ...(meUser || {}) };
 
-            // Preserve token
             if (user?.token) {
                 userData.token = user.token;
                 userData.role = pickRole(userData) || userData.role;
             }
 
-            // Preserve kyc_status if /auth/me doesn't return it
             if (!userData.kyc_status && user?.kyc_status) {
                 userData.kyc_status = user.kyc_status;
             }
@@ -302,31 +323,10 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // Verify password reset OTP
-    const verifyPasswordOtp = async (email, otp) => {
+    // Reset password with token from email link
+    const resetPassword = async (email, token, password, password_confirmation) => {
         try {
-            const data = await authService.verifyPasswordOtp(email, otp);
-            return data;
-        } catch (error) {
-            // Handle specific error status codes
-            if (error.status === 422) {
-                const apiError = new Error('Invalid or expired OTP. Please request a new one.');
-                apiError.status = 422;
-                throw apiError;
-            } else if (error.status === 429) {
-                const apiError = new Error('Too many failed attempts. Your account has been temporarily locked. Please try again later.');
-                apiError.status = 429;
-                throw apiError;
-            }
-            console.error('Failed to verify password reset OTP:', error);
-            throw error;
-        }
-    };
-
-    // Reset password with OTP
-    const resetPassword = async (email, otp, password, password_confirmation) => {
-        try {
-            const data = await authService.resetPassword(email, otp, password, password_confirmation);
+            const data = await authService.resetPassword(email, token, password, password_confirmation);
             return data;
         } catch (error) {
             // Handle specific error status codes
@@ -375,9 +375,8 @@ export const AuthProvider = ({ children }) => {
         // Email verification
         verifyEmail,
         resendEmail,
-        // Password reset
+        // Password reset (token-based, no OTP)
         forgotPassword,
-        verifyPasswordOtp,
         resetPassword,
         // Password change (while logged in)
         changePassword,

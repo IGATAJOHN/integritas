@@ -128,19 +128,14 @@ const Explore = ({ type }) => {
                 if (minimumRating > 0) rows = rows.filter((c) => Number(c.rating || 0) >= minimumRating);
                 setCourses(rows);
 
-                // Fetch essential courses list to label badges (non-blocking, works for all users)
+                // Essential-course badges removed — track is now exposed directly
+                // on each course (foundational | expert).
                 if (rows.length > 0) {
-                    courseCatalogService.listEssentialCourses({ per_page: 100 })
-                        .then((essentialRes) => {
-                            if (!active) return;
-                            const essentialIds = new Set((essentialRes.data || []).map((c) => c.id));
-                            const map = {};
-                            rows.forEach((c) => {
-                                map[c.id] = { is_essential: essentialIds.has(c.id) };
-                            });
-                            setAccessMap(map);
-                        })
-                        .catch(() => {});
+                    const map = {};
+                    rows.forEach((c) => {
+                        map[c.id] = { track: c.track || c.raw?.track };
+                    });
+                    setAccessMap(map);
                 }
 
                 // Set featured course once from the first batch of results.

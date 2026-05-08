@@ -8,9 +8,9 @@ export default defineConfig({
     port: 1000,
     proxy: {
       '/api': {
-        target: 'https://goodgov.andjemztech.com',
+        target: 'https://dev.giaftechnology.com',
         changeOrigin: true,
-        secure: false,
+        secure: true,
       },
     },
   },

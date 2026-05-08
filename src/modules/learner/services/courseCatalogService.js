@@ -253,6 +253,7 @@ export const courseCatalogService = {
         language,
         page,
         per_page = 30,
+        track,
     } = {}) => {
         const query = buildQuery({
             q,
@@ -261,11 +262,10 @@ export const courseCatalogService = {
             language,
             page,
             per_page,
-            with_categories: 1,
-            with_audit: 1,
+            track,
         });
 
-        const res = await apiService.get(`/lms/courses${query}`);
+        const res = await apiService.get(`/catalogue/courses${query}`);
         const normalized = unwrapList(res);
         const filtered = (normalized.data || [])
             .map((item) => normalizeCourse(item))
@@ -281,13 +281,11 @@ export const courseCatalogService = {
 
     getCourseById: async (id) => {
         const identifier = encodeURIComponent(toTrimmedString(id));
-        const query = buildQuery({
-            with_categories: 1,
-            with_audit: 1
-        });
         let res;
         try {
-            res = await apiService.get(`/lms/courses/${identifier}${query}`);
+            // Backend addresses courses by slug; this works whether caller passes
+            // slug or numeric id since the catalogue endpoint accepts either.
+            res = await apiService.get(`/catalogue/courses/${identifier}`);
         } catch (error) {
             if (error?.status === 404) {
                 const notFoundError = new Error('Course not found');
@@ -296,10 +294,8 @@ export const courseCatalogService = {
             }
             throw error;
         }
-        
+
         const rawCourse = res.data ? res.data : res;
-        
-        // Return raw course along with normalized for CourseDetail
         return {
              ...rawCourse,
              ...normalizeCourse(rawCourse),
@@ -308,52 +304,22 @@ export const courseCatalogService = {
     },
 
     getLessonById: async (lessonId) => {
-        const res = await apiService.get(`/lms/lessons/${encodeURIComponent(toTrimmedString(lessonId))}`);
+        const res = await apiService.get(`/catalogue/lessons/${encodeURIComponent(toTrimmedString(lessonId))}`);
         return res?.data ? res.data : res;
     },
 
     getFeaturedCourses: async ({ limit = 1 } = {}) => {
-        return courseCatalogService.listCourses({ per_page: limit, sort: 'popular', status: 'published' });
+        return courseCatalogService.listCourses({ per_page: limit, sort: 'popular' });
     },
 
     listFoundationalCourses: async ({ per_page = 30, page, sort } = {}) => {
-        const query = buildQuery({ per_page, page });
-        const res = await apiService.get(`/lms/courses/foundational${query}`);
-        const normalized = unwrapList(res);
-        return {
-            data: sortCourses(
-                (normalized.data || []).map((item) => normalizeCourse(item)).filter((item) => item.id),
-                sort
-            ),
-            meta: normalized.meta || {},
-            links: normalized.links || {},
-        };
+        return courseCatalogService.listCourses({ per_page, page, sort, track: 'foundational' });
     },
 
     listExpertiaCourses: async ({ per_page = 30, page, sort } = {}) => {
-        const query = buildQuery({ per_page, page });
-        const res = await apiService.get(`/lms/courses/expertia${query}`);
-        const normalized = unwrapList(res);
-        return {
-            data: sortCourses(
-                (normalized.data || []).map((item) => normalizeCourse(item)).filter((item) => item.id),
-                sort
-            ),
-            meta: normalized.meta || {},
-            links: normalized.links || {},
-        };
+        return courseCatalogService.listCourses({ per_page, page, sort, track: 'expert' });
     },
 
-    listEssentialCourses: async ({ per_page = 20, page, status } = {}) => {
-        const query = buildQuery({ per_page, page, status });
-        const res = await apiService.get(`/lms/courses/essential${query}`);
-        const normalized = unwrapList(res);
-        return {
-            data: (normalized.data || []).map((item) => normalizeCourse(item)).filter((item) => item.id),
-            meta: normalized.meta || {},
-            links: normalized.links || {},
-        };
-    },
 
     listCategories: async () => {
         const courses = await courseCatalogService.listCourses({ per_page: 100, status: 'published' });

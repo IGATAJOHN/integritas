@@ -11,6 +11,11 @@ import {
     CourseLessonV2,
     Checkout,
     PaymentSuccess,
+    EnrolmentReturnPage,
+    CBTAttemptPage,
+    ProjectSubmission,
+    Certificates,
+    CertificatePaymentReturn,
     LearnerDashboard,
     OrganizationOverview,
     OrganizationInvitations,
@@ -81,6 +86,26 @@ export const learnerRoutes = [
     {
         path: '/payment/success',
         element: <PaymentSuccess />,
+    },
+    {
+        path: '/enrolment/return',
+        element: <EnrolmentReturnPage />,
+    },
+    {
+        path: '/learner/lessons/:lessonSlug/cbt',
+        element: <CBTAttemptPage />,
+    },
+    {
+        path: '/learner/courses/:courseSlug/project',
+        element: <ProjectSubmission />,
+    },
+    {
+        path: '/learner/certificates',
+        element: <Certificates />,
+    },
+    {
+        path: '/certificates/return',
+        element: <CertificatePaymentReturn />,
     },
     {
         path: '/learner',

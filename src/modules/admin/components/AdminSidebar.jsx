@@ -27,6 +27,9 @@ import {
     ExpandLess,
     ExpandMore,
     LogoutOutlined,
+    AssignmentOutlined,
+    ReceiptLongOutlined,
+    PersonAddAlt1,
 } from '@mui/icons-material';
 import appTheme from '../../../styles/theme';
 
@@ -73,14 +76,14 @@ const AdminSidebar = ({
             icon: <SchoolOutlined sx={{ fontSize: 22 }} />,
             children: [
                 { path: '/admin/content/courses', label: 'Courses' },
-                { path: '/admin/content/essential-courses', label: 'Essential Courses' },
                 { path: '/admin/content/categories', label: 'Categories' },
-                { path: '/admin/content/price-changes', label: 'Price Changes' },
             ]
         },
         { path: '/admin/kycreview', label: 'KYC Review', icon: <VerifiedUserOutlined sx={{ fontSize: 22 }} /> },
+        { path: '/admin/project-submissions', label: 'Project Submissions', icon: <AssignmentOutlined sx={{ fontSize: 22 }} /> },
+        { path: '/admin/foundational-tutors', label: 'Foundational Tutors', icon: <PersonAddAlt1 sx={{ fontSize: 22 }} /> },
+        { path: '/admin/transactions', label: 'Transactions', icon: <ReceiptLongOutlined sx={{ fontSize: 22 }} /> },
         { path: '/admin/analytics', label: 'Analytics', icon: <BarChartOutlined sx={{ fontSize: 22 }} /> },
-        { path: '/admin/verifications', label: 'Verifications', icon: <VerifiedUserOutlined sx={{ fontSize: 22 }} /> },
         { path: '/admin/settings', label: 'Settings', icon: <SettingsOutlined sx={{ fontSize: 22 }} /> },
     ];
 
@@ -102,14 +105,25 @@ const AdminSidebar = ({
         }
     };
 
+    const sidebarBg = theme.palette.mode === 'dark' ? '#0F1729' : '#FFFFFF';
+    const sidebarBorder = theme.palette.mode === 'dark' ? '#1F2937' : '#E2E8F0';
+
+    const hideScrollbar = {
+        scrollbarWidth: 'none', // Firefox
+        msOverflowStyle: 'none', // IE/legacy Edge
+        '&::-webkit-scrollbar': {
+            display: 'none',
+        },
+    };
+
     const drawerContent = (
         <Box
             sx={{
                 width: DRAWER_WIDTH,
                 minWidth: DRAWER_WIDTH,
                 maxWidth: DRAWER_WIDTH,
-                bgcolor: '#0F1729',
-                borderRight: '1px solid #1F2937',
+                bgcolor: sidebarBg,
+                borderRight: `1px solid ${sidebarBorder}`,
                 display: 'flex',
                 flexDirection: 'column',
                 height: '100%',
@@ -137,7 +151,7 @@ const AdminSidebar = ({
                             sx={{
                                 fontSize: '0.875rem',
                                 fontWeight: 600,
-                                color: '#FFFFFF',
+                                color: 'text.primary',
                                 lineHeight: 1.2,
                             }}
                         >
@@ -146,7 +160,7 @@ const AdminSidebar = ({
                         <Typography
                             sx={{
                                 fontSize: '0.75rem',
-                                color: '#6B7280',
+                                color: 'text.secondary',
                             }}
                         >
                             Admin Portal
@@ -156,7 +170,7 @@ const AdminSidebar = ({
             </Box>
 
             {/* Navigation */}
-            <Box sx={{ flex: 1, py: 2, overflow: 'auto' }}>
+            <Box sx={{ flex: 1, py: 2, overflow: 'auto', ...hideScrollbar }}>
                 <List sx={{ px: 0 }}>
                     {navItems.map((item) => (
                         <React.Fragment key={item.label}>
@@ -233,7 +247,7 @@ const AdminSidebar = ({
             </Box>
 
             {/* Logout Button */}
-            <Box sx={{ p: 2, borderTop: '1px solid #1F2937' }}>
+            <Box sx={{ p: 2, borderTop: `1px solid ${sidebarBorder}` }}>
                 <Button
                     fullWidth
                     onClick={handleLogout}
@@ -271,9 +285,12 @@ const AdminSidebar = ({
                     '& .MuiDrawer-paper': {
                         boxSizing: 'border-box',
                         width: DRAWER_WIDTH,
-                        bgcolor: '#0F1729',
+                        bgcolor: sidebarBg,
                         border: 'none',
                         overflowX: 'hidden',
+                        scrollbarWidth: 'none',
+                        msOverflowStyle: 'none',
+                        '&::-webkit-scrollbar': { display: 'none' },
                     },
                 }}
             >
@@ -288,10 +305,13 @@ const AdminSidebar = ({
                     '& .MuiDrawer-paper': {
                         boxSizing: 'border-box',
                         width: DRAWER_WIDTH,
-                        bgcolor: '#0F1729',
+                        bgcolor: sidebarBg,
                         border: 'none',
-                        borderRight: '1px solid #1F2937',
+                        borderRight: `1px solid ${sidebarBorder}`,
                         overflowX: 'hidden',
+                        scrollbarWidth: 'none',
+                        msOverflowStyle: 'none',
+                        '&::-webkit-scrollbar': { display: 'none' },
                     },
                 }}
                 open

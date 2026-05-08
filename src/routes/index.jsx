@@ -1,5 +1,5 @@
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
-import { NotFound, LandingPage, AboutUsPage, PartnersPage, ContactPage, DonatePage, LoginPage, SignupPage, VerifyPage, ForgotPasswordPage, InviteAcceptPage } from '../pages';
+import { NotFound, LandingPage, AboutUsPage, PartnersPage, ContactPage, DonatePage, LoginPage, SignupPage, VerifyPage, ForgotPasswordPage, ResetPasswordPage, TutorAcceptInvitePage, CertificateVerifyPage, NotificationsPage, ProfileSettingsPage, InviteAcceptPage } from '../pages';
 import { adminRoutes } from '../modules/admin';
 import { tutorRoutes } from '../modules/tutor';
 import { learnerRoutes } from '../modules/learner';
@@ -79,6 +79,38 @@ const router = createBrowserRouter([
             <PublicRoute>
                 <ForgotPasswordPage />
             </PublicRoute>
+        ),
+    },
+    {
+        path: '/reset-password',
+        element: (
+            <PublicRoute>
+                <ResetPasswordPage />
+            </PublicRoute>
+        ),
+    },
+    {
+        path: '/accept-tutor-invite',
+        element: <TutorAcceptInvitePage />,
+    },
+    {
+        path: '/verify/:uuid',
+        element: <CertificateVerifyPage />,
+    },
+    {
+        path: '/notifications',
+        element: (
+            <ProtectedRoute>
+                <NotificationsPage />
+            </ProtectedRoute>
+        ),
+    },
+    {
+        path: '/settings/profile',
+        element: (
+            <ProtectedRoute>
+                <ProfileSettingsPage />
+            </ProtectedRoute>
         ),
     },
     {

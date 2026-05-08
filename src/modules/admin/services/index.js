@@ -4,3 +4,6 @@ export * from './adminService';
 export * from './reviewLogService';
 export * from './reviewerService';
 export * from './optionAdminService';
+export * from './projectReviewService';
+export * from './foundationalTutorService';
+export * from './transactionsService';

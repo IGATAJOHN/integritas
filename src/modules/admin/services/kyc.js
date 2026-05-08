@@ -1,32 +1,32 @@
 import { apiService } from "../../../services/api";
 
-export const adminListKyc = async ({
-  status,
-  role,
-  q = "",
-  page = 1,
-} = {}) => {
-  const params = new URLSearchParams();
-  if (status) params.append("status", status);
-  if (role) params.append("role", role);
-  if (q !== undefined) params.append("q", q);
-  if (page) params.append("page", String(page));
+const buildQuery = (params = {}) => {
+  const search = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === "") return;
+    search.append(key, String(value));
+  });
+  const query = search.toString();
+  return query ? `?${query}` : "";
+};
 
-  return apiService.get(`/admin/kyc?${params.toString()}`);
+export const adminListKyc = async ({ status, role, q, page, per_page = 20 } = {}) => {
+  const query = buildQuery({ status, role, q, page, per_page });
+  return apiService.get(`/admin/kyc-queue${query}`);
 };
 
 export const adminGetKycById = async (kycId) => {
-  return apiService.get(`/admin/kyc/${kycId}`);
+  return apiService.get(`/admin/kyc-queue/${encodeURIComponent(kycId)}`);
 };
 
 export const adminApproveKyc = async (kycId, reviewNote = "Approved.") => {
-  return apiService.post(`/admin/kyc/${kycId}/approve`, {
+  return apiService.post(`/admin/kyc-queue/${encodeURIComponent(kycId)}/approve`, {
     review_note: reviewNote,
   });
 };
 
 export const adminRejectKyc = async (kycId, reviewNote) => {
-  return apiService.post(`/admin/kyc/${kycId}/reject`, {
+  return apiService.post(`/admin/kyc-queue/${encodeURIComponent(kycId)}/reject`, {
     review_note: reviewNote,
   });
 };

@@ -1,5 +1,7 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
-    (import.meta.env.DEV ? '/api' : 'http://localhost:3001/api');
+    (import.meta.env.DEV ? '/api/v1' : 'https://dev.giaftechnology.com/api/v1');
+
+export const API_BASE = API_BASE_URL;
 
 const defaultHeaders = {
     'Content-Type': 'application/json',
@@ -132,49 +134,95 @@ const apiRequest = async (endpoint, options = {}) => {
     }
 };
 
-export const apiService = {
-    get: (endpoint) => apiRequest(endpoint, { method: 'GET' }),
+const buildExtraHeaders = (opts = {}) => {
+    const headers = {};
+    if (opts.idempotencyKey) headers['Idempotency-Key'] = opts.idempotencyKey;
+    if (opts.headers) Object.assign(headers, opts.headers);
+    return headers;
+};
 
-    post: (endpoint, data) => {
+export const apiService = {
+    get: (endpoint, opts = {}) => apiRequest(endpoint, { method: 'GET', headers: buildExtraHeaders(opts) }),
+
+    post: (endpoint, data, opts = {}) => {
         const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
         return apiRequest(endpoint, {
             method: 'POST',
             body: isFormData ? data : JSON.stringify(data),
+            headers: buildExtraHeaders(opts),
         });
     },
 
-    put: (endpoint, data) => {
+    put: (endpoint, data, opts = {}) => {
         const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
         return apiRequest(endpoint, {
             method: 'PUT',
             body: isFormData ? data : JSON.stringify(data),
+            headers: buildExtraHeaders(opts),
         });
     },
 
-    patch: (endpoint, data) => {
+    patch: (endpoint, data, opts = {}) => {
         const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
         return apiRequest(endpoint, {
             method: 'PATCH',
             body: isFormData ? data : JSON.stringify(data),
+            headers: buildExtraHeaders(opts),
         });
     },
 
-    delete: (endpoint) => apiRequest(endpoint, { method: 'DELETE' }),
+    delete: (endpoint, opts = {}) => apiRequest(endpoint, { method: 'DELETE', headers: buildExtraHeaders(opts) }),
+};
+
+export const newIdempotencyKey = () => {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+    return `idem-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+};
+
+export const buildBackendUrl = (path) => {
+    const cleanPath = String(path || '').replace(/^\//, '');
+    return `${API_BASE_URL}/${cleanPath}`;
+};
+
+export const authFetch = async (path, options = {}) => {
+    const url = path.startsWith('http') ? path : buildBackendUrl(path);
+    const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+    const config = {
+        ...options,
+        headers: createHeaders(options.headers, { isFormData }),
+    };
+    return fetch(url, config);
+};
+
+const defaultDeviceName = () => {
+    if (typeof navigator === 'undefined') return 'web';
+    const platform = navigator.platform || 'web';
+    return `${platform}-web`.slice(0, 60);
 };
 
 export const authService = {
-    login: (credentials) => apiService.post('/auth/login', credentials),
-    register: (userData) => apiService.post('/auth/signup', userData),
+    login: (credentials) =>
+        apiService.post('/auth/login', {
+            device_name: defaultDeviceName(),
+            ...credentials,
+        }),
+    twoFactorChallenge: (challenge_token, code) =>
+        apiService.post('/auth/2fa/challenge', { challenge_token, code }),
+    register: (userData) => apiService.post('/auth/register', userData),
+    registerExpertTutor: (userData) => apiService.post('/auth/tutor/expert/register', userData),
+    acceptTutorInvite: (payload) => apiService.post('/auth/tutor/accept-invite', payload),
     logout: () => apiService.post('/auth/logout'),
+    logoutAll: () => apiService.post('/auth/logout-all'),
     getCurrentUser: () => apiService.get('/auth/me'),
     verifyEmail: (endpoint) => apiService.get(endpoint),
-    resendEmail: () => apiService.post('/auth/email/resend'),
+    resendEmail: () => apiService.post('/auth/email/verify/resend'),
     forgotPassword: (email) => apiService.post('/auth/password/forgot', { email }),
-    verifyPasswordOtp: (email, otp) => apiService.post('/auth/password/verify-otp', { email, otp }),
-    resetPassword: (email, otp, password, password_confirmation) =>
-        apiService.post('/auth/password/reset', { email, otp, password, password_confirmation }),
+    resetPassword: (email, token, password, password_confirmation) =>
+        apiService.post('/auth/password/reset', { email, token, password, password_confirmation }),
     changePassword: (current_password, password, password_confirmation) =>
         apiService.post('/auth/password/change', { current_password, password, password_confirmation }),
+    setPublicVerifiable: (is_publicly_verifiable) =>
+        apiService.patch('/me/profile/public-verification', { is_publicly_verifiable }),
 };
 
 export const userService = {

@@ -130,24 +130,25 @@ export const isEmpty = (obj) => {
     return Object.keys(obj).length === 0;
 };
 
-const IMAGE_BASE_URL = 'https://goodgov.andjemztech.com/';
+const BACKEND_ORIGIN = (import.meta.env.VITE_BACKEND_ORIGIN || 'https://dev.giaftechnology.com').replace(/\/$/, '');
 
 export const getImageUrl = (path) => {
     if (!path) return '';
     const trimmed = String(path).trim();
     if (!trimmed) return '';
     if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) return trimmed;
-    return IMAGE_BASE_URL + trimmed.replace(/^\//, '');
+    return `${BACKEND_ORIGIN}/${trimmed.replace(/^\//, '')}`;
 };
 
-const VIDEO_BASE_URL = 'https://goodgov.andjemztech.com/storage/';
-
+// Lesson videos are served from Bunny CDN as signed URLs returned by
+// GET /learner/lessons/{slug}/video/playback-url. Always pass an absolute URL.
+// This helper exists only as a defensive passthrough for legacy callers.
 export const getVideoUrl = (path) => {
     if (!path) return '';
     const trimmed = String(path).trim();
     if (!trimmed) return '';
     if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) return trimmed;
-    return VIDEO_BASE_URL + trimmed.replace(/^\//, '');
+    return `${BACKEND_ORIGIN}/${trimmed.replace(/^\//, '')}`;
 };
 
 export {
@@ -157,4 +158,8 @@ export {
     hasOrganizationAccess,
     canManageOrganization,
     isReturnToAllowedForUser,
+    getTutorVariant,
+    isFoundationalTutor,
+    isExpertTutor,
+    TUTOR_VARIANTS,
 } from './roleUtils';

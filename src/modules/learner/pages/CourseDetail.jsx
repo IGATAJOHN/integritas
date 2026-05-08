@@ -324,10 +324,7 @@ const CourseDetail = () => {
         setEnrolling(true);
         setEnrollError(null);
         try {
-            const enrollFn = accessInfo?.is_essential
-                ? learnerEnrollmentService.enrollInEssentialCourse
-                : learnerEnrollmentService.enrollInCourse;
-            const result = await enrollFn(courseData.id);
+            const result = await learnerEnrollmentService.enrollInCourse(courseData.slug || courseData.id);
             if (result?.payment_url) {
                 sessionStorage.setItem('pending_course_id', courseData.id);
                 window.location.href = result.payment_url;
@@ -809,38 +806,20 @@ const CourseDetail = () => {
                                     ) : (
                                         <Typography variant="h5" sx={{ fontWeight: 700, color: colors.success }}>Free</Typography>
                                     )}
-                                    {accessInfo && (
+                                    {accessInfo?.track && (
                                         <Chip
-                                            label={accessInfo.is_essential ? 'Essential' : 'Standard'}
+                                            label={accessInfo.track === 'foundational' ? 'Foundational' : 'Expert'}
                                             size="small"
                                             sx={{
-                                                bgcolor: accessInfo.is_essential ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-                                                color: accessInfo.is_essential ? '#F59E0B' : '#10B981',
-                                                border: `1px solid ${accessInfo.is_essential ? 'rgba(245, 158, 11, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`,
+                                                bgcolor: accessInfo.track === 'foundational' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(168, 85, 247, 0.15)',
+                                                color: accessInfo.track === 'foundational' ? '#10B981' : '#A855F7',
+                                                border: `1px solid ${accessInfo.track === 'foundational' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(168, 85, 247, 0.3)'}`,
                                                 fontWeight: 700,
                                                 fontSize: '0.7rem',
                                             }}
                                         />
                                     )}
                                 </Stack>
-
-                                {/* Action Buttons */}
-                                {accessInfo?.is_essential && !isEnrolled && (
-                                    <Box sx={{
-                                        bgcolor: 'rgba(245, 158, 11, 0.1)',
-                                        border: '1px solid rgba(245, 158, 11, 0.3)',
-                                        borderRadius: 1,
-                                        p: 1.5,
-                                        mb: 2
-                                    }}>
-                                        <Typography sx={{ color: '#F59E0B', fontWeight: 600, fontSize: '0.8rem', mb: 0.5 }}>
-                                            One-Time Payment — Unlimited Essential Access
-                                        </Typography>
-                                        <Typography sx={{ color: colors.textSecondary, fontSize: '0.75rem', lineHeight: 1.5 }}>
-                                            Paying for any Essential course gives you permanent access to all Essential courses on the platform.
-                                        </Typography>
-                                    </Box>
-                                )}
                                 {enrollError && (
                                     <Typography sx={{ color: colors.error, fontSize: '0.8rem', mb: 1.5 }}>
                                         {enrollError}

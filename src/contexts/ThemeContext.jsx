@@ -77,6 +77,30 @@ const getDesignTokens = (mode) => ({
                 },
             },
         },
+        // Suppress the Chrome aria-hidden warning that fires when a Menu /
+        // Popover / Dialog closes while the trigger button still has focus.
+        // disableRestoreFocus stops MUI from re-focusing the trigger after
+        // the modal element has aria-hidden applied.
+        MuiMenu: {
+            defaultProps: {
+                disableRestoreFocus: true,
+            },
+        },
+        MuiPopover: {
+            defaultProps: {
+                disableRestoreFocus: true,
+            },
+        },
+        MuiModal: {
+            defaultProps: {
+                disableRestoreFocus: true,
+            },
+        },
+        MuiDialog: {
+            defaultProps: {
+                disableRestoreFocus: true,
+            },
+        },
     },
 });
 
