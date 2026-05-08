@@ -81,10 +81,10 @@ export const adminCoursesService = {
         return unwrap(res);
     },
 
-    reorderModules: async (courseId, orderedIds) => {
+    reorderModules: async (courseId, order) => {
         const res = await apiService.post(
             `/admin/courses/${encodeURIComponent(courseId)}/modules/reorder`,
-            { ordered_ids: orderedIds }
+            { order }
         );
         return unwrap(res);
     },
@@ -114,10 +114,10 @@ export const adminCoursesService = {
         return unwrap(res);
     },
 
-    reorderLessons: async (moduleId, orderedIds) => {
+    reorderLessons: async (moduleId, order) => {
         const res = await apiService.post(
             `/admin/modules/${encodeURIComponent(moduleId)}/lessons/reorder`,
-            { ordered_ids: orderedIds }
+            { order }
         );
         return unwrap(res);
     },
@@ -187,10 +187,11 @@ export const adminCoursesService = {
         return unwrapList(res);
     },
 
-    addMaterial: async (lessonId, file, { title } = {}) => {
+    addMaterial: async (lessonId, file, { display_name, title } = {}) => {
         const form = new FormData();
         form.append('file', file);
-        if (title) form.append('title', title);
+        const name = display_name ?? title;
+        if (name) form.append('display_name', name);
         const res = await apiService.post(
             `/admin/lessons/${encodeURIComponent(lessonId)}/materials`,
             form
@@ -211,10 +212,36 @@ export const adminCoursesService = {
         return unwrapList(res);
     },
 
-    addCbtQuestion: async (lessonVersionId, { question_text, options, correct_option }) => {
+    /**
+     * Create a CBT question on a lesson version.
+     * Backend: POST /admin/lesson-versions/{id}/cbt-questions
+     * Body: { prompt, points, options: [{ body, is_correct }, ...] }
+     *
+     * Accepts either the documented shape or the legacy
+     * { question_text, options: ['a','b'], correct_option: 0 } shape and
+     * normalizes to the documented shape.
+     */
+    addCbtQuestion: async (lessonVersionId, payload = {}) => {
+        const prompt = payload.prompt ?? payload.question_text ?? '';
+        const points = Number(payload.points ?? 1);
+
+        let options;
+        if (Array.isArray(payload.options) && payload.options.length > 0 && typeof payload.options[0] === 'object') {
+            options = payload.options.map((o) => ({
+                body: o.body ?? o.text ?? '',
+                is_correct: Boolean(o.is_correct),
+            }));
+        } else {
+            const correctIndex = Number(payload.correct_option);
+            options = (payload.options || []).map((opt, idx) => ({
+                body: typeof opt === 'string' ? opt : (opt?.body ?? opt?.text ?? ''),
+                is_correct: idx === correctIndex,
+            }));
+        }
+
         const res = await apiService.post(
             `/admin/lesson-versions/${encodeURIComponent(lessonVersionId)}/cbt-questions`,
-            { question_text, options, correct_option: Number(correct_option) }
+            { prompt, points, options }
         );
         return unwrap(res);
     },

@@ -58,13 +58,19 @@ export const adminTransactionsService = {
         return unwrapList(res);
     },
 
-    approveRefund: async (id) => {
-        const res = await apiService.post(`/admin/refund-requests/${encodeURIComponent(id)}/approve`);
+    approveRefund: async (id, notes = '') => {
+        const res = await apiService.post(
+            `/admin/refund-requests/${encodeURIComponent(id)}/approve`,
+            { notes }
+        );
         return unwrap(res);
     },
 
-    rejectRefund: async (id, reason = '') => {
-        const res = await apiService.post(`/admin/refund-requests/${encodeURIComponent(id)}/reject`, { reason });
+    rejectRefund: async (id, notes = '') => {
+        const res = await apiService.post(
+            `/admin/refund-requests/${encodeURIComponent(id)}/reject`,
+            { notes }
+        );
         return unwrap(res);
     },
 };

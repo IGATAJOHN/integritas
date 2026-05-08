@@ -71,7 +71,8 @@ const ProjectGradePage = () => {
             setSubmitting(true);
             setError('');
             const result = await adminProjectReviewService.grade(id, {
-                score: passed ? Math.max(numericScore, 50) : Math.min(numericScore, 49),
+                passed: Boolean(passed),
+                score_percent: numericScore,
                 feedback: feedback.trim(),
             });
             setSubmission((prev) => ({ ...(prev || {}), ...result }));

@@ -24,8 +24,7 @@ import theme from '../styles/theme';
 const partners = [
     { name: 'Counter Fraud', full: '' },
     { name: 'Intelligence', full: '' },
-    { name: 'Center for Fiscal Transparency', full: '' },
-    { name: 'Public Integrity', full: '' },
+    { name: 'Center for Fiscal Transparency and Public Integrity', full: '' },
 ];
 
 const Footer = () => {

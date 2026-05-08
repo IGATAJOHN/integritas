@@ -7,3 +7,4 @@ export * from './optionAdminService';
 export * from './projectReviewService';
 export * from './foundationalTutorService';
 export * from './transactionsService';
+export * from './learnerService';

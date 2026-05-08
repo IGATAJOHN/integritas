@@ -43,10 +43,19 @@ export const adminProjectReviewService = {
         return unwrap(res);
     },
 
-    grade: async (id, { score, feedback }) => {
+    /**
+     * Grade a project submission.
+     * Backend: POST /admin/project-submissions/{id}/grade
+     * Body: { passed: boolean, score_percent: number (0..100), feedback: string }
+     */
+    grade: async (id, { passed, score_percent, feedback }) => {
         const res = await apiService.post(
             `/admin/project-submissions/${encodeURIComponent(id)}/grade`,
-            { score: Number(score), feedback: feedback || '' }
+            {
+                passed: Boolean(passed),
+                score_percent: Number(score_percent),
+                feedback: feedback || '',
+            }
         );
         return unwrap(res);
     },

@@ -92,9 +92,9 @@ const LandingPage = () => {
 
 
     const testimonial = {
-        quote: "The Integritas has transformed how our department approaches policy making. The rigorous curriculum and practical tools are unmatched in the field of public service education.",
-        name: 'CEO Integritas',
-        title: 'Senior Policy adviser',
+        quote: "Umar has eloquently, even if not intentionally, argued for a fourth arm of government-the Integrity arm. We need strong institutions led by people with character.",
+        name: 'Kole Shettima',
+        title: 'Country Director, MacArthur Foundation, Nigeria',
         avatar: '',
     };
 
@@ -302,9 +302,9 @@ const LandingPage = () => {
                             lineHeight: 1.3,
                         }}
                     >
-                        Transparency is the tool.{' '}
+                        Anchoring a Future{' '}
                         <Box component="span" sx={{ color: theme.colors.brand }}>
-                            Integrity is the outcome.
+                            on Integrity.
                         </Box>
                     </Typography>
                     <Typography
@@ -681,7 +681,7 @@ const LandingPage = () => {
                                     color: colors.textWhite,
                                 }}
                             >
-                                Essential Courses
+                                Foundational Courses
                             </Typography>
                             <Typography sx={{ color: colors.textMuted }}>
                                 Core courses recommended for every public service professional.
@@ -717,7 +717,7 @@ const LandingPage = () => {
                     ) : essentialCourses.length === 0 ? (
                         <Box sx={{ textAlign: 'center', py: 6 }}>
                             <Typography sx={{ color: colors.textMuted, mb: 2 }}>
-                                No essential courses available at this time.
+                                No foundational courses available at this time.
                             </Typography>
                             <Button
                                 component={Link}
