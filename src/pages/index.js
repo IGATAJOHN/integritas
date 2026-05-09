@@ -12,5 +12,6 @@ export { default as CertificateVerifyPage } from './CertificateVerifyPage';
 export { default as NotificationsPage } from './NotificationsPage';
 export { default as ProfileSettingsPage } from './ProfileSettingsPage';
 export { default as InviteAcceptPage } from './InviteAcceptPage';
+export { default as TwoFactorChallengePage } from './TwoFactorChallengePage';
 export { default as ContactPage } from './ContactPage';
 export { default as DonatePage } from './DonatePage';

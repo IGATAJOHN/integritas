@@ -26,8 +26,11 @@ import {
     DescriptionOutlined,
     ArrowForward,
 } from '@mui/icons-material';
-import { optionAdminService } from '../services/optionAdminService';
-import { adminService } from '../services/adminService';
+import { adminFoundationalTutorService } from '../services/foundationalTutorService';
+import { adminTransactionsService } from '../services/transactionsService';
+import { adminProjectReviewService } from '../services/projectReviewService';
+import { adminListKyc } from '../services/kyc';
+import { apiService } from '../../../services/api';
 import theme from '../../../styles/theme';
 
 
@@ -100,95 +103,65 @@ const AdminDashboard = () => {
         return () => window.removeEventListener('resize', updateWidth);
     }, []);
 
-    // Fetch all live dashboard data
+    // Fetch all live dashboard data from documented endpoints
     useEffect(() => {
         const fetchDashboardData = async () => {
-            try {
-                const [dashRes, statsRes, tutorsRes, studentsRes] = await Promise.allSettled([
-                    adminService.getDashboard(),
-                    adminService.getStats(),
-                    optionAdminService.listTutors({ per_page: 20 }),
-                    adminService.listStudents({ per_page: 4 }),
-                ]);
+            const [usersRes, tutorsRes, enrolmentsRes, kycRes, projectsRes] = await Promise.allSettled([
+                apiService.get('/support/users'),
+                adminFoundationalTutorService.listTutors({ per_page: 25 }),
+                adminTransactionsService.listEnrolments({ per_page: 1 }),
+                adminListKyc({ status: 'pending_review', per_page: 1 }),
+                adminProjectReviewService.list({ status: 'pending', per_page: 3 }),
+            ]);
 
-                // Process dashboard overview
-                const dash = dashRes.status === 'fulfilled' ? dashRes.value : null;
-                const stats = statsRes.status === 'fulfilled' ? statsRes.value : null;
-                const combined = { ...stats, ...dash };
+            // Total users
+            const totalUsers = usersRes.status === 'fulfilled'
+                ? (usersRes.value?.meta?.total ?? (usersRes.value?.data?.length ?? 0))
+                : 0;
 
-                if (dash || stats) {
-                    setStatsData(prev => prev.map(stat => {
-                        if (stat.label === 'Total Users') {
-                            const val = combined.total_users ?? combined.users_count ?? combined.total_students ?? null;
-                            return val !== null ? { ...stat, value: Number(val).toLocaleString() } : stat;
-                        }
-                        if (stat.label === 'Active Courses') {
-                            const val = combined.active_courses ?? combined.courses_count ?? combined.total_courses ?? null;
-                            return val !== null ? { ...stat, value: Number(val).toLocaleString() } : stat;
-                        }
-                        if (stat.label === 'Pending Verifications') {
-                            const val = combined.pending_verifications ?? combined.pending_kyc ?? combined.kyc_pending ?? null;
-                            return val !== null ? { ...stat, value: Number(val).toLocaleString() } : stat;
-                        }
-                        return stat;
-                    }));
+            // Tutors
+            const tutorMeta = tutorsRes.status === 'fulfilled' ? tutorsRes.value : { data: [], meta: {} };
+            const tutorList = tutorMeta.data || [];
+            const totalTutors = tutorMeta.meta?.total ?? tutorList.length;
 
-                    // Pending actions from dashboard
-                    const rawActions = combined.pending_actions ?? combined.pending_courses ?? combined.recent_submissions ?? [];
-                    if (Array.isArray(rawActions) && rawActions.length > 0) {
-                        setPendingActionsList(rawActions.slice(0, 3).map((item, i) => ({
-                            id: item.id || i,
-                            title: item.title || item.name || 'Pending Item',
-                            author: item.author || item.tutor_name || item.user?.name || item.student?.name || 'Unknown',
-                            time: getTimeAgo(item.submitted_at || item.created_at || item.updated_at),
-                            action: item.action || 'Review',
-                        })));
-                    }
+            // Enrolments
+            const totalEnrolments = enrolmentsRes.status === 'fulfilled'
+                ? (enrolmentsRes.value?.meta?.total ?? 0)
+                : 0;
 
-                    // Chart data
-                    const rawGrowth = combined.user_growth ?? combined.monthly_users ?? combined.registrations ?? [];
-                    if (Array.isArray(rawGrowth) && rawGrowth.length > 0) {
-                        const values = rawGrowth.map(d => Number(d.count ?? d.value ?? d.total ?? 0));
-                        setChartData(values);
-                        const last = values[values.length - 1] || 0;
-                        setChartTotal(`+${last.toLocaleString()}`);
-                    }
-                }
+            // Pending KYC
+            const pendingKyc = kycRes.status === 'fulfilled'
+                ? (kycRes.value?.meta?.total ?? kycRes.value?.data?.length ?? 0)
+                : 0;
 
-                // Process tutors
-                if (tutorsRes.status === 'fulfilled') {
-                    const tutorList = tutorsRes.value?.data || tutorsRes.value || [];
-                    const tutors = Array.isArray(tutorList) ? tutorList : [];
-                    const formattedTutors = tutors.slice(0, 4).map((tutor, index) => ({
-                        id: tutor.id || index,
-                        name: tutor.name || `${tutor.first_name || ''} ${tutor.last_name || ''}`.trim() || 'Unknown Tutor',
-                        subject: tutor.specialization || tutor.expertise || 'General',
-                        status: tutor.status === 'Active' ? 'Online' : 'Offline',
-                    }));
-                    setActiveTutors(formattedTutors);
-                    setStatsData(prev => prev.map(stat =>
-                        stat.label === 'Active Tutors'
-                            ? { ...stat, value: tutors.length.toString() }
-                            : stat
-                    ));
-                }
+            // Pending projects → also feeds the pending actions list
+            const pendingProjects = projectsRes.status === 'fulfilled' ? projectsRes.value : { data: [], meta: {} };
+            const pendingProjectCount = pendingProjects.meta?.total ?? pendingProjects.data?.length ?? 0;
+            const pendingActions = (pendingProjects.data || []).slice(0, 3).map((item, i) => ({
+                id: item.id || i,
+                title: item.course?.title || item.title || 'Project Submission',
+                author: item.learner?.name || item.user?.name || item.student?.name || 'Unknown',
+                time: getTimeAgo(item.submitted_at || item.created_at),
+                action: 'Grade',
+            }));
 
-                // Process recent students/users
-                if (studentsRes.status === 'fulfilled') {
-                    const students = studentsRes.value?.data || [];
-                    const formatted = students.slice(0, 4).map(s => ({
-                        id: s.id,
-                        name: s.name || `${s.first_name || ''} ${s.last_name || ''}`.trim() || 'Unknown User',
-                        email: s.email || '',
-                        role: s.role || 'Learner',
-                        status: (s.status === 'active' || s.is_active) ? 'active' : 'pending',
-                        avatar: s.avatar || s.profile_photo || null,
-                    }));
-                    if (formatted.length > 0) setRecentUsersList(formatted);
-                }
-            } catch (error) {
-                console.error('Error fetching admin dashboard data:', error);
-            }
+            setStatsData(prev => prev.map(stat => {
+                if (stat.label === 'Total Users') return { ...stat, value: Number(totalUsers).toLocaleString() };
+                if (stat.label === 'Active Courses') return { ...stat, value: Number(totalEnrolments).toLocaleString() };
+                if (stat.label === 'Pending Verifications') return { ...stat, value: Number(pendingKyc + pendingProjectCount).toLocaleString() };
+                if (stat.label === 'Active Tutors') return { ...stat, value: Number(totalTutors).toLocaleString() };
+                return stat;
+            }));
+
+            if (pendingActions.length > 0) setPendingActionsList(pendingActions);
+
+            const formattedTutors = tutorList.slice(0, 4).map((tutor, index) => ({
+                id: tutor.id || index,
+                name: tutor.name || `${tutor.first_name || ''} ${tutor.last_name || ''}`.trim() || 'Unknown Tutor',
+                subject: tutor.specialization || tutor.expertise || tutor.bio?.slice(0, 30) || 'Tutor',
+                status: 'Online',
+            }));
+            if (formattedTutors.length > 0) setActiveTutors(formattedTutors);
         };
 
         fetchDashboardData();

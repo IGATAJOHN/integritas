@@ -12,6 +12,7 @@ import {
     CategoryManagement,
     KycReview,
     AdminCourseDetail,
+    AdminCbtQuestionsPage,
     ProjectReview,
     ProjectGradePage,
     FoundationalTutorInvites,
@@ -65,6 +66,10 @@ const adminRoutes = {
                 {
                     path: 'courses/:courseId',
                     element: <AdminCourseDetail />,
+                },
+                {
+                    path: 'courses/:courseId/lessons/:lessonId/quiz',
+                    element: <AdminCbtQuestionsPage />,
                 },
                 {
                     path: 'lessons-by-admin',

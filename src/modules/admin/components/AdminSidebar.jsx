@@ -83,8 +83,8 @@ const AdminSidebar = ({
         { path: '/admin/project-submissions', label: 'Project Submissions', icon: <AssignmentOutlined sx={{ fontSize: 22 }} /> },
         { path: '/admin/foundational-tutors', label: 'Foundational Tutors', icon: <PersonAddAlt1 sx={{ fontSize: 22 }} /> },
         { path: '/admin/transactions', label: 'Transactions', icon: <ReceiptLongOutlined sx={{ fontSize: 22 }} /> },
-        { path: '/admin/analytics', label: 'Analytics', icon: <BarChartOutlined sx={{ fontSize: 22 }} /> },
-        { path: '/admin/settings', label: 'Settings', icon: <SettingsOutlined sx={{ fontSize: 22 }} /> },
+        // { path: '/admin/analytics', label: 'Analytics', icon: <BarChartOutlined sx={{ fontSize: 22 }} /> },
+        // { path: '/admin/settings', label: 'Settings', icon: <SettingsOutlined sx={{ fontSize: 22 }} /> },
     ];
 
     const isActive = (path) => {

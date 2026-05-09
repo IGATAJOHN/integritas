@@ -1,5 +1,5 @@
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
-import { NotFound, LandingPage, AboutUsPage, PartnersPage, ContactPage, DonatePage, LoginPage, SignupPage, VerifyPage, ForgotPasswordPage, ResetPasswordPage, TutorAcceptInvitePage, CertificateVerifyPage, NotificationsPage, ProfileSettingsPage, InviteAcceptPage } from '../pages';
+import { NotFound, LandingPage, AboutUsPage, PartnersPage, ContactPage, DonatePage, LoginPage, SignupPage, VerifyPage, ForgotPasswordPage, ResetPasswordPage, TutorAcceptInvitePage, CertificateVerifyPage, NotificationsPage, ProfileSettingsPage, InviteAcceptPage, TwoFactorChallengePage } from '../pages';
 import { adminRoutes } from '../modules/admin';
 import { tutorRoutes } from '../modules/tutor';
 import { learnerRoutes } from '../modules/learner';
@@ -92,6 +92,10 @@ const router = createBrowserRouter([
     {
         path: '/accept-tutor-invite',
         element: <TutorAcceptInvitePage />,
+    },
+    {
+        path: '/2fa/challenge',
+        element: <TwoFactorChallengePage />,
     },
     {
         path: '/verify/:uuid',

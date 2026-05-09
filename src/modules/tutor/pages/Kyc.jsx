@@ -75,8 +75,10 @@ const Kyc = () => {
     // Required document uploads
     const [idFrontFile, setIdFrontFile] = useState(null);
     const [certificateFile, setCertificateFile] = useState(null);
+    const [photoFile, setPhotoFile] = useState(null);
     const [uploadingIdFront, setUploadingIdFront] = useState(false);
     const [uploadingCertificate, setUploadingCertificate] = useState(false);
+    const [uploadingPhoto, setUploadingPhoto] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -108,8 +110,10 @@ const Kyc = () => {
                     const docs = data.documents || [];
                     const existingIdFront = docs.find(d => d.type === 'id_front');
                     const existingCertificate = docs.find(d => d.type === 'certificate');
+                    const existingPhoto = docs.find(d => d.type === 'photo');
                     if (existingIdFront) setIdFrontFile(existingIdFront);
                     if (existingCertificate) setCertificateFile(existingCertificate);
+                    if (existingPhoto) setPhotoFile(existingPhoto);
 
                     // Sync status to AuthContext to fix redirection
                     if (data.status) {
@@ -222,13 +226,29 @@ const Kyc = () => {
         }
     };
 
+    // Upload passport photo
+    const handlePhotoUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setUploadingPhoto(true);
+        setError(null);
+        try {
+            const result = await kycService.uploadDocument(file, 'photo');
+            setPhotoFile(result.document || { name: file.name, type: 'photo', ...result });
+        } catch (err) {
+            setError(err.message || 'Failed to upload photo.');
+        } finally {
+            setUploadingPhoto(false);
+        }
+    };
+
     // Remove uploaded required document
     const handleRemoveRequiredDoc = async (docType) => {
-        const doc = docType === 'id_front' ? idFrontFile : certificateFile;
+        const doc = docType === 'id_front' ? idFrontFile : docType === 'certificate' ? certificateFile : photoFile;
         if (!doc?.id) {
-            // Not yet uploaded to server, just clear local state
             if (docType === 'id_front') setIdFrontFile(null);
-            else setCertificateFile(null);
+            else if (docType === 'certificate') setCertificateFile(null);
+            else setPhotoFile(null);
             return;
         }
 
@@ -236,7 +256,8 @@ const Kyc = () => {
         try {
             await kycService.deleteDocument(doc.id);
             if (docType === 'id_front') setIdFrontFile(null);
-            else setCertificateFile(null);
+            else if (docType === 'certificate') setCertificateFile(null);
+            else setPhotoFile(null);
         } catch (err) {
             setError(err.message || 'Failed to remove document.');
         } finally {
@@ -328,8 +349,7 @@ const Kyc = () => {
     };
 
     const isStep2Valid = () => {
-        // Both id_front and certificate are required
-        return idFrontFile && certificateFile;
+        return idFrontFile && certificateFile && photoFile;
     };
 
     const canSubmit = isStep1Valid() && isStep2Valid();
@@ -667,6 +687,70 @@ const Kyc = () => {
                         </Box>
                     )}
                 </Box>
+
+                {/* Photo */}
+                <Box>
+                    <Typography sx={{ color: '#E5E7EB', fontSize: '0.875rem', fontWeight: 500, mb: 1 }}>
+                        Passport Photo <Box component="span" sx={{ color: '#EF4444' }}>*</Box>
+                    </Typography>
+                    {photoFile ? (
+                        <Paper sx={{ bgcolor: '#111827', border: '1px solid #22C55E', borderRadius: 2, p: 2 }}>
+                            <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                <Stack direction="row" spacing={2} alignItems="center">
+                                    <PersonOutline sx={{ color: '#22C55E', fontSize: 28 }} />
+                                    <Box>
+                                        <Typography sx={{ color: '#fff', fontSize: '0.9rem', fontWeight: 500 }}>
+                                            {photoFile.name || photoFile.original_name || 'Photo'}
+                                        </Typography>
+                                        <Typography sx={{ color: '#22C55E', fontSize: '0.75rem' }}>Uploaded</Typography>
+                                    </Box>
+                                </Stack>
+                                {!isReadOnly && (
+                                    <IconButton onClick={() => handleRemoveRequiredDoc('photo')} sx={{ color: '#EF4444', '&:hover': { bgcolor: 'rgba(239,68,68,0.1)' } }}>
+                                        <DeleteOutline />
+                                    </IconButton>
+                                )}
+                            </Stack>
+                        </Paper>
+                    ) : (
+                        <Box
+                            sx={{
+                                border: `2px dashed ${isReadOnly ? '#374151' : appTheme.colors.brand}`,
+                                borderRadius: 2, p: 3, textAlign: 'center',
+                                bgcolor: isReadOnly ? 'transparent' : 'rgba(23,138,131,0.04)',
+                                cursor: isReadOnly ? 'default' : 'pointer',
+                                '&:hover': isReadOnly ? {} : { bgcolor: 'rgba(23,138,131,0.08)' },
+                            }}
+                        >
+                            <input
+                                accept="image/*"
+                                style={{ display: 'none' }}
+                                id="photo-upload"
+                                type="file"
+                                onChange={handlePhotoUpload}
+                                disabled={isReadOnly || uploadingPhoto}
+                            />
+                            <label htmlFor="photo-upload">
+                                <Stack spacing={1} alignItems="center">
+                                    <CloudUploadOutlined sx={{ fontSize: 32, color: appTheme.colors.brand }} />
+                                    <Button
+                                        variant="outlined"
+                                        component="span"
+                                        disabled={uploadingPhoto}
+                                        sx={{
+                                            color: appTheme.colors.brand, borderColor: appTheme.colors.brand,
+                                            textTransform: 'none',
+                                            '&:hover': { borderColor: '#0D42AF', bgcolor: 'rgba(17,82,212,0.05)' }
+                                        }}
+                                    >
+                                        {uploadingPhoto ? 'Uploading...' : 'Upload Photo'}
+                                    </Button>
+                                    <Typography variant="caption" sx={{ color: '#6B7280' }}>JPG or PNG, clear face visible</Typography>
+                                </Stack>
+                            </label>
+                        </Box>
+                    )}
+                </Box>
             </Stack>
         </Box>
     );
@@ -739,7 +823,13 @@ const Kyc = () => {
                                 Certificate: {certificateFile.name || certificateFile.original_name || 'Uploaded'}
                             </Typography>
                         )}
-                        {!idFrontFile && !certificateFile && (
+                        {photoFile && (
+                            <Typography sx={{ color: '#fff', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <CheckCircleOutline sx={{ color: '#10B981', fontSize: 16 }} />
+                                Photo: {photoFile.name || photoFile.original_name || 'Uploaded'}
+                            </Typography>
+                        )}
+                        {!idFrontFile && !certificateFile && !photoFile && (
                             <Typography sx={{ color: '#EF4444', fontStyle: 'italic', fontSize: '0.85rem' }}>No documents uploaded</Typography>
                         )}
                     </Stack>

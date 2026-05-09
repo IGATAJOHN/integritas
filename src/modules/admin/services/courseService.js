@@ -66,11 +66,13 @@ export const adminCoursesService = {
     },
 
     // ===== MODULES =====
-    getCourseModules: async (courseId) => {
-        // Modules are typically returned within the course detail; this is a
-        // convenience helper for callers that only need the module list.
-        const detail = await adminCoursesService.getCourseDetail(courseId);
-        return detail?.modules || [];
+
+    // GET /admin/modules/{id} — returns the module object including its lessons.
+    getModuleDetail: async (moduleId) => {
+        const res = await apiService.get(`/admin/modules/${encodeURIComponent(moduleId)}`);
+        const data = unwrap(res);
+        // Normalise: ensure lessons array is always present.
+        return { ...data, lessons: data?.lessons || [] };
     },
 
     createModule: async (courseId, payload) => {
@@ -249,6 +251,21 @@ export const adminCoursesService = {
     deleteCbtQuestion: async (questionId) => {
         const res = await apiService.delete(`/admin/cbt-questions/${encodeURIComponent(questionId)}`);
         return { success: true, ...(res || {}) };
+    },
+
+    // ===== LESSON VERSIONS =====
+    duplicateLessonVersion: async (lessonId) => {
+        const res = await apiService.post(
+            `/admin/lessons/${encodeURIComponent(lessonId)}/versions/duplicate`
+        );
+        return unwrap(res);
+    },
+
+    promoteLessonVersion: async (lessonId, versionId) => {
+        const res = await apiService.post(
+            `/admin/lessons/${encodeURIComponent(lessonId)}/versions/${encodeURIComponent(versionId)}/promote`
+        );
+        return unwrap(res);
     },
 
     // ===== Legacy/no-op: Certificate price changes — endpoints not present in

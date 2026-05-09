@@ -27,7 +27,7 @@ const LoginPage = () => {
     const location = useLocation();
     const { login } = useAuth();
     const currentyear = new Date().getFullYear();
-    
+
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -57,21 +57,25 @@ const LoginPage = () => {
         setLoading(true);
 
         try {
-            // Login with only email and password - role comes from API response
-            const userData = await login(formData.email, formData.password);
-            
-            // Get role from API response only
-            const userRole = userData?.role || userData?.userType;
-            
+            const result = await login(formData.email, formData.password);
+
+            // MFA required — redirect to challenge page
+            if (result?.requires2fa) {
+                sessionStorage.setItem('2fa_challenge_token', result.challenge_token);
+                navigate('/2fa/challenge', { state: { from: location.state?.from } });
+                return;
+            }
+
+            const userRole = result?.role || result?.userType;
             if (!userRole) {
                 setError('Unable to determine user role. Please contact support.');
                 setLoading(false);
                 return;
             }
 
-            const dashboardRoute = getDashboardRoute(userData || userRole);
+            const dashboardRoute = getDashboardRoute(result || userRole);
             const returnTo = location.state?.from;
-            const target = isReturnToAllowedForUser(returnTo, userData) ? returnTo : dashboardRoute;
+            const target = isReturnToAllowedForUser(returnTo, result) ? returnTo : dashboardRoute;
             navigate(target, { replace: true });
         } catch (err) {
             console.error('Login error:', err);

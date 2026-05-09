@@ -1,33 +1,57 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useTheme as useMuiTheme } from '@mui/material/styles';
 import {
     Box, Typography, Stack, Button, IconButton, Paper,
     Tabs, Tab, Accordion, AccordionSummary, AccordionDetails,
     List, ListItem, ListItemButton, ListItemIcon, ListItemText,
-    TextField, Modal, Chip, Alert, Snackbar, CircularProgress,
-    FormControl, InputLabel, Select, MenuItem, Switch, Breadcrumbs
+    TextField, Chip, Alert, Snackbar, CircularProgress,
+    FormControl, Select, MenuItem, Switch, Breadcrumbs
 } from '@mui/material';
 import {
     ArrowBack, Add, Edit, Delete, ExpandMore, Publish,
-    School, Language, Timer, Payments, History, CheckCircle,
-    Cancel, PlayCircleOutline, Description, AttachFile, Close,
-    CloudUpload, VideoLibrary
+    School, Language, Timer, Payments, CheckCircle,
+    Cancel, PlayCircleOutline, Close,
+    CloudUpload, Quiz, VideoLibrary, DragIndicator,
 } from '@mui/icons-material';
+import { Tooltip, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { adminCoursesService } from '../services/courseService';
 import { getImageUrl } from '../../../utils';
-import {
-
-    textFieldStyle,
-    selectStyle,
-    selectMenuProps,
-    primaryButtonStyle,
-    paperStyle,
-    modalStyle
-} from '../../../styles/formStyles';
+import { paperStyle } from '../../../styles/formStyles';
 
 const AdminCourseDetail = () => {
     const { courseId } = useParams();
     const navigate = useNavigate();
+    const muiTheme = useMuiTheme();
+    const isDark = muiTheme.palette.mode === 'dark';
+
+    const modalBg     = isDark ? '#111827' : '#FFFFFF';
+    const modalBorder = isDark ? '#374151' : '#E2E8F0';
+    const labelColor  = isDark ? '#E5E7EB' : '#374151';
+    const inputSx = {
+        '& .MuiOutlinedInput-root': {
+            bgcolor: isDark ? '#1E293B' : '#F8FAFC',
+            borderRadius: 1.5,
+            '& fieldset': { borderColor: isDark ? '#374151' : '#CBD5E1' },
+            '&:hover fieldset': { borderColor: isDark ? '#4B5563' : '#94A3B8' },
+            '&.Mui-focused fieldset': { borderColor: '#178A83' },
+        },
+        '& .MuiInputBase-input': {
+            py: 1.25, fontSize: '0.875rem',
+            color: isDark ? '#FFFFFF' : '#1E293B',
+            '&::placeholder': { color: '#9CA3AF', opacity: 1 },
+        },
+    };
+    const selectSx = {
+        bgcolor: isDark ? '#1E293B' : '#F8FAFC',
+        borderRadius: 1.5,
+        fontSize: '0.875rem',
+        color: isDark ? '#FFFFFF' : '#1E293B',
+        '& .MuiOutlinedInput-notchedOutline': { borderColor: isDark ? '#374151' : '#CBD5E1' },
+        '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: isDark ? '#4B5563' : '#94A3B8' },
+        '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#178A83' },
+        '& .MuiSvgIcon-root': { color: '#9CA3AF' },
+    };
 
     // Data State
     const [course, setCourse] = useState(null);
@@ -63,28 +87,85 @@ const AdminCourseDetail = () => {
         fetchCourseData();
     }, [courseId]);
 
+    // ── localStorage helpers ────────────────────────────────────────────────
+    // The API does not embed modules in course detail, and may not embed
+    // lessons in module detail. We persist the full module+lesson structure
+    // in localStorage so everything survives page navigation and refresh.
+    const storageKey = `course_data_${courseId}`;
+
+    const persistModules = (mods) => {
+        try {
+            const slim = mods.map(m => ({
+                id: m.id,
+                title: m.title,
+                summary: m.summary || '',
+                is_published: m.is_published || false,
+                lessons: (m.lessons || []).map(l => ({
+                    id: l.id,
+                    title: l.title,
+                    type: l.type || 'video',
+                    published_at: l.published_at || null,
+                })),
+            }));
+            localStorage.setItem(storageKey, JSON.stringify(slim));
+        } catch { /* quota */ }
+    };
+
+    const restoreModules = () => {
+        try {
+            const v = localStorage.getItem(storageKey);
+            return v ? JSON.parse(v) : [];
+        } catch { return []; }
+    };
+
+    const removeModule = (id) => {
+        const mods = restoreModules().filter(m => m.id !== id);
+        try { localStorage.setItem(storageKey, JSON.stringify(mods)); } catch { /* ignore */ }
+    };
+    // ────────────────────────────────────────────────────────────────────────
+
     const fetchCourseData = async () => {
         try {
             setLoading(true);
             const courseData = await adminCoursesService.getCourseDetail(courseId);
             setCourse(courseData);
 
-            // Fetch modules details
-            const modulesData = await adminCoursesService.getCourseModules(courseId);
+            // Restore from localStorage first so something shows immediately.
+            const cached = restoreModules();
 
-            // Fetch lessons for each module in parallel to populate the accordion
-            if (modulesData && modulesData.length > 0) {
-                const modulesWithLessons = await Promise.all(modulesData.map(async (mod) => {
-                    try {
-                        const lessonsRes = await adminCoursesService.listLessons(mod.id);
-                        return { ...mod, lessons: lessonsRes.data || [] };
-                    } catch (e) {
-                        return { ...mod, lessons: [] };
-                    }
-                }));
-                setModules(modulesWithLessons);
-            } else {
-                setModules([]);
+            // Try to get module IDs from the course detail response first
+            // (some API versions embed them). If not, fall back to localStorage.
+            const embeddedModules =
+                courseData?.modules ||
+                courseData?.course_modules ||
+                [];
+
+            let sourceModules = cached;
+
+            if (Array.isArray(embeddedModules) && embeddedModules.length > 0) {
+                // API returned modules — merge with cached to preserve lesson data
+                sourceModules = embeddedModules.map(apiMod => {
+                    const cached_mod = cached.find(c => c.id === apiMod.id) || {};
+                    return { ...cached_mod, ...apiMod, lessons: apiMod.lessons || cached_mod.lessons || [] };
+                });
+            }
+
+            if (sourceModules.length > 0) {
+                const refreshed = await Promise.all(
+                    sourceModules.map(async (cached_mod) => {
+                        try {
+                            const fresh = await adminCoursesService.getModuleDetail(cached_mod.id);
+                            const lessons = (fresh?.lessons?.length > 0)
+                                ? fresh.lessons
+                                : cached_mod.lessons || [];
+                            return { ...cached_mod, ...fresh, lessons };
+                        } catch {
+                            return cached_mod;
+                        }
+                    })
+                );
+                setModules(refreshed);
+                persistModules(refreshed);
             }
         } catch (error) {
             console.error('Error fetching course data:', error);
@@ -98,29 +179,123 @@ const AdminCourseDetail = () => {
         setSnackbar({ open: true, message, severity });
     };
 
+    // ── Drag-and-drop reorder ────────────────────────────────────────────────
+    const [modDrag, setModDrag]       = useState({ dragIdx: null, overIdx: null });
+    const [lessonDrag, setLessonDrag] = useState({ modId: null, dragIdx: null, overIdx: null });
+
+    const onModDragStart = (e, idx) => {
+        e.dataTransfer.effectAllowed = 'move';
+        setModDrag({ dragIdx: idx, overIdx: null });
+    };
+    const onModDragOver = (e, idx) => {
+        e.preventDefault();
+        if (idx !== modDrag.dragIdx) setModDrag(s => ({ ...s, overIdx: idx }));
+    };
+    const onModDragEnd = () => setModDrag({ dragIdx: null, overIdx: null });
+    const onModDrop = async (e, idx) => {
+        e.preventDefault();
+        const { dragIdx } = modDrag;
+        setModDrag({ dragIdx: null, overIdx: null });
+        if (dragIdx === null || dragIdx === idx) return;
+
+        // Guard: API requires ALL module IDs of the course.
+        // If modules_count doesn't match what we have loaded, the reorder will be rejected.
+        const serverCount = course?.modules_count ?? modules.length;
+        if (serverCount !== modules.length) {
+            showSnackbar(
+                `Cannot reorder — the server shows ${serverCount} modules but only ${modules.length} are loaded. ` +
+                `Add all modules through this page first.`,
+                'error'
+            );
+            return;
+        }
+
+        const prev = [...modules];
+        const reordered = [...modules];
+        const [item] = reordered.splice(dragIdx, 1);
+        reordered.splice(idx, 0, item);
+        setModules(reordered);
+        persistModules(reordered);
+        try {
+            await adminCoursesService.reorderModules(courseId, reordered.map(m => Number(m.id)));
+            showSnackbar('Modules reordered');
+        } catch (err) {
+            setModules(prev);
+            persistModules(prev);
+            showSnackbar(err?.message || 'Failed to reorder modules', 'error');
+        }
+    };
+
+    const onLessonDragStart = (e, modId, idx) => {
+        e.stopPropagation();
+        e.dataTransfer.effectAllowed = 'move';
+        setLessonDrag({ modId, dragIdx: idx, overIdx: null });
+    };
+    const onLessonDragOver = (e, modId, idx) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (modId === lessonDrag.modId && idx !== lessonDrag.dragIdx)
+            setLessonDrag(s => ({ ...s, overIdx: idx }));
+    };
+    const onLessonDragEnd = (e) => { e.stopPropagation(); setLessonDrag({ modId: null, dragIdx: null, overIdx: null }); };
+    const onLessonDrop = async (e, modId, idx) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const { dragIdx } = lessonDrag;
+        setLessonDrag({ modId: null, dragIdx: null, overIdx: null });
+        if (dragIdx === null || dragIdx === idx || modId !== lessonDrag.modId) return;
+        const mod = modules.find(m => m.id === modId);
+        const lessons = [...(mod?.lessons || [])];
+        const [item] = lessons.splice(dragIdx, 1);
+        lessons.splice(idx, 0, item);
+        const prev = modules;
+        const updated = modules.map(m => m.id === modId ? { ...m, lessons } : m);
+        setModules(updated);
+        persistModules(updated);
+        try {
+            await adminCoursesService.reorderLessons(modId, lessons.map(l => Number(l.id)));
+            showSnackbar('Lessons reordered');
+        } catch (err) {
+            setModules(prev);
+            persistModules(prev);
+            showSnackbar(err?.message || 'Failed to reorder lessons', 'error');
+        }
+    };
+    // ────────────────────────────────────────────────────────────────────────
+
     // --- Module Handlers ---
 
     const handleCreateModule = async () => {
         if (!moduleTitle.trim()) return;
         try {
             setActionLoading(true);
-            const payload = { title: moduleTitle, description: moduleDescription };
+            // API field is `summary`, not `description`
+            const payload = { title: moduleTitle.trim(), summary: moduleDescription.trim() };
 
             if (editingModuleId) {
-                await adminCoursesService.updateModule(editingModuleId, payload);
-                showSnackbar('Module updated successfully');
+                const updated = await adminCoursesService.updateModule(editingModuleId, payload);
+                setModules(prev => prev.map(m =>
+                    m.id === editingModuleId ? { ...m, ...updated, lessons: m.lessons } : m
+                ));
+                showSnackbar('Module updated');
             } else {
-                await adminCoursesService.createModule(courseId, payload);
-                showSnackbar('Module created successfully');
+                const created = await adminCoursesService.createModule(courseId, payload);
+                const newModule = { ...(created || {}), id: created?.id ?? Date.now(), title: moduleTitle.trim(), lessons: [] };
+                setModules(prev => {
+                    const updated = [...prev, newModule];
+                    persistModules(updated);
+                    return updated;
+                });
+                showSnackbar('Module created');
             }
 
             setModuleModalOpen(false);
             setModuleTitle('');
             setModuleDescription('');
             setEditingModuleId(null);
-            fetchCourseData();
         } catch (error) {
-            showSnackbar('Failed to save module', 'error');
+            console.error('Module save error:', error);
+            showSnackbar(error?.message || 'Failed to save module', 'error');
         } finally {
             setActionLoading(false);
         }
@@ -131,8 +306,13 @@ const AdminCourseDetail = () => {
         try {
             setActionLoading(true);
             await adminCoursesService.deleteModule(moduleId);
+            removeModule(moduleId);
+            setModules(prev => {
+                const updated = prev.filter(m => m.id !== moduleId);
+                persistModules(updated);
+                return updated;
+            });
             showSnackbar('Module deleted');
-            fetchCourseData();
         } catch (error) {
             showSnackbar('Failed to delete module', 'error');
         } finally {
@@ -142,7 +322,6 @@ const AdminCourseDetail = () => {
 
     const handlePublishModule = async (moduleId, currentStatus) => {
         try {
-            // Optimistic update
             const updatedModules = modules.map(m =>
                 m.id === moduleId ? { ...m, is_published: !currentStatus } : m
             );
@@ -155,10 +334,12 @@ const AdminCourseDetail = () => {
                 await adminCoursesService.publishModule(courseId, moduleId);
                 showSnackbar('Module published');
             }
-            fetchCourseData();
         } catch (error) {
+            // Revert optimistic update on failure
+            setModules(prev => prev.map(m =>
+                m.id === moduleId ? { ...m, is_published: currentStatus } : m
+            ));
             showSnackbar('Failed to update module status', 'error');
-            fetchCourseData(); // Revert
         }
     };
 
@@ -184,25 +365,34 @@ const AdminCourseDetail = () => {
         try {
             setActionLoading(true);
 
+            // API: POST /admin/modules/{module}/lessons { title, description, assigned_tutor_id }
             const payload = {
-                title: lessonTitle,
-                type: lessonType,
-                content: lessonContent,
-                duration: lessonDuration,
-                position: 0
+                title: lessonTitle.trim(),
+                description: lessonContent.trim() || undefined,
             };
 
             const newLesson = await adminCoursesService.createLesson(selectedModuleForLesson, payload);
 
-            if ((lessonType === 'video' || lessonType === 'document') && lessonFile) {
+            if ((lessonType === 'video' || lessonType === 'document') && lessonFile && newLesson?.id) {
                 const formData = new FormData();
-                formData.append('file', lessonFile);
-                await adminCoursesService.uploadLessonMedia(newLesson.id, formData);
+                formData.append('video', lessonFile);
+                await adminCoursesService.uploadLessonMedia(newLesson.id, formData).catch(() => {});
             }
 
-            showSnackbar('Lesson created successfully');
+            // Append lesson directly to the correct module in state and persist
+            const created = newLesson || { id: Date.now(), title: lessonTitle.trim(), type: lessonType, published_at: null };
+            setModules(prev => {
+                const updated = prev.map(m =>
+                    m.id === selectedModuleForLesson
+                        ? { ...m, lessons: [...(m.lessons || []), created] }
+                        : m
+                );
+                persistModules(updated);
+                return updated;
+            });
+
+            showSnackbar('Lesson created');
             setLessonModalOpen(false);
-            fetchCourseData();
         } catch (error) {
             console.error('Create lesson error:', error);
             showSnackbar(error.message || 'Failed to create lesson', 'error');
@@ -216,8 +406,12 @@ const AdminCourseDetail = () => {
         try {
             setActionLoading(true);
             await adminCoursesService.deleteLesson(lessonId);
+            setModules(prev => {
+                const updated = prev.map(m => ({ ...m, lessons: (m.lessons || []).filter(l => l.id !== lessonId) }));
+                persistModules(updated);
+                return updated;
+            });
             showSnackbar('Lesson deleted');
-            fetchCourseData();
         } catch (error) {
             showSnackbar('Failed to delete lesson', 'error');
         } finally {
@@ -226,6 +420,13 @@ const AdminCourseDetail = () => {
     };
 
     const handlePublishLesson = async (moduleId, lessonId, currentStatus) => {
+        // Optimistic update
+        const toggle = (lessons) => lessons.map(l =>
+            l.id === lessonId ? { ...l, published_at: currentStatus ? null : new Date().toISOString() } : l
+        );
+        setModules(prev => prev.map(m =>
+            m.id === moduleId ? { ...m, lessons: toggle(m.lessons || []) } : m
+        ));
         try {
             if (currentStatus) {
                 await adminCoursesService.unpublishLesson(moduleId, lessonId);
@@ -234,27 +435,39 @@ const AdminCourseDetail = () => {
                 await adminCoursesService.publishLesson(moduleId, lessonId);
                 showSnackbar('Lesson published');
             }
-            fetchCourseData();
         } catch (error) {
+            // Revert
+            setModules(prev => prev.map(m =>
+                m.id === moduleId ? { ...m, lessons: toggle(m.lessons || []) } : m
+            ));
             showSnackbar('Failed to update lesson status', 'error');
         }
     };
 
     // --- Course Actions ---
 
+    const refreshCourse = async () => {
+        try {
+            const courseData = await adminCoursesService.getCourseDetail(courseId);
+            setCourse(courseData);
+        } catch { /* silently ignore */ }
+    };
+
     const handlePublishCourse = async () => {
         try {
             setActionLoading(true);
             if (course.published_at) {
                 await adminCoursesService.unpublishCourse(courseId);
+                setCourse(prev => ({ ...prev, published_at: null }));
                 showSnackbar('Course unpublished');
             } else {
                 await adminCoursesService.publishCourse(courseId);
+                setCourse(prev => ({ ...prev, published_at: new Date().toISOString() }));
                 showSnackbar('Course published');
             }
-            fetchCourseData();
         } catch (error) {
             showSnackbar('Failed to update course status', 'error');
+            await refreshCourse();
         } finally {
             setActionLoading(false);
         }
@@ -265,8 +478,8 @@ const AdminCourseDetail = () => {
         try {
             setActionLoading(true);
             await adminCoursesService.updateCourse(courseId, { status: 'published' });
+            setCourse(prev => ({ ...prev, status: 'published' }));
             showSnackbar('Course approved');
-            fetchCourseData();
         } catch (error) {
             showSnackbar('Failed to approve course', 'error');
         } finally {
@@ -282,9 +495,9 @@ const AdminCourseDetail = () => {
         try {
             setActionLoading(true);
             await adminCoursesService.updateCourse(courseId, { status: 'rejected', rejection_reason: rejectionReason });
+            setCourse(prev => ({ ...prev, status: 'rejected' }));
             showSnackbar('Course rejected');
             setRejectModalOpen(false);
-            fetchCourseData();
         } catch (error) {
             showSnackbar('Failed to reject course', 'error');
         } finally {
@@ -375,11 +588,23 @@ const AdminCourseDetail = () => {
                             variant="contained"
                             startIcon={<Add />}
                             onClick={() => { setEditingModuleId(null); setModuleTitle(''); setModuleDescription(''); setModuleModalOpen(true); }}
-                            sx={primaryButtonStyle}
+                            sx={{ bgcolor: '#178A83', '&:hover': { bgcolor: '#126E68' }, textTransform: 'none', fontWeight: 600 }}
                         >
                             Add Module
                         </Button>
                     </Stack>
+
+                    {/* Warn when server modules_count doesn't match loaded count */}
+                    {course?.modules_count > 0 && modules.length < course.modules_count && (
+                        <Alert
+                            severity="warning"
+                            sx={{ mb: 2, bgcolor: 'rgba(251,191,36,0.08)', color: '#FBBF24', '& .MuiAlert-icon': { color: '#FBBF24' } }}
+                        >
+                            The server shows <strong>{course.modules_count}</strong> modules for this course, but only{' '}
+                            <strong>{modules.length}</strong> are loaded in this browser. Modules created in another session
+                            are not visible here — dragging to reorder is disabled until all modules are loaded.
+                        </Alert>
+                    )}
 
                     {modules.length === 0 ? (
                         <Paper sx={{ p: 6, textAlign: 'center', bgcolor: '#1A2230', border: '1px dashed #374151', borderRadius: 2 }}>
@@ -388,18 +613,46 @@ const AdminCourseDetail = () => {
                         </Paper>
                     ) : (
                         <Stack spacing={2}>
-                            {modules.map((mod) => (
-                                <Paper key={mod.id} sx={{ bgcolor: '#1A2230', overflow: 'hidden', border: '1px solid #374151', borderRadius: 2 }}>
+                            {modules.map((mod, modIdx) => (
+                                <Box
+                                    key={mod.id}
+                                    draggable
+                                    onDragStart={e => onModDragStart(e, modIdx)}
+                                    onDragOver={e => onModDragOver(e, modIdx)}
+                                    onDragEnd={onModDragEnd}
+                                    onDrop={e => onModDrop(e, modIdx)}
+                                    sx={{
+                                        borderRadius: 2,
+                                        transition: 'opacity 0.15s, outline 0.1s',
+                                        opacity: modDrag.dragIdx === modIdx ? 0.35 : 1,
+                                        outline: modDrag.overIdx === modIdx && modDrag.dragIdx !== modIdx
+                                            ? '2px solid #178A83' : '2px solid transparent',
+                                    }}
+                                >
+                                <Paper sx={{ bgcolor: '#1A2230', overflow: 'hidden', border: '1px solid #374151', borderRadius: 2 }}>
                                     <Accordion disableGutters sx={{ bgcolor: 'transparent', boxShadow: 'none', '&:before': { display: 'none' } }}>
                                         <AccordionSummary expandIcon={<ExpandMore sx={{ color: '#9CA3AF' }} />}>
-                                            <Stack direction="row" alignItems="center" sx={{ width: '100%', mr: 2 }}>
+                                            <Stack direction="row" alignItems="center" sx={{ width: '100%', mr: 2 }} spacing={1}>
+                                                {/* Drag handle */}
+                                                <Box
+                                                    onClick={e => e.stopPropagation()}
+                                                    sx={{ cursor: 'grab', display: 'flex', alignItems: 'center', '&:active': { cursor: 'grabbing' } }}
+                                                >
+                                                    <DragIndicator sx={{ color: '#4B5563', fontSize: 20 }} />
+                                                </Box>
+                                                {/* Position number */}
+                                                <Chip
+                                                    label={modIdx + 1}
+                                                    size="small"
+                                                    sx={{ bgcolor: '#0C1322', color: '#6B7280', fontSize: '0.7rem', fontWeight: 700, height: 20, minWidth: 24 }}
+                                                />
                                                 <Box sx={{ flexGrow: 1 }}>
                                                     <Typography sx={{ color: '#fff', fontWeight: 600 }}>
                                                         {mod.title}
                                                     </Typography>
-                                                    {mod.description && (
+                                                    {(mod.summary || mod.description) && (
                                                         <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem' }}>
-                                                            {mod.description}
+                                                            {mod.summary || mod.description}
                                                         </Typography>
                                                     )}
                                                 </Box>
@@ -410,7 +663,7 @@ const AdminCourseDetail = () => {
                                                         onChange={() => handlePublishModule(mod.id, mod.is_published)}
                                                         color="success"
                                                     />
-                                                    <IconButton size="small" sx={{ color: '#3B82F6' }} onClick={() => { setEditingModuleId(mod.id); setModuleTitle(mod.title); setModuleDescription(mod.description || ''); setModuleModalOpen(true); }}>
+                                                    <IconButton size="small" sx={{ color: '#3B82F6' }} onClick={() => { setEditingModuleId(mod.id); setModuleTitle(mod.title); setModuleDescription(mod.summary || mod.description || ''); setModuleModalOpen(true); }}>
                                                         <Edit fontSize="small" />
                                                     </IconButton>
                                                     <IconButton size="small" sx={{ color: '#EF4444' }} onClick={() => handleDeleteModule(mod.id)}>
@@ -421,9 +674,32 @@ const AdminCourseDetail = () => {
                                         </AccordionSummary>
                                         <AccordionDetails sx={{ bgcolor: '#111827', borderTop: '1px solid #374151', p: 0 }}>
                                             <List>
-                                                {mod.lessons && mod.lessons.map((lesson) => (
-                                                    <ListItem key={lesson.id} disablePadding secondaryAction={
+                                                {mod.lessons && mod.lessons.map((lesson, lesIdx) => (
+                                                    <Box
+                                                        key={lesson.id}
+                                                        draggable
+                                                        onDragStart={e => onLessonDragStart(e, mod.id, lesIdx)}
+                                                        onDragOver={e => onLessonDragOver(e, mod.id, lesIdx)}
+                                                        onDragEnd={onLessonDragEnd}
+                                                        onDrop={e => onLessonDrop(e, mod.id, lesIdx)}
+                                                        sx={{
+                                                            transition: 'opacity 0.15s, outline 0.1s',
+                                                            opacity: lessonDrag.modId === mod.id && lessonDrag.dragIdx === lesIdx ? 0.35 : 1,
+                                                            outline: lessonDrag.modId === mod.id && lessonDrag.overIdx === lesIdx && lessonDrag.dragIdx !== lesIdx
+                                                                ? '2px solid #178A83' : '2px solid transparent',
+                                                        }}
+                                                    >
+                                                    <ListItem disablePadding secondaryAction={
                                                         <Stack direction="row" alignItems="center" spacing={1}>
+                                                            <Tooltip title="Manage quiz questions">
+                                                                <IconButton
+                                                                    size="small"
+                                                                    onClick={() => navigate(`/admin/content/courses/${courseId}/lessons/${lesson.id}/quiz`)}
+                                                                    sx={{ color: '#A78BFA', bgcolor: 'rgba(167,139,250,0.08)', '&:hover': { bgcolor: 'rgba(167,139,250,0.18)' } }}
+                                                                >
+                                                                    <Quiz fontSize="small" />
+                                                                </IconButton>
+                                                            </Tooltip>
                                                             <Switch
                                                                 size="small"
                                                                 checked={!!lesson.published_at}
@@ -436,7 +712,15 @@ const AdminCourseDetail = () => {
                                                         </Stack>
                                                     }>
                                                         <ListItemButton>
-                                                            <ListItemIcon sx={{ color: '#9CA3AF', minWidth: 40 }}>
+                                                            {/* Lesson drag handle */}
+                                                            <Box sx={{ cursor: 'grab', display: 'flex', alignItems: 'center', mr: 1, '&:active': { cursor: 'grabbing' } }}>
+                                                                <DragIndicator sx={{ color: '#374151', fontSize: 18 }} />
+                                                            </Box>
+                                                            {/* Lesson position number */}
+                                                            <Typography sx={{ color: '#4B5563', fontSize: '0.7rem', fontWeight: 700, minWidth: 18, mr: 1 }}>
+                                                                {lesIdx + 1}
+                                                            </Typography>
+                                                            <ListItemIcon sx={{ color: '#9CA3AF', minWidth: 36 }}>
                                                                 {getLessonIcon(lesson.type)}
                                                             </ListItemIcon>
                                                             <ListItemText
@@ -449,6 +733,7 @@ const AdminCourseDetail = () => {
                                                             />
                                                         </ListItemButton>
                                                     </ListItem>
+                                                    </Box>
                                                 ))}
                                                 {(!mod.lessons || mod.lessons.length === 0) && (
                                                     <ListItem>
@@ -471,6 +756,7 @@ const AdminCourseDetail = () => {
                                         </AccordionDetails>
                                     </Accordion>
                                 </Paper>
+                                </Box>
                             ))}
                         </Stack>
                     )}
@@ -597,132 +883,259 @@ const AdminCourseDetail = () => {
                 </Box>
             )}
 
-            {/* Module Modal */}
-            <Modal open={moduleModalOpen} onClose={() => setModuleModalOpen(false)}>
-                <Box sx={modalStyle}>
-                    <Typography variant="h6" sx={{ color: '#fff', mb: 2 }}>{editingModuleId ? 'Edit Module' : 'Add Module'}</Typography>
-                    <Stack spacing={2}>
-                        <TextField
-                            label="Title"
-                            fullWidth
-                            value={moduleTitle}
-                            onChange={(e) => setModuleTitle(e.target.value)}
-                            sx={textFieldStyle}
-                        />
-                        <TextField
-                            label="Description"
-                            fullWidth
-                            multiline
-                            rows={3}
-                            value={moduleDescription}
-                            onChange={(e) => setModuleDescription(e.target.value)}
-                            sx={textFieldStyle}
-                        />
-                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
-                            <Button onClick={() => setModuleModalOpen(false)} sx={{ color: '#9CA3AF' }}>Cancel</Button>
-                            <Button variant="contained" onClick={handleCreateModule} disabled={actionLoading} sx={primaryButtonStyle}>Save</Button>
+
+            {/* Module Dialog */}
+            <Dialog
+                open={moduleModalOpen}
+                onClose={() => setModuleModalOpen(false)}
+                maxWidth="sm"
+                fullWidth
+                PaperProps={{ sx: { bgcolor: modalBg, border: `1px solid ${modalBorder}`, borderRadius: 2 } }}
+            >
+                <DialogTitle sx={{ borderBottom: `1px solid ${modalBorder}`, pb: 2 }}>
+                    <Stack direction="row" alignItems="center" justifyContent="space-between">
+                        <Typography sx={{ fontWeight: 700, fontSize: '1rem' }}>
+                            {editingModuleId ? 'Edit Module' : 'Add Module'}
+                        </Typography>
+                        <IconButton onClick={() => setModuleModalOpen(false)} size="small" sx={{ color: 'text.secondary' }}>
+                            <Close fontSize="small" />
+                        </IconButton>
+                    </Stack>
+                </DialogTitle>
+                <DialogContent sx={{ p: 3 }}>
+                    <Stack spacing={2.5}>
+                        <Box>
+                            <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: labelColor, mb: 0.75 }}>
+                                Module Title <Box component="span" sx={{ color: '#EF4444' }}>*</Box>
+                            </Typography>
+                            <TextField
+                                fullWidth
+                                placeholder="e.g. Introduction to Governance"
+                                value={moduleTitle}
+                                onChange={e => setModuleTitle(e.target.value)}
+                                autoFocus
+                                sx={inputSx}
+                            />
+                        </Box>
+                        <Box>
+                            <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: labelColor, mb: 0.75 }}>
+                                Description <Box component="span" sx={{ color: 'text.secondary', fontWeight: 400 }}> — optional</Box>
+                            </Typography>
+                            <TextField
+                                fullWidth
+                                multiline
+                                rows={3}
+                                placeholder="Brief overview of what this module covers."
+                                value={moduleDescription}
+                                onChange={e => setModuleDescription(e.target.value)}
+                                sx={inputSx}
+                            />
                         </Box>
                     </Stack>
-                </Box>
-            </Modal>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2.5, borderTop: `1px solid ${modalBorder}`, pt: 2, gap: 1 }}>
+                    <Button onClick={() => setModuleModalOpen(false)} sx={{ textTransform: 'none', color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}>
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleCreateModule}
+                        disabled={actionLoading || !moduleTitle.trim()}
+                        sx={{ bgcolor: '#178A83', textTransform: 'none', fontWeight: 600, '&:hover': { bgcolor: '#126E68' }, '&:disabled': { bgcolor: isDark ? '#374151' : '#CBD5E1', color: '#9CA3AF' } }}
+                    >
+                        {actionLoading ? 'Saving…' : 'Save Module'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
-            {/* Lesson Modal */}
-            <Modal open={lessonModalOpen} onClose={() => setLessonModalOpen(false)}>
-                <Box sx={modalStyle}>
-                    <Typography variant="h6" sx={{ color: '#fff', mb: 2 }}>Add Lesson</Typography>
-                    <Stack spacing={2}>
-                        <TextField
-                            label="Lesson Title"
-                            fullWidth
-                            value={lessonTitle}
-                            onChange={(e) => setLessonTitle(e.target.value)}
-                            sx={textFieldStyle}
-                        />
-                        <FormControl fullWidth>
-                            <InputLabel sx={{ color: '#9CA3AF' }}>Type</InputLabel>
+            {/* Lesson Dialog */}
+            <Dialog
+                open={lessonModalOpen}
+                onClose={() => setLessonModalOpen(false)}
+                maxWidth="sm"
+                fullWidth
+                PaperProps={{ sx: { bgcolor: modalBg, border: `1px solid ${modalBorder}`, borderRadius: 2 } }}
+            >
+                <DialogTitle sx={{ borderBottom: `1px solid ${modalBorder}`, pb: 2 }}>
+                    <Stack direction="row" alignItems="center" justifyContent="space-between">
+                        <Typography sx={{ fontWeight: 700, fontSize: '1rem' }}>Add Lesson</Typography>
+                        <IconButton onClick={() => setLessonModalOpen(false)} size="small" sx={{ color: 'text.secondary' }}>
+                            <Close fontSize="small" />
+                        </IconButton>
+                    </Stack>
+                </DialogTitle>
+                <DialogContent sx={{ p: 3 }}>
+                    <Stack spacing={2.5}>
+                        <Box>
+                            <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: labelColor, mb: 0.75 }}>
+                                Lesson Title <Box component="span" sx={{ color: '#EF4444' }}>*</Box>
+                            </Typography>
+                            <TextField
+                                fullWidth
+                                placeholder="e.g. What is Corporate Governance?"
+                                value={lessonTitle}
+                                onChange={e => setLessonTitle(e.target.value)}
+                                autoFocus
+                                sx={inputSx}
+                            />
+                        </Box>
+
+                        <Box>
+                            <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: labelColor, mb: 0.75 }}>
+                                Lesson Type
+                            </Typography>
                             <Select
+                                fullWidth
                                 value={lessonType}
-                                onChange={(e) => setLessonType(e.target.value)}
-                                sx={selectStyle}
-                                MenuProps={selectMenuProps}
-                                label="Type"
+                                onChange={e => setLessonType(e.target.value)}
+                                sx={selectSx}
+                                MenuProps={{
+                                    PaperProps: {
+                                        sx: {
+                                            bgcolor: isDark ? '#1E293B' : '#FFFFFF',
+                                            border: `1px solid ${modalBorder}`,
+                                            borderRadius: 1.5,
+                                            mt: 0.5,
+                                            '& .MuiMenuItem-root': {
+                                                fontSize: '0.875rem',
+                                                color: isDark ? '#FFFFFF' : '#1E293B',
+                                                '&:hover': { bgcolor: isDark ? '#374151' : '#F1F5F9' },
+                                                '&.Mui-selected': { bgcolor: 'rgba(23,138,131,0.12)' },
+                                            },
+                                        },
+                                    },
+                                }}
                             >
                                 <MenuItem value="video">Video</MenuItem>
-                                <MenuItem value="text">Text/Article</MenuItem>
+                                <MenuItem value="text">Text / Article</MenuItem>
                                 <MenuItem value="document">File Attachment</MenuItem>
                             </Select>
-                        </FormControl>
+                        </Box>
 
                         {(lessonType === 'video' || lessonType === 'document') && (
-                            <Box sx={{ border: '1px dashed #374151', p: 2, borderRadius: 1, textAlign: 'center' }}>
+                            <Box
+                                sx={{
+                                    border: `2px dashed ${isDark ? '#374151' : '#CBD5E1'}`,
+                                    p: 2.5, borderRadius: 1.5, textAlign: 'center',
+                                    bgcolor: isDark ? 'rgba(23,138,131,0.04)' : '#F8FAFC',
+                                    '&:hover': { borderColor: '#178A83' },
+                                    transition: 'border-color 0.15s',
+                                }}
+                            >
                                 <input
                                     type="file"
                                     id="lesson-file-upload"
                                     style={{ display: 'none' }}
-                                    onChange={(e) => {
+                                    onChange={e => {
                                         const file = e.target.files[0];
-                                        if (file) {
-                                            setLessonFile(file);
-                                            setLessonFileName(file.name);
-                                        }
+                                        if (file) { setLessonFile(file); setLessonFileName(file.name); }
                                     }}
                                 />
                                 <label htmlFor="lesson-file-upload">
-                                    <Button component="span" startIcon={<CloudUpload />} sx={{ color: '#3B82F6' }}>
-                                        {lessonFileName || 'Upload File'}
-                                    </Button>
+                                    <Stack spacing={0.5} alignItems="center">
+                                        <CloudUpload sx={{ fontSize: 28, color: '#178A83' }} />
+                                        <Button component="span" sx={{ color: '#178A83', textTransform: 'none', fontWeight: 600, fontSize: '0.875rem' }}>
+                                            {lessonFileName || 'Choose file to upload'}
+                                        </Button>
+                                        <Typography variant="caption" sx={{ color: '#9CA3AF' }}>
+                                            {lessonType === 'video' ? 'MP4, MOV, WebM' : 'PDF, DOCX, ZIP'}
+                                        </Typography>
+                                    </Stack>
                                 </label>
                             </Box>
                         )}
 
                         {lessonType === 'text' && (
-                            <TextField
-                                label="Content"
-                                fullWidth
-                                multiline
-                                rows={4}
-                                value={lessonContent}
-                                onChange={(e) => setLessonContent(e.target.value)}
-                                sx={textFieldStyle}
-                            />
+                            <Box>
+                                <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: labelColor, mb: 0.75 }}>Content</Typography>
+                                <TextField
+                                    fullWidth
+                                    multiline
+                                    rows={4}
+                                    placeholder="Write the lesson content here…"
+                                    value={lessonContent}
+                                    onChange={e => setLessonContent(e.target.value)}
+                                    sx={inputSx}
+                                />
+                            </Box>
                         )}
 
-                        <TextField
-                            label="Duration (minutes)"
-                            type="number"
-                            fullWidth
-                            value={lessonDuration}
-                            onChange={(e) => setLessonDuration(e.target.value)}
-                            sx={textFieldStyle}
-                        />
-
-                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
-                            <Button onClick={() => setLessonModalOpen(false)} sx={{ color: '#9CA3AF' }}>Cancel</Button>
-                            <Button variant="contained" onClick={handleCreateLesson} disabled={actionLoading} sx={primaryButtonStyle}>Create</Button>
+                        <Box>
+                            <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: labelColor, mb: 0.75 }}>
+                                Duration <Box component="span" sx={{ color: 'text.secondary', fontWeight: 400 }}> (minutes)</Box>
+                            </Typography>
+                            <TextField
+                                fullWidth
+                                type="number"
+                                placeholder="e.g. 15"
+                                value={lessonDuration}
+                                onChange={e => setLessonDuration(e.target.value)}
+                                inputProps={{ min: 0 }}
+                                sx={inputSx}
+                            />
                         </Box>
                     </Stack>
-                </Box>
-            </Modal>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2.5, borderTop: `1px solid ${modalBorder}`, pt: 2, gap: 1 }}>
+                    <Button onClick={() => setLessonModalOpen(false)} sx={{ textTransform: 'none', color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}>
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleCreateLesson}
+                        disabled={actionLoading || !lessonTitle.trim()}
+                        sx={{ bgcolor: '#178A83', textTransform: 'none', fontWeight: 600, '&:hover': { bgcolor: '#126E68' }, '&:disabled': { bgcolor: isDark ? '#374151' : '#CBD5E1', color: '#9CA3AF' } }}
+                    >
+                        {actionLoading ? 'Creating…' : 'Create Lesson'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
-            {/* Reject Modal */}
-            <Modal open={rejectModalOpen} onClose={() => setRejectModalOpen(false)}>
-                <Box sx={modalStyle}>
-                    <Typography variant="h6" sx={{ color: '#fff', mb: 2 }}>Reject Course</Typography>
+            {/* Reject Course Dialog */}
+            <Dialog
+                open={rejectModalOpen}
+                onClose={() => setRejectModalOpen(false)}
+                maxWidth="sm"
+                fullWidth
+                PaperProps={{ sx: { bgcolor: modalBg, border: `1px solid ${modalBorder}`, borderRadius: 2 } }}
+            >
+                <DialogTitle sx={{ borderBottom: `1px solid ${modalBorder}`, pb: 2 }}>
+                    <Stack direction="row" alignItems="center" justifyContent="space-between">
+                        <Typography sx={{ fontWeight: 700, fontSize: '1rem' }}>Reject Course</Typography>
+                        <IconButton onClick={() => setRejectModalOpen(false)} size="small" sx={{ color: 'text.secondary' }}>
+                            <Close fontSize="small" />
+                        </IconButton>
+                    </Stack>
+                </DialogTitle>
+                <DialogContent sx={{ p: 3 }}>
+                    <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: labelColor, mb: 0.75 }}>
+                        Reason for rejection <Box component="span" sx={{ color: '#EF4444' }}>*</Box>
+                    </Typography>
                     <TextField
-                        label="Reason for rejection"
                         fullWidth
                         multiline
                         rows={3}
+                        placeholder="Explain why this course is being rejected…"
                         value={rejectionReason}
-                        onChange={(e) => setRejectionReason(e.target.value)}
-                        sx={textFieldStyle}
+                        onChange={e => setRejectionReason(e.target.value)}
+                        sx={inputSx}
                     />
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
-                        <Button onClick={() => setRejectModalOpen(false)} sx={{ color: '#9CA3AF' }}>Cancel</Button>
-                        <Button variant="contained" color="error" onClick={handleRejectCourse} disabled={actionLoading}>Reject</Button>
-                    </Box>
-                </Box>
-            </Modal>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2.5, borderTop: `1px solid ${modalBorder}`, pt: 2, gap: 1 }}>
+                    <Button onClick={() => setRejectModalOpen(false)} sx={{ textTransform: 'none', color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}>
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="contained"
+                        color="error"
+                        onClick={handleRejectCourse}
+                        disabled={actionLoading || !rejectionReason.trim()}
+                        sx={{ textTransform: 'none', fontWeight: 600 }}
+                    >
+                        {actionLoading ? 'Rejecting…' : 'Reject Course'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
             <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
                 <Alert severity={snackbar.severity} sx={{ width: '100%' }} onClose={() => setSnackbar({ ...snackbar, open: false })}>

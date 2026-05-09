@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTheme as useMuiTheme } from '@mui/material/styles';
 import { adminCoursesService } from '../services';
 import { CircularProgress } from '@mui/material';
 import { formatCurrency, getImageUrl } from '../../../utils';
@@ -74,6 +75,31 @@ const trackChip = (track) => {
 
 const CourseManagement = () => {
     const navigate = useNavigate();
+    const muiTheme = useMuiTheme();
+    const isDark = muiTheme.palette.mode === 'dark';
+
+    // Input styling that matches LoginPage exactly, but adapts to dark/light
+    const inputSx = {
+        '& .MuiOutlinedInput-root': {
+            bgcolor: isDark ? '#1E293B' : '#F8FAFC',
+            borderRadius: 1.5,
+            '& fieldset': { borderColor: isDark ? '#374151' : '#CBD5E1' },
+            '&:hover fieldset': { borderColor: isDark ? '#4B5563' : '#94A3B8' },
+            '&.Mui-focused fieldset': { borderColor: theme.colors.brand },
+            '&.Mui-error fieldset': { borderColor: '#EF4444' },
+        },
+        '& .MuiInputBase-input': {
+            py: 1.25,
+            fontSize: '0.875rem',
+            color: isDark ? '#FFFFFF' : '#1E293B',
+            '&::placeholder': { color: '#9CA3AF', opacity: 1 },
+        },
+    };
+
+    const modalBg    = isDark ? '#111827' : '#FFFFFF';
+    const modalBorder = isDark ? '#374151' : '#E2E8F0';
+    const cardBg     = isDark ? '#1E293B' : '#F1F5F9';
+    const labelColor = isDark ? '#E5E7EB' : '#374151';
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -87,8 +113,9 @@ const CourseManagement = () => {
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
     const [form, setForm] = useState({
         title: '',
+        summary: '',
         description: '',
-        track: TRACK_FOUNDATIONAL,
+        type: TRACK_FOUNDATIONAL,
         price: '',
     });
 
@@ -130,7 +157,7 @@ const CourseManagement = () => {
     };
 
     const resetCreateForm = () => {
-        setForm({ title: '', description: '', track: TRACK_FOUNDATIONAL, price: '' });
+        setForm({ title: '', summary: '', description: '', type: TRACK_FOUNDATIONAL, price: '' });
         setCreateError('');
     };
 
@@ -143,8 +170,8 @@ const CourseManagement = () => {
             setCreateError('Title must be at least 3 characters.');
             return;
         }
-        if (!form.track) {
-            setCreateError('Please select a track.');
+        if (!form.type) {
+            setCreateError('Please select a course type.');
             return;
         }
         const priceNumber = form.price === '' ? 0 : Number(form.price);
@@ -155,9 +182,10 @@ const CourseManagement = () => {
         try {
             setCreating(true);
             const created = await adminCoursesService.createCourse({
+                type: form.type,
                 title,
+                summary: form.summary.trim(),
                 description,
-                track: form.track,
                 price: priceNumber,
                 currency: 'NGN',
             });
@@ -441,114 +469,161 @@ const CourseManagement = () => {
                 maxWidth="sm"
                 fullWidth
                 disableRestoreFocus
-                PaperProps={{ component: 'form', onSubmit: handleCreateCourse }}
+                PaperProps={{
+                    component: 'form',
+                    onSubmit: handleCreateCourse,
+                    sx: { bgcolor: modalBg, border: `1px solid ${modalBorder}`, borderRadius: 2 },
+                }}
             >
-                <DialogTitle>
-                    <Stack direction="row" alignItems="center" spacing={1.5}>
-                        <Avatar sx={{ bgcolor: theme.colors.brand, width: 36, height: 36 }}>
-                            <School fontSize="small" />
-                        </Avatar>
-                        <Box>
-                            <Typography sx={{ fontWeight: 700 }}>Create New Course</Typography>
-                            <Typography variant="caption" color="text.secondary">
-                                Pick the track first — it can't easily be changed later.
-                            </Typography>
-                        </Box>
+                <DialogTitle sx={{ borderBottom: `1px solid ${modalBorder}`, pb: 2 }}>
+                    <Stack direction="row" alignItems="center" justifyContent="space-between">
+                        <Stack direction="row" alignItems="center" spacing={1.5}>
+                            <Avatar sx={{ bgcolor: theme.colors.brand, width: 36, height: 36 }}>
+                                <School fontSize="small" />
+                            </Avatar>
+                            <Box>
+                                <Typography sx={{ fontWeight: 700 }}>Create New Course</Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                    Pick the type first — it cannot be changed later.
+                                </Typography>
+                            </Box>
+                        </Stack>
+                        <IconButton onClick={() => { setCreateOpen(false); resetCreateForm(); }} sx={{ color: 'text.secondary' }}>
+                            <Close fontSize="small" />
+                        </IconButton>
                     </Stack>
                 </DialogTitle>
-                <DialogContent dividers>
+
+                <DialogContent sx={{ p: 3, overflowY: 'auto' }}>
                     {createError && (
-                        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setCreateError('')}>
+                        <Alert severity="error" sx={{ mb: 2.5 }} onClose={() => setCreateError('')}>
                             {createError}
                         </Alert>
                     )}
-                    <Stack spacing={2.5}>
+
+                    <Stack spacing={3}>
+                        {/* Type selector */}
                         <Box>
-                            <Typography variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase', color: 'text.secondary', display: 'block', mb: 1 }}>
-                                Track
+                            <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: labelColor, mb: 1 }}>
+                                Course Type <Box component="span" sx={{ color: '#EF4444' }}>*</Box>
                             </Typography>
-                            <ToggleButtonGroup
-                                value={form.track}
-                                exclusive
-                                fullWidth
-                                onChange={(_e, v) => v && setForm((prev) => ({ ...prev, track: v }))}
-                                sx={{ '& .MuiToggleButton-root': { textTransform: 'none', py: 1.5 } }}
-                            >
-                                <ToggleButton value={TRACK_FOUNDATIONAL}>
-                                    <Stack alignItems="flex-start" sx={{ width: '100%' }}>
-                                        <Stack direction="row" spacing={1} alignItems="center">
-                                            <StarBorderOutlined sx={{ fontSize: 18 }} />
-                                            <Typography sx={{ fontWeight: 600 }}>Foundational</Typography>
-                                        </Stack>
-                                        <Typography variant="caption" color="text.secondary">
-                                            14 lessons · admin-managed · leads to Fellow certificate
-                                        </Typography>
-                                    </Stack>
-                                </ToggleButton>
-                                <ToggleButton value={TRACK_EXPERT}>
-                                    <Stack alignItems="flex-start" sx={{ width: '100%' }}>
-                                        <Stack direction="row" spacing={1} alignItems="center">
-                                            <EngineeringOutlined sx={{ fontSize: 18 }} />
-                                            <Typography sx={{ fontWeight: 600 }}>Expert</Typography>
-                                        </Stack>
-                                        <Typography variant="caption" color="text.secondary">
-                                            Tutor-delivered · flexible structure
-                                        </Typography>
-                                    </Stack>
-                                </ToggleButton>
-                            </ToggleButtonGroup>
+                            <Stack direction="row" spacing={1.5}>
+                                {[
+                                    { value: TRACK_FOUNDATIONAL, icon: <StarBorderOutlined sx={{ fontSize: 18 }} />, label: 'Foundational', sub: 'Admin-managed · leads to certificate' },
+                                    { value: TRACK_EXPERT, icon: <EngineeringOutlined sx={{ fontSize: 18 }} />, label: 'Expert', sub: 'Tutor-delivered · flexible structure' },
+                                ].map(opt => {
+                                    const selected = form.type === opt.value;
+                                    return (
+                                        <Box
+                                            key={opt.value}
+                                            onClick={() => setForm(prev => ({ ...prev, type: opt.value }))}
+                                            sx={{
+                                                flex: 1, p: 2, borderRadius: 2, cursor: 'pointer',
+                                                border: `2px solid ${selected ? theme.colors.brand : modalBorder}`,
+                                                bgcolor: selected ? 'rgba(23,138,131,0.08)' : cardBg,
+                                                transition: 'border-color 0.15s',
+                                                '&:hover': { borderColor: selected ? theme.colors.brand : theme.colors.brandMuted },
+                                            }}
+                                        >
+                                            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.5 }}>
+                                                <Box sx={{ color: selected ? theme.colors.brand : 'text.secondary' }}>{opt.icon}</Box>
+                                                <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>{opt.label}</Typography>
+                                            </Stack>
+                                            <Typography variant="caption" color="text.secondary">{opt.sub}</Typography>
+                                        </Box>
+                                    );
+                                })}
+                            </Stack>
                         </Box>
 
-                        <TextField
-                            label="Course Title"
-                            value={form.title}
-                            onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-                            fullWidth
-                            required
-                            autoFocus
-                            inputProps={{ maxLength: 160 }}
-                        />
-                        <TextField
-                            label="Short Description"
-                            value={form.description}
-                            onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-                            fullWidth
-                            multiline
-                            minRows={3}
-                            inputProps={{ maxLength: 500 }}
-                            helperText="Shown in the public catalogue. 1–2 sentences."
-                        />
-                        <TextField
-                            label={form.track === TRACK_FOUNDATIONAL ? 'Enrolment Fee' : 'Course Price'}
-                            value={form.price}
-                            onChange={(e) => setForm((prev) => ({ ...prev, price: e.target.value }))}
-                            type="number"
-                            fullWidth
-                            InputProps={{
-                                startAdornment: <InputAdornment position="start">₦</InputAdornment>,
-                                inputProps: { min: 0, step: 100 },
-                            }}
-                            helperText={
-                                form.track === TRACK_FOUNDATIONAL
-                                    ? 'PRD recommends NGN 5,000 one-time enrolment.'
-                                    : 'Set 0 for free expert courses.'
-                            }
-                        />
+                        {/* Title */}
+                        <Box>
+                            <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: labelColor, mb: 0.75 }}>
+                                Course Title <Box component="span" sx={{ color: '#EF4444' }}>*</Box>
+                            </Typography>
+                            <TextField
+                                fullWidth
+                                placeholder="e.g. Introduction to Ethics in Governance"
+                                value={form.title}
+                                onChange={e => setForm(prev => ({ ...prev, title: e.target.value }))}
+                                autoFocus
+                                inputProps={{ maxLength: 160 }}
+                                sx={inputSx}
+                            />
+                        </Box>
+
+                        {/* Summary */}
+                        <Box>
+                            <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: labelColor, mb: 0.75 }}>
+                                Summary <Box component="span" sx={{ color: 'text.secondary', fontWeight: 400 }}> — shown in catalogue</Box>
+                            </Typography>
+                            <TextField
+                                fullWidth
+                                placeholder="One or two sentences about what this course covers."
+                                value={form.summary}
+                                onChange={e => setForm(prev => ({ ...prev, summary: e.target.value }))}
+                                inputProps={{ maxLength: 300 }}
+                                sx={inputSx}
+                            />
+                        </Box>
+
+                        {/* Description */}
+                        <Box>
+                            <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: labelColor, mb: 0.75 }}>
+                                Full Description <Box component="span" sx={{ color: 'text.secondary', fontWeight: 400 }}> — optional</Box>
+                            </Typography>
+                            <TextField
+                                fullWidth
+                                multiline
+                                rows={3}
+                                placeholder="Detailed overview, learning outcomes, prerequisites…"
+                                value={form.description}
+                                onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))}
+                                inputProps={{ maxLength: 2000 }}
+                                sx={inputSx}
+                            />
+                        </Box>
+
+                        {/* Price */}
+                        <Box>
+                            <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: labelColor, mb: 0.75 }}>
+                                {form.type === TRACK_FOUNDATIONAL ? 'Enrolment Fee' : 'Course Price'}
+                            </Typography>
+                            <TextField
+                                fullWidth
+                                type="number"
+                                placeholder="0"
+                                value={form.price}
+                                onChange={e => setForm(prev => ({ ...prev, price: e.target.value }))}
+                                inputProps={{ min: 0, step: 100 }}
+                                InputProps={{
+                                    startAdornment: <InputAdornment position="start"><Typography sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>₦</Typography></InputAdornment>,
+                                }}
+                                helperText={form.type === TRACK_FOUNDATIONAL ? 'Recommended: NGN 5,000' : 'Set 0 for a free course'}
+                                sx={inputSx}
+                            />
+                        </Box>
                     </Stack>
                 </DialogContent>
-                <DialogActions sx={{ px: 3, py: 2 }}>
+
+                <DialogActions sx={{ px: 3, py: 2, borderTop: `1px solid ${modalBorder}`, gap: 1 }}>
                     <Button
                         onClick={() => { setCreateOpen(false); resetCreateForm(); }}
                         disabled={creating}
-                        sx={{ textTransform: 'none' }}
+                        sx={{ textTransform: 'none', color: '#9CA3AF', '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' } }}
                     >
                         Cancel
                     </Button>
                     <Button
                         type="submit"
                         variant="contained"
-                        disabled={creating}
-                        sx={{ textTransform: 'none' }}
+                        disabled={creating || !form.title.trim()}
+                        sx={{
+                            textTransform: 'none', fontWeight: 600,
+                            bgcolor: theme.colors.brand,
+                            '&:hover': { bgcolor: theme.colors.brandHover },
+                            '&:disabled': { bgcolor: '#374151', color: '#9CA3AF' },
+                        }}
                     >
                         {creating ? 'Creating…' : 'Create Course'}
                     </Button>

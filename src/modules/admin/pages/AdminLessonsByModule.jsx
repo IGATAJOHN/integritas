@@ -30,7 +30,7 @@ import {
     School,
     Search,
 } from '@mui/icons-material';
-import { optionAdminService } from '../services/optionAdminService';
+import { adminCoursesService } from '../services/courseService';
 import {
     paperStyle,
     primaryButtonStyle,
@@ -80,7 +80,7 @@ const AdminLessonsByModule = () => {
         setError('');
 
         try {
-            const response = await optionAdminService.listLessonsByModule(moduleId.trim());
+            const response = await adminCoursesService.listLessons(moduleId.trim());
             setLessons(response.data || []);
         } catch (err) {
             console.error('Failed to load lessons by module:', err);

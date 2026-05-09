@@ -19,14 +19,14 @@ export const adminGetKycById = async (kycId) => {
   return apiService.get(`/admin/kyc-queue/${encodeURIComponent(kycId)}`);
 };
 
-export const adminApproveKyc = async (kycId, reviewNote = "Approved.") => {
+export const adminApproveKyc = async (kycId, notes = "Approved.") => {
   return apiService.post(`/admin/kyc-queue/${encodeURIComponent(kycId)}/approve`, {
-    review_note: reviewNote,
+    notes,
   });
 };
 
-export const adminRejectKyc = async (kycId, reviewNote) => {
+export const adminRejectKyc = async (kycId, notes) => {
   return apiService.post(`/admin/kyc-queue/${encodeURIComponent(kycId)}/reject`, {
-    review_note: reviewNote,
+    notes,
   });
 };

@@ -5,6 +5,7 @@ import {
     Typography,
     Button,
     Stack,
+    Chip,
     CircularProgress,
     Alert,
     Radio,
@@ -18,6 +19,8 @@ import {
     ErrorOutline,
     ReplayOutlined,
     NavigateNext,
+    LockOutlined,
+    AccessTime,
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import { learnerCbtService, learnerLessonService } from '../services';
@@ -37,12 +40,14 @@ const CBTAttemptPage = () => {
         danger: theme.palette.error.main,
     };
 
-    const [phase, setPhase] = useState('loading'); // loading | answering | submitting | result | error
+    const [phase, setPhase] = useState('loading'); // loading | answering | submitting | result | locked | error
     const [error, setError] = useState('');
-    const [attempt, setAttempt] = useState(null); // { id, questions: [{id, question_text, options: []}] }
-    const [answers, setAnswers] = useState({}); // { [questionIndex]: optionIndex }
-    const [result, setResult] = useState(null); // { passed, score, ... }
+    const [attempt, setAttempt] = useState(null);
+    const [answers, setAnswers] = useState({});
+    const [result, setResult] = useState(null);
     const [lessonMeta, setLessonMeta] = useState(null);
+    const [attemptsRemaining, setAttemptsRemaining] = useState(null);
+    const [lockedUntil, setLockedUntil] = useState(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -57,8 +62,14 @@ const CBTAttemptPage = () => {
                 ]);
                 if (cancelled) return;
                 setLessonMeta(lesson);
-                setAttempt(attemptData);
-                setPhase('answering');
+                if (attemptData?.locked_until) {
+                    setLockedUntil(attemptData.locked_until);
+                    setPhase('locked');
+                } else {
+                    setAttempt(attemptData);
+                    if (attemptData?.attempts_remaining != null) setAttemptsRemaining(attemptData.attempts_remaining);
+                    setPhase('answering');
+                }
             } catch (err) {
                 if (cancelled) return;
                 setError(err?.message || 'Could not start the assessment.');
@@ -101,8 +112,14 @@ const CBTAttemptPage = () => {
         try {
             setPhase('loading');
             const attemptData = await learnerCbtService.startAttempt(lessonSlug);
-            setAttempt(attemptData);
-            setPhase('answering');
+            if (attemptData?.locked_until) {
+                setLockedUntil(attemptData.locked_until);
+                setPhase('locked');
+            } else {
+                setAttempt(attemptData);
+                if (attemptData?.attempts_remaining != null) setAttemptsRemaining(attemptData.attempts_remaining);
+                setPhase('answering');
+            }
         } catch (err) {
             setError(err?.message || 'Could not start a new attempt.');
             setPhase('error');
@@ -155,6 +172,39 @@ const CBTAttemptPage = () => {
                         <CircularProgress sx={{ color: colors.primary }} />
                         <Typography sx={{ color: colors.textSecondary }}>Preparing your questions…</Typography>
                     </Stack>
+                )}
+
+                {phase === 'locked' && (
+                    <Box
+                        sx={{
+                            bgcolor: 'rgba(239,68,68,0.08)',
+                            border: '1px solid rgba(239,68,68,0.3)',
+                            borderRadius: 2, p: 4, textAlign: 'center',
+                        }}
+                    >
+                        <LockOutlined sx={{ color: '#EF4444', fontSize: 52, mb: 2 }} />
+                        <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, color: '#FCA5A5' }}>
+                            Assessment Locked
+                        </Typography>
+                        <Typography sx={{ color: colors.textSecondary, mb: 2 }}>
+                            You've used all 3 attempts. The assessment is locked for 24 hours.
+                        </Typography>
+                        {lockedUntil && (
+                            <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} sx={{ mb: 3 }}>
+                                <AccessTime sx={{ color: '#9CA3AF', fontSize: 18 }} />
+                                <Typography sx={{ color: '#9CA3AF', fontSize: '0.875rem' }}>
+                                    Available after: {new Date(lockedUntil).toLocaleString()}
+                                </Typography>
+                            </Stack>
+                        )}
+                        <Button
+                            variant="outlined"
+                            onClick={() => navigate(-1)}
+                            sx={{ borderColor: '#374151', color: '#9CA3AF', textTransform: 'none', '&:hover': { borderColor: '#6B7280', bgcolor: 'rgba(255,255,255,0.05)' } }}
+                        >
+                            Back to Lesson
+                        </Button>
+                    </Box>
                 )}
 
                 {phase === 'error' && (
@@ -247,13 +297,29 @@ const CBTAttemptPage = () => {
                             ))}
                         </Stack>
 
+                        {attemptsRemaining != null && (
+                            <Stack direction="row" justifyContent="center" sx={{ mt: 3 }}>
+                                <Chip
+                                    icon={<AccessTime sx={{ fontSize: 14 }} />}
+                                    label={`${attemptsRemaining} attempt${attemptsRemaining !== 1 ? 's' : ''} remaining`}
+                                    size="small"
+                                    sx={{
+                                        bgcolor: attemptsRemaining <= 1 ? 'rgba(239,68,68,0.12)' : 'rgba(251,191,36,0.12)',
+                                        color: attemptsRemaining <= 1 ? '#EF4444' : '#FBBF24',
+                                        '& .MuiChip-icon': { color: 'inherit' },
+                                        fontSize: '0.75rem',
+                                    }}
+                                />
+                            </Stack>
+                        )}
+
                         <Button
                             fullWidth
                             variant="contained"
                             disabled={!allAnswered || phase === 'submitting'}
                             onClick={handleSubmit}
                             sx={{
-                                mt: 4,
+                                mt: 2,
                                 py: 1.5,
                                 bgcolor: colors.primary,
                                 textTransform: 'none',

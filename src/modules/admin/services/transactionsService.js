@@ -58,6 +58,14 @@ export const adminTransactionsService = {
         return unwrapList(res);
     },
 
+    flagForRefund: async (id, reason = '') => {
+        const res = await apiService.post(
+            `/support/transactions/${encodeURIComponent(id)}/flag-refund`,
+            { reason }
+        );
+        return unwrap(res);
+    },
+
     approveRefund: async (id, notes = '') => {
         const res = await apiService.post(
             `/admin/refund-requests/${encodeURIComponent(id)}/approve`,

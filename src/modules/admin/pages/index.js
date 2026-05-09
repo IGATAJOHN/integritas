@@ -14,3 +14,4 @@ export { default as ProjectReview } from './ProjectReview';
 export { default as ProjectGradePage } from './ProjectGradePage';
 export { default as FoundationalTutorInvites } from './FoundationalTutorInvites';
 export { default as AdminTransactions } from './AdminTransactions';
+export { default as AdminCbtQuestionsPage } from './AdminCbtQuestionsPage';

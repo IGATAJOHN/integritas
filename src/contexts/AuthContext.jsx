@@ -91,26 +91,32 @@ export const AuthProvider = ({ children }) => {
             if (!response) {
                 throw new Error('Login response was empty. Check that the API returned a token.');
             }
-            const { user: loginUser, token } = unwrapAuthPayload(response);
 
-            const baseUser = {
-                ...(loginUser || {}),
-                ...(token ? { token } : {}),
-            };
-            baseUser.role = pickRole(baseUser) || baseUser.role;
+            // MFA required — backend returns a challenge token instead of a session token.
+            // Return a signal so the login page can redirect to the 2FA challenge screen.
+            if (response.challenge_token) {
+                return { requires2fa: true, challenge_token: response.challenge_token };
+            }
 
-            // The new backend's /auth/login response already contains the full
-            // user payload (id, roles, permissions, email_verified_at, ...).
-            // Skip the redundant /auth/me round-trip — it adds latency without
-            // adding information. /auth/me is still used by initializeAuth on
-            // page reload and by refreshUser when callers need fresh data.
-            setUser(baseUser);
-            localStorage.setItem('user', JSON.stringify(baseUser));
-            return baseUser;
+            return completeLogin(response);
         } catch (error) {
             console.error('Login failed:', error);
             throw error;
         }
+    };
+
+    // Shared helper used by login() and the 2FA challenge page after the
+    // code is verified. Takes the full auth response and sets user state.
+    const completeLogin = (response) => {
+        const { user: loginUser, token } = unwrapAuthPayload(response);
+        const baseUser = {
+            ...(loginUser || {}),
+            ...(token ? { token } : {}),
+        };
+        baseUser.role = pickRole(baseUser) || baseUser.role;
+        setUser(baseUser);
+        localStorage.setItem('user', JSON.stringify(baseUser));
+        return baseUser;
     };
 
     const pickRole = (u) => getPrimaryRole(u);
@@ -368,6 +374,7 @@ export const AuthProvider = ({ children }) => {
         loading,
         isAuthenticated: !!user,
         login,
+        completeLogin,
         register,
         logout,
         updateUser,

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
     Box,
@@ -21,6 +21,7 @@ import {
 } from '@mui/icons-material';
 import { useThemeMode } from '../../../contexts';
 import appTheme from '../../../styles/theme';
+import { apiService } from '../../../services/api';
 
 
 const AdminNavbar = ({
@@ -29,8 +30,28 @@ const AdminNavbar = ({
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const { isDark, toggleThemeMode } = useThemeMode();
+    const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
+    const [unreadCount, setUnreadCount] = useState(0);
     const { user } = useAuth();
+
+    useEffect(() => {
+        let failed = false;
+        const fetchUnread = async () => {
+            if (failed) return; // stop polling after a server error
+            try {
+                const res = await apiService.get('/me/notifications/unread-count');
+                const count = res?.count ?? res?.unread_count ?? res?.data?.count ?? 0;
+                setUnreadCount(Number(count) || 0);
+            } catch (err) {
+                // Stop polling on 5xx — server-side issue, no point hammering it
+                if (err?.status >= 500 || err?.response?.status >= 500) failed = true;
+            }
+        };
+        fetchUnread();
+        const interval = setInterval(fetchUnread, 60000);
+        return () => clearInterval(interval);
+    }, []);
 
     // Get user display info
     const userName = user?.name || user?.first_name || 'Admin';
@@ -117,12 +138,17 @@ const AdminNavbar = ({
                 </IconButton>
 
                 <IconButton
+                    onClick={() => navigate('/notifications')}
                     sx={{
                         color: '#6B7280',
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' },
+                        '&:hover': { color: '#FFFFFF', bgcolor: 'rgba(255,255,255,0.05)' },
                     }}
                 >
-                    <Badge badgeContent={5} color="error">
+                    <Badge
+                        badgeContent={unreadCount > 9 ? '9+' : unreadCount}
+                        color="error"
+                        invisible={unreadCount === 0}
+                    >
                         <NotificationsOutlined sx={{ fontSize: 24 }} />
                     </Badge>
                 </IconButton>
