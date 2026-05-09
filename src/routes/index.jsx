@@ -94,6 +94,11 @@ const router = createBrowserRouter([
         element: <TutorAcceptInvitePage />,
     },
     {
+        // Alias: backend invite emails link to /tutor/accept-invite?token=...
+        path: '/tutor/accept-invite',
+        element: <TutorAcceptInvitePage />,
+    },
+    {
         path: '/2fa/challenge',
         element: <TwoFactorChallengePage />,
     },

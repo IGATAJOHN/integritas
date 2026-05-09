@@ -34,7 +34,9 @@ import {
     CheckCircleOutlined,
     AccessTimeOutlined,
     HighlightOff,
+    BlockOutlined,
     RefreshOutlined,
+    RotateLeftOutlined,
 } from '@mui/icons-material';
 import { adminFoundationalTutorService } from '../services';
 
@@ -153,7 +155,19 @@ const FoundationalTutorInvites = () => {
             setTab('invites');
             await refresh();
         } catch (err) {
-            setError(err?.message || 'Failed to send invite.');
+            if (err?.status === 409) {
+                setError(
+                    err.message ||
+                    `An invite already exists for ${email}. Revoke the existing invite first, then try again.`
+                );
+            } else if (err?.status === 422) {
+                const details = err?.data?.errors
+                    ? Object.values(err.data.errors).flat().join(' ')
+                    : err.message;
+                setError(details || 'Please check the form and try again.');
+            } else {
+                setError(err?.message || 'Failed to send invite. Please try again.');
+            }
         } finally {
             setBusy(false);
         }
@@ -173,17 +187,29 @@ const FoundationalTutorInvites = () => {
         }
     };
 
+    const handleReset = async (invite) => {
+        if (!window.confirm(`Reset the invite link for ${invite.name || invite.email}? A new link will be sent to ${invite.email}.`)) return;
+        try {
+            setBusy(true);
+            setError('');
+            // Revoke the old invite then immediately create a fresh one
+            await adminFoundationalTutorService.revokeInvite(invite.id);
+            await adminFoundationalTutorService.createInvite({ email: invite.email, name: invite.name });
+            setSuccess(`New invite link sent to ${invite.email}.`);
+            await refresh();
+        } catch (err) {
+            setError(err?.message || 'Failed to reset invite link.');
+        } finally {
+            setBusy(false);
+        }
+    };
+
     const stats = useMemo(() => {
-        const accepted = invites.filter((i) => String(i.status || '').toLowerCase() === 'accepted' || i.accepted_at).length;
-        const pending = invites.filter((i) => {
-            const s = String(i.status || (i.accepted_at ? 'accepted' : 'pending')).toLowerCase();
-            return s === 'pending';
-        }).length;
-        return {
-            tutors: tutors.length,
-            pending,
-            accepted,
-        };
+        const getStatus = (i) =>
+            String(i.status || (i.accepted_at ? 'accepted' : i.revoked_at ? 'revoked' : 'pending')).toLowerCase();
+        const accepted = invites.filter((i) => getStatus(i) === 'accepted').length;
+        const pending  = invites.filter((i) => getStatus(i) === 'pending').length;
+        return { tutors: tutors.length, pending, accepted };
     }, [tutors, invites]);
 
     return (
@@ -313,7 +339,7 @@ const FoundationalTutorInvites = () => {
                 ) : tab === 'tutors' ? (
                     <TutorList tutors={tutors} />
                 ) : (
-                    <InviteList invites={invites} busy={busy} onRevoke={handleRevoke} />
+                    <InviteList invites={invites} busy={busy} onRevoke={handleRevoke} onReset={handleReset} />
                 )}
             </Paper>
 
@@ -345,6 +371,11 @@ const FoundationalTutorInvites = () => {
                 </DialogTitle>
                 <DialogContent dividers>
                     <Stack spacing={2.5} sx={{ mt: 0.5 }}>
+                        {error && (
+                            <Alert severity="error" onClose={() => setError('')}>
+                                {error}
+                            </Alert>
+                        )}
                         <Autocomplete
                             freeSolo
                             value={selectedTutor}
@@ -547,7 +578,7 @@ const TutorList = ({ tutors }) => {
     );
 };
 
-const InviteList = ({ invites, busy, onRevoke }) => {
+const InviteList = ({ invites, busy, onRevoke, onReset }) => {
     if (invites.length === 0) {
         return (
             <Box sx={{ p: 6, textAlign: 'center' }}>
@@ -562,9 +593,10 @@ const InviteList = ({ invites, busy, onRevoke }) => {
     return (
         <Stack divider={<Divider />}>
             {invites.map((invite) => {
-                const status = String(invite.status || (invite.accepted_at ? 'accepted' : 'pending')).toLowerCase();
+                const status = String(invite.status || (invite.accepted_at ? 'accepted' : invite.revoked_at ? 'revoked' : 'pending')).toLowerCase();
                 const isAccepted = status === 'accepted';
-                const isExpired = status === 'expired';
+                const isExpired  = status === 'expired';
+                const isRevoked  = status === 'revoked';
                 return (
                     <Stack
                         key={invite.id}
@@ -595,17 +627,40 @@ const InviteList = ({ invites, busy, onRevoke }) => {
                             <Chip
                                 size="small"
                                 icon={
-                                    isAccepted
-                                        ? <CheckCircleOutlined />
-                                        : isExpired
-                                            ? <HighlightOff />
-                                            : <AccessTimeOutlined />
+                                    isAccepted ? <CheckCircleOutlined /> :
+                                    isRevoked  ? <BlockOutlined /> :
+                                    isExpired  ? <HighlightOff /> :
+                                                 <AccessTimeOutlined />
                                 }
-                                label={isAccepted ? 'Accepted' : isExpired ? 'Expired' : 'Pending'}
-                                color={isAccepted ? 'success' : isExpired ? 'default' : 'warning'}
+                                label={
+                                    isAccepted ? 'Accepted' :
+                                    isRevoked  ? 'Revoked' :
+                                    isExpired  ? 'Expired' :
+                                                 'Pending'
+                                }
+                                color={
+                                    isAccepted ? 'success' :
+                                    isRevoked  ? 'error' :
+                                    isExpired  ? 'default' :
+                                                 'warning'
+                                }
                                 variant="outlined"
                             />
                             {!isAccepted && (
+                                <Tooltip title="Reset — revoke and send a new link">
+                                    <span>
+                                        <IconButton
+                                            disabled={busy}
+                                            onClick={() => onReset(invite)}
+                                            aria-label="Reset invite link"
+                                            sx={{ color: 'warning.main' }}
+                                        >
+                                            <RotateLeftOutlined />
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
+                            )}
+                            {!isAccepted && !isRevoked && (
                                 <Tooltip title="Revoke invite">
                                     <span>
                                         <IconButton
