@@ -16,9 +16,8 @@ import {
     LockOutlined,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts';
-import { getDashboardRoute, isReturnToAllowedForUser } from '../utils';
+import { getPostAuthRoute, isReturnToAllowedForUser } from '../utils';
 import logo from '../assets/images/integritas_logo.jpg';
-import icon from '../assets/images/integritas_logo.jpg';
 import theme from '../styles/theme';
 
 
@@ -73,7 +72,7 @@ const LoginPage = () => {
                 return;
             }
 
-            const dashboardRoute = getDashboardRoute(result || userRole);
+            const dashboardRoute = getPostAuthRoute(result || userRole);
             const returnTo = location.state?.from;
             const target = isReturnToAllowedForUser(returnTo, result) ? returnTo : dashboardRoute;
             navigate(target, { replace: true });

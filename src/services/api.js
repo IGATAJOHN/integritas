@@ -216,6 +216,10 @@ export const authService = {
     getCurrentUser: () => apiService.get('/auth/me'),
     verifyEmail: (endpoint) => apiService.get(endpoint),
     resendEmail: () => apiService.post('/auth/email/verify/resend'),
+    enableTwoFactor: () => apiService.post('/auth/2fa/enable'),
+    confirmTwoFactor: (code) => apiService.post('/auth/2fa/confirm', { code }),
+    disableTwoFactor: () => apiService.post('/auth/2fa/disable'),
+    regenerateRecoveryCodes: () => apiService.post('/auth/2fa/recovery-codes'),
     forgotPassword: (email) => apiService.post('/auth/password/forgot', { email }),
     resetPassword: (email, token, password, password_confirmation) =>
         apiService.post('/auth/password/reset', { email, token, password, password_confirmation }),

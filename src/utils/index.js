@@ -153,11 +153,15 @@ export const getVideoUrl = (path) => {
 
 export {
     getPrimaryRole,
+    getAccountState,
     getDashboardRoute,
+    getPostAuthRoute,
     getOrganizationRole,
     hasOrganizationAccess,
     canManageOrganization,
     isReturnToAllowedForUser,
+    isLearnerUser,
+    isLearnerPendingPayment,
     getTutorVariant,
     isFoundationalTutor,
     isExpertTutor,

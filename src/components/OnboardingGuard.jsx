@@ -7,7 +7,7 @@ import theme from '../styles/theme';
 
 
 const OnboardingGuard = ({ children }) => {
-    const { user, loading, needsEmailVerification, needsKyc, isKycComplete } = useAuth();
+    const { user, loading, needsEmailVerification, needsLearnerPayment, needsKyc, isKycComplete } = useAuth();
     const location = useLocation();
 
     if (loading) {
@@ -39,6 +39,21 @@ const OnboardingGuard = ({ children }) => {
     if (!shouldBypassEmailVerification && needsEmailVerification() && location.pathname !== '/verify') {
         return <Navigate to="/verify" replace />;
     }
+
+    const isLearnerPaymentAllowedPath =
+        location.pathname === '/learner/foundational' ||
+        location.pathname === '/explore/foundational' ||
+        location.pathname === '/checkout' ||
+        location.pathname === '/enrolment/return' ||
+        location.pathname === '/payment-success' ||
+        location.pathname === '/payment/success' ||
+        location.pathname === '/settings/profile' ||
+        location.pathname === '/notifications';
+
+    if (needsLearnerPayment() && !isLearnerPaymentAllowedPath) {
+        return <Navigate to="/learner/foundational" state={{ from: location }} replace />;
+    }
+
     const isTutorRoute = location.pathname.startsWith('/tutor');
     const isKycPage = location.pathname === '/tutor/kyc';
     // Foundational tutors are admin-vouched and skip KYC entirely.

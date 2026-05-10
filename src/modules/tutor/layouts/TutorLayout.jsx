@@ -1,36 +1,46 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
-import { Box, useTheme, useMediaQuery } from '@mui/material';
+import { Box } from '@mui/material';
 import TutorSidebar from '../components/TutorSidebar';
 import TutorNavbar from '../components/TutorNavbar';
 import { useAuth } from '../../../contexts';
 import { kycService } from '../services/kycService';
+import { isFoundationalTutor } from '../../../utils';
 
 const SIDEBAR_WIDTH = 260;
 
+const readKycStatus = (user) => {
+    const status = user?.kyc_status || user?.kycStatus || null;
+    return status ? String(status).toLowerCase() : null;
+};
+
 const TutorLayout = () => {
-    const theme = useTheme();
-    const { user, getKycStatus, updateUser } = useAuth();
-    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+    const { user } = useAuth();
+    const isFoundational = isFoundationalTutor(user);
     const [mobileOpen, setMobileOpen] = useState(false);
-    const [kycStatus, setKycStatus] = useState(getKycStatus() || 'draft');
+    const [expertKycStatus, setExpertKycStatus] = useState(readKycStatus(user) || 'draft');
+    const kycStatus = isFoundational ? null : expertKycStatus;
 
     // Fetch actual KYC status from API
     useEffect(() => {
+        if (isFoundational) return;
+
         const fetchKycStatus = async () => {
             try {
                 const data = await kycService.getKyc();
                 if (data?.status) {
-                    setKycStatus(data.status);
-                    // Sync with global auth context to prevent stale data redirects
-                    updateUser({ kyc_status: data.status });
+                    setExpertKycStatus(String(data.status).toLowerCase());
                 }
             } catch (err) {
+                if (err?.status === 403) {
+                    setExpertKycStatus(readKycStatus(user) || null);
+                    return;
+                }
                 console.warn('Failed to fetch KYC status:', err);
             }
         };
         fetchKycStatus();
-    }, []);
+    }, [isFoundational, user]);
 
     const handleDrawerToggle = () => {
         setMobileOpen(!mobileOpen);

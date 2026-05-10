@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
     Box,
@@ -187,7 +187,7 @@ const CBTAttemptPage = () => {
                             Assessment Locked
                         </Typography>
                         <Typography sx={{ color: colors.textSecondary, mb: 2 }}>
-                            You've used all 3 attempts. The assessment is locked for 24 hours.
+                            You've used the available attempts for this lesson. The next lesson stays locked until this cooldown ends and you pass the assessment.
                         </Typography>
                         {lockedUntil && (
                             <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} sx={{ mb: 3 }}>
@@ -376,6 +376,11 @@ const CBTAttemptPage = () => {
                                         ? ` — ${result.attempts_remaining} attempt(s) left`
                                         : ''}
                                 </Typography>
+                                {result.attempts_remaining === 0 && (
+                                    <Alert severity="warning" sx={{ mb: 3, textAlign: 'left' }}>
+                                        Your next lesson will remain locked until the assessment cooldown resets and this lesson is passed.
+                                    </Alert>
+                                )}
                                 <Stack direction="row" spacing={2} justifyContent="center">
                                     <Button
                                         variant="contained"

@@ -9,6 +9,8 @@ import {
     CourseDashboard,
     AddQuestion,
     AssignedLessons,
+    AssignedLessonEditor,
+    AssignedLessonQuiz,
     LessonStatsPage,
     BankingDetails,
     Earnings,
@@ -25,6 +27,14 @@ const tutorRoutes = {
         {
             path: 'lessons',
             element: <AssignedLessons />,
+        },
+        {
+            path: 'lessons/:lessonId/edit',
+            element: <AssignedLessonEditor />,
+        },
+        {
+            path: 'lessons/:lessonId/quiz',
+            element: <AssignedLessonQuiz />,
         },
         {
             path: 'lessons/:lessonId',

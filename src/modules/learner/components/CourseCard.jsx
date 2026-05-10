@@ -19,7 +19,7 @@ const CourseCard = ({ course, colors, access }) => {
     const navigate = useNavigate();
     const [imageFailed, setImageFailed] = useState(false);
 
-    const safeCoursePathId = String(course?.id || '').trim();
+    const safeCoursePathId = String(course?.slug || course?.id || '').trim();
     const safeLevel = String(course?.level || 'Unspecified');
     const safeTitle = String(course?.title || 'Untitled Course');
     const safeDescription = String(course?.description || 'No description available.');

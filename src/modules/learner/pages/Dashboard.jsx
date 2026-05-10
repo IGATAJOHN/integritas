@@ -49,7 +49,7 @@ const LearnerDashboard = () => {
             try {
                 const [enrollmentsRes, recommendedRes] = await Promise.allSettled([
                     learnerEnrollmentService.getEnrollments({ per_page: 20 }),
-                    courseCatalogService.listCourses({ per_page: 3, sort: 'popular', status: 'published' }),
+                    courseCatalogService.listFoundationalCourses({ per_page: 3, sort: 'popular' }),
                 ]);
 
                 // Process enrollments
@@ -255,8 +255,8 @@ const LearnerDashboard = () => {
                     <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
                         Enroll in a course to start your learning journey.
                     </Typography>
-                    <Button variant="contained" onClick={() => navigate('/explore')} sx={{ borderRadius: 2 }}>
-                        Explore Courses
+                    <Button variant="contained" onClick={() => navigate('/learner/foundational')} sx={{ borderRadius: 2 }}>
+                        Open Foundational
                     </Button>
                 </Card>
             )}
@@ -276,7 +276,7 @@ const LearnerDashboard = () => {
                         </Box>
                         {activeCourses.length === 0 ? (
                             <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
-                                No active courses. Browse the catalog to enroll.
+                                No active learning yet. Open the Foundational Course to begin.
                             </Typography>
                         ) : (
                             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>

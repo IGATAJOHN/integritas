@@ -29,8 +29,8 @@ const buildQuery = (params = {}) => {
 
 export const adminCoursesService = {
     // ===== COURSES =====
-    listCourses: async ({ page, per_page = 20, q, status, level, language, track } = {}) => {
-        const query = buildQuery({ page, per_page, q, status, level, language, track });
+    listCourses: async ({ page, per_page = 20, q, status, level, language, type, track } = {}) => {
+        const query = buildQuery({ page, per_page, q, status, level, language, type: type || track });
         const res = await apiService.get(`/admin/courses${query}`);
         return unwrapList(res);
     },
@@ -62,6 +62,12 @@ export const adminCoursesService = {
 
     unpublishCourse: async (courseId) => {
         const res = await apiService.post(`/admin/courses/${encodeURIComponent(courseId)}/unpublish`);
+        return unwrap(res);
+    },
+
+    // ===== SETTINGS =====
+    getPricingSettings: async () => {
+        const res = await apiService.get('/admin/settings?group=pricing');
         return unwrap(res);
     },
 
@@ -174,7 +180,7 @@ export const adminCoursesService = {
             try {
                 const d = await response.json();
                 msg = d.message || msg;
-            } catch (_e) {
+            } catch {
                 /* ignore */
             }
             throw new Error(msg);
@@ -205,6 +211,28 @@ export const adminCoursesService = {
         const res = await apiService.delete(`/admin/materials/${encodeURIComponent(materialId)}`);
         return { success: true, ...(res || {}) };
     },
+
+    // ===== FOUNDATIONAL SINGLETON HELPERS =====
+    getFoundationalCourse: async () => {
+        const list = await adminCoursesService.listCourses({ type: 'foundational', per_page: 25 });
+        const courses = list.data || [];
+        const exact = courses.find((course) => String(course.title || '').trim().toLowerCase() === 'foundational course');
+        const course = exact || courses[0] || null;
+        if (!course) return { course: null, courses, duplicates: [] };
+        const detail = await adminCoursesService.getCourseDetail(course.id || course.slug);
+        return {
+            course: detail || course,
+            courses,
+            duplicates: courses.filter((item) => String(item.id) !== String(course.id)),
+        };
+    },
+
+    createFoundationalCourse: async (payload = {}) => adminCoursesService.createCourse({
+        type: 'foundational',
+        title: payload.title || 'Foundational Course',
+        summary: payload.summary || 'Foundational governance and integrity programme.',
+        description: payload.description || payload.summary || 'Foundational governance and integrity programme.',
+    }),
 
     // ===== CBT QUESTIONS (per lesson version) =====
     listCbtQuestions: async (lessonVersionId) => {
@@ -261,9 +289,10 @@ export const adminCoursesService = {
         return unwrap(res);
     },
 
-    promoteLessonVersion: async (lessonId, versionId) => {
+    promoteLessonVersion: async (lessonId, versionId, payload = {}) => {
         const res = await apiService.post(
-            `/admin/lessons/${encodeURIComponent(lessonId)}/versions/${encodeURIComponent(versionId)}/promote`
+            `/admin/lessons/${encodeURIComponent(lessonId)}/versions/${encodeURIComponent(versionId)}/promote`,
+            payload
         );
         return unwrap(res);
     },

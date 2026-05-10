@@ -47,6 +47,7 @@ const LearnerSidebar = ({ onClose }) => {
 
     const menuItems = [
         { label: 'Dashboard', icon: <DashboardIcon />, path: '/learner', private: true },
+        { label: 'Foundational', icon: <CoursesIcon />, path: '/learner/foundational', private: true },
         { label: 'My Learning', icon: <CoursesIcon />, path: '/explore/my-learning', private: true },
         {
             label: 'Organization',

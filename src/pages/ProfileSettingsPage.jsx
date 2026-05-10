@@ -22,6 +22,7 @@ import {
     VisibilityOff,
     LogoutOutlined,
     PersonOutlineOutlined,
+    SecurityOutlined,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts';
 import { authService } from '../services/api';
@@ -40,6 +41,9 @@ const ProfileSettingsPage = () => {
     const [showPassword, setShowPassword] = useState(false);
 
     const [publicVerify, setPublicVerify] = useState(false);
+    const [mfaSetup, setMfaSetup] = useState(null);
+    const [mfaCode, setMfaCode] = useState('');
+    const [recoveryCodes, setRecoveryCodes] = useState([]);
 
     useEffect(() => {
         const value = user?.is_publicly_verifiable ?? user?.publicly_verifiable ?? false;
@@ -99,6 +103,73 @@ const ProfileSettingsPage = () => {
             navigate('/login');
         } catch (err) {
             setError(err?.message || 'Failed to log out from all devices.');
+            setBusy(false);
+        }
+    };
+
+    const handleEnableMfa = async () => {
+        try {
+            setBusy(true);
+            setError('');
+            setSuccess('');
+            const res = await authService.enableTwoFactor();
+            setMfaSetup(res?.data || res);
+            setRecoveryCodes((res?.data || res)?.recovery_codes || []);
+            setSuccess('Scan the QR code, then enter your 6-digit code to confirm MFA.');
+        } catch (err) {
+            setError(err?.message || 'Failed to start MFA setup.');
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const handleConfirmMfa = async () => {
+        if (!mfaCode.trim()) {
+            setError('Enter the 6-digit code from your authenticator app.');
+            return;
+        }
+        try {
+            setBusy(true);
+            setError('');
+            const res = await authService.confirmTwoFactor(mfaCode.trim());
+            setMfaCode('');
+            setRecoveryCodes(res?.recovery_codes || res?.data?.recovery_codes || recoveryCodes);
+            await refreshUser?.();
+            setSuccess('MFA is active for this account.');
+        } catch (err) {
+            setError(err?.message || 'Failed to confirm MFA.');
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const handleRegenerateRecoveryCodes = async () => {
+        try {
+            setBusy(true);
+            setError('');
+            const res = await authService.regenerateRecoveryCodes();
+            setRecoveryCodes(res?.recovery_codes || res?.data?.recovery_codes || []);
+            setSuccess('New recovery codes generated.');
+        } catch (err) {
+            setError(err?.message || 'Failed to generate recovery codes.');
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const handleDisableMfa = async () => {
+        if (!window.confirm('Disable MFA for this account?')) return;
+        try {
+            setBusy(true);
+            setError('');
+            await authService.disableTwoFactor();
+            setMfaSetup(null);
+            setRecoveryCodes([]);
+            await refreshUser?.();
+            setSuccess('MFA disabled.');
+        } catch (err) {
+            setError(err?.message || 'MFA cannot be disabled for this role.');
+        } finally {
             setBusy(false);
         }
     };
@@ -201,6 +272,66 @@ const ProfileSettingsPage = () => {
                             {busy ? 'Saving…' : 'Change Password'}
                         </Button>
                     </Stack>
+                </Paper>
+
+                <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
+                    <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 1 }}>
+                        <SecurityOutlined color="primary" />
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                            Multi-Factor Authentication
+                        </Typography>
+                    </Stack>
+                    <Typography color="text.secondary" sx={{ mb: 2 }}>
+                        Elevated roles may be required to set up TOTP MFA before continuing.
+                    </Typography>
+
+                    {mfaSetup?.qr_code_svg && (
+                        <Box
+                            sx={{ bgcolor: '#fff', width: 180, height: 180, p: 1, borderRadius: 1, mb: 2 }}
+                            dangerouslySetInnerHTML={{ __html: mfaSetup.qr_code_svg }}
+                        />
+                    )}
+                    {mfaSetup?.otpauth_url && (
+                        <Typography variant="caption" sx={{ display: 'block', wordBreak: 'break-all', color: 'text.secondary', mb: 2 }}>
+                            Manual setup: {mfaSetup.otpauth_url}
+                        </Typography>
+                    )}
+
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mb: 2 }}>
+                        <Button variant="contained" onClick={handleEnableMfa} disabled={busy} sx={{ textTransform: 'none' }}>
+                            Start MFA Setup
+                        </Button>
+                        <TextField
+                            label="Authenticator code"
+                            value={mfaCode}
+                            onChange={(e) => setMfaCode(e.target.value)}
+                            inputProps={{ maxLength: 6 }}
+                            size="small"
+                        />
+                        <Button variant="outlined" onClick={handleConfirmMfa} disabled={busy || !mfaCode.trim()} sx={{ textTransform: 'none' }}>
+                            Confirm
+                        </Button>
+                    </Stack>
+
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+                        <Button variant="outlined" onClick={handleRegenerateRecoveryCodes} disabled={busy} sx={{ textTransform: 'none' }}>
+                            Recovery Codes
+                        </Button>
+                        <Button variant="outlined" color="error" onClick={handleDisableMfa} disabled={busy} sx={{ textTransform: 'none' }}>
+                            Disable MFA
+                        </Button>
+                    </Stack>
+
+                    {recoveryCodes.length > 0 && (
+                        <Box sx={{ mt: 2, p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                            <Typography variant="subtitle2" sx={{ mb: 1 }}>Recovery codes</Typography>
+                            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: 0.5 }}>
+                                {recoveryCodes.map((code) => (
+                                    <Typography key={code} sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>{code}</Typography>
+                                ))}
+                            </Box>
+                        </Box>
+                    )}
                 </Paper>
 
                 <Paper variant="outlined" sx={{ p: 3 }}>

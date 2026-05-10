@@ -70,8 +70,8 @@ export const learnerEnrollmentService = {
     /**
      * GET /me/enrolments — authenticated learner's enrolments
      */
-    getMyEnrolments: async ({ page, per_page = 20, status } = {}) => {
-        const query = buildQuery({ page, per_page, status });
+    getMyEnrolments: async ({ page, per_page = 20, status, course_id, course_slug } = {}) => {
+        const query = buildQuery({ page, per_page, status, course_id, course_slug });
         const res = await apiService.get(`/me/enrolments${query}`);
         return unwrapList(res);
     },
@@ -91,6 +91,28 @@ export const learnerEnrollmentService = {
     getCourseProgress: async (courseSlug) => {
         const res = await apiService.get(`/learner/courses/${encodeURIComponent(courseSlug)}/progress`);
         return unwrap(res);
+    },
+
+    /**
+     * Compatibility helper for course detail pages.
+     * The current backend exposes course access through learner progress once
+     * the learner is enrolled; keep this shape small so UI badges/buttons do
+     * not crash when the learner has not enrolled yet.
+     */
+    getCourseAccess: async (courseSlugOrId) => {
+        const progress = await learnerEnrollmentService.getCourseProgress(courseSlugOrId);
+        const course = progress?.course || progress?.enrolment?.course || progress;
+        return {
+            ...progress,
+            has_access: Boolean(
+                progress?.has_access ??
+                progress?.can_access ??
+                progress?.is_enrolled ??
+                progress?.enrolment
+            ),
+            track: progress?.track || course?.track || course?.type || null,
+            status: progress?.status || progress?.enrolment?.status || null,
+        };
     },
 
     // -------------------------------------------------------------------

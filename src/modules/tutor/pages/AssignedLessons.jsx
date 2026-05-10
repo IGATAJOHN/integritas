@@ -1,22 +1,99 @@
 import React, { useEffect, useState } from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
-    Box,
-    Typography,
-    Stack,
-    CircularProgress,
     Alert,
-    Paper,
+    Box,
     Chip,
+    CircularProgress,
+    IconButton,
+    ListItemIcon,
+    ListItemText,
+    Menu,
+    MenuItem,
+    Paper,
+    Stack,
+    Typography,
 } from '@mui/material';
-import { ChevronRight, MenuBookOutlined } from '@mui/icons-material';
+import {
+    BarChartOutlined,
+    EditOutlined,
+    MenuBookOutlined,
+    MoreVert,
+    QuizOutlined,
+} from '@mui/icons-material';
 import { tutorAssignmentService } from '../services';
+
+const actionMenuPaperSx = {
+    bgcolor: '#111827',
+    color: '#E5E7EB',
+    border: '1px solid #374151',
+    minWidth: 190,
+    '& .MuiMenuItem-root': {
+        fontSize: '0.875rem',
+        gap: 1,
+        '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
+    },
+};
+
+const LessonActionsMenu = ({ lesson, onAction }) => {
+    const [anchorEl, setAnchorEl] = useState(null);
+    const open = Boolean(anchorEl);
+
+    const handleAction = (action) => {
+        setAnchorEl(null);
+        onAction(action, lesson);
+    };
+
+    return (
+        <>
+            <IconButton
+                size="small"
+                aria-label={`Actions for ${lesson.title || 'lesson'}`}
+                aria-controls={open ? `lesson-actions-${lesson.id}` : undefined}
+                aria-haspopup="menu"
+                aria-expanded={open ? 'true' : undefined}
+                onClick={(event) => setAnchorEl(event.currentTarget)}
+                sx={{ color: '#9CA3AF', '&:hover': { bgcolor: 'rgba(255,255,255,0.08)', color: '#FFFFFF' } }}
+            >
+                <MoreVert fontSize="small" />
+            </IconButton>
+            <Menu
+                id={`lesson-actions-${lesson.id}`}
+                anchorEl={anchorEl}
+                open={open}
+                onClose={() => setAnchorEl(null)}
+                PaperProps={{ sx: actionMenuPaperSx }}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            >
+                <MenuItem onClick={() => handleAction('edit')}>
+                    <ListItemIcon sx={{ color: '#93C5FD', minWidth: 30 }}><EditOutlined fontSize="small" /></ListItemIcon>
+                    <ListItemText>Edit Content</ListItemText>
+                </MenuItem>
+                <MenuItem onClick={() => handleAction('quiz')}>
+                    <ListItemIcon sx={{ color: '#A78BFA', minWidth: 30 }}><QuizOutlined fontSize="small" /></ListItemIcon>
+                    <ListItemText>Manage Quiz</ListItemText>
+                </MenuItem>
+                <MenuItem onClick={() => handleAction('stats')}>
+                    <ListItemIcon sx={{ color: '#34D399', minWidth: 30 }}><BarChartOutlined fontSize="small" /></ListItemIcon>
+                    <ListItemText>View Stats</ListItemText>
+                </MenuItem>
+            </Menu>
+        </>
+    );
+};
 
 const AssignedLessons = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [lessons, setLessons] = useState([]);
+
+    const handleAction = (action, lesson) => {
+        if (action === 'edit') navigate(`/tutor/lessons/${lesson.id}/edit`);
+        if (action === 'quiz') navigate(`/tutor/lessons/${lesson.id}/quiz`);
+        if (action === 'stats') navigate(`/tutor/lessons/${lesson.id}`);
+    };
 
     useEffect(() => {
         let cancelled = false;
@@ -72,14 +149,13 @@ const AssignedLessons = () => {
                             key={lesson.id}
                             variant="outlined"
                             sx={{ p: 2, cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' } }}
-                            onClick={() => navigate(`/tutor/lessons/${lesson.id}`)}
                         >
                             <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
                                 <Box>
                                     <Typography sx={{ fontWeight: 600 }}>{lesson.title || 'Untitled lesson'}</Typography>
                                     <Typography variant="caption" color="text.secondary">
-                                        {lesson.course?.title || lesson.module?.course?.title || '—'}
-                                        {lesson.module?.title ? ` · ${lesson.module.title}` : ''}
+                                        {lesson.course?.title || lesson.module?.course?.title || '-'}
+                                        {lesson.module?.title ? ` - ${lesson.module.title}` : ''}
                                     </Typography>
                                 </Box>
                                 <Stack direction="row" alignItems="center" spacing={1}>
@@ -91,7 +167,7 @@ const AssignedLessons = () => {
                                             variant="outlined"
                                         />
                                     )}
-                                    <ChevronRight color="action" />
+                                    <LessonActionsMenu lesson={lesson} onAction={handleAction} />
                                 </Stack>
                             </Stack>
                         </Paper>

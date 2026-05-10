@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTheme as useMuiTheme } from '@mui/material/styles';
 import { adminCoursesService } from '../services';
 import { CircularProgress } from '@mui/material';
 import { formatCurrency, getImageUrl } from '../../../utils';
 import {
+    textFieldStyle,
+    selectStyle,
+    selectMenuProps,
     searchBarStyle,
     searchInputStyle,
     tableHeaderCellStyle,
     tableBodyCellStyle,
     paperStyle,
+    primaryButtonStyle,
+    scrollableModalBody,
 } from '../../../styles/formStyles';
 import {
     Box,
@@ -26,18 +30,17 @@ import {
     TableContainer,
     TableHead,
     TableRow,
-    Modal,
     TextField,
     InputBase,
     Tooltip,
-    Collapse,
-    Divider,
     Snackbar,
     Alert,
     Dialog,
     DialogTitle,
     DialogContent,
     DialogActions,
+    Select,
+    MenuItem,
     ToggleButton,
     ToggleButtonGroup,
     InputAdornment,
@@ -61,50 +64,134 @@ import {
 } from '@mui/icons-material';
 import theme from '../../../styles/theme';
 
-const TRACK_FOUNDATIONAL = 'foundational';
-const TRACK_EXPERT = 'expert';
+const TYPE_FOUNDATIONAL = 'foundational';
+const TYPE_EXPERT = 'expert';
 
-const trackChip = (track) => {
-    const t = String(track || '').toLowerCase();
-    if (t === TRACK_FOUNDATIONAL) return { label: 'Foundational', color: '#10B981', bg: 'rgba(16,185,129,0.15)' };
-    if (t === TRACK_EXPERT) return { label: 'Expert', color: '#A855F7', bg: 'rgba(168,85,247,0.15)' };
-    return { label: 'Untracked', color: '#9CA3AF', bg: 'rgba(156,163,175,0.15)' };
+const getCourseType = (course = {}) => String(course.type || course.track || course.course_type || '').toLowerCase();
+
+const courseTypeChip = (courseType) => {
+    const t = String(courseType || '').toLowerCase();
+    if (t === TYPE_FOUNDATIONAL) return { label: 'Foundational', color: '#10B981', bg: 'rgba(16,185,129,0.15)' };
+    if (t === TYPE_EXPERT) return { label: 'Expert', color: '#A855F7', bg: 'rgba(168,85,247,0.15)' };
+    return { label: 'Unknown', color: '#9CA3AF', bg: 'rgba(156,163,175,0.15)' };
 };
 
+const getCourseStatus = (course = {}) => {
+    const rawStatus = String(course.status || course.publication_status || course.publish_status || '').toLowerCase();
+    const isPublished = Boolean(course.published_at || course.is_published || course.published);
+
+    if (rawStatus === 'active') return { label: 'Published', state: 'published' };
+    if (rawStatus === 'published') return { label: 'Published', state: 'published' };
+    if (rawStatus === 'draft' || rawStatus === 'unpublished') return { label: 'Draft', state: 'draft' };
+    if (rawStatus === 'rejected') return { label: 'Rejected', state: 'rejected' };
+    if (rawStatus === 'pending' || rawStatus === 'pending_review') return { label: 'Pending', state: 'pending' };
+    if (isPublished) return { label: 'Published', state: 'published' };
+    return { label: 'Draft', state: 'draft' };
+};
+
+const statusChipStyle = (state) => {
+    if (state === 'published') return { color: '#10B981', bg: 'rgba(16, 185, 129, 0.15)' };
+    if (state === 'rejected') return { color: '#EF4444', bg: 'rgba(239, 68, 68, 0.15)' };
+    if (state === 'pending') return { color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.15)' };
+    return { color: '#9CA3AF', bg: 'rgba(156, 163, 175, 0.15)' };
+};
+
+const normalizeMoneyInput = (value) => String(value || '').replace(/[^\d]/g, '');
+
+const formatMoneyInput = (value) => {
+    const digits = normalizeMoneyInput(value);
+    if (!digits) return '';
+    return new Intl.NumberFormat('en-NG').format(Number(digits));
+};
+
+const toMoneyNumber = (value) => {
+    const normalized = String(value ?? '').replace(/,/g, '');
+    const number = Number(normalized);
+    return Number.isFinite(number) ? number : 0;
+};
+
+const readSettingValue = (settings, keys = []) => {
+    const payload = settings?.data ?? settings;
+    if (!payload) return undefined;
+
+    if (Array.isArray(payload)) {
+        const item = payload.find((entry) => keys.includes(String(entry?.key || entry?.name || '').toLowerCase()));
+        return item?.value ?? item?.current_value ?? item?.default ?? item?.meta?.default;
+    }
+
+    if (typeof payload === 'object') {
+        for (const key of keys) {
+            const value = payload[key];
+            if (value && typeof value === 'object' && !Array.isArray(value)) {
+                return value.value ?? value.current_value ?? value.default ?? value.meta?.default;
+            }
+            if (value !== undefined && value !== null) return value;
+        }
+    }
+
+    return undefined;
+};
+
+const firstMoneyValue = (values = []) => {
+    for (const { value, divisor = 1 } of values) {
+        const amount = toMoneyNumber(value);
+        if (amount > 0) return amount / divisor;
+    }
+    return 0;
+};
+
+const getPricingSettingsFee = (settings) => firstMoneyValue([
+    { value: readSettingValue(settings, ['foundational_enrolment_fee_kobo', 'foundational_enrollment_fee_kobo', 'enrolment_fee_kobo', 'enrollment_fee_kobo', 'course_enrolment_fee_kobo', 'course_enrollment_fee_kobo', 'course_fee_kobo', 'foundational_fee_kobo']), divisor: 100 },
+    { value: readSettingValue(settings, ['foundational_enrolment_fee', 'foundational_enrollment_fee', 'enrolment_fee', 'enrollment_fee', 'course_enrolment_fee', 'course_enrollment_fee', 'course_fee', 'foundational_fee']) },
+]);
+
+const getCoursePrice = (course = {}, pricingSettings = null) => {
+    const coursePrice = firstMoneyValue([
+        { value: course.price },
+        { value: course.amount },
+        { value: course.fee_amount },
+        { value: course.enrolment_fee },
+        { value: course.enrollment_fee },
+        { value: course.course_fee },
+        { value: course.pricing?.price },
+        { value: course.pricing?.amount },
+        { value: course.pricing?.fee },
+        { value: course.pricing?.enrolment_fee },
+        { value: course.pricing?.enrollment_fee },
+        { value: course.fees?.enrolment },
+        { value: course.fees?.enrollment },
+        { value: course.fees?.course },
+        { value: course.enrolment?.fee },
+        { value: course.enrollment?.fee },
+        { value: course.price_kobo, divisor: 100 },
+        { value: course.amount_kobo, divisor: 100 },
+        { value: course.fee_amount_kobo, divisor: 100 },
+        { value: course.enrolment_fee_kobo, divisor: 100 },
+        { value: course.enrollment_fee_kobo, divisor: 100 },
+        { value: course.course_fee_kobo, divisor: 100 },
+        { value: course.pricing?.price_kobo, divisor: 100 },
+        { value: course.pricing?.amount_kobo, divisor: 100 },
+        { value: course.pricing?.fee_kobo, divisor: 100 },
+        { value: course.pricing?.enrolment_fee_kobo, divisor: 100 },
+        { value: course.pricing?.enrollment_fee_kobo, divisor: 100 },
+    ]);
+
+    if (coursePrice > 0) return coursePrice;
+    return getCourseType(course) === TYPE_FOUNDATIONAL ? getPricingSettingsFee(pricingSettings) : 0;
+};
+
+const getCourseCurrency = (course = {}) => course.currency || course.pricing?.currency || course.fees?.currency || 'NGN';
 
 
 const CourseManagement = () => {
     const navigate = useNavigate();
-    const muiTheme = useMuiTheme();
-    const isDark = muiTheme.palette.mode === 'dark';
-
-    // Input styling that matches LoginPage exactly, but adapts to dark/light
-    const inputSx = {
-        '& .MuiOutlinedInput-root': {
-            bgcolor: isDark ? '#1E293B' : '#F8FAFC',
-            borderRadius: 1.5,
-            '& fieldset': { borderColor: isDark ? '#374151' : '#CBD5E1' },
-            '&:hover fieldset': { borderColor: isDark ? '#4B5563' : '#94A3B8' },
-            '&.Mui-focused fieldset': { borderColor: theme.colors.brand },
-            '&.Mui-error fieldset': { borderColor: '#EF4444' },
-        },
-        '& .MuiInputBase-input': {
-            py: 1.25,
-            fontSize: '0.875rem',
-            color: isDark ? '#FFFFFF' : '#1E293B',
-            '&::placeholder': { color: '#9CA3AF', opacity: 1 },
-        },
-    };
-
-    const modalBg    = isDark ? '#111827' : '#FFFFFF';
-    const modalBorder = isDark ? '#374151' : '#E2E8F0';
-    const cardBg     = isDark ? '#1E293B' : '#F1F5F9';
-    const labelColor = isDark ? '#E5E7EB' : '#374151';
+    const labelColor = '#E5E7EB';
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [trackFilter, setTrackFilter] = useState('all');
+    const [typeFilter, setTypeFilter] = useState('all');
     const [pendingChanges, setPendingChanges] = useState({}); // Map of courseId -> change
+    const [pricingSettings, setPricingSettings] = useState(null);
 
     // Create dialog state
     const [createOpen, setCreateOpen] = useState(false);
@@ -115,22 +202,24 @@ const CourseManagement = () => {
         title: '',
         summary: '',
         description: '',
-        type: TRACK_FOUNDATIONAL,
+        type: TYPE_EXPERT,
         price: '',
     });
 
     const fetchCourses = async () => {
         setLoading(true);
         try {
-            const [coursesResp, changesResp] = await Promise.all([
+            const [coursesResp, changesResp, settingsResp] = await Promise.all([
                 adminCoursesService.listCourses({
                     q: searchTerm,
-                    track: trackFilter === 'all' ? undefined : trackFilter,
+                    type: typeFilter === 'all' ? undefined : typeFilter,
                 }),
-                adminCoursesService.listPriceChanges({ status: 'pending' })
+                adminCoursesService.listPriceChanges({ status: 'pending' }),
+                adminCoursesService.getPricingSettings().catch(() => null),
             ]);
 
             setCourses(coursesResp.data || []);
+            setPricingSettings(settingsResp);
 
             const changesMap = {};
             (changesResp?.data || changesResp || []).forEach(change => {
@@ -150,14 +239,14 @@ const CourseManagement = () => {
         }, 500);
         return () => clearTimeout(timer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [searchTerm, trackFilter]);
+    }, [searchTerm, typeFilter]);
 
     const handleViewCourse = (course) => {
         navigate(`/admin/content/courses/${course.id}`);
     };
 
     const resetCreateForm = () => {
-        setForm({ title: '', summary: '', description: '', type: TRACK_FOUNDATIONAL, price: '' });
+        setForm({ title: '', summary: '', description: '', type: TYPE_EXPERT, price: '' });
         setCreateError('');
     };
 
@@ -174,7 +263,7 @@ const CourseManagement = () => {
             setCreateError('Please select a course type.');
             return;
         }
-        const priceNumber = form.price === '' ? 0 : Number(form.price);
+        const priceNumber = form.price === '' ? 0 : Number(normalizeMoneyInput(form.price));
         if (!Number.isFinite(priceNumber) || priceNumber < 0) {
             setCreateError('Price must be a non-negative number.');
             return;
@@ -229,7 +318,7 @@ const CourseManagement = () => {
                 </Button>
             </Stack>
 
-            {/* Search + Track filter */}
+            {/* Search + type filter */}
             <Paper sx={{ ...paperStyle, p: 2, mb: 4 }}>
                 <Stack direction={{ xs: 'column', md: 'row' }} alignItems={{ md: 'center' }} spacing={2} justifyContent="space-between">
                     <Box sx={{ ...searchBarStyle, maxWidth: 400, flex: 1 }}>
@@ -242,10 +331,10 @@ const CourseManagement = () => {
                         />
                     </Box>
                     <ToggleButtonGroup
-                        value={trackFilter}
+                        value={typeFilter}
                         exclusive
                         size="small"
-                        onChange={(_e, v) => v && setTrackFilter(v)}
+                        onChange={(_e, v) => v && setTypeFilter(v)}
                         sx={{
                             '& .MuiToggleButton-root': {
                                 color: '#9CA3AF',
@@ -261,11 +350,11 @@ const CourseManagement = () => {
                         }}
                     >
                         <ToggleButton value="all">All</ToggleButton>
-                        <ToggleButton value={TRACK_FOUNDATIONAL}>
+                        <ToggleButton value={TYPE_FOUNDATIONAL}>
                             <StarBorderOutlined sx={{ fontSize: 16, mr: 0.5 }} />
                             Foundational
                         </ToggleButton>
-                        <ToggleButton value={TRACK_EXPERT}>
+                        <ToggleButton value={TYPE_EXPERT}>
                             <EngineeringOutlined sx={{ fontSize: 16, mr: 0.5 }} />
                             Expert
                         </ToggleButton>
@@ -279,7 +368,7 @@ const CourseManagement = () => {
                     <TableHead>
                         <TableRow>
                             <TableCell sx={tableHeaderCellStyle}>Course</TableCell>
-                            <TableCell sx={tableHeaderCellStyle}>Track</TableCell>
+                            <TableCell sx={tableHeaderCellStyle}>Type</TableCell>
                             <TableCell sx={tableHeaderCellStyle}>Tutor</TableCell>
                             <TableCell sx={tableHeaderCellStyle}>Students</TableCell>
                             <TableCell sx={tableHeaderCellStyle}>Price</TableCell>
@@ -302,15 +391,11 @@ const CourseManagement = () => {
                             </TableRow>
                         ) : (
                             courses.map((course) => {
-                                const isActive = course.status === 'active' || course.status === 'published';
-                                const statusLabel = course.status ? course.status.charAt(0).toUpperCase() + course.status.slice(1) : 'Unknown';
-                                // Determine a friendly category label from multiple possible response shapes
-                                const categoryLabel = course.category?.name
-                                    || course.category?.title
-                                    || course.category_name
-                                    || (course.categories && course.categories[0]?.name)
-                                    || 'Uncategorized';
-
+                                const courseStatus = getCourseStatus(course);
+                                const statusStyle = statusChipStyle(courseStatus.state);
+                                const courseType = getCourseType(course);
+                                const coursePrice = getCoursePrice(course, pricingSettings);
+                                const courseCurrency = getCourseCurrency(course);
                                 // Resolve tutor data and friendly display name
                                 const tutorData = course.tutor || course.user || course.creator || course.created_by;
                                 const tutorName = (() => {
@@ -366,7 +451,7 @@ const CourseManagement = () => {
                                         </TableCell>
                                         <TableCell sx={tableBodyCellStyle}>
                                             {(() => {
-                                                const t = trackChip(course.track);
+                                                const t = courseTypeChip(courseType);
                                                 return (
                                                     <Chip
                                                         label={t.label}
@@ -407,16 +492,19 @@ const CourseManagement = () => {
                                         </TableCell>
                                         <TableCell sx={tableBodyCellStyle}>
                                             <Typography variant="body2" sx={{ color: '#fff', fontWeight: 600 }}>
-                                                {course.price > 0
-                                                    ? formatCurrency(course.price, course.currency)
+                                                {coursePrice > 0
+                                                    ? formatCurrency(coursePrice, courseCurrency, 'en-NG')
                                                     : 'Free'}
                                             </Typography>
+                                            <Typography variant="caption" sx={{ color: '#6B7280' }}>
+                                                {courseType === TYPE_FOUNDATIONAL ? 'Enrolment fee' : courseType === TYPE_EXPERT ? 'Course price' : 'Course fee'}
+                                            </Typography>
                                             {pendingChanges[course.id] && (
-                                                <Tooltip title={`Pending Change: ${formatCurrency(pendingChanges[course.id].new_amount, pendingChanges[course.id].new_currency)}`}>
+                                                <Tooltip title={`Pending Change: ${formatCurrency(pendingChanges[course.id].new_amount, pendingChanges[course.id].new_currency, 'en-NG')}`}>
                                                     <Stack direction="row" alignItems="center" spacing={0.5} sx={{ color: '#3B82F6', mt: 0.5 }}>
                                                         <History sx={{ fontSize: 12 }} />
                                                         <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                                                            {formatCurrency(pendingChanges[course.id].new_amount, pendingChanges[course.id].new_currency)}
+                                                            {formatCurrency(pendingChanges[course.id].new_amount, pendingChanges[course.id].new_currency, 'en-NG')}
                                                         </Typography>
                                                     </Stack>
                                                 </Tooltip>
@@ -424,15 +512,15 @@ const CourseManagement = () => {
                                         </TableCell>
                                         <TableCell sx={tableBodyCellStyle}>
                                             <Chip
-                                                icon={isActive ? <CheckCircle sx={{ fontSize: 14 }} /> : <Block sx={{ fontSize: 14 }} />}
-                                                label={statusLabel}
+                                                icon={courseStatus.state === 'published' ? <CheckCircle sx={{ fontSize: 14 }} /> : <Block sx={{ fontSize: 14 }} />}
+                                                label={courseStatus.label}
                                                 size="small"
                                                 sx={{
-                                                    bgcolor: isActive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                                                    color: isActive ? '#10B981' : '#EF4444',
+                                                    bgcolor: statusStyle.bg,
+                                                    color: statusStyle.color,
                                                     fontSize: '0.75rem',
                                                     '& .MuiChip-icon': {
-                                                        color: isActive ? '#10B981' : '#EF4444',
+                                                        color: statusStyle.color,
                                                     },
                                                 }}
                                             />
@@ -469,48 +557,77 @@ const CourseManagement = () => {
                 maxWidth="sm"
                 fullWidth
                 disableRestoreFocus
+                slotProps={{
+                    backdrop: {
+                        sx: {
+                            bgcolor: 'rgba(8,13,25,0.78)',
+                            backdropFilter: 'blur(3px)',
+                        },
+                    },
+                }}
                 PaperProps={{
                     component: 'form',
                     onSubmit: handleCreateCourse,
-                    sx: { bgcolor: modalBg, border: `1px solid ${modalBorder}`, borderRadius: 2 },
+                    sx: {
+                        bgcolor: '#111827',
+                        border: '1px solid #1F2937',
+                        borderRadius: 2.5,
+                        boxShadow: '0 24px 80px rgba(0,0,0,0.45)',
+                        overflow: 'hidden',
+                    },
                 }}
             >
-                <DialogTitle sx={{ borderBottom: `1px solid ${modalBorder}`, pb: 2 }}>
+                <DialogTitle sx={{ bgcolor: '#111827', borderBottom: '1px solid #1F2937', px: 3, py: 2.25 }}>
                     <Stack direction="row" alignItems="center" justifyContent="space-between">
                         <Stack direction="row" alignItems="center" spacing={1.5}>
-                            <Avatar sx={{ bgcolor: theme.colors.brand, width: 36, height: 36 }}>
+                            <Avatar sx={{ bgcolor: theme.colors.brandLight, color: theme.colors.brand, width: 38, height: 38 }}>
                                 <School fontSize="small" />
                             </Avatar>
                             <Box>
-                                <Typography sx={{ fontWeight: 700 }}>Create New Course</Typography>
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography sx={{ fontWeight: 700, color: '#F9FAFB' }}>Create Course</Typography>
+                                <Typography variant="caption" sx={{ color: '#9CA3AF', display: 'none' }}>
                                     Pick the type first — it cannot be changed later.
                                 </Typography>
                             </Box>
+                            <Typography variant="caption" sx={{ color: '#9CA3AF', display: 'block', mt: 0.25 }}>
+                                Add a course shell, then manage modules and lessons.
+                            </Typography>
                         </Stack>
-                        <IconButton onClick={() => { setCreateOpen(false); resetCreateForm(); }} sx={{ color: 'text.secondary' }}>
+                        <IconButton disabled={creating} onClick={() => { setCreateOpen(false); resetCreateForm(); }} sx={{ color: '#9CA3AF' }}>
                             <Close fontSize="small" />
                         </IconButton>
                     </Stack>
                 </DialogTitle>
 
-                <DialogContent sx={{ p: 3, overflowY: 'auto' }}>
+                <DialogContent sx={{ bgcolor: '#0F1729', p: 3, overflowY: 'auto', ...scrollableModalBody }}>
                     {createError && (
                         <Alert severity="error" sx={{ mb: 2.5 }} onClose={() => setCreateError('')}>
                             {createError}
                         </Alert>
                     )}
 
-                    <Stack spacing={3}>
+                    <Stack spacing={2}>
                         {/* Type selector */}
                         <Box>
                             <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: labelColor, mb: 1 }}>
                                 Course Type <Box component="span" sx={{ color: '#EF4444' }}>*</Box>
                             </Typography>
-                            <Stack direction="row" spacing={1.5}>
+                            <Select
+                                fullWidth
+                                value={form.type}
+                                onChange={(event) => setForm(prev => ({ ...prev, type: event.target.value }))}
+                                sx={selectStyle}
+                                MenuProps={selectMenuProps}
+                            >
+                                <MenuItem value={TYPE_EXPERT}>Expert</MenuItem>
+                            </Select>
+                            <Typography variant="caption" sx={{ color: '#9CA3AF', display: 'block', mt: 1 }}>
+                                Foundational is managed from the dedicated Foundational menu to keep it as one programme course.
+                            </Typography>
+                            <Stack direction="row" spacing={1.5} sx={{ display: 'none' }}>
                                 {[
-                                    { value: TRACK_FOUNDATIONAL, icon: <StarBorderOutlined sx={{ fontSize: 18 }} />, label: 'Foundational', sub: 'Admin-managed · leads to certificate' },
-                                    { value: TRACK_EXPERT, icon: <EngineeringOutlined sx={{ fontSize: 18 }} />, label: 'Expert', sub: 'Tutor-delivered · flexible structure' },
+                                    { value: TYPE_FOUNDATIONAL, icon: <StarBorderOutlined sx={{ fontSize: 18 }} />, label: 'Foundational', sub: 'Admin-managed · leads to certificate' },
+                                    { value: TYPE_EXPERT, icon: <EngineeringOutlined sx={{ fontSize: 18 }} />, label: 'Expert', sub: 'Tutor-delivered · flexible structure' },
                                 ].map(opt => {
                                     const selected = form.type === opt.value;
                                     return (
@@ -519,8 +636,8 @@ const CourseManagement = () => {
                                             onClick={() => setForm(prev => ({ ...prev, type: opt.value }))}
                                             sx={{
                                                 flex: 1, p: 2, borderRadius: 2, cursor: 'pointer',
-                                                border: `2px solid ${selected ? theme.colors.brand : modalBorder}`,
-                                                bgcolor: selected ? 'rgba(23,138,131,0.08)' : cardBg,
+                                                border: `2px solid ${selected ? theme.colors.brand : '#374151'}`,
+                                                bgcolor: selected ? 'rgba(23,138,131,0.08)' : '#1E293B',
                                                 transition: 'border-color 0.15s',
                                                 '&:hover': { borderColor: selected ? theme.colors.brand : theme.colors.brandMuted },
                                             }}
@@ -548,7 +665,7 @@ const CourseManagement = () => {
                                 onChange={e => setForm(prev => ({ ...prev, title: e.target.value }))}
                                 autoFocus
                                 inputProps={{ maxLength: 160 }}
-                                sx={inputSx}
+                                sx={textFieldStyle}
                             />
                         </Box>
 
@@ -563,7 +680,7 @@ const CourseManagement = () => {
                                 value={form.summary}
                                 onChange={e => setForm(prev => ({ ...prev, summary: e.target.value }))}
                                 inputProps={{ maxLength: 300 }}
-                                sx={inputSx}
+                                sx={textFieldStyle}
                             />
                         </Box>
 
@@ -580,33 +697,40 @@ const CourseManagement = () => {
                                 value={form.description}
                                 onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))}
                                 inputProps={{ maxLength: 2000 }}
-                                sx={inputSx}
+                                sx={textFieldStyle}
                             />
                         </Box>
 
                         {/* Price */}
                         <Box>
                             <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: labelColor, mb: 0.75 }}>
-                                {form.type === TRACK_FOUNDATIONAL ? 'Enrolment Fee' : 'Course Price'}
+                                {form.type === TYPE_FOUNDATIONAL ? 'Enrolment Fee' : 'Course Price'}
                             </Typography>
                             <TextField
                                 fullWidth
-                                type="number"
                                 placeholder="0"
-                                value={form.price}
-                                onChange={e => setForm(prev => ({ ...prev, price: e.target.value }))}
-                                inputProps={{ min: 0, step: 100 }}
+                                value={formatMoneyInput(form.price)}
+                                onChange={e => setForm(prev => ({ ...prev, price: normalizeMoneyInput(e.target.value) }))}
+                                inputProps={{ inputMode: 'numeric' }}
                                 InputProps={{
-                                    startAdornment: <InputAdornment position="start"><Typography sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>₦</Typography></InputAdornment>,
+                                    startAdornment: <InputAdornment position="start"><Typography sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>NGN</Typography></InputAdornment>,
                                 }}
-                                helperText={form.type === TRACK_FOUNDATIONAL ? 'Recommended: NGN 5,000' : 'Set 0 for a free course'}
-                                sx={inputSx}
+                                helperText={form.type === TYPE_FOUNDATIONAL ? 'Recommended: NGN 5,000' : 'Set 0 for a free course'}
+                                sx={{
+                                    ...textFieldStyle,
+                                    '& .MuiFormHelperText-root': {
+                                        color: '#9CA3AF',
+                                        ml: 0,
+                                        mt: 0.75,
+                                        fontSize: '0.78rem',
+                                    },
+                                }}
                             />
                         </Box>
                     </Stack>
                 </DialogContent>
 
-                <DialogActions sx={{ px: 3, py: 2, borderTop: `1px solid ${modalBorder}`, gap: 1 }}>
+                <DialogActions sx={{ bgcolor: '#111827', px: 3, py: 2, borderTop: '1px solid #1F2937', gap: 1 }}>
                     <Button
                         onClick={() => { setCreateOpen(false); resetCreateForm(); }}
                         disabled={creating}
@@ -619,9 +743,11 @@ const CourseManagement = () => {
                         variant="contained"
                         disabled={creating || !form.title.trim()}
                         sx={{
-                            textTransform: 'none', fontWeight: 600,
-                            bgcolor: theme.colors.brand,
-                            '&:hover': { bgcolor: theme.colors.brandHover },
+                            ...primaryButtonStyle,
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            boxShadow: 'none',
+                            '&:hover': { bgcolor: theme.colors.brandHover, boxShadow: 'none' },
                             '&:disabled': { bgcolor: '#374151', color: '#9CA3AF' },
                         }}
                     >

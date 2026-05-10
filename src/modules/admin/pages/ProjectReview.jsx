@@ -24,6 +24,13 @@ const STATUS_TABS = [
     { value: 'failed', label: 'Needs Revision' },
 ];
 
+const getScanStatus = (submission) => String(
+    submission.virus_scan_status ||
+    submission.scan_status ||
+    submission.security_scan_status ||
+    'clean'
+).toLowerCase();
+
 const ProjectReview = () => {
     const navigate = useNavigate();
     const [tab, setTab] = useState('pending');
@@ -112,6 +119,12 @@ const ProjectReview = () => {
                                     </Typography>
                                 </Box>
                                 <Stack direction="row" alignItems="center" spacing={1}>
+                                    <Chip
+                                        size="small"
+                                        label={`Scan: ${getScanStatus(submission)}`}
+                                        color={['clean', 'passed', 'safe', 'completed'].includes(getScanStatus(submission)) ? 'success' : 'warning'}
+                                        variant="outlined"
+                                    />
                                     <Chip
                                         size="small"
                                         label={submission.status || tab}

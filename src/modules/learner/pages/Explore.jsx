@@ -44,7 +44,7 @@ const mapSortBy = (value) => {
 };
 
 const PAGE_TITLES = {
-    foundational: { heading: 'Foundational Courses', sub: 'Core governance and policy foundations.' },
+    foundational: { heading: 'Foundational Course', sub: 'Core governance and policy foundations.' },
     experta: { heading: 'Exemplar Class', sub: 'Advanced expert-level governance courses.' },
     default: { heading: 'Explore Courses', sub: 'Discover governance and policy courses.' },
 };
@@ -187,55 +187,55 @@ const Explore = ({ type }) => {
         setSelectedLevels((prev) => prev.includes(level) ? prev.filter((l) => l !== level) : [...prev, level]);
     };
 
-    const featuredCourseId = String(featuredCourse?.id || '').trim();
+    const featuredCourseId = String(featuredCourse?.slug || featuredCourse?.id || '').trim();
 
-    const renderFilters = () => (
-        <Box>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                <Typography sx={{ color: colors.text, fontWeight: 700, fontSize: '0.85rem' }}>Filters</Typography>
-                <Typography onClick={resetFilters} sx={{ color: colors.primary, cursor: 'pointer', fontSize: '0.8rem' }}>Reset</Typography>
-            </Stack>
-            <Divider sx={{ borderColor: 'rgba(255,255,255,0.08)', mb: 2 }} />
-            <Typography sx={{ color: colors.textSecondary, mb: 1, fontSize: '0.8rem' }}>Level</Typography>
-            <Stack>
-                {levels.length === 0 ? (
-                    <Typography sx={{ color: colors.textSecondary, fontSize: '0.85rem' }}>No levels available yet.</Typography>
-                ) : levels.map((level) => (
-                    <FormControlLabel
-                        key={level}
-                        control={<Checkbox checked={selectedLevels.includes(level)} onChange={() => toggleLevel(level)} sx={{ color: colors.textSecondary, '&.Mui-checked': { color: colors.primary } }} />}
-                        label={<Typography sx={{ color: colors.text, fontSize: '0.85rem' }}>{level}</Typography>}
-                    />
-                ))}
-            </Stack>
-            <Divider sx={{ borderColor: 'rgba(255,255,255,0.08)', my: 2 }} />
-            <Typography sx={{ color: colors.textSecondary, mb: 1, fontSize: '0.8rem' }}>Minimum Rating</Typography>
-            <Stack direction="row" spacing={0.5}>
-                {[1, 2, 3, 4, 5].map((star) => (
-                    <IconButton key={star} onClick={() => setMinimumRating((prev) => (prev === star ? 0 : star))} sx={{ p: 0.5 }}>
-                        <StarIcon sx={{ color: star <= minimumRating ? colors.warning : colors.border }} />
-                    </IconButton>
-                ))}
-            </Stack>
-        </Box>
-    );
+    // const renderFilters = () => (
+    //     <Box>
+    //         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+    //             <Typography sx={{ color: colors.text, fontWeight: 700, fontSize: '0.85rem' }}>Filters</Typography>
+    //             <Typography onClick={resetFilters} sx={{ color: colors.primary, cursor: 'pointer', fontSize: '0.8rem' }}>Reset</Typography>
+    //         </Stack>
+    //         <Divider sx={{ borderColor: 'rgba(255,255,255,0.08)', mb: 2 }} />
+    //         <Typography sx={{ color: colors.textSecondary, mb: 1, fontSize: '0.8rem' }}>Level</Typography>
+    //         <Stack>
+    //             {levels.length === 0 ? (
+    //                 <Typography sx={{ color: colors.textSecondary, fontSize: '0.85rem' }}>No levels available yet.</Typography>
+    //             ) : levels.map((level) => (
+    //                 <FormControlLabel
+    //                     key={level}
+    //                     control={<Checkbox checked={selectedLevels.includes(level)} onChange={() => toggleLevel(level)} sx={{ color: colors.textSecondary, '&.Mui-checked': { color: colors.primary } }} />}
+    //                     label={<Typography sx={{ color: colors.text, fontSize: '0.85rem' }}>{level}</Typography>}
+    //                 />
+    //             ))}
+    //         </Stack>
+    //         <Divider sx={{ borderColor: 'rgba(255,255,255,0.08)', my: 2 }} />
+    //         <Typography sx={{ color: colors.textSecondary, mb: 1, fontSize: '0.8rem' }}>Minimum Rating</Typography>
+    //         <Stack direction="row" spacing={0.5}>
+    //             {[1, 2, 3, 4, 5].map((star) => (
+    //                 <IconButton key={star} onClick={() => setMinimumRating((prev) => (prev === star ? 0 : star))} sx={{ p: 0.5 }}>
+    //                     <StarIcon sx={{ color: star <= minimumRating ? colors.warning : colors.border }} />
+    //                 </IconButton>
+    //             ))}
+    //         </Stack>
+    //     </Box>
+    // );
 
     return (
         <Box sx={{ bgcolor: colors.bg, color: colors.text, minHeight: '100%' }}>
             <Header />
-            <Drawer open={isFilterOpen} onClose={() => setIsFilterOpen(false)} PaperProps={{ sx: { width: 280, p: 3, bgcolor: colors.paper, color: colors.text } }}>
+            {/* <Drawer open={isFilterOpen} onClose={() => setIsFilterOpen(false)} PaperProps={{ sx: { width: 280, p: 3, bgcolor: colors.paper, color: colors.text } }}>
                 <Stack direction="row" justifyContent="space-between" sx={{ mb: 2 }}>
                     <Typography sx={{ color: colors.text, fontWeight: 700 }}>Filters</Typography>
                     <IconButton onClick={() => setIsFilterOpen(false)} sx={{ color: colors.text }}><CloseIcon /></IconButton>
                 </Stack>
                 {renderFilters()}
-            </Drawer>
+            </Drawer> */}
 
             <Box sx={{ display: 'flex' }}>
                 {/* Sidebar filters — desktop */}
-                <Box sx={{ width: 280, p: 3, bgcolor: colors.paper, borderRight: `1px solid ${colors.border}`, display: { xs: 'none', md: 'block' } }}>
+                {/* <Box sx={{ width: 280, p: 3, bgcolor: colors.paper, borderRight: `1px solid ${colors.border}`, display: { xs: 'none', md: 'block' } }}>
                     {renderFilters()}
-                </Box>
+                </Box> */}
 
                 <Box sx={{ flex: 1, p: { xs: 2, md: 4 } }}>
                     {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}

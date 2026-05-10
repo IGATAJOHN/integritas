@@ -22,7 +22,21 @@ export const TUTOR_VARIANTS = {
 };
 
 export const getTutorVariant = (user) => {
-    const candidates = [user?.role, user?.userType, ...(Array.isArray(user?.roles) ? user.roles.map((r) => r?.name || r) : [])];
+    const candidates = [
+        user?.role,
+        user?.userType,
+        user?.tutor_type,
+        user?.tutorType,
+        user?.type,
+        user?.profile_type,
+        user?.profileType,
+        user?.tutor_profile?.type,
+        user?.tutorProfile?.type,
+        user?.profile?.type,
+        user?.is_foundational_tutor ? 'foundational_tutor' : null,
+        user?.is_expert_tutor ? 'expert_tutor' : null,
+        ...(Array.isArray(user?.roles) ? user.roles.map((r) => r?.name || r) : []),
+    ];
     for (const candidate of candidates) {
         const normalized = String(candidate || '').trim().toLowerCase();
         if (normalized === 'foundational_tutor' || normalized === 'foundational-tutor') return TUTOR_VARIANTS.FOUNDATIONAL;
@@ -111,6 +125,9 @@ export const canManageOrganization = (user) => {
     return role === 'owner' || role === 'admin' || role === 'manager';
 };
 
+export const getAccountState = (user) =>
+    normalizeRoleName(user?.account_state || user?.accountState || user?.state);
+
 export const getPrimaryRole = (user) => {
     const explicit = normalizeWithAlias(user?.role || user?.userType);
 
@@ -151,6 +168,14 @@ export const isReturnToAllowedForUser = (returnTo, user) => {
     return true;
 };
 
+export const isLearnerUser = (user) => getPrimaryRole(user) === 'learner';
+
+export const isLearnerPendingPayment = (user) => {
+    if (!isLearnerUser(user)) return false;
+    const state = getAccountState(user);
+    return state === 'pending_payment' || state === 'waiting_for_payment' || state === 'payment_pending';
+};
+
 export const getDashboardRoute = (userOrRole) => {
     if (typeof userOrRole === 'string') {
         const normalized = normalizeWithAlias(userOrRole);
@@ -169,4 +194,11 @@ export const getDashboardRoute = (userOrRole) => {
     if (primaryRole === 'organization') return '/learner/organization';
     if (primaryRole === 'tutor') return '/tutor';
     return '/learner';
+};
+
+export const getPostAuthRoute = (userOrRole) => {
+    if (typeof userOrRole !== 'string' && isLearnerPendingPayment(userOrRole)) {
+        return '/learner/foundational';
+    }
+    return getDashboardRoute(userOrRole);
 };

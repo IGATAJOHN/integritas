@@ -98,7 +98,8 @@ const readCategoryNames = (course = {}) => {
 };
 
 const normalizeCourse = (course = {}) => {
-    const id = toTrimmedString(course.id || course.course_id || course.slug || course.uuid);
+    const slug = toTrimmedString(course.slug);
+    const id = toTrimmedString(course.id || course.course_id || slug || course.uuid);
     const categoryNames = readCategoryNames(course);
     const rating = toNumber(
         course.rating?.average ??
@@ -149,7 +150,7 @@ const normalizeCourse = (course = {}) => {
     return {
         id,
         raw: course,
-        slug: toTrimmedString(course.slug),
+        slug,
         title: toTrimmedString(course.title || course.name || 'Untitled Course'),
         description,
         instructor: instructorName,
@@ -280,19 +281,46 @@ export const courseCatalogService = {
     },
 
     getCourseById: async (id) => {
-        const identifier = encodeURIComponent(toTrimmedString(id));
+        const originalIdentifier = toTrimmedString(id);
+        let identifier = originalIdentifier;
         let res;
-        try {
-            // Backend addresses courses by slug; this works whether caller passes
-            // slug or numeric id since the catalogue endpoint accepts either.
-            res = await apiService.get(`/catalogue/courses/${identifier}`);
-        } catch (error) {
-            if (error?.status === 404) {
+        if (/^\d+$/.test(originalIdentifier)) {
+            const list = await courseCatalogService.listCourses({ per_page: 100 });
+            const match = (list.data || []).find((course) => (
+                String(course.raw?.id || course.raw?.course_id || course.id) === originalIdentifier
+            ));
+            if (match?.slug) {
+                identifier = match.slug;
+            } else {
                 const notFoundError = new Error('Course not found');
                 notFoundError.status = 404;
                 throw notFoundError;
             }
-            throw error;
+        }
+
+        try {
+            res = await apiService.get(`/catalogue/courses/${encodeURIComponent(identifier)}`);
+        } catch (error) {
+            if (error?.status === 404 && /^\d+$/.test(originalIdentifier)) {
+                const list = await courseCatalogService.listCourses({ per_page: 100 });
+                const match = (list.data || []).find((course) => (
+                    String(course.raw?.id || course.raw?.course_id || course.id) === originalIdentifier
+                ));
+                if (match?.slug) {
+                    identifier = match.slug;
+                    res = await apiService.get(`/catalogue/courses/${encodeURIComponent(identifier)}`);
+                } else {
+                    const notFoundError = new Error('Course not found');
+                    notFoundError.status = 404;
+                    throw notFoundError;
+                }
+            } else if (error?.status === 404) {
+                const notFoundError = new Error('Course not found');
+                notFoundError.status = 404;
+                throw notFoundError;
+            } else {
+                throw error;
+            }
         }
 
         const rawCourse = res.data ? res.data : res;
@@ -306,6 +334,11 @@ export const courseCatalogService = {
     getLessonById: async (lessonId) => {
         const res = await apiService.get(`/catalogue/lessons/${encodeURIComponent(toTrimmedString(lessonId))}`);
         return res?.data ? res.data : res;
+    },
+
+    listCourseTutors: async (courseSlug) => {
+        const res = await apiService.get(`/catalogue/courses/${encodeURIComponent(toTrimmedString(courseSlug))}/tutors`);
+        return unwrapList(res);
     },
 
     getFeaturedCourses: async ({ limit = 1 } = {}) => {

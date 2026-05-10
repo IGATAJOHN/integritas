@@ -7,6 +7,7 @@ export { default as CourseLessonV2 } from './CourseLessonV2';
 export { default as Checkout } from './Checkout';
 export { default as MyProgress } from './MyProgress';
 export { default as Explore } from './Explore';
+export { default as FoundationalHub } from './FoundationalHub';
 export { default as CourseDetail } from './CourseDetail';
 export { default as PaymentSuccess } from './PaymentSuccess';
 export { default as EnrolmentReturnPage } from './EnrolmentReturnPage';

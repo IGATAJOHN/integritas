@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import {
     Box,
@@ -18,6 +18,7 @@ import {
 } from '@mui/icons-material';
 import logo from '../../../assets/images/integritas_logo.jpg';
 import { learnerEnrollmentService, courseCatalogService } from '../services';
+import { useAuth } from '../../../contexts';
 
 const formatDate = (dateStr) => {
     if (!dateStr) return new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -28,6 +29,8 @@ const PaymentSuccess = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const theme = useTheme();
+    const { refreshUser } = useAuth();
+    const refreshUserRef = useRef(refreshUser);
     const [searchParams] = useSearchParams();
     const [verifying, setVerifying] = useState(false);
     const [verifyError, setVerifyError] = useState(null);
@@ -49,8 +52,12 @@ const PaymentSuccess = () => {
                 instructor: data?.instructor || prev.instructor,
                 courseId,
             }));
-        } catch (_) { /* best-effort */ }
+        } catch { /* best-effort */ }
     };
+
+    useEffect(() => {
+        refreshUserRef.current = refreshUser;
+    }, [refreshUser]);
 
     useEffect(() => {
         // New flow: /payment/success?reference=ENR_... (enrollment callback)
@@ -62,7 +69,10 @@ const PaymentSuccess = () => {
                     const result = await learnerEnrollmentService.verifyPaymentStatus(reference);
                     setEnrollment(result);
                     await fetchCourseIfMissing(result);
-                } catch (err) {
+                    try {
+                        await refreshUserRef.current();
+                    } catch { /* best-effort account-state refresh */ }
+                } catch {
                     setVerifyError('Payment verification failed. Your enrollment may still be active — check My Enrollments.');
                 } finally {
                     setVerifying(false);
@@ -79,7 +89,10 @@ const PaymentSuccess = () => {
                     const result = await learnerEnrollmentService.verifyPayment({ trxref, reference });
                     setEnrollment(result);
                     await fetchCourseIfMissing(result);
-                } catch (err) {
+                    try {
+                        await refreshUserRef.current();
+                    } catch { /* best-effort account-state refresh */ }
+                } catch {
                     setVerifyError('Payment verification failed. Your enrollment may still be active — check My Enrollments.');
                 } finally {
                     setVerifying(false);
@@ -303,15 +316,8 @@ const PaymentSuccess = () => {
                     <Button
                         variant="contained"
                         onClick={() => {
-                            const courseId =
-                                enrollment?.course_id ||
-                                enrollment?.course?.id ||
-                                enrollment?.courseId ||
-                                course?.courseId ||
-                                course?.id ||
-                                sessionStorage.getItem('pending_course_id');
                             sessionStorage.removeItem('pending_course_id');
-                            navigate(courseId ? `/explore/lesson/${courseId}` : '/learner');
+                            navigate('/learner/foundational');
                         }}
                         startIcon={<CheckCircle sx={{ fontSize: 20 }} />}
                         sx={{
@@ -329,7 +335,7 @@ const PaymentSuccess = () => {
                     </Button>
                     <Button
                         variant="outlined"
-                        onClick={() => navigate('/explore/courses')}
+                        onClick={() => navigate('/learner/foundational')}
                         sx={{
                             color: '#fff',
                             borderColor: 'rgba(255,255,255,0.2)',

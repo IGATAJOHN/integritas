@@ -1,6 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services/api';
-import { getOrganizationRole, getPrimaryRole } from '../utils';
+import {
+    getAccountState,
+    getOrganizationRole,
+    getPrimaryRole,
+    isLearnerPendingPayment,
+} from '../utils';
 
 const AuthContext = createContext(null);
 
@@ -37,6 +42,19 @@ const unwrapAuthPayload = (response) => {
 
     // Last resort: treat the response itself as the user.
     return { user: response, token: response.token || null };
+};
+
+const hasVerifiedEmail = (candidate) => {
+    const state = getAccountState(candidate);
+    if (state === 'pending_email_verification') return false;
+    if (state === 'pending_payment' || state === 'active') return true;
+
+    return (
+        candidate?.email_verified === true ||
+        candidate?.emailVerified === true ||
+        !!candidate?.email_verified_at ||
+        !!candidate?.emailVerifiedAt
+    );
 };
 
 export const AuthProvider = ({ children }) => {
@@ -94,7 +112,7 @@ export const AuthProvider = ({ children }) => {
 
             // MFA required — backend returns a challenge token instead of a session token.
             // Return a signal so the login page can redirect to the 2FA challenge screen.
-            if (response.challenge_token) {
+            if (response.challenge_token || response.mfa_required) {
                 return { requires2fa: true, challenge_token: response.challenge_token };
             }
 
@@ -248,15 +266,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     // Helper functions to check onboarding status
-    const isEmailVerified = () => {
-        // Support multiple common field names from backend (boolean or timestamp)
-        return (
-            user?.email_verified === true ||
-            user?.emailVerified === true ||
-            !!user?.email_verified_at ||
-            !!user?.emailVerifiedAt
-        );
-    };
+    const isEmailVerified = () => hasVerifiedEmail(user);
 
     const getKycStatus = () => {
         const status = user?.kyc_status || user?.kycStatus || null;
@@ -276,6 +286,10 @@ export const AuthProvider = ({ children }) => {
         return !isEmailVerified();
     };
 
+    const needsLearnerPayment = (candidate = user) => (
+        hasVerifiedEmail(candidate) && isLearnerPendingPayment(candidate)
+    );
+
     const needsKyc = () => {
         const status = getKycStatus();
         return !status || status === 'pending' || status === 'draft' || status === 'rejected';
@@ -294,7 +308,8 @@ export const AuthProvider = ({ children }) => {
             const storedUser = localStorage.getItem('user');
             if (storedUser) {
                 try {
-                    await refreshUser();
+                    const refreshedUser = await refreshUser();
+                    return { data, user: refreshedUser };
                 } catch (refreshError) {
                     console.warn('Refresh user failed after verification:', refreshError);
                 }
@@ -392,7 +407,9 @@ export const AuthProvider = ({ children }) => {
         getKycStatus,
         isKycComplete,
         needsEmailVerification,
+        needsLearnerPayment,
         needsKyc,
+        getAccountState: () => getAccountState(user),
     };
 
     return (
@@ -402,6 +419,7 @@ export const AuthProvider = ({ children }) => {
     );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
     const context = useContext(AuthContext);
     if (!context) {

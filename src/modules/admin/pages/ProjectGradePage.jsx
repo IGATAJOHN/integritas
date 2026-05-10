@@ -19,6 +19,7 @@ import {
     DownloadOutlined,
     CheckCircleOutlined,
     HighlightOff,
+    SecurityOutlined,
 } from '@mui/icons-material';
 import { adminProjectReviewService } from '../services';
 
@@ -58,6 +59,10 @@ const ProjectGradePage = () => {
     }, [id]);
 
     const handleGrade = async (passed) => {
+        if (!canGrade) {
+            setError('This submission is not ready for review until the virus scan is clean.');
+            return;
+        }
         const numericScore = Number(score);
         if (!Number.isFinite(numericScore) || numericScore < 0 || numericScore > 100) {
             setError('Score must be a number between 0 and 100.');
@@ -101,6 +106,15 @@ const ProjectGradePage = () => {
     }
 
     const files = submission.files || submission.attachments || [];
+    const scanStatus = String(
+        submission.virus_scan_status ||
+        submission.scan_status ||
+        submission.security_scan_status ||
+        files.find((file) => file.virus_scan_status || file.scan_status)?.virus_scan_status ||
+        files.find((file) => file.virus_scan_status || file.scan_status)?.scan_status ||
+        'clean'
+    ).toLowerCase();
+    const canGrade = ['clean', 'passed', 'safe', 'completed'].includes(scanStatus);
 
     return (
         <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 880, mx: 'auto' }}>
@@ -138,6 +152,15 @@ const ProjectGradePage = () => {
             )}
 
             <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
+                <Alert
+                    severity={canGrade ? 'success' : scanStatus === 'infected' || scanStatus === 'failed' ? 'error' : 'warning'}
+                    icon={<SecurityOutlined />}
+                    sx={{ mb: 2 }}
+                >
+                    Virus scan status: <strong>{scanStatus}</strong>
+                    {!canGrade ? '. Review actions are disabled until the scan is clean.' : ''}
+                </Alert>
+
                 <Typography variant="subtitle2" sx={{ textTransform: 'uppercase', color: 'text.secondary', fontWeight: 600, mb: 1 }}>
                     Learner's Description
                 </Typography>
@@ -166,6 +189,15 @@ const ProjectGradePage = () => {
                                                 <Typography variant="caption" color="text.secondary">
                                                     {(file.size_bytes / 1024 / 1024).toFixed(2)} MB
                                                 </Typography>
+                                            )}
+                                            {(file.virus_scan_status || file.scan_status) && (
+                                                <Chip
+                                                    size="small"
+                                                    label={`Scan: ${file.virus_scan_status || file.scan_status}`}
+                                                    color={['clean', 'passed', 'safe', 'completed'].includes(String(file.virus_scan_status || file.scan_status).toLowerCase()) ? 'success' : 'warning'}
+                                                    variant="outlined"
+                                                    sx={{ mt: 0.75 }}
+                                                />
                                             )}
                                         </Box>
                                     </Stack>
@@ -215,7 +247,7 @@ const ProjectGradePage = () => {
                             variant="contained"
                             color="success"
                             startIcon={<CheckCircleOutlined />}
-                            disabled={submitting}
+                            disabled={submitting || !canGrade}
                             onClick={() => handleGrade(true)}
                             sx={{ textTransform: 'none' }}
                         >
@@ -225,7 +257,7 @@ const ProjectGradePage = () => {
                             variant="contained"
                             color="error"
                             startIcon={<HighlightOff />}
-                            disabled={submitting}
+                            disabled={submitting || !canGrade}
                             onClick={() => handleGrade(false)}
                             sx={{ textTransform: 'none' }}
                         >

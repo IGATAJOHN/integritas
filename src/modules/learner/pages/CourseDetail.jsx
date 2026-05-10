@@ -44,7 +44,6 @@ import {
 import { useAuth } from '../../../contexts';
 import { useLocation } from 'react-router-dom';
 import { alpha } from '@mui/material/styles';
-import logo from '../../../assets/images/integritas_logo.jpg';
 import Footer from '../../../components/Footer';
 import { courseCatalogService, learnerEnrollmentService } from '../services';
 import { apiService } from '../../../services/api';
@@ -127,6 +126,31 @@ const readTutorValue = (candidate, ...fields) => {
         .find(Boolean) || '';
 };
 
+const countLessons = (modules = [], fallback = 0) => {
+    const total = modules.reduce((sum, module) => {
+        const lessons = Array.isArray(module?.lessons) ? module.lessons : [];
+        const moduleCount = Number(module?.lessons_count ?? lessons.length ?? 0);
+        return sum + (Number.isFinite(moduleCount) ? moduleCount : 0);
+    }, 0);
+
+    return total || Number(fallback || 0) || 0;
+};
+
+const getEnrollmentErrorMessage = (error) => {
+    const message = String(error?.data?.message || error?.message || '').trim();
+    const lower = message.toLowerCase();
+
+    if (
+        lower.includes('authorization bearer') ||
+        lower.includes('secret key') ||
+        lower.includes('paystack')
+    ) {
+        return 'Payment is temporarily unavailable because the payment gateway is not configured correctly. Please contact support or try again later.';
+    }
+
+    return message || 'Enrollment failed. Please try again.';
+};
+
 const CourseDetail = () => {
     const { courseId } = useParams();
     const navigate = useNavigate();
@@ -150,7 +174,6 @@ const CourseDetail = () => {
     };
     const [activeTab, setActiveTab] = useState(0);
     const [expandedModule, setExpandedModule] = useState('module-1');
-    const [searchQuery, setSearchQuery] = useState('');
 
     const [courseData, setCourseData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -158,7 +181,7 @@ const CourseDetail = () => {
 
     const curriculumSummary = useMemo(() => {
         const modules = courseData?.modules || [];
-        const moduleCount = modules.length;
+        const moduleCount = modules.length || Number(courseData?.modulesCount || 0);
         let lessonCount = 0;
         let totalMinutes = 0;
         modules.forEach((m) => {
@@ -170,6 +193,7 @@ const CourseDetail = () => {
                 totalMinutes += lessons.reduce((sum, l) => sum + (Number(l.duration_minutes) || 0), 0);
             }
         });
+        lessonCount = lessonCount || Number(courseData?.lessonsCount || 0);
         const hours = Math.floor(totalMinutes / 60);
         const minutes = totalMinutes % 60;
         const durationLabel = totalMinutes > 0
@@ -186,6 +210,8 @@ const CourseDetail = () => {
     const [enrollError, setEnrollError] = useState(null);
     const [accessInfo, setAccessInfo] = useState(null);
     const [isEnrolled, setIsEnrolled] = useState(false);
+    const courseSlug = courseData?.slug || '';
+    const courseLessonCount = countLessons(courseData?.modules || [], courseData?.lessonsCount);
 
     useEffect(() => {
         let active = true;
@@ -211,8 +237,12 @@ const CourseDetail = () => {
                             ? [rawObjectives]
                             : [];
 
+                    const rawModules = Array.isArray(raw.modules) ? raw.modules : [];
+
                     setCourseData({
                         id: data.id,
+                        slug: data.slug || raw.slug || '',
+                        type: raw.type || raw.track || data.type || '',
                         title: data.title || 'Untitled Course',
                         description: data.description || 'No description available.',
                         price: coursePrice,
@@ -229,7 +259,9 @@ const CourseDetail = () => {
                             ? raw.tags.map(t => ({ label: t.name || t, icon: VerifiedIcon, iconColor: appTheme.colors.brand, bgColor: '#374151' }))
                             : [],
                         learningObjectives,
-                        modules: Array.isArray(raw.modules) ? raw.modules : [],
+                        modules: rawModules,
+                        modulesCount: Number(raw.modules_count ?? data.modules_count ?? rawModules.length ?? 0),
+                        lessonsCount: Number(raw.lessons_count ?? data.lessons_count ?? countLessons(rawModules)),
                         instructor: {
                             name: readTutorName(tutorProfile) || data.instructor || 'Integritas',
                             title: readTutorValue(tutorProfile, 'headline', 'title', 'profession') || 'Course Instructor',
@@ -243,7 +275,6 @@ const CourseDetail = () => {
                     });
 
                     // Fetch lessons for modules that don't already include them
-                    const rawModules = Array.isArray(raw.modules) ? raw.modules : [];
                     const modulesMissingLessons = rawModules.filter(
                         (m) => !Array.isArray(m.lessons) || m.lessons.length === 0
                     );
@@ -289,22 +320,32 @@ const CourseDetail = () => {
         };
     }, [courseId]);
 
-    // Fetch access info + enrollment status once authenticated
+    // Fetch enrollment status first. Progress endpoints are for enrolled
+    // learners and are slug-based in the API docs.
     useEffect(() => {
-        if (!isAuthenticated || !courseId) return;
-        learnerEnrollmentService.getCourseAccess(courseId)
-            .then((data) => setAccessInfo(data))
-            .catch(() => {});
-        learnerEnrollmentService.getEnrollments({ course_id: courseId, per_page: 1 })
+        if (!isAuthenticated || !courseData?.id) return;
+        setIsEnrolled(false);
+        setAccessInfo(null);
+        learnerEnrollmentService.getEnrollments({
+            course_id: courseData.id,
+            course_slug: courseSlug || undefined,
+            per_page: 1,
+        })
             .then((res) => {
                 const enrollment = res.data?.[0];
                 const status = String(enrollment?.status || '').toLowerCase();
                 if (status === 'enrolled' || status === 'in_progress' || status === 'completed') {
                     setIsEnrolled(true);
+                    const slugForProgress = courseSlug || enrollment?.course?.slug || enrollment?.course_slug;
+                    if (slugForProgress) {
+                        learnerEnrollmentService.getCourseAccess(slugForProgress)
+                            .then((data) => setAccessInfo(data))
+                            .catch(() => {});
+                    }
                 }
             })
             .catch(() => {});
-    }, [isAuthenticated, courseId]);
+    }, [isAuthenticated, courseData?.id, courseSlug]);
 
     const handleTabChange = (event, newValue) => {
         setActiveTab(newValue);
@@ -325,14 +366,18 @@ const CourseDetail = () => {
         setEnrollError(null);
         try {
             const result = await learnerEnrollmentService.enrollInCourse(courseData.slug || courseData.id);
-            if (result?.payment_url) {
+            const paymentUrl = result?.authorization_url || result?.payment_url || result?.data?.authorization_url || result?.data?.payment_url;
+            const reference = result?.reference || result?.data?.reference;
+            if (paymentUrl) {
                 sessionStorage.setItem('pending_course_id', courseData.id);
-                window.location.href = result.payment_url;
+                if (courseData.slug) sessionStorage.setItem('pending_course_slug', courseData.slug);
+                if (reference) sessionStorage.setItem('pending_enrolment_reference', reference);
+                window.location.href = paymentUrl;
             } else {
                 navigate('/payment-success', { state: { enrollment: result, course: { courseId: courseData.id, title: courseData.title, price: courseData.price, thumbnail: courseData.image } } });
             }
         } catch (err) {
-            setEnrollError(err?.message || 'Enrollment failed. Please try again.');
+            setEnrollError(getEnrollmentErrorMessage(err));
         } finally {
             setEnrolling(false);
         }
@@ -829,7 +874,7 @@ const CourseDetail = () => {
                                     <Button
                                         fullWidth
                                         variant="contained"
-                                        onClick={() => navigate(`/explore/lesson/${courseId}/`)}
+                                        onClick={() => navigate(`/explore/lesson/${courseData.slug || courseData.id}/`)}
                                         sx={{
                                             bgcolor: colors.success,
                                             py: 1.25,
@@ -844,6 +889,23 @@ const CourseDetail = () => {
                                         Resume Course
                                     </Button>
                                 ) : (
+                                    <>
+                                    <Box
+                                        sx={{
+                                            bgcolor: alpha(colors.primary, 0.1),
+                                            border: `1px solid ${alpha(colors.primary, 0.24)}`,
+                                            borderRadius: 1,
+                                            p: 1.5,
+                                            mb: 1.5,
+                                        }}
+                                    >
+                                        <Typography sx={{ color: colors.text, fontWeight: 700, fontSize: '0.85rem', mb: 0.5 }}>
+                                            Foundational access flow
+                                        </Typography>
+                                        <Typography sx={{ color: colors.textSecondary, fontSize: '0.78rem', lineHeight: 1.6 }}>
+                                            Register and verify your email, choose a foundational course, then pay the enrolment fee through Paystack. Lessons unlock after payment is confirmed.
+                                        </Typography>
+                                    </Box>
                                     <Button
                                         fullWidth
                                         variant="contained"
@@ -862,6 +924,7 @@ const CourseDetail = () => {
                                     >
                                         {enrolling ? 'Processing...' : 'Enroll Now'}
                                     </Button>
+                                    </>
                                 )}
 
                                 {/* <Button
@@ -885,6 +948,7 @@ const CourseDetail = () => {
                                 <Stack spacing={1.5}>
                                     {[
                                         { icon: LevelIcon, label: 'Level', value: courseData.level },
+                                        { icon: LessonsIcon, label: 'Lessons', value: `${courseLessonCount} ${courseLessonCount === 1 ? 'lesson' : 'lessons'}` },
                                         { icon: ClockIcon, label: 'Duration', value: courseData.duration },
                                         { icon: CertificateIcon, label: 'Certificate', value: courseData.hasCertificate ? 'Yes, Official' : 'No' },
                                         { icon: WorldIcon, label: 'Language', value: courseData.language },

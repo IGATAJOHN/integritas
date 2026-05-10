@@ -16,7 +16,6 @@ import {
     CardContent,
     Avatar,
     useTheme,
-    alpha,
     Container,
     CircularProgress,
     Alert
@@ -75,11 +74,12 @@ const Checkout = () => {
     };
 
     const total = course.price + course.tax + course.fee;
+    const hasSelectedCourse = Boolean(course.courseSlug || course.courseId);
 
     const handleCompletePurchase = async () => {
         const slugOrId = course.courseSlug || course.courseId;
         if (!slugOrId) {
-            setEnrollError('Course information is missing. Please go back and try again.');
+            setEnrollError('Choose a foundational course first, then continue to payment.');
             return;
         }
         setEnrolling(true);
@@ -183,6 +183,30 @@ const Checkout = () => {
                                 <Typography sx={{ color: 'rgba(255,255,255,0.5)' }}>Confirmation</Typography>
                             </Stack>
                         </Box>
+
+                        {!hasSelectedCourse && (
+                            <Alert
+                                severity="info"
+                                sx={{
+                                    mb: 4,
+                                    bgcolor: 'rgba(37, 99, 235, 0.12)',
+                                    color: '#BFDBFE',
+                                    border: '1px solid rgba(37, 99, 235, 0.28)',
+                                    '& .MuiAlert-icon': { color: '#60A5FA' },
+                                }}
+                                action={
+                                    <Button
+                                        size="small"
+                                        onClick={() => navigate('/learner/foundational')}
+                                        sx={{ color: '#93C5FD', textTransform: 'none', fontWeight: 700 }}
+                                    >
+                                        Choose course
+                                    </Button>
+                                }
+                            >
+                                Your account is ready for payment. Select a foundational course so we can start the documented enrolment payment.
+                            </Alert>
+                        )}
 
                         {/* Progress Bar */}
                         <Box sx={{ mb: 6 }}>
@@ -673,7 +697,7 @@ const Checkout = () => {
                                     variant="contained"
                                     size="large"
                                     onClick={handleCompletePurchase}
-                                    disabled={enrolling}
+                                    disabled={enrolling || !hasSelectedCourse}
                                     startIcon={enrolling ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : <Lock />}
                                     sx={{
                                         bgcolor: '#2563EB',
@@ -688,7 +712,7 @@ const Checkout = () => {
                                         '&.Mui-disabled': { bgcolor: '#1d4ed8', opacity: 0.7 }
                                     }}
                                 >
-                                    {enrolling ? 'Processing...' : 'Complete Purchase'}
+                                    {enrolling ? 'Processing...' : hasSelectedCourse ? 'Complete Purchase' : 'Choose a Course'}
                                 </Button>
 
                                 {/* Security Badge */}

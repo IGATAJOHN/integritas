@@ -15,8 +15,9 @@ import {
     AdminCbtQuestionsPage,
     ProjectReview,
     ProjectGradePage,
-    FoundationalTutorInvites,
     AdminTransactions,
+    AuditLogPage,
+    FoundationalProgram,
 } from './pages';
 
 const adminRoutes = {
@@ -90,6 +91,10 @@ const adminRoutes = {
             element: <AdminSettings />,
         },
         {
+            path: 'foundational',
+            element: <FoundationalProgram />,
+        },
+        {
             path: 'kycreview',
             element: <KycReview />,
         },
@@ -103,11 +108,15 @@ const adminRoutes = {
         },
         {
             path: 'foundational-tutors',
-            element: <FoundationalTutorInvites />,
+            element: <Navigate to="/admin/foundational" replace />,
         },
         {
             path: 'transactions',
             element: <AdminTransactions />,
+        },
+        {
+            path: 'audit-logs',
+            element: <AuditLogPage />,
         },
     ],
 };

@@ -12,7 +12,7 @@ import {
     EmailOutlined,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts';
-import { getDashboardRoute } from '../utils';
+import { getPostAuthRoute } from '../utils';
 import icon from '../assets/images/integritas_logo.jpg';
 import theme from '../styles/theme';
 
@@ -41,13 +41,21 @@ const VerifyPage = () => {
                     // Extract all query parameters (expires, signature, etc.)
                     const queryParams = Object.fromEntries([...searchParams]);
 
-                    await verifyEmail(id, hash, queryParams);
+                    const result = await verifyEmail(id, hash, queryParams);
+                    const verifiedUser = result?.user || user;
+                    const nextRoute = verifiedUser?.token ? getPostAuthRoute(verifiedUser) : '/login';
 
-                    setSuccess('Email verified successfully! Redirecting to dashboard...');
+                    setSuccess(
+                        nextRoute === '/learner/foundational'
+                            ? 'Email verified successfully! Continue to the Foundational Course payment.'
+                            : nextRoute === '/login'
+                                ? 'Email verified successfully! Log in to continue to payment.'
+                            : 'Email verified successfully! Redirecting to dashboard...'
+                    );
 
                     // Delay redirect to show success message
                     setTimeout(() => {
-                        navigate(getDashboardRoute(user));
+                        navigate(nextRoute, { replace: true });
                     }, 3000);
                 } catch (err) {
                     console.error('Auto-verification error:', err);
@@ -344,7 +352,7 @@ const VerifyPage = () => {
                     onClick={async () => {
                         try {
                             await logout();
-                        } catch (_e) {
+                        } catch {
                             /* ignore — we just need to clear session */
                         }
                         navigate('/signup');

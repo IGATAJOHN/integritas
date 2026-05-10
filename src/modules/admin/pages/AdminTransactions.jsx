@@ -52,6 +52,7 @@ const inputSx = {
 const TABS = [
     { value: 'transactions', label: 'Transactions' },
     { value: 'enrolments', label: 'Enrolments' },
+    { value: 'refunds', label: 'Refund Requests' },
 ];
 
 const AdminTransactions = () => {
@@ -75,7 +76,9 @@ const AdminTransactions = () => {
                 const res =
                     tab === 'transactions'
                         ? await adminTransactionsService.listTransactions()
-                        : await adminTransactionsService.listEnrolments();
+                        : tab === 'refunds'
+                            ? await adminTransactionsService.listRefundRequests()
+                            : await adminTransactionsService.listEnrolments();
                 if (cancelled) return;
                 setItems(res?.data || []);
             } catch (err) {
@@ -92,6 +95,26 @@ const AdminTransactions = () => {
     const openFlagDialog = (tx) => {
         setFlagReason('');
         setFlagDialog({ open: true, tx });
+    };
+
+    const handleRefundDecision = async (request, decision) => {
+        const notes = window.prompt(`${decision === 'approve' ? 'Approve' : 'Reject'} refund request${request?.id ? ` #${request.id}` : ''}. Add notes:`, '');
+        if (notes === null) return;
+        try {
+            setLoading(true);
+            if (decision === 'approve') {
+                await adminTransactionsService.approveRefund(request.id, notes);
+            } else {
+                await adminTransactionsService.rejectRefund(request.id, notes);
+            }
+            setSnackbar({ open: true, message: `Refund request ${decision === 'approve' ? 'approved' : 'rejected'}.`, severity: 'success' });
+            const res = await adminTransactionsService.listRefundRequests();
+            setItems(res?.data || []);
+        } catch (err) {
+            setSnackbar({ open: true, message: err?.message || 'Failed to update refund request.', severity: 'error' });
+        } finally {
+            setLoading(false);
+        }
     };
     const closeFlagDialog = () => setFlagDialog({ open: false, tx: null });
 
@@ -159,6 +182,15 @@ const AdminTransactions = () => {
                                     <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }}>Learner</TableCell>
                                     <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }}>Type</TableCell>
                                     <TableCell align="right" sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }}>Amount</TableCell>
+                                    <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }}>Status</TableCell>
+                                    <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }}>Date</TableCell>
+                                    <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }} />
+                                </TableRow>
+                            ) : tab === 'refunds' ? (
+                                <TableRow>
+                                    <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }}>Request</TableCell>
+                                    <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }}>Transaction</TableCell>
+                                    <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }}>Reason</TableCell>
                                     <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }}>Status</TableCell>
                                     <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }}>Date</TableCell>
                                     <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }} />
@@ -247,6 +279,48 @@ const AdminTransactions = () => {
                                     </TableCell>
                                 </TableRow>
                             ))}
+                            {tab === 'refunds' && items.map((request) => {
+                                const status = String(request.status || 'pending').toLowerCase();
+                                return (
+                                    <TableRow key={request.id} sx={{ '&:last-child td': { border: 0 } }}>
+                                        <TableCell sx={{ color: '#E5E7EB', borderBottom: '1px solid #374151' }}>#{request.id}</TableCell>
+                                        <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontFamily: 'monospace' }}>
+                                            {request.transaction?.reference || request.reference || request.transaction_id || '—'}
+                                        </TableCell>
+                                        <TableCell sx={{ color: '#E5E7EB', borderBottom: '1px solid #374151', maxWidth: 320 }}>
+                                            <Typography noWrap title={request.reason || request.notes || ''}>
+                                                {request.reason || request.notes || '—'}
+                                            </Typography>
+                                        </TableCell>
+                                        <TableCell sx={{ borderBottom: '1px solid #374151' }}>
+                                            <Chip
+                                                label={status}
+                                                size="small"
+                                                sx={{
+                                                    bgcolor: status === 'approved' ? 'rgba(34,197,94,0.12)' : status === 'rejected' ? 'rgba(239,68,68,0.12)' : 'rgba(251,191,36,0.12)',
+                                                    color: status === 'approved' ? '#22C55E' : status === 'rejected' ? '#EF4444' : '#FBBF24',
+                                                    fontSize: '0.72rem',
+                                                }}
+                                            />
+                                        </TableCell>
+                                        <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151' }}>
+                                            {request.created_at ? new Date(request.created_at).toLocaleDateString() : '—'}
+                                        </TableCell>
+                                        <TableCell sx={{ borderBottom: '1px solid #374151' }}>
+                                            {status === 'pending' && (
+                                                <Stack direction="row" spacing={1}>
+                                                    <Button size="small" color="success" onClick={() => handleRefundDecision(request, 'approve')} sx={{ textTransform: 'none' }}>
+                                                        Approve
+                                                    </Button>
+                                                    <Button size="small" color="error" onClick={() => handleRefundDecision(request, 'reject')} sx={{ textTransform: 'none' }}>
+                                                        Reject
+                                                    </Button>
+                                                </Stack>
+                                            )}
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            })}
                         </TableBody>
                     </Table>
                 </Paper>

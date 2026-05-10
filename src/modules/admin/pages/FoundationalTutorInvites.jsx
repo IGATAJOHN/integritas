@@ -38,6 +38,7 @@ import {
     RefreshOutlined,
     RotateLeftOutlined,
 } from '@mui/icons-material';
+import { textFieldStyle } from '../../../styles/formStyles';
 import { adminFoundationalTutorService } from '../services';
 
 const TABS = [
@@ -119,7 +120,7 @@ const FoundationalTutorInvites = () => {
                     per_page: 25,
                 });
                 if (!cancelled) setTutorOptions(res?.data || []);
-            } catch (_err) {
+            } catch {
                 if (!cancelled) setTutorOptions([]);
             } finally {
                 if (!cancelled) setTutorOptionsLoading(false);
@@ -440,6 +441,7 @@ const FoundationalTutorInvites = () => {
                                     label="Search existing tutors or enter email"
                                     autoFocus
                                     placeholder="Type a name, email, or pick from the list"
+                                    sx={textFieldStyle}
                                     InputProps={{
                                         ...params.InputProps,
                                         endAdornment: (
@@ -478,6 +480,7 @@ const FoundationalTutorInvites = () => {
                             fullWidth
                             required
                             inputProps={{ maxLength: 120 }}
+                            sx={textFieldStyle}
                         />
                         <TextField
                             label="Email Address"
@@ -488,6 +491,7 @@ const FoundationalTutorInvites = () => {
                             required
                             inputProps={{ maxLength: 255 }}
                             helperText="The invite link is sent to this email."
+                            sx={textFieldStyle}
                         />
                     </Stack>
                 </DialogContent>

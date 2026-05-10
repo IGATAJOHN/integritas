@@ -7,6 +7,7 @@ import {
     MyEnrollments,
     MyProgress,
     CourseDetail,
+    FoundationalHub,
     CourseLesson,
     CourseLessonV2,
     Checkout,
@@ -32,7 +33,7 @@ export const learnerRoutes = [
     },
     {
         path: '/explore/foundational',
-        element: <Explore type="foundational" />,
+        element: <Navigate to="/learner/foundational" replace />,
     },
     {
         path: '/explore/experta',
@@ -62,6 +63,10 @@ export const learnerRoutes = [
     {
         path: '/explore/course/:courseId',
         element: <CourseDetail />,
+    },
+    {
+        path: '/learner/foundational',
+        element: <FoundationalHub />,
     },
     {
         path: '/explore/lesson/:courseId',

@@ -13,11 +13,18 @@ import {
     School, Language, Timer, Payments, CheckCircle,
     Cancel, PlayCircleOutline, Close,
     CloudUpload, Quiz, VideoLibrary, DragIndicator,
+    ContentCopy, Upgrade,
 } from '@mui/icons-material';
 import { Tooltip, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { adminCoursesService } from '../services/courseService';
 import { getImageUrl } from '../../../utils';
-import { paperStyle } from '../../../styles/formStyles';
+import {
+    modalStyle,
+    paperStyle,
+    primaryButtonStyle,
+    scrollableModalBody,
+    textFieldStyle,
+} from '../../../styles/formStyles';
 
 const AdminCourseDetail = () => {
     const { courseId } = useParams();
@@ -56,6 +63,7 @@ const AdminCourseDetail = () => {
     // Data State
     const [course, setCourse] = useState(null);
     const [modules, setModules] = useState([]);
+    const [pricingSettings, setPricingSettings] = useState(null);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
     const [activeTab, setActiveTab] = useState(0);
@@ -79,6 +87,8 @@ const AdminCourseDetail = () => {
     // Reject Modal State
     const [rejectModalOpen, setRejectModalOpen] = useState(false);
     const [rejectionReason, setRejectionReason] = useState('');
+    const [deleteCourseDialogOpen, setDeleteCourseDialogOpen] = useState(false);
+    const [deleteCourseError, setDeleteCourseError] = useState('');
 
     // Snackbar
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
@@ -127,8 +137,12 @@ const AdminCourseDetail = () => {
     const fetchCourseData = async () => {
         try {
             setLoading(true);
-            const courseData = await adminCoursesService.getCourseDetail(courseId);
+            const [courseData, settingsData] = await Promise.all([
+                adminCoursesService.getCourseDetail(courseId),
+                adminCoursesService.getPricingSettings().catch(() => null),
+            ]);
             setCourse(courseData);
+            setPricingSettings(settingsData);
 
             // Restore from localStorage first so something shows immediately.
             const cached = restoreModules();
@@ -313,7 +327,7 @@ const AdminCourseDetail = () => {
                 return updated;
             });
             showSnackbar('Module deleted');
-        } catch (error) {
+        } catch {
             showSnackbar('Failed to delete module', 'error');
         } finally {
             setActionLoading(false);
@@ -334,7 +348,7 @@ const AdminCourseDetail = () => {
                 await adminCoursesService.publishModule(courseId, moduleId);
                 showSnackbar('Module published');
             }
-        } catch (error) {
+        } catch {
             // Revert optimistic update on failure
             setModules(prev => prev.map(m =>
                 m.id === moduleId ? { ...m, is_published: currentStatus } : m
@@ -412,7 +426,7 @@ const AdminCourseDetail = () => {
                 return updated;
             });
             showSnackbar('Lesson deleted');
-        } catch (error) {
+        } catch {
             showSnackbar('Failed to delete lesson', 'error');
         } finally {
             setActionLoading(false);
@@ -435,12 +449,73 @@ const AdminCourseDetail = () => {
                 await adminCoursesService.publishLesson(moduleId, lessonId);
                 showSnackbar('Lesson published');
             }
-        } catch (error) {
+        } catch {
             // Revert
             setModules(prev => prev.map(m =>
                 m.id === moduleId ? { ...m, lessons: toggle(m.lessons || []) } : m
             ));
             showSnackbar('Failed to update lesson status', 'error');
+        }
+    };
+
+    const updateLessonInModule = (lessonId, updater) => {
+        setModules(prev => {
+            const updated = prev.map(m => ({
+                ...m,
+                lessons: (m.lessons || []).map(l => l.id === lessonId ? updater(l) : l),
+            }));
+            persistModules(updated);
+            return updated;
+        });
+    };
+
+    const handleDuplicateLessonVersion = async (lesson) => {
+        try {
+            setActionLoading(true);
+            const draft = await adminCoursesService.duplicateLessonVersion(lesson.id);
+            updateLessonInModule(lesson.id, (current) => ({
+                ...current,
+                draft_version: draft,
+                draft_version_id: draft?.id || draft?.version_id || current.draft_version_id,
+                locked: false,
+            }));
+            showSnackbar('Draft lesson version created. Update CBT questions against the draft version before promoting.');
+        } catch (err) {
+            showSnackbar(err?.message || 'Failed to clone lesson version', 'error');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handlePromoteLessonVersion = async (lesson) => {
+        const versionId =
+            lesson.draft_version_id ||
+            lesson.draft_version?.id ||
+            lesson.version_id ||
+            lesson.current_version_id ||
+            lesson.current_version?.id;
+        if (!versionId) {
+            showSnackbar('No lesson version was found to promote.', 'error');
+            return;
+        }
+        const migrate = window.confirm('Promote this version? Choose OK to migrate existing learners so they retake the updated CBT, or Cancel to promote without migration.');
+        try {
+            setActionLoading(true);
+            const promoted = await adminCoursesService.promoteLessonVersion(lesson.id, versionId, { migrate_learners: migrate });
+            updateLessonInModule(lesson.id, (current) => ({
+                ...current,
+                ...promoted,
+                current_version: promoted?.current_version || promoted,
+                current_version_id: promoted?.current_version_id || promoted?.id || versionId,
+                draft_version: null,
+                draft_version_id: null,
+                locked: true,
+            }));
+            showSnackbar('Lesson version promoted');
+        } catch (err) {
+            showSnackbar(err?.message || 'Failed to promote lesson version', 'error');
+        } finally {
+            setActionLoading(false);
         }
     };
 
@@ -465,7 +540,7 @@ const AdminCourseDetail = () => {
                 setCourse(prev => ({ ...prev, published_at: new Date().toISOString() }));
                 showSnackbar('Course published');
             }
-        } catch (error) {
+        } catch {
             showSnackbar('Failed to update course status', 'error');
             await refreshCourse();
         } finally {
@@ -480,7 +555,7 @@ const AdminCourseDetail = () => {
             await adminCoursesService.updateCourse(courseId, { status: 'published' });
             setCourse(prev => ({ ...prev, status: 'published' }));
             showSnackbar('Course approved');
-        } catch (error) {
+        } catch {
             showSnackbar('Failed to approve course', 'error');
         } finally {
             setActionLoading(false);
@@ -498,7 +573,7 @@ const AdminCourseDetail = () => {
             setCourse(prev => ({ ...prev, status: 'rejected' }));
             showSnackbar('Course rejected');
             setRejectModalOpen(false);
-        } catch (error) {
+        } catch {
             showSnackbar('Failed to reject course', 'error');
         } finally {
             setActionLoading(false);
@@ -506,13 +581,22 @@ const AdminCourseDetail = () => {
     };
 
     const handleDeleteCourse = async () => {
-        if (!window.confirm('CRITICAL: Delete this course permanently? This cannot be undone.')) return;
+        setDeleteCourseError('');
         try {
             setActionLoading(true);
             await adminCoursesService.deleteCourse(courseId);
+            setDeleteCourseDialogOpen(false);
             navigate('/admin/content/courses');
-        } catch (error) {
-            showSnackbar('Failed to delete course', 'error');
+        } catch (err) {
+            const apiMessage =
+                err?.data?.message ||
+                err?.message ||
+                'Failed to delete course';
+            const conflictMessage = err?.status === 409
+                ? `${apiMessage}. This usually means the course still has related modules, lessons, enrolments, payments, or other records. Remove those dependencies or unpublish the course instead.`
+                : apiMessage;
+            setDeleteCourseError(conflictMessage);
+            showSnackbar(conflictMessage, 'error');
             setActionLoading(false);
         }
     };
@@ -532,6 +616,86 @@ const AdminCourseDetail = () => {
     const formatCurrency = (amount, currency) => {
         return new Intl.NumberFormat('en-NG', { style: 'currency', currency: currency || 'NGN' }).format(amount);
     };
+
+    const toMoneyNumber = (value) => {
+        const normalized = String(value ?? '').replace(/,/g, '');
+        const number = Number(normalized);
+        return Number.isFinite(number) ? number : 0;
+    };
+
+    const firstMoneyValue = (values = []) => {
+        for (const { value, divisor = 1 } of values) {
+            const amount = toMoneyNumber(value);
+            if (amount > 0) return amount / divisor;
+        }
+        return 0;
+    };
+
+    const readSettingValue = (settings, keys = []) => {
+        const payload = settings?.data ?? settings;
+        if (!payload) return undefined;
+
+        if (Array.isArray(payload)) {
+            const item = payload.find((entry) => keys.includes(String(entry?.key || entry?.name || '').toLowerCase()));
+            return item?.value ?? item?.current_value ?? item?.default ?? item?.meta?.default;
+        }
+
+        if (typeof payload === 'object') {
+            for (const key of keys) {
+                const value = payload[key];
+                if (value && typeof value === 'object' && !Array.isArray(value)) {
+                    return value.value ?? value.current_value ?? value.default ?? value.meta?.default;
+                }
+                if (value !== undefined && value !== null) return value;
+            }
+        }
+
+        return undefined;
+    };
+
+    const getPricingSettingsFee = (settings) => firstMoneyValue([
+        { value: readSettingValue(settings, ['foundational_enrolment_fee_kobo', 'foundational_enrollment_fee_kobo', 'enrolment_fee_kobo', 'enrollment_fee_kobo', 'course_enrolment_fee_kobo', 'course_enrollment_fee_kobo', 'course_fee_kobo', 'foundational_fee_kobo']), divisor: 100 },
+        { value: readSettingValue(settings, ['foundational_enrolment_fee', 'foundational_enrollment_fee', 'enrolment_fee', 'enrollment_fee', 'course_enrolment_fee', 'course_enrollment_fee', 'course_fee', 'foundational_fee']) },
+    ]);
+
+    const getCourseType = (courseData = {}) => String(courseData.type || courseData.track || courseData.course_type || '').toLowerCase();
+
+    const getCoursePrice = (courseData = {}) => {
+        const coursePrice = firstMoneyValue([
+            { value: courseData.price },
+            { value: courseData.amount },
+            { value: courseData.fee_amount },
+            { value: courseData.enrolment_fee },
+            { value: courseData.enrollment_fee },
+            { value: courseData.course_fee },
+            { value: courseData.pricing?.price },
+            { value: courseData.pricing?.amount },
+            { value: courseData.pricing?.fee },
+            { value: courseData.pricing?.enrolment_fee },
+            { value: courseData.pricing?.enrollment_fee },
+            { value: courseData.fees?.enrolment },
+            { value: courseData.fees?.enrollment },
+            { value: courseData.fees?.course },
+            { value: courseData.enrolment?.fee },
+            { value: courseData.enrollment?.fee },
+            { value: courseData.price_kobo, divisor: 100 },
+            { value: courseData.amount_kobo, divisor: 100 },
+            { value: courseData.fee_amount_kobo, divisor: 100 },
+            { value: courseData.enrolment_fee_kobo, divisor: 100 },
+            { value: courseData.enrollment_fee_kobo, divisor: 100 },
+            { value: courseData.course_fee_kobo, divisor: 100 },
+            { value: courseData.pricing?.price_kobo, divisor: 100 },
+            { value: courseData.pricing?.amount_kobo, divisor: 100 },
+            { value: courseData.pricing?.fee_kobo, divisor: 100 },
+            { value: courseData.pricing?.enrolment_fee_kobo, divisor: 100 },
+            { value: courseData.pricing?.enrollment_fee_kobo, divisor: 100 },
+        ]);
+
+        if (coursePrice > 0) return coursePrice;
+        return getCourseType(courseData) === 'foundational' ? getPricingSettingsFee(pricingSettings) : 0;
+    };
+
+    const getCourseCurrency = (courseData = {}) => courseData.currency || courseData.pricing?.currency || courseData.fees?.currency || 'NGN';
 
     if (loading) {
         return (
@@ -700,6 +864,26 @@ const AdminCourseDetail = () => {
                                                                     <Quiz fontSize="small" />
                                                                 </IconButton>
                                                             </Tooltip>
+                                                            <Tooltip title="Clone locked version for edits">
+                                                                <IconButton
+                                                                    size="small"
+                                                                    disabled={actionLoading}
+                                                                    onClick={() => handleDuplicateLessonVersion(lesson)}
+                                                                    sx={{ color: '#38BDF8', bgcolor: 'rgba(56,189,248,0.08)', '&:hover': { bgcolor: 'rgba(56,189,248,0.18)' } }}
+                                                                >
+                                                                    <ContentCopy fontSize="small" />
+                                                                </IconButton>
+                                                            </Tooltip>
+                                                            <Tooltip title="Promote draft/current version">
+                                                                <IconButton
+                                                                    size="small"
+                                                                    disabled={actionLoading}
+                                                                    onClick={() => handlePromoteLessonVersion(lesson)}
+                                                                    sx={{ color: '#22C55E', bgcolor: 'rgba(34,197,94,0.08)', '&:hover': { bgcolor: 'rgba(34,197,94,0.18)' } }}
+                                                                >
+                                                                    <Upgrade fontSize="small" />
+                                                                </IconButton>
+                                                            </Tooltip>
                                                             <Switch
                                                                 size="small"
                                                                 checked={!!lesson.published_at}
@@ -824,7 +1008,7 @@ const AdminCourseDetail = () => {
                                 </Box>
                                 <Box>
                                     <Stack direction="row" spacing={1} alignItems="center"><Payments sx={{ fontSize: 16, color: '#6B7280' }} /><Typography sx={{ color: '#6B7280', fontSize: '0.75rem' }}>Price</Typography></Stack>
-                                    <Typography sx={{ color: '#fff' }}>{formatCurrency(course.price, course.currency)}</Typography>
+                                    <Typography sx={{ color: '#fff' }}>{formatCurrency(getCoursePrice(course), getCourseCurrency(course))}</Typography>
                                 </Box>
                             </Box>
                         </Paper>
@@ -874,7 +1058,15 @@ const AdminCourseDetail = () => {
                                     <Typography sx={{ color: '#fff', fontWeight: 500 }}>Delete Course</Typography>
                                     <Typography sx={{ color: '#6B7280', fontSize: '0.85rem' }}>Irreversible action</Typography>
                                 </Box>
-                                <Button variant="outlined" color="error" onClick={handleDeleteCourse} startIcon={<Delete />}>
+                                <Button
+                                    variant="outlined"
+                                    color="error"
+                                    onClick={() => {
+                                        setDeleteCourseError('');
+                                        setDeleteCourseDialogOpen(true);
+                                    }}
+                                    startIcon={<Delete />}
+                                >
                                     Delete
                                 </Button>
                             </Stack>
@@ -894,10 +1086,15 @@ const AdminCourseDetail = () => {
             >
                 <DialogTitle sx={{ borderBottom: `1px solid ${modalBorder}`, pb: 2 }}>
                     <Stack direction="row" alignItems="center" justifyContent="space-between">
-                        <Typography sx={{ fontWeight: 700, fontSize: '1rem' }}>
-                            {editingModuleId ? 'Edit Module' : 'Add Module'}
-                        </Typography>
-                        <IconButton onClick={() => setModuleModalOpen(false)} size="small" sx={{ color: 'text.secondary' }}>
+                        <Box>
+                            <Typography sx={{ color: '#FFFFFF', fontWeight: 700, fontSize: '1rem' }}>
+                                {editingModuleId ? 'Edit Module' : 'Add Module'}
+                            </Typography>
+                            <Typography sx={{ color: '#9CA3AF', fontSize: '0.82rem', mt: 0.35 }}>
+                                Organize foundational content into clear learning sections.
+                            </Typography>
+                        </Box>
+                        <IconButton onClick={() => setModuleModalOpen(false)} size="small" sx={{ color: '#9CA3AF', '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' } }}>
                             <Close fontSize="small" />
                         </IconButton>
                     </Stack>
@@ -905,7 +1102,7 @@ const AdminCourseDetail = () => {
                 <DialogContent sx={{ p: 3 }}>
                     <Stack spacing={2.5}>
                         <Box>
-                            <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: labelColor, mb: 0.75 }}>
+                            <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#E5E7EB', mb: 0.75 }}>
                                 Module Title <Box component="span" sx={{ color: '#EF4444' }}>*</Box>
                             </Typography>
                             <TextField
@@ -914,11 +1111,11 @@ const AdminCourseDetail = () => {
                                 value={moduleTitle}
                                 onChange={e => setModuleTitle(e.target.value)}
                                 autoFocus
-                                sx={inputSx}
+                                sx={textFieldStyle}
                             />
                         </Box>
                         <Box>
-                            <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: labelColor, mb: 0.75 }}>
+                            <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#E5E7EB', mb: 0.75 }}>
                                 Description <Box component="span" sx={{ color: 'text.secondary', fontWeight: 400 }}> — optional</Box>
                             </Typography>
                             <TextField
@@ -928,20 +1125,20 @@ const AdminCourseDetail = () => {
                                 placeholder="Brief overview of what this module covers."
                                 value={moduleDescription}
                                 onChange={e => setModuleDescription(e.target.value)}
-                                sx={inputSx}
+                                sx={textFieldStyle}
                             />
                         </Box>
                     </Stack>
                 </DialogContent>
-                <DialogActions sx={{ px: 3, pb: 2.5, borderTop: `1px solid ${modalBorder}`, pt: 2, gap: 1 }}>
-                    <Button onClick={() => setModuleModalOpen(false)} sx={{ textTransform: 'none', color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}>
+                <DialogActions sx={{ bgcolor: '#111827', px: 3, py: 2, borderTop: '1px solid #374151', gap: 1 }}>
+                    <Button onClick={() => setModuleModalOpen(false)} sx={{ textTransform: 'none', color: '#9CA3AF', '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' } }}>
                         Cancel
                     </Button>
                     <Button
                         variant="contained"
                         onClick={handleCreateModule}
                         disabled={actionLoading || !moduleTitle.trim()}
-                        sx={{ bgcolor: '#178A83', textTransform: 'none', fontWeight: 600, '&:hover': { bgcolor: '#126E68' }, '&:disabled': { bgcolor: isDark ? '#374151' : '#CBD5E1', color: '#9CA3AF' } }}
+                        sx={{ ...primaryButtonStyle, textTransform: 'none', fontWeight: 600, boxShadow: 'none', '&:disabled': { bgcolor: '#374151', color: '#9CA3AF' } }}
                     >
                         {actionLoading ? 'Saving…' : 'Save Module'}
                     </Button>
@@ -1133,6 +1330,80 @@ const AdminCourseDetail = () => {
                         sx={{ textTransform: 'none', fontWeight: 600 }}
                     >
                         {actionLoading ? 'Rejecting…' : 'Reject Course'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Delete Course Dialog */}
+            <Dialog
+                open={deleteCourseDialogOpen}
+                onClose={() => !actionLoading && setDeleteCourseDialogOpen(false)}
+                maxWidth="xs"
+                fullWidth
+                PaperProps={{
+                    sx: {
+                        ...modalStyle,
+                        position: 'relative',
+                        top: 'auto',
+                        left: 'auto',
+                        transform: 'none',
+                        width: '100%',
+                        maxWidth: 560,
+                    },
+                }}
+            >
+                <DialogTitle sx={{ bgcolor: '#111827', borderBottom: '1px solid #374151', px: 3, py: 2.25 }}>
+                    <Stack direction="row" alignItems="center" justifyContent="space-between">
+                        <Typography sx={{ fontWeight: 700, fontSize: '1rem' }}>Delete Course</Typography>
+                        <IconButton
+                            onClick={() => setDeleteCourseDialogOpen(false)}
+                            disabled={actionLoading}
+                            size="small"
+                            sx={{ color: 'text.secondary' }}
+                        >
+                            <Close fontSize="small" />
+                        </IconButton>
+                    </Stack>
+                </DialogTitle>
+                <DialogContent sx={{ bgcolor: '#0F1729', p: 3, overflowY: 'auto', ...scrollableModalBody }}>
+                    <Stack spacing={1.25}>
+                        {deleteCourseError && (
+                            <Alert severity="error" onClose={() => setDeleteCourseError('')}>
+                                {deleteCourseError}
+                            </Alert>
+                        )}
+                        <Typography sx={{ color: labelColor, fontWeight: 600 }}>
+                            Delete this course permanently?
+                        </Typography>
+                        <Typography sx={{ color: 'text.secondary', fontSize: '0.875rem', lineHeight: 1.7 }}>
+                            This cannot be undone. The course, its modules, lessons, and related content will no longer be available.
+                        </Typography>
+                        {course?.title && (
+                            <Box sx={{ bgcolor: isDark ? '#1E293B' : '#F8FAFC', border: `1px solid ${modalBorder}`, borderRadius: 1.5, p: 1.5, mt: 0.5 }}>
+                                <Typography sx={{ color: isDark ? '#F9FAFB' : '#111827', fontWeight: 600, fontSize: '0.875rem' }}>
+                                    {course.title}
+                                </Typography>
+                            </Box>
+                        )}
+                    </Stack>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2.5, borderTop: `1px solid ${modalBorder}`, pt: 2, gap: 1 }}>
+                    <Button
+                        onClick={() => setDeleteCourseDialogOpen(false)}
+                        disabled={actionLoading}
+                        sx={{ textTransform: 'none', color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="contained"
+                        color="error"
+                        onClick={handleDeleteCourse}
+                        disabled={actionLoading}
+                        startIcon={<Delete />}
+                        sx={{ textTransform: 'none', fontWeight: 600 }}
+                    >
+                        {actionLoading ? 'Deleting...' : 'Delete Permanently'}
                     </Button>
                 </DialogActions>
             </Dialog>

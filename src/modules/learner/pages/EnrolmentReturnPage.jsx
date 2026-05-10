@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import {
     Box,
@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import { CheckCircleOutlined, ErrorOutline, ArrowBack } from '@mui/icons-material';
 import { learnerEnrollmentService } from '../services';
+import { useAuth } from '../../../contexts';
 
 const POLL_INTERVAL_MS = 2000;
 const MAX_POLL_ATTEMPTS = 15; // ~30 seconds
@@ -18,6 +19,8 @@ const MAX_POLL_ATTEMPTS = 15; // ~30 seconds
 const EnrolmentReturnPage = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+    const { refreshUser } = useAuth();
+    const refreshUserRef = useRef(refreshUser);
 
     const referenceFromQuery =
         searchParams.get('reference') ||
@@ -25,14 +28,17 @@ const EnrolmentReturnPage = () => {
         sessionStorage.getItem('pending_enrolment_reference') ||
         '';
 
-    const [status, setStatus] = useState('verifying');
-    const [error, setError] = useState('');
-    const [enrolment, setEnrolment] = useState(null);
+    const [status, setStatus] = useState(referenceFromQuery ? 'verifying' : 'error');
+    const [error, setError] = useState(
+        referenceFromQuery ? '' : 'No payment reference found. If you completed payment, check your enrolments page in a moment.'
+    );
+
+    useEffect(() => {
+        refreshUserRef.current = refreshUser;
+    }, [refreshUser]);
 
     useEffect(() => {
         if (!referenceFromQuery) {
-            setStatus('error');
-            setError('No payment reference found. If you completed payment, check your enrolments page in a moment.');
             return undefined;
         }
 
@@ -47,9 +53,11 @@ const EnrolmentReturnPage = () => {
 
                 const verifiedStatus = String(result?.status || result?.enrolment?.status || '').toLowerCase();
                 if (verifiedStatus === 'success' || verifiedStatus === 'paid' || verifiedStatus === 'active') {
-                    setEnrolment(result?.enrolment || result);
                     setStatus('success');
                     sessionStorage.removeItem('pending_enrolment_reference');
+                    try {
+                        await refreshUserRef.current();
+                    } catch { /* best-effort account-state refresh */ }
                     return;
                 }
                 if (verifiedStatus === 'failed' || verifiedStatus === 'cancelled') {
@@ -79,8 +87,6 @@ const EnrolmentReturnPage = () => {
             cancelled = true;
         };
     }, [referenceFromQuery]);
-
-    const courseSlug = enrolment?.course?.slug || enrolment?.course_slug;
 
     return (
         <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', color: 'text.primary', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 3 }}>
@@ -118,11 +124,7 @@ const EnrolmentReturnPage = () => {
                         <Stack direction="row" spacing={2} justifyContent="center">
                             <Button
                                 variant="contained"
-                                onClick={() =>
-                                    courseSlug
-                                        ? navigate(`/learner/courses/${courseSlug}`)
-                                        : navigate('/learner/my-learning')
-                                }
+                                onClick={() => navigate('/learner/foundational')}
                                 sx={{ textTransform: 'none' }}
                             >
                                 Start Learning

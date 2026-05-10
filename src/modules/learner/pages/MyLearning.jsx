@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Alert,
@@ -43,10 +43,8 @@ const MyLearning = () => {
     const [activeTab, setActiveTab] = useState('All Courses');
     const [searchTerm, setSearchTerm] = useState('');
 
-    useEffect(() => {
+    const loadEnrollments = useCallback(() => {
         let active = true;
-        setLoading(true);
-        setError('');
 
         learnerEnrollmentService.getMyEnrollments({ per_page: 50 })
             .then((res) => {
@@ -63,6 +61,8 @@ const MyLearning = () => {
 
         return () => { active = false; };
     }, []);
+
+    useEffect(() => loadEnrollments(), [loadEnrollments]);
 
     const filteredEnrollments = useMemo(() => {
         const byTab = enrollments.filter((enrollment) => {
@@ -109,17 +109,17 @@ const MyLearning = () => {
                 <Stack direction="row" spacing={1.25}>
                     {/* <Button
                         variant="outlined"
-                        onClick={() => navigate('/explore/courses')}
+                        onClick={() => navigate('/learner/foundational')}
                         sx={{ borderColor: '#374151', color: '#E5E7EB', textTransform: 'none' }}
                     >
                         Browse Courses
                     </Button> */}
                     <Button
                         variant="contained"
-                        onClick={() => navigate('/explore/courses')}
+                        onClick={() => navigate('/learner/foundational')}
                         sx={{ bgcolor: theme.colors.brand, textTransform: 'none', '&:hover': { bgcolor: '#0D42AF' } }}
                     >
-                        Explore Courses
+                        Open Foundational
                     </Button>
                 </Stack>
             </Stack>
@@ -234,10 +234,10 @@ const MyLearning = () => {
                     {enrollments.length === 0 && (
                         <Button
                             variant="contained"
-                            onClick={() => navigate('/explore/courses')}
+                            onClick={() => navigate('/learner/foundational')}
                             sx={{ bgcolor: theme.colors.brand, textTransform: 'none', '&:hover': { bgcolor: '#0D42AF' } }}
                         >
-                            Explore Courses
+                            Open Foundational
                         </Button>
                     )}
                 </Box>

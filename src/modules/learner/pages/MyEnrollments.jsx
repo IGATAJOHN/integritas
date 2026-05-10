@@ -83,7 +83,7 @@ const MyEnrollments = () => {
                 const result = await learnerEnrollmentService.getEnrollments({ per_page: 20, page });
                 setEnrollments(result.data || []);
                 setMeta(result.meta || {});
-            } catch (err) {
+            } catch {
                 setError('Failed to load your enrollments. Please try again.');
             } finally {
                 setLoading(false);
@@ -134,7 +134,7 @@ const MyEnrollments = () => {
                     </Typography>
                     <Button
                         variant="contained"
-                        onClick={() => navigate('/explore/courses')}
+                        onClick={() => navigate('/learner/foundational')}
                         sx={{ bgcolor: '#2563EB', textTransform: 'none', fontWeight: 600, '&:hover': { bgcolor: '#1D4ED8' } }}
                     >
                         Browse Courses

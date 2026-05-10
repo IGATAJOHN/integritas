@@ -46,7 +46,7 @@ const LearnerNavbar = ({ onMobileMenuToggle }) => {
 
     const navLinks = [
         { label: 'Dashboard', path: '/learner' },
-        { label: 'Explore', path: '/explore' },
+        { label: 'Foundational', path: '/learner/foundational' },
         // { label: 'My Learning', path: '/explore/my-learning' },
         { label: 'Organization', path: '/learner/organization' },
         // { label: 'Community', path: '/community' },
@@ -59,7 +59,7 @@ const LearnerNavbar = ({ onMobileMenuToggle }) => {
 
     const displayNavLinks = isAuthenticated 
         ? navLinks 
-        : navLinks.filter(l => l.path === '/explore' || l.path === '/community');
+        : navLinks.filter(l => l.path === '/learner/foundational' || l.path === '/community');
 
     return (
         <Box

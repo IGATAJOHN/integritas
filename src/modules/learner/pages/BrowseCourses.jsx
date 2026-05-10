@@ -73,7 +73,7 @@ const BrowseCourses = () => {
             ) : (
                 <div className="courses-grid">
                     {courses.map((course) => {
-                        const coursePathId = String(course?.id || '').trim();
+                        const coursePathId = String(course?.slug || course?.id || '').trim();
 
                         return (
                         <Card key={course.id} className="course-card">
