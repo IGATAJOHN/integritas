@@ -44,7 +44,6 @@ import {
 import logo from '../../../assets/images/integritas_logo.jpg';
 import { courseCatalogService, learnerEnrollmentService, learnerLessonService } from '../services';
 import { apiService } from '../../../services/api';
-import { getImageUrl } from '../../../utils';
 import { getVideoUrl } from '../../../utils';
 
 
@@ -70,6 +69,50 @@ const parseDurationMinutes = (value) => {
     if (!value) return 0;
     const n = parseInt(String(value), 10);
     return Number.isFinite(n) ? n : 0;
+};
+
+const toArray = (value) => (Array.isArray(value) ? value : []);
+
+const getLessonIdentifier = (lesson) => String(lesson?.slug || lesson?.id || lesson?.lesson_id || '');
+
+const matchesLessonIdentifier = (lesson, identifier) => {
+    const value = String(identifier || '');
+    if (!value) return false;
+    return [lesson?.id, lesson?.lesson_id, lesson?.slug].some((candidate) => String(candidate || '') === value);
+};
+
+const normalizeLesson = (lesson) => ({
+    ...lesson,
+    id: String(lesson.id || lesson.lesson_id || lesson.slug || ''),
+    slug: lesson.slug || lesson.lesson_slug || '',
+    title: String(lesson.title || lesson.name || 'Untitled Lesson'),
+    duration: lesson.duration || lesson.duration_minutes || 0,
+    order: lesson.order || lesson.position || 0,
+    video_url: lesson.video_url || lesson.video || '',
+    description: lesson.description || lesson.summary || '',
+    content: lesson.content || '',
+});
+
+const normalizeModule = (module) => ({
+    ...module,
+    id: String(module.id || module.module_id || module.slug || ''),
+    title: String(module.title || module.name || 'Untitled Module'),
+    order: module.order || module.position || 0,
+    lessons: toArray(module.lessons || module.course_lessons).map(normalizeLesson),
+});
+
+const extractModules = (payload) => {
+    const candidates = [
+        payload?.modules,
+        payload?.course_modules,
+        payload?.course?.modules,
+        payload?.course?.course_modules,
+        payload?.enrolment?.course?.modules,
+        payload?.enrollment?.course?.modules,
+        payload?.progress?.modules,
+    ];
+    const found = candidates.find((item) => Array.isArray(item));
+    return toArray(found).map(normalizeModule);
 };
 
 const CourseLesson = () => {
@@ -111,43 +154,40 @@ const CourseLesson = () => {
                 if (!active) return;
                 setCourseData(data);
 
-                // Fetch modules list
-                const modulesRes = await apiService.get(`/lms/courses/${courseId}/modules`);
-                if (!active) return;
-                const rawModules = Array.isArray(modulesRes?.data) ? modulesRes.data
-                    : Array.isArray(modulesRes) ? modulesRes : [];
+                let moduleList = [];
+                try {
+                    const progress = await learnerEnrollmentService.getCourseProgress(courseId);
+                    if (!active) return;
+                    setEnrollmentData(progress?.enrolment || progress?.enrollment || progress);
+                    moduleList = extractModules(progress);
+                } catch {
+                    moduleList = extractModules(data?.raw_data || data);
+                }
 
-                // Fetch lessons for every module in parallel
-                const moduleList = await Promise.all(
-                    rawModules.map(async (m) => {
-                        try {
-                            const lessonsRes = await apiService.get(`/lms/modules/${m.id}/lessons`);
-                            const rawLessons = Array.isArray(lessonsRes?.data) ? lessonsRes.data
-                                : Array.isArray(lessonsRes) ? lessonsRes : [];
-                            return {
-                                id: String(m.id || ''),
-                                title: String(m.title || m.name || 'Untitled Module'),
-                                order: m.order || m.position || 0,
-                                lessons: rawLessons.map((l) => ({
-                                    id: String(l.id || ''),
-                                    title: String(l.title || l.name || 'Untitled Lesson'),
-                                    duration: l.duration || l.duration_minutes || 0,
-                                    order: l.order || l.position || 0,
-                                    video_url: l.video_url || l.video || '',
-                                    description: l.description || '',
-                                    content: l.content || '',
-                                })),
-                            };
-                        } catch {
-                            return {
-                                id: String(m.id || ''),
-                                title: String(m.title || m.name || 'Untitled Module'),
-                                order: m.order || m.position || 0,
-                                lessons: [],
-                            };
-                        }
-                    })
-                );
+                if (moduleList.length === 0) {
+                    moduleList = extractModules(data?.raw_data || data);
+                }
+
+                if (moduleList.length === 0) {
+                    const moduleCourseId = data?.raw_data?.id || data?.raw?.id || data?.id || courseId;
+                    const modulesRes = await apiService.get(`/lms/courses/${moduleCourseId}/modules`);
+                    if (!active) return;
+                    const rawModules = Array.isArray(modulesRes?.data) ? modulesRes.data
+                        : Array.isArray(modulesRes) ? modulesRes : [];
+
+                    moduleList = await Promise.all(
+                        rawModules.map(async (m) => {
+                            try {
+                                const lessonsRes = await apiService.get(`/lms/modules/${m.id}/lessons`);
+                                const rawLessons = Array.isArray(lessonsRes?.data) ? lessonsRes.data
+                                    : Array.isArray(lessonsRes) ? lessonsRes : [];
+                                return normalizeModule({ ...m, lessons: rawLessons });
+                            } catch {
+                                return normalizeModule({ ...m, lessons: [] });
+                            }
+                        })
+                    );
+                }
                 if (!active) return;
 
                 setModules(moduleList);
@@ -156,22 +196,26 @@ const CourseLesson = () => {
                 if (!initialLessonLoaded.current) {
                     const allLessons = moduleList.flatMap((m) => m.lessons);
                     const target = lessonId
-                        ? allLessons.find((l) => l.id === lessonId)
+                        ? allLessons.find((l) => matchesLessonIdentifier(l, lessonId))
                         : allLessons[0];
 
                     if (target) {
-                        setSelectedLessonId(target.id);
+                        const targetIdentifier = getLessonIdentifier(target);
+                        setSelectedLessonId(targetIdentifier);
                         // Auto-expand that module
                         const ownerModule = moduleList.find((m) =>
-                            m.lessons.some((l) => l.id === target.id)
+                            m.lessons.some((l) => matchesLessonIdentifier(l, targetIdentifier))
                         );
                         if (ownerModule) setExpandedModule(ownerModule.id);
+                        if (targetIdentifier && targetIdentifier !== lessonId) {
+                            navigate(`/explore/lesson/${courseId}/${targetIdentifier}`, { replace: true });
+                        }
                     }
                     initialLessonLoaded.current = true;
                 }
 
                 // Non-blocking enrollment info
-                learnerEnrollmentService.getEnrollments({ course_id: courseId, per_page: 1 })
+                learnerEnrollmentService.getEnrollments({ course_slug: courseId, per_page: 1 })
                     .then((res) => { if (active) setEnrollmentData(res.data?.[0] || null); })
                     .catch(() => {});
             } catch (err) {
@@ -183,7 +227,7 @@ const CourseLesson = () => {
 
         load();
         return () => { active = false; };
-    }, [courseId]);
+    }, [courseId, lessonId, navigate]);
 
     // --- Load lesson detail when selectedLessonId changes ---
     useEffect(() => {
@@ -191,7 +235,7 @@ const CourseLesson = () => {
         let active = true;
 
         // First try to populate from cached module data
-        const cached = modules.flatMap((m) => m.lessons).find((l) => l.id === selectedLessonId);
+        const cached = modules.flatMap((m) => m.lessons).find((l) => matchesLessonIdentifier(l, selectedLessonId));
         if (cached) setCurrentLesson(cached);
 
         setLessonLoading(true);
@@ -200,7 +244,11 @@ const CourseLesson = () => {
         setIsPlaying(false);
         if (videoRef.current) { videoRef.current.pause(); videoRef.current.src = ''; }
 
-        courseCatalogService.getLessonById(selectedLessonId)
+        const detailRequest = cached?.slug || !/^\d+$/.test(String(selectedLessonId || ''))
+            ? learnerLessonService.getLesson(cached?.slug || selectedLessonId)
+            : courseCatalogService.getLessonById(selectedLessonId);
+
+        detailRequest
             .then((detail) => {
                 if (!active) return;
                 setCurrentLesson((prev) => ({
@@ -214,7 +262,7 @@ const CourseLesson = () => {
             .finally(() => { if (active) setLessonLoading(false); });
 
         return () => { active = false; };
-    }, [selectedLessonId]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [selectedLessonId, modules]);
 
     // When currentLesson changes, fetch a fresh Bunny CDN signed URL.
     useEffect(() => {
@@ -262,7 +310,7 @@ const CourseLesson = () => {
 
     const allLessons = useMemo(() => modules.flatMap((m) => m.lessons), [modules]);
     const currentIndex = useMemo(
-        () => allLessons.findIndex((l) => l.id === selectedLessonId),
+        () => allLessons.findIndex((l) => matchesLessonIdentifier(l, selectedLessonId)),
         [allLessons, selectedLessonId]
     );
     const prevLesson = allLessons[currentIndex - 1] || null;
@@ -280,13 +328,14 @@ const CourseLesson = () => {
     const completedLessons = Math.round((progressPercent / 100) * totalLessons);
 
     const currentModule = modules.find((m) =>
-        m.lessons.some((l) => l.id === selectedLessonId)
+        m.lessons.some((l) => matchesLessonIdentifier(l, selectedLessonId))
     );
 
     const handleSelectLesson = (lesson) => {
-        setSelectedLessonId(lesson.id);
-        navigate(`/explore/lesson/${courseId}/${lesson.id}`, { replace: true });
-        const ownerModule = modules.find((m) => m.lessons.some((l) => l.id === lesson.id));
+        const identifier = getLessonIdentifier(lesson);
+        setSelectedLessonId(identifier);
+        navigate(`/explore/lesson/${courseId}/${identifier}`, { replace: true });
+        const ownerModule = modules.find((m) => m.lessons.some((l) => matchesLessonIdentifier(l, identifier)));
         if (ownerModule) setExpandedModule(ownerModule.id);
     };
 
@@ -346,6 +395,16 @@ const CourseLesson = () => {
     const courseLevel = courseData?.level || '—';
     const courseLanguage = courseData?.raw?.language || '—';
     const courseStartDate = courseData?.raw?.start_date || courseData?.raw?.published_at || 'Ongoing';
+    const isFoundationalCourse = String(
+        courseData?.type ||
+        courseData?.track ||
+        courseData?.raw_data?.type ||
+        courseData?.raw?.type ||
+        ''
+    ).toLowerCase() === 'foundational' ||
+        String(courseData?.title || '').trim().toLowerCase() === 'foundational course';
+    const courseOverviewPath = isFoundationalCourse ? '/learner/foundational' : `/explore/course/${courseId}`;
+    const learningListPath = isFoundationalCourse ? '/learner/foundational' : '/explore/my-learning';
 
     return (
         <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, display: 'flex', flexDirection: 'column' }}>
@@ -367,15 +426,15 @@ const CourseLesson = () => {
                         <Typography
                             variant="body2"
                             sx={{ color: colors.textSecondary, cursor: 'pointer', '&:hover': { color: colors.text } }}
-                            onClick={() => navigate('/explore/my-learning')}
+                            onClick={() => navigate(learningListPath)}
                         >
-                            My Learning
+                            {isFoundationalCourse ? 'Foundational' : 'My Learning'}
                         </Typography>
                         <Typography variant="body2" sx={{ color: colors.textSecondary }}>›</Typography>
                         <Typography
                             variant="body2"
                             sx={{ color: colors.textSecondary, cursor: 'pointer', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', '&:hover': { color: colors.text } }}
-                            onClick={() => navigate(`/explore/course/${courseId}`)}
+                            onClick={() => navigate(courseOverviewPath)}
                         >
                             {courseData?.title || 'Course'}
                         </Typography>
@@ -394,7 +453,7 @@ const CourseLesson = () => {
                     startIcon={<ArrowBack sx={{ fontSize: 16 }} />}
                     size="small"
                     // onClick={() => navigate(`/explore/course/${courseId}`)}
-                    onClick={() => navigate(`/explore/my-learning`)}
+                    onClick={() => navigate(courseOverviewPath)}
                     sx={{ color: colors.textSecondary, textTransform: 'none', '&:hover': { color: colors.text } }}
                 >
                     Back to Course
@@ -483,10 +542,11 @@ const CourseLesson = () => {
                                 <AccordionDetails sx={{ p: 0 }}>
                                     <List disablePadding>
                                         {mod.lessons.map((l) => {
-                                            const isActive = l.id === selectedLessonId;
+                                            const lessonIdentifier = getLessonIdentifier(l);
+                                            const isActive = matchesLessonIdentifier(l, selectedLessonId);
                                             return (
                                                 <ListItemButton
-                                                    key={l.id}
+                                                    key={lessonIdentifier}
                                                     onClick={() => handleSelectLesson(l)}
                                                     sx={{
                                                         py: 1.25,
@@ -532,7 +592,7 @@ const CourseLesson = () => {
                         <Button
                             fullWidth
                             startIcon={<ArrowBack />}
-                            onClick={() => navigate(`/explore/my-learning`)}
+                            onClick={() => navigate(learningListPath)}
                             sx={{
                                 justifyContent: 'flex-start',
                                 color: colors.textSecondary,
@@ -728,7 +788,7 @@ const CourseLesson = () => {
                         <Button
                             variant="contained"
                             startIcon={<ArrowBack />}
-                            onClick={() => navigate(`/explore/course/${courseId}`)}
+                            onClick={() => navigate(courseOverviewPath)}
                             sx={{ bgcolor: colors.success, '&:hover': { bgcolor: '#059669' }, textTransform: 'none', fontWeight: 600 }}
                         >
                             Back to Course Overview

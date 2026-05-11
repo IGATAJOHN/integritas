@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
     Accordion,
     AccordionDetails,
@@ -80,6 +80,7 @@ const getPaymentError = (error) => {
 
 const FoundationalHub = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { isAuthenticated } = useAuth();
     const [loading, setLoading] = useState(true);
     const [paying, setPaying] = useState(false);
@@ -152,6 +153,10 @@ const FoundationalHub = () => {
 
     const startPayment = async () => {
         if (!courseSlug) return;
+        if (!isAuthenticated) {
+            navigate('/login', { state: { from: location } });
+            return;
+        }
         setPaying(true);
         try {
             const result = await learnerEnrollmentService.initiateEnrolment(courseSlug);
@@ -307,6 +312,16 @@ const FoundationalHub = () => {
                             </Box>
                             <Button fullWidth variant="contained" startIcon={<PlayArrow />} onClick={() => navigate(`/explore/lesson/${courseSlug}`)} sx={{ textTransform: 'none', ...buttonSx }}>
                                 Continue Learning
+                            </Button>
+                        </>
+                    ) : !isAuthenticated ? (
+                        <>
+                            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+                                <Lock sx={{ color: '#FBBF24' }} />
+                                <Typography sx={{ color: '#FBBF24', fontWeight: 700 }}>Preview mode</Typography>
+                            </Stack>
+                            <Button fullWidth variant="contained" disabled={!courseSlug} onClick={startPayment} sx={{ textTransform: 'none', ...buttonSx }}>
+                                Login to Enrol
                             </Button>
                         </>
                     ) : (

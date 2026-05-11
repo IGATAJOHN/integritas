@@ -27,6 +27,8 @@ const EnrolmentReturnPage = () => {
         searchParams.get('trxref') ||
         sessionStorage.getItem('pending_enrolment_reference') ||
         '';
+    const pendingCourseSlug = sessionStorage.getItem('pending_course_slug') || '';
+    const learningPath = pendingCourseSlug ? `/explore/lesson/${pendingCourseSlug}` : '/learner/foundational';
 
     const [status, setStatus] = useState(referenceFromQuery ? 'verifying' : 'error');
     const [error, setError] = useState(
@@ -58,6 +60,9 @@ const EnrolmentReturnPage = () => {
                     try {
                         await refreshUserRef.current();
                     } catch { /* best-effort account-state refresh */ }
+                    setTimeout(() => {
+                        if (!cancelled) navigate(learningPath, { replace: true });
+                    }, 1200);
                     return;
                 }
                 if (verifiedStatus === 'failed' || verifiedStatus === 'cancelled') {
@@ -86,7 +91,7 @@ const EnrolmentReturnPage = () => {
         return () => {
             cancelled = true;
         };
-    }, [referenceFromQuery]);
+    }, [learningPath, navigate, referenceFromQuery]);
 
     return (
         <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', color: 'text.primary', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 3 }}>
@@ -119,19 +124,19 @@ const EnrolmentReturnPage = () => {
                             You're enrolled!
                         </Typography>
                         <Typography color="text.secondary" sx={{ mb: 3 }}>
-                            Your payment has been confirmed and your course access is ready.
+                            Your payment has been confirmed. Taking you to your first lesson...
                         </Typography>
                         <Stack direction="row" spacing={2} justifyContent="center">
                             <Button
                                 variant="contained"
-                                onClick={() => navigate('/learner/foundational')}
+                                onClick={() => navigate(learningPath, { replace: true })}
                                 sx={{ textTransform: 'none' }}
                             >
-                                Start Learning
+                                Go to Lessons
                             </Button>
                             <Button
                                 variant="outlined"
-                                onClick={() => navigate('/learner/my-enrollments')}
+                                onClick={() => navigate('/explore/enrollments')}
                                 sx={{ textTransform: 'none' }}
                             >
                                 My Enrolments
@@ -152,7 +157,7 @@ const EnrolmentReturnPage = () => {
                         </Typography>
                         <Button
                             variant="contained"
-                            onClick={() => navigate('/learner/my-enrollments')}
+                            onClick={() => navigate('/explore/enrollments')}
                             sx={{ textTransform: 'none' }}
                         >
                             Go to My Enrolments

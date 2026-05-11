@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import { NotFound, LandingPage, AboutUsPage, PartnersPage, ContactPage, DonatePage, LoginPage, SignupPage, VerifyPage, ForgotPasswordPage, ResetPasswordPage, TutorAcceptInvitePage, CertificateVerifyPage, NotificationsPage, ProfileSettingsPage, InviteAcceptPage, TwoFactorChallengePage } from '../pages';
 import { adminRoutes } from '../modules/admin';
@@ -20,6 +21,7 @@ const PUBLIC_LEARNER_PATHS = [
     '/explore/courses',
     '/explore/course/:courseId',
     '/explore/foundational',
+    '/learner/foundational',
     '/explore/experta',
     '/payment-success',
     '/payment/success',
