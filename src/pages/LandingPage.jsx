@@ -683,7 +683,7 @@ const LandingPage = () => {
                                     color: colors.textWhite,
                                 }}
                             >
-                                Foundational Courses
+                                Foundational Course
                             </Typography>
                             <Typography sx={{ color: colors.textMuted }}>
                                 Core courses recommended for every public service professional.
@@ -719,7 +719,7 @@ const LandingPage = () => {
                     ) : essentialCourses.length === 0 ? (
                         <Box sx={{ textAlign: 'center', py: 6 }}>
                             <Typography sx={{ color: colors.textMuted, mb: 2 }}>
-                                No foundational courses available at this time.
+                                No foundational course available at this time.
                             </Typography>
                             <Button
                                 component={Link}
