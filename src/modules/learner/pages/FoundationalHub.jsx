@@ -103,10 +103,10 @@ const FoundationalHub = () => {
         try {
             const list = await courseCatalogService.listFoundationalCourses({ per_page: 25 });
             const courses = list.data || [];
-            const selected = courses.find((item) => String(item.title || '').trim().toLowerCase() === 'foundational course') || courses[0];
+            const selected = courses.find((item) => ['foundational course', 'foundational courses'].includes(String(item.title || '').trim().toLowerCase())) || courses[0];
             if (!selected) {
                 setCourse(null);
-                setError('The Foundational Course is not available yet.');
+                setError('The Foundational Courses are not available yet.');
                 return;
             }
 
@@ -141,7 +141,7 @@ const FoundationalHub = () => {
                 }
             }
         } catch (err) {
-            setError(err?.message || 'Failed to load the Foundational Course.');
+            setError(err?.message || 'Failed to load the Foundational Courses.');
         } finally {
             setLoading(false);
         }
@@ -184,7 +184,7 @@ const FoundationalHub = () => {
                 <Box sx={{ minHeight: 'calc(100vh - 84px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Stack alignItems="center" spacing={2}>
                         <CircularProgress sx={{ color: colors.brand }} />
-                        <Typography sx={{ color: colors.muted }}>Loading Foundational Course...</Typography>
+                        <Typography sx={{ color: colors.muted }}>Loading Foundational Courses...</Typography>
                     </Stack>
                 </Box>
             </Box>
@@ -200,7 +200,7 @@ const FoundationalHub = () => {
                         Home
                     </Typography>
                     <Typography sx={{ color: colors.muted }}>/</Typography>
-                    <Typography sx={{ color: colors.brand, fontSize: '0.875rem' }}>Foundational Course</Typography>
+                    <Typography sx={{ color: colors.brand, fontSize: '0.875rem' }}>Foundational Courses</Typography>
                 </Stack>
 
                 <Stack direction={{ xs: 'column', lg: 'row' }} spacing={4} alignItems="flex-start">
@@ -208,7 +208,7 @@ const FoundationalHub = () => {
                     <Box sx={{ mb: 4 }}>
                         <Chip label="Foundational Programme" icon={<VerifiedUserOutlined />} sx={{ bgcolor: 'rgba(17,82,212,0.18)', color: '#93C5FD', mb: 2 }} />
                         <Typography variant="h4" sx={{ fontWeight: 800, mb: 2, fontSize: { xs: '1.65rem', md: '2.35rem' } }}>
-                            {course?.title || 'Foundational Course'}
+                            {course?.title || 'Foundational Courses'}
                         </Typography>
                         <Typography sx={{ color: colors.muted, fontSize: '1rem', lineHeight: 1.7, mb: 3, maxWidth: 760 }}>
                             {course?.description || course?.summary || 'Build the core governance and integrity foundations before moving into advanced learning.'}
@@ -227,7 +227,7 @@ const FoundationalHub = () => {
                         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
                             {[
                                 ['1', 'Verify email', 'Use the verification link sent after registration.'],
-                                ['2', 'Pay enrolment fee', 'Complete Paystack payment for the Foundational Course.'],
+                                ['2', 'Pay enrolment fee', 'Complete Paystack payment for the Foundational Courses.'],
                                 ['3', 'Unlock lessons and CBT', 'Access every foundational module, lesson, tutor content, and quiz.'],
                             ].map(([step, title, body]) => (
                                 <Paper key={step} sx={{ flex: 1, bgcolor: colors.card, border: `1px solid ${colors.border}`, p: 2 }}>

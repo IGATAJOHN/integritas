@@ -39,11 +39,14 @@ export const learnerEnrollmentService = {
      * POST /enrolment/initiate
      * Returns { authorization_url, reference, ... }; redirect the user to the URL.
      */
-    initiateEnrolment: async (courseSlug, { idempotencyKey } = {}) => {
+    initiateEnrolment: async (courseSlug, { idempotencyKey, callbackUrl } = {}) => {
         const key = idempotencyKey || newIdempotencyKey();
+        // Pass callback_url so the backend can forward it to Paystack's initialization.
+        // Paystack will redirect the user here after payment with ?reference=xxx&trxref=xxx.
+        const callback_url = callbackUrl || `${window.location.origin}/enrolment/return`;
         const res = await apiService.post(
             '/enrolment/initiate',
-            { course_slug: courseSlug, idempotency_key: key },
+            { course_slug: courseSlug, idempotency_key: key, callback_url },
             { idempotencyKey: key }
         );
         return unwrap(res);

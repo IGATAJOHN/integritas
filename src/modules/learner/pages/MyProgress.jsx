@@ -75,7 +75,7 @@ const MyProgress = () => {
         },
         {
             id: 2,
-            title: 'Ethics in Public Service',
+            title: 'Integrity in Public Service',
             module: 'Module 2: Conflict of Interest',
             progress: 30,
             remaining: '45m remaining',

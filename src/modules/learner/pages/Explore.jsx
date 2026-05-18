@@ -44,7 +44,7 @@ const mapSortBy = (value) => {
 };
 
 const PAGE_TITLES = {
-    foundational: { heading: 'Foundational Course', sub: 'Core governance and policy foundations.' },
+    foundational: { heading: 'Foundational Courses', sub: 'Core governance and policy foundations.' },
     experta: { heading: 'Exemplar Class', sub: 'Advanced expert-level governance courses.' },
     default: { heading: 'Explore Courses', sub: 'Discover governance and policy courses.' },
 };

@@ -660,7 +660,7 @@ const CourseManagement = () => {
                             </Typography>
                             <TextField
                                 fullWidth
-                                placeholder="e.g. Introduction to Ethics in Governance"
+                                placeholder="e.g. Governance Foundations"
                                 value={form.title}
                                 onChange={e => setForm(prev => ({ ...prev, title: e.target.value }))}
                                 autoFocus

@@ -63,7 +63,7 @@ const CourseLessonV2 = () => {
 
     // Mock data for course
     const course = {
-        title: 'Governance Ethics 101',
+        title: 'Governance Foundations 101',
         progress: 45,
         completedLessons: 12,
         totalLessons: 28

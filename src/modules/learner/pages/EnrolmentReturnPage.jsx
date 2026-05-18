@@ -27,8 +27,14 @@ const EnrolmentReturnPage = () => {
         searchParams.get('trxref') ||
         sessionStorage.getItem('pending_enrolment_reference') ||
         '';
+
+    // Resolve the post-payment destination from session storage saved before
+    // the Paystack redirect. Falls back to the foundational hub.
     const pendingCourseSlug = sessionStorage.getItem('pending_course_slug') || '';
-    const learningPath = pendingCourseSlug ? `/explore/lesson/${pendingCourseSlug}` : '/learner/foundational';
+    const pendingCourseType = sessionStorage.getItem('pending_course_type') || '';
+    const learningPath = pendingCourseType === 'expert' && pendingCourseSlug
+        ? `/explore/lesson/${pendingCourseSlug}`
+        : '/learner/foundational';
 
     const [status, setStatus] = useState(referenceFromQuery ? 'verifying' : 'error');
     const [error, setError] = useState(
@@ -57,12 +63,15 @@ const EnrolmentReturnPage = () => {
                 if (verifiedStatus === 'success' || verifiedStatus === 'paid' || verifiedStatus === 'active') {
                     setStatus('success');
                     sessionStorage.removeItem('pending_enrolment_reference');
+                    sessionStorage.removeItem('pending_course_slug');
+                    sessionStorage.removeItem('pending_course_id');
+                    sessionStorage.removeItem('pending_course_type');
                     try {
                         await refreshUserRef.current();
                     } catch { /* best-effort account-state refresh */ }
                     setTimeout(() => {
                         if (!cancelled) navigate(learningPath, { replace: true });
-                    }, 1200);
+                    }, 1500);
                     return;
                 }
                 if (verifiedStatus === 'failed' || verifiedStatus === 'cancelled') {
@@ -124,24 +133,15 @@ const EnrolmentReturnPage = () => {
                             You're enrolled!
                         </Typography>
                         <Typography color="text.secondary" sx={{ mb: 3 }}>
-                            Your payment has been confirmed. Taking you to your first lesson...
+                            Payment confirmed. Taking you to the course now…
                         </Typography>
-                        <Stack direction="row" spacing={2} justifyContent="center">
-                            <Button
-                                variant="contained"
-                                onClick={() => navigate(learningPath, { replace: true })}
-                                sx={{ textTransform: 'none' }}
-                            >
-                                Go to Lessons
-                            </Button>
-                            <Button
-                                variant="outlined"
-                                onClick={() => navigate('/explore/enrollments')}
-                                sx={{ textTransform: 'none' }}
-                            >
-                                My Enrolments
-                            </Button>
-                        </Stack>
+                        <Button
+                            variant="contained"
+                            onClick={() => navigate(learningPath, { replace: true })}
+                            sx={{ textTransform: 'none' }}
+                        >
+                            Start Learning
+                        </Button>
                     </>
                 )}
 

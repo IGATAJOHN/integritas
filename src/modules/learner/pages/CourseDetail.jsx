@@ -34,10 +34,6 @@ import {
     People as PeopleIcon,
     PlayLesson as LessonsIcon,
     Verified as VerifiedIcon,
-    AccountBalance as GovernanceIcon,
-    Gavel as EthicsIcon,
-    Notifications as NotificationsIcon,
-    Settings as SettingsIcon,
     Language as WorldIcon,
     AlternateEmail as EmailIcon
 } from '@mui/icons-material';
@@ -320,32 +316,43 @@ const CourseDetail = () => {
         };
     }, [courseId]);
 
-    // Fetch enrollment status first. Progress endpoints are for enrolled
-    // learners and are slug-based in the API docs.
+    // Check enrolment status when the course loads.
+    // Primary: course progress endpoint (only works if enrolled → reliable).
+    // Fallback: scan /me/enrolments list for a matching active entry.
     useEffect(() => {
-        if (!isAuthenticated || !courseData?.id) return;
+        if (!isAuthenticated || !courseSlug) return;
         setIsEnrolled(false);
         setAccessInfo(null);
-        learnerEnrollmentService.getEnrollments({
-            course_id: courseData.id,
-            course_slug: courseSlug || undefined,
-            per_page: 1,
-        })
-            .then((res) => {
-                const enrollment = res.data?.[0];
-                const status = String(enrollment?.status || '').toLowerCase();
-                if (status === 'enrolled' || status === 'in_progress' || status === 'completed') {
+
+        const ENROLLED_STATUSES = ['active', 'enrolled', 'in_progress', 'completed'];
+
+        // Try the progress endpoint first — it 403s when not enrolled
+        learnerEnrollmentService.getCourseAccess(courseSlug)
+            .then((data) => {
+                if (data?.has_access || ENROLLED_STATUSES.includes(String(data?.status || '').toLowerCase())) {
                     setIsEnrolled(true);
-                    const slugForProgress = courseSlug || enrollment?.course?.slug || enrollment?.course_slug;
-                    if (slugForProgress) {
-                        learnerEnrollmentService.getCourseAccess(slugForProgress)
-                            .then((data) => setAccessInfo(data))
-                            .catch(() => {});
-                    }
+                    setAccessInfo(data);
+                } else {
+                    throw new Error('not enrolled');
                 }
             })
-            .catch(() => {});
-    }, [isAuthenticated, courseData?.id, courseSlug]);
+            .catch(() => {
+                // Fallback: scan enrolments list
+                learnerEnrollmentService.getEnrollments({ per_page: 50 })
+                    .then((res) => {
+                        const match = (res.data || []).find(
+                            e =>
+                                e.course?.slug === courseSlug ||
+                                String(e.course?.id) === String(courseData?.id) ||
+                                String(e.course_id) === String(courseData?.id)
+                        );
+                        if (match && ENROLLED_STATUSES.includes(String(match.status || '').toLowerCase())) {
+                            setIsEnrolled(true);
+                        }
+                    })
+                    .catch(() => {});
+            });
+    }, [isAuthenticated, courseSlug, courseData?.id]);
 
     const handleTabChange = (event, newValue) => {
         setActiveTab(newValue);
@@ -372,6 +379,9 @@ const CourseDetail = () => {
                 sessionStorage.setItem('pending_course_id', courseData.id);
                 if (courseData.slug) sessionStorage.setItem('pending_course_slug', courseData.slug);
                 if (reference) sessionStorage.setItem('pending_enrolment_reference', reference);
+                // Store course type so the return page navigates to the right hub
+                const courseType = String(courseData?.type || courseData?.track || '').toLowerCase();
+                sessionStorage.setItem('pending_course_type', courseType);
                 window.location.href = paymentUrl;
             } else {
                 navigate('/payment-success', { state: { enrollment: result, course: { courseId: courseData.id, title: courseData.title, price: courseData.price, thumbnail: courseData.image } } });
@@ -874,7 +884,15 @@ const CourseDetail = () => {
                                     <Button
                                         fullWidth
                                         variant="contained"
-                                        onClick={() => navigate(`/explore/lesson/${courseData.slug || courseData.id}/`)}
+                                        onClick={() => {
+                                            const type = String(courseData?.type || courseData?.track || '').toLowerCase();
+                                            if (type === 'foundational') {
+                                                navigate('/learner/foundational');
+                                            } else {
+                                                const slug = courseData?.slug || courseData?.id;
+                                                navigate(`/explore/lesson/${slug}`);
+                                            }
+                                        }}
                                         sx={{
                                             bgcolor: colors.success,
                                             py: 1.25,
@@ -886,7 +904,7 @@ const CourseDetail = () => {
                                             '&:hover': { bgcolor: '#059669' }
                                         }}
                                     >
-                                        Resume Course
+                                        Continue Learning
                                     </Button>
                                 ) : (
                                     <>
@@ -903,7 +921,7 @@ const CourseDetail = () => {
                                             Foundational access flow
                                         </Typography>
                                         <Typography sx={{ color: colors.textSecondary, fontSize: '0.78rem', lineHeight: 1.6 }}>
-                                            Register and verify your email, choose a foundational course, then pay the enrolment fee through Paystack. Lessons unlock after payment is confirmed.
+                                            Register and verify your email, choose foundational courses, then pay the enrolment fee through Paystack. Lessons unlock after payment is confirmed.
                                         </Typography>
                                     </Box>
                                     <Button
@@ -922,7 +940,9 @@ const CourseDetail = () => {
                                             '&.Mui-disabled': { bgcolor: colors.primary, opacity: 0.7 }
                                         }}
                                     >
-                                        {enrolling ? 'Processing...' : 'Enroll Now'}
+                                        {enrolling
+                                            ? 'Processing…'
+                                            : (courseData?.price > 0 ? 'Enrol & Pay' : 'Enrol Free')}
                                     </Button>
                                     </>
                                 )}

@@ -47,7 +47,7 @@ const VerifyPage = () => {
 
                     setSuccess(
                         nextRoute === '/learner/foundational'
-                            ? 'Email verified successfully! Continue to the Foundational Course payment.'
+                            ? 'Email verified successfully! Continue to the Foundational Courses payment.'
                             : nextRoute === '/login'
                                 ? 'Email verified successfully! Log in to continue to payment.'
                             : 'Email verified successfully! Redirecting to dashboard...'

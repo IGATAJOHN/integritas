@@ -24,7 +24,7 @@ import {
     TextField,
     Snackbar,
 } from '@mui/material';
-import { ReceiptLongOutlined, FlagOutlined } from '@mui/icons-material';
+import { ReceiptLongOutlined, FlagOutlined, MoneyOffOutlined, BlockOutlined, RestoreOutlined } from '@mui/icons-material';
 import { adminTransactionsService } from '../services';
 import theme from '../../../styles/theme';
 
@@ -125,13 +125,61 @@ const AdminTransactions = () => {
             await adminTransactionsService.flagForRefund(flagDialog.tx.id, flagReason.trim());
             setSnackbar({ open: true, message: 'Transaction flagged for refund review.', severity: 'success' });
             closeFlagDialog();
-            // Refresh list
             const res = await adminTransactionsService.listTransactions();
             setItems(res?.data || []);
         } catch (err) {
             setSnackbar({ open: true, message: err?.message || 'Failed to flag transaction.', severity: 'error' });
         } finally {
             setFlagging(false);
+        }
+    };
+
+    const handleManualRefund = async (tx) => {
+        const reason = window.prompt(`Manual refund for ${tx.reference || '#' + tx.id}\n\nReason (required):`);
+        if (reason === null) return;
+        const external_reference = window.prompt('External reference (e.g. bank transfer ref) — optional:') || undefined;
+        try {
+            setLoading(true);
+            await adminTransactionsService.manualRefund(tx.id, { reason, external_reference });
+            setSnackbar({ open: true, message: 'Manual refund recorded.', severity: 'success' });
+            const res = await adminTransactionsService.listTransactions();
+            setItems(res?.data || []);
+        } catch (err) {
+            setSnackbar({ open: true, message: err?.message || 'Failed to record manual refund.', severity: 'error' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleCancelEnrolment = async (en) => {
+        const reason = window.prompt(`Cancel enrolment for ${en.user?.name || en.learner?.name || 'learner'}?\n\nReason (required):`);
+        if (reason === null) return;
+        try {
+            setLoading(true);
+            await adminTransactionsService.cancelEnrolment(en.id, reason);
+            setSnackbar({ open: true, message: 'Enrolment cancelled.', severity: 'success' });
+            const res = await adminTransactionsService.listEnrolments();
+            setItems(res?.data || []);
+        } catch (err) {
+            setSnackbar({ open: true, message: err?.message || 'Failed to cancel enrolment.', severity: 'error' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleReinstateEnrolment = async (en) => {
+        const notes = window.prompt(`Reinstate enrolment for ${en.user?.name || en.learner?.name || 'learner'}?\n\nNotes (optional):`) ?? '';
+        if (notes === null) return;
+        try {
+            setLoading(true);
+            await adminTransactionsService.reinstateEnrolment(en.id, notes);
+            setSnackbar({ open: true, message: 'Enrolment reinstated.', severity: 'success' });
+            const res = await adminTransactionsService.listEnrolments();
+            setItems(res?.data || []);
+        } catch (err) {
+            setSnackbar({ open: true, message: err?.message || 'Failed to reinstate enrolment.', severity: 'error' });
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -201,6 +249,7 @@ const AdminTransactions = () => {
                                     <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }}>Course</TableCell>
                                     <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }}>Enrolled</TableCell>
                                     <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }}>Status</TableCell>
+                                    <TableCell sx={{ color: '#9CA3AF', borderBottom: '1px solid #374151', fontWeight: 600 }} />
                                 </TableRow>
                             )}
                         </TableHead>
@@ -245,21 +294,32 @@ const AdminTransactions = () => {
                                         {tx.created_at ? new Date(tx.created_at).toLocaleDateString() : '—'}
                                     </TableCell>
                                     <TableCell sx={{ borderBottom: '1px solid #374151' }}>
-                                        {tx.status === 'success' && (
-                                            <Tooltip title="Flag for refund">
-                                                <IconButton
-                                                    size="small"
-                                                    onClick={() => openFlagDialog(tx)}
-                                                    sx={{ color: '#FBBF24', '&:hover': { bgcolor: 'rgba(251,191,36,0.1)' } }}
-                                                >
-                                                    <FlagOutlined fontSize="small" />
-                                                </IconButton>
-                                            </Tooltip>
-                                        )}
+                                        <Stack direction="row" spacing={0.5}>
+                                            {tx.status === 'success' && (
+                                                <Tooltip title="Flag for refund">
+                                                    <IconButton size="small" onClick={() => openFlagDialog(tx)}
+                                                        sx={{ color: '#FBBF24', '&:hover': { bgcolor: 'rgba(251,191,36,0.1)' } }}>
+                                                        <FlagOutlined fontSize="small" />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            )}
+                                            {tx.status === 'success' && (
+                                                <Tooltip title="Record manual refund">
+                                                    <IconButton size="small" onClick={() => handleManualRefund(tx)}
+                                                        sx={{ color: '#9CA3AF', '&:hover': { color: '#FFFFFF', bgcolor: 'rgba(255,255,255,0.08)' } }}>
+                                                        <MoneyOffOutlined fontSize="small" />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            )}
+                                        </Stack>
                                     </TableCell>
                                 </TableRow>
                             ))}
-                            {tab === 'enrolments' && items.map((en) => (
+                            {tab === 'enrolments' && items.map((en) => {
+                                const enStatus = String(en.status || '').toLowerCase();
+                                const isCancelled = enStatus === 'cancelled' || enStatus === 'canceled';
+                                const isActive = enStatus === 'active';
+                                return (
                                 <TableRow key={en.id} sx={{ '&:last-child td': { border: 0 } }}>
                                     <TableCell sx={{ color: '#E5E7EB', borderBottom: '1px solid #374151' }}>{en.user?.name || en.learner?.name || '—'}</TableCell>
                                     <TableCell sx={{ color: '#E5E7EB', borderBottom: '1px solid #374151' }}>{en.course?.title || '—'}</TableCell>
@@ -272,13 +332,34 @@ const AdminTransactions = () => {
                                             size="small"
                                             sx={{
                                                 fontSize: '0.72rem',
-                                                bgcolor: en.status === 'active' ? 'rgba(34,197,94,0.12)' : 'rgba(156,163,175,0.12)',
-                                                color: en.status === 'active' ? '#22C55E' : '#9CA3AF',
+                                                bgcolor: isActive ? 'rgba(34,197,94,0.12)' : isCancelled ? 'rgba(239,68,68,0.12)' : 'rgba(156,163,175,0.12)',
+                                                color: isActive ? '#22C55E' : isCancelled ? '#EF4444' : '#9CA3AF',
                                             }}
                                         />
                                     </TableCell>
+                                    <TableCell sx={{ borderBottom: '1px solid #374151' }}>
+                                        <Stack direction="row" spacing={0.5}>
+                                            {isActive && (
+                                                <Tooltip title="Cancel enrolment">
+                                                    <IconButton size="small" onClick={() => handleCancelEnrolment(en)}
+                                                        sx={{ color: '#EF4444', '&:hover': { bgcolor: 'rgba(239,68,68,0.1)' } }}>
+                                                        <BlockOutlined fontSize="small" />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            )}
+                                            {isCancelled && (
+                                                <Tooltip title="Reinstate enrolment">
+                                                    <IconButton size="small" onClick={() => handleReinstateEnrolment(en)}
+                                                        sx={{ color: '#22C55E', '&:hover': { bgcolor: 'rgba(34,197,94,0.1)' } }}>
+                                                        <RestoreOutlined fontSize="small" />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            )}
+                                        </Stack>
+                                    </TableCell>
                                 </TableRow>
-                            ))}
+                                );
+                            })}
                             {tab === 'refunds' && items.map((request) => {
                                 const status = String(request.status || 'pending').toLowerCase();
                                 return (

@@ -318,7 +318,7 @@ const LandingPage = () => {
                             mx: 'auto',
                         }}
                     >
-                        In a landscape where the &ldquo;Nigerian Factor&rdquo; is often used as an excuse for compromise, technical skills alone are not enough. INTEGRITAS bridges rigorous compliance training with high-impact experiential mentorship. We transform public ethics from an abstract concept into a verifiable, professional standard.
+                        In a landscape where the &ldquo;Nigerian Factor&rdquo; is often used as an excuse for compromise, technical skills alone are not enough. INTEGRITAS bridges rigorous compliance training with high-impact experiential mentorship. We transform integrity from an abstract concept into a verifiable, professional standard.
                     </Typography>
                 </Container>
             </Box>
@@ -683,7 +683,7 @@ const LandingPage = () => {
                                     color: colors.textWhite,
                                 }}
                             >
-                                Foundational Course
+                                Foundational Courses
                             </Typography>
                             <Typography sx={{ color: colors.textMuted }}>
                                 Core courses recommended for every public service professional.
@@ -719,7 +719,7 @@ const LandingPage = () => {
                     ) : essentialCourses.length === 0 ? (
                         <Box sx={{ textAlign: 'center', py: 6 }}>
                             <Typography sx={{ color: colors.textMuted, mb: 2 }}>
-                                No foundational course available at this time.
+                                No foundational courses available at this time.
                             </Typography>
                             <Button
                                 component={Link}

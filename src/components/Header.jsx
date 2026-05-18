@@ -27,7 +27,7 @@ import { useAuth } from '../contexts';
 const Header = () => {
     const navItems = [
         { label: 'Home', to: '/', children: [{ label: 'The Vision', to: '/about-us' }] },
-        { label: 'Foundational Course', to: '/explore/foundational' },
+        { label: 'Foundational Courses', to: '/explore/foundational' },
         { label: 'Exemplar Class', to: '/explore/experta' },
         { label: 'Partners', to: '/partners' },
     ];

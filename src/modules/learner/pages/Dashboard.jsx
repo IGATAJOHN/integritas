@@ -276,7 +276,7 @@ const LearnerDashboard = () => {
                         </Box>
                         {activeCourses.length === 0 ? (
                             <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
-                                No active learning yet. Open the Foundational Course to begin.
+                                No active learning yet. Open the Foundational Courses to begin.
                             </Typography>
                         ) : (
                             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>

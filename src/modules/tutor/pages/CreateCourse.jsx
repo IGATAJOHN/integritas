@@ -527,7 +527,7 @@ const CreateCourse = () => {
                         </Typography>
                         <TextField
                             fullWidth
-                            placeholder="e.g. Introduction to Public Ethics 101"
+                            placeholder="e.g. Public Governance 101"
                             value={courseData.title}
                             onChange={(e) => handleInputChange('title', e.target.value)}
                             error={!!validationErrors.title}

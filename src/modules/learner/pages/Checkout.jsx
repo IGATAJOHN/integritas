@@ -79,7 +79,7 @@ const Checkout = () => {
     const handleCompletePurchase = async () => {
         const slugOrId = course.courseSlug || course.courseId;
         if (!slugOrId) {
-            setEnrollError('Choose a foundational course first, then continue to payment.');
+            setEnrollError('Choose foundational courses first, then continue to payment.');
             return;
         }
         setEnrolling(true);
@@ -204,7 +204,7 @@ const Checkout = () => {
                                     </Button>
                                 }
                             >
-                                Your account is ready for payment. Select a foundational course so we can start the documented enrolment payment.
+                                Your account is ready for payment. Select foundational courses so we can start the documented enrolment payment.
                             </Alert>
                         )}
 

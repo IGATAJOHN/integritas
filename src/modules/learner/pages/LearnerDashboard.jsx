@@ -34,7 +34,7 @@ const LearnerDashboard = () => {
 
     // Mock Data
     const activeCourse = {
-        title: 'Ethics in Public Administration',
+        title: 'Integrity in Public Administration',
         subtitle: 'MODULE 4: CONFLICT OF INTEREST',
         description: 'Deep dive into the ethical frameworks governing public service, focusing on practical scenarios and conflict resolution.',
         progress: 75,
@@ -114,7 +114,7 @@ const LearnerDashboard = () => {
     const recentAchievements = [
         {
             id: 1,
-            title: 'Ethics Champion',
+            title: 'Integrity Champion',
             date: 'Earned 2 days ago',
             icon: <CheckCircleIcon sx={{ fontSize: 16 }} />,
             color: '#3B82F6'

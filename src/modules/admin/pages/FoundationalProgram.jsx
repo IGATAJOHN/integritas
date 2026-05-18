@@ -65,7 +65,7 @@ import {
 import theme from '../../../styles/theme';
 
 const DEFAULT_COURSE = {
-    title: 'Foundational Course',
+    title: 'Foundational Courses',
     summary: 'Foundational governance and integrity programme.',
     description: 'Foundational governance and integrity programme.',
 };
@@ -176,7 +176,7 @@ const FoundationalProgram = () => {
                 setDuplicates(courseResult.value.duplicates || []);
                 if (!courseResult.value.course) setSetupOpen(true);
             } else {
-                setError(getErrorMessage(courseResult.reason, 'Failed to load foundational course.'));
+                setError(getErrorMessage(courseResult.reason, 'Failed to load foundational courses.'));
             }
 
             if (tutorResult.status === 'fulfilled') {
@@ -214,10 +214,10 @@ const FoundationalProgram = () => {
             const created = await adminCoursesService.createFoundationalCourse(setupForm);
             setCourse(created);
             setSetupOpen(false);
-            showMessage('Foundational Course created.');
+            showMessage('Foundational Courses created.');
             await refresh();
         } catch (err) {
-            showMessage(getErrorMessage(err, 'Failed to create foundational course.'), 'error');
+            showMessage(getErrorMessage(err, 'Failed to create foundational courses.'), 'error');
         } finally {
             setActionLoading(false);
         }
@@ -394,7 +394,7 @@ const FoundationalProgram = () => {
                         </Typography>
                     </Stack>
                     <Typography sx={{ color: '#9CA3AF', mt: 0.5 }}>
-                        Manage the single Foundational Course, tutors, lesson assignments, content, and CBT.
+                        Manage the Foundational Courses, tutors, lesson assignments, content, and CBT.
                     </Typography>
                 </Box>
                 <Stack direction="row" spacing={1}>
@@ -410,7 +410,7 @@ const FoundationalProgram = () => {
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
             {duplicates.length > 0 && (
                 <Alert severity="warning" sx={{ mb: 2 }}>
-                    Multiple foundational courses were found. This hub is using "{course?.title || 'Foundational Course'}"; consolidate the extras to preserve the one-course flow.
+                    Multiple foundational courses were found. This hub is using "{course?.title || 'Foundational Courses'}"; consolidate the extras to preserve the one-course flow.
                 </Alert>
             )}
 
@@ -468,12 +468,12 @@ const FoundationalProgram = () => {
 const SetupState = ({ onCreate }) => (
     <Paper sx={{ ...paperStyle, p: 6, textAlign: 'center' }}>
         <SchoolOutlined sx={{ fontSize: 56, color: theme.colors.brand, mb: 2 }} />
-        <Typography variant="h6" sx={{ color: '#FFFFFF', fontWeight: 700 }}>No Foundational Course yet</Typography>
+        <Typography variant="h6" sx={{ color: '#FFFFFF', fontWeight: 700 }}>No Foundational Courses yet</Typography>
         <Typography sx={{ color: '#9CA3AF', mt: 1, mb: 3 }}>
             Create the single programme course before adding modules, lessons, tutors, and quizzes.
         </Typography>
         <Button variant="contained" startIcon={<Add />} onClick={onCreate} sx={{ ...primaryButtonStyle, textTransform: 'none' }}>
-            Create Foundational Course
+            Create Foundational Courses
         </Button>
     </Paper>
 );
@@ -804,7 +804,7 @@ const dialogPaperSx = {
 
 const CourseSetupDialog = ({ open, form, setForm, saving, onClose, onSave }) => (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" PaperProps={{ sx: dialogPaperSx }}>
-        <DialogTitle sx={{ color: '#FFFFFF', fontWeight: 700 }}>Create Foundational Course</DialogTitle>
+        <DialogTitle sx={{ color: '#FFFFFF', fontWeight: 700 }}>Create Foundational Courses</DialogTitle>
         <DialogContent sx={{ ...scrollableModalBody, pt: 1 }}>
             <Stack spacing={2}>
                 <TextField label="Title" value={form.title} onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))} sx={textFieldStyle} fullWidth />
