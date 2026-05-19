@@ -8,7 +8,7 @@ export default defineConfig({
     port: 1000,
     proxy: {
       '/api': {
-        target: 'https://dev.giaftechnology.com',
+        target: 'https://api.theintegritas.org',
         changeOrigin: true,
         secure: true,
       },
