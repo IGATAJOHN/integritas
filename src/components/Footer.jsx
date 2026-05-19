@@ -22,8 +22,8 @@ import theme from '../styles/theme';
 
 
 const partners = [
-    { name: 'Counter Fraud', full: '' },
-    { name: 'Intelligence', full: '' },
+    { name: 'Counter Fraud Center', full: '' },
+    { name: 'Intelligence & Strategies', full: '' },
     { name: 'Center for Fiscal Transparency and Public Integrity', full: '' },
 ];
 
