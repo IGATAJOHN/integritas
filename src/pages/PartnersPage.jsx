@@ -233,7 +233,7 @@ const PartnersPage = () => {
                         We build meaningful partnerships with government bodies, academic institutions, international organizations, and private sector leaders to deliver world-class public sector education.
                     </Typography>
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="center">
-                        <Button
+                        {/* <Button
                             component={Link}
                             to="/signup"
                             variant="contained"
@@ -250,7 +250,7 @@ const PartnersPage = () => {
                             }}
                         >
                             Become a Partner
-                        </Button>
+                        </Button> */}
                         <Button
                             component={Link}
                             to="/explore/courses"
