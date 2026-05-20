@@ -213,7 +213,7 @@ const Header = () => {
                                 py: 1.5,
                             }}
                         >
-                            Become an Associate
+                            Start Learning
                         </Button>
                     </>
                 )}
@@ -464,7 +464,7 @@ const Header = () => {
                                                 color: '#FFFFFF',
                                             }}
                                         >
-                                            Become an Associate
+                                            Start Learning
                                         </Button>
                                     </>
                                 )}

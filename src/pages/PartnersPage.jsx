@@ -230,7 +230,7 @@ const PartnersPage = () => {
                             mb: 5,
                         }}
                     >
-                        We build meaningful partnerships with government bodies, academic institutions, international organizations, and private sector leaders to deliver world-class public sector education.
+                        We build meaningful partnerships with government bodies, academic institutions, international organizations, and private sector leaders.
                     </Typography>
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="center">
                         {/* <Button
