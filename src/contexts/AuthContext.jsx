@@ -142,9 +142,11 @@ export const AuthProvider = ({ children }) => {
     const register = async (payload) => {
         try {
             const isTutorRole = String(payload?.role || payload?.user_type || '').toLowerCase().includes('tutor');
+            // Strip role/user_type — the API register endpoints don't accept them
+            const { role: _r, user_type: _ut, ...cleanPayload } = payload;
             const response = isTutorRole
-                ? await authService.registerExpertTutor(payload)
-                : await authService.register(payload);
+                ? await authService.registerExpertTutor(cleanPayload)
+                : await authService.register(cleanPayload);
 
             if (!response) {
                 throw new Error('Registration response was empty.');
@@ -197,6 +199,27 @@ export const AuthProvider = ({ children }) => {
 
             return finalUser;
         } catch (error) {
+            // Backend crashes with 500 when SMTP fails, but the user is already
+            // created in the DB at that point. Try auto-login so the user can
+            // still land on /verify and resend the verification email.
+            if (error?.status === 500 && payload?.email && payload?.password) {
+                try {
+                    const loginResponse = await authService.login({
+                        email: payload.email,
+                        password: payload.password,
+                    });
+                    const { user: loginUser, token: loginToken } = unwrapAuthPayload(loginResponse);
+                    if (loginUser || loginToken) {
+                        const recoveredUser = { ...(loginUser || {}), ...(loginToken ? { token: loginToken } : {}) };
+                        recoveredUser.role = pickRole(recoveredUser) || recoveredUser.role;
+                        setUser(recoveredUser);
+                        localStorage.setItem('user', JSON.stringify(recoveredUser));
+                        return recoveredUser;
+                    }
+                } catch {
+                    // login also failed — user was not created, surface original error
+                }
+            }
             console.error('Registration failed:', error);
             throw error;
         }

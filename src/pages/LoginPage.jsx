@@ -215,7 +215,7 @@ const LoginPage = () => {
                     </Stack>
 
                     {/* Subtitle */}
-                    <Typography
+                    {/* <Typography
                         sx={{
                             color: '#9CA3AF',
                             fontSize: '0.875rem',
@@ -223,7 +223,7 @@ const LoginPage = () => {
                         }}
                     >
                         Secure Access for Governance Professionals
-                    </Typography>
+                    </Typography> */}
 
                     {/* Login Form */}
                     <Box component="form" onSubmit={handleSubmit}>

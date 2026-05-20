@@ -375,9 +375,9 @@ const SignupPage = () => {
                         <LockOutlined sx={{ color: theme.colors.brand, fontSize: 24 }} />
                     </Stack>
 
-                    <Typography sx={{ color: '#9CA3AF', fontSize: '0.875rem', mb: 3 }}>
+                    {/* <Typography sx={{ color: '#9CA3AF', fontSize: '0.875rem', mb: 3 }}>
                         Secure Access for Governance Professionals
-                    </Typography>
+                    </Typography> */}
 
                     {/* Role Tabs */}
                     <Box sx={{ bgcolor: '#1E293B', borderRadius: 2, p: 0.5, mb: 3 }}>

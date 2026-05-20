@@ -130,7 +130,7 @@ export const isEmpty = (obj) => {
     return Object.keys(obj).length === 0;
 };
 
-const BACKEND_ORIGIN = (import.meta.env.VITE_BACKEND_ORIGIN || 'https://dev.giaftechnology.com').replace(/\/$/, '');
+const BACKEND_ORIGIN = (import.meta.env.VITE_BACKEND_ORIGIN || 'https://api.theintegritas.org').replace(/\/$/, '');
 
 export const getImageUrl = (path) => {
     if (!path) return '';

@@ -273,7 +273,7 @@ const AboutUsPage = () => {
                                 num: '04',
                                 heading: <>Success Without Compromise{' '}<Box component="span" sx={{ color: theme.colors.brand }}>is Possible.</Box></>,
                                 body: [
-                                    'For graduates who pass the Gateway Project, INTEGRITAS unlocks the Exemplar Class \u2014 a cinematic library of survival guides from vetted Nigerian leaders. These \u201cIntegrity Icons\u201d provide the ultimate proof that you can reach the highest levels of government and enterprise in Nigeria without dirtying your hands.',
+                                    'For graduates who pass the Gateway Project, INTEGRITAS unlocks the Exemplar Series \u2014 a cinematic library of survival guides from vetted Nigerian leaders. These \u201cIntegrity Icons\u201d provide the ultimate proof that you can reach the highest levels of government and enterprise in Nigeria without dirtying your hands.',
                                 ],
                             },
                         ].map((block, i) => (
@@ -343,7 +343,7 @@ const AboutUsPage = () => {
                             <Typography sx={{ color: colors.textMuted, lineHeight: 1.9, fontSize: '1rem', mb: 2 }}>
                                 Whether you are a university student navigating your first ethical dilemma, a civil servant protecting the public purse, or a corporate executive building a clean supply chain, this platform is your anchor.
                             </Typography>
-                            <Typography
+                            {/* <Typography
                                 sx={{
                                     color: colors.textWhite,
                                     fontSize: '1.05rem',
@@ -353,7 +353,7 @@ const AboutUsPage = () => {
                                 }}
                             >
                                 Are you ready to lead with clean hands?
-                            </Typography>
+                            </Typography> */}
                             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                                 <Button
                                     component={Link}
@@ -475,7 +475,7 @@ const AboutUsPage = () => {
                                 '&:hover': { borderColor: colors.textWhite, color: colors.textWhite, bgcolor: 'transparent' },
                             }}
                         >
-                            Create Free Account
+                            Create Account
                         </Button>
                     </Stack>
                 </Container>

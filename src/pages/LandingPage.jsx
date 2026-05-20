@@ -556,7 +556,7 @@ const LandingPage = () => {
                                 ))}
                             </Stack>
                             <Stack direction="row" justifyContent="space-between" sx={{ mt: 1, px: -6, }}>
-                                {['The Foundational Track', 'The Gateway Certification', 'Unlock the Exemplar Class'].map((label) => (
+                                {['The Foundational Track', 'The Gateway Certification', 'Unlock the Exemplar Series'].map((label) => (
                                     <Typography key={label} sx={{ fontSize: '0.65rem', color: colors.textDark, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                         {label}
                                     </Typography>
@@ -585,7 +585,7 @@ const LandingPage = () => {
                             },
                             {
                                 step: '03',
-                                title: 'Unlock the Exemplar Class',
+                                title: 'Unlock the Exemplar Series',
                                 description: "Gain exclusive access to high-production, cinematic mentorship from vetted national leaders. These aren't lectures; they are raw survival guides from leaders who fought the system and won with clean hands.",
                             },
                         ].map((item) => (
@@ -884,6 +884,149 @@ const LandingPage = () => {
                 </Box>
             </Box>
 
+
+            {/* Founder's Message Section */}
+            <Box
+                sx={{
+                    py: { xs: 8, md: 12 },
+                    px: { xs: 2, md: 4, lg: 6 },
+                    bgcolor: colors.bgDark,
+                    borderTop: `1px solid ${colors.border}`,
+                    borderBottom: `1px solid ${colors.border}`,
+                }}
+            >
+                <Container maxWidth="xl">
+                    {/* Header */}
+                    <Box sx={{ mb: { xs: 5, md: 7 } }}>
+                        <Typography
+                            sx={{
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.15em',
+                                color: theme.colors.brand,
+                                mb: 1.5,
+                            }}
+                        >
+                            Founder's Message
+                        </Typography>
+                        <Typography
+                            variant="h2"
+                            sx={{
+                                fontSize: { xs: '1.75rem', md: '2.25rem' },
+                                fontWeight: 700,
+                                color: colors.textWhite,
+                                lineHeight: 1.3,
+                                maxWidth: 700,
+                            }}
+                        >
+                            Anchoring a Future on Integrity,{' '}
+                            <Box component="span" sx={{ color: theme.colors.brand }}>
+                                Let us Begin Now.
+                            </Box>
+                        </Typography>
+                    </Box>
+
+                    {/* Two-column layout */}
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            flexDirection: { xs: 'column', lg: 'row' },
+                            gap: { xs: 5, lg: 8 },
+                            alignItems: 'flex-start',
+                        }}
+                    >
+                        {/* Left column — first 4 paragraphs */}
+                        <Box
+                            sx={{
+                                flex: 1,
+                                borderLeft: `3px solid ${theme.colors.brand}`,
+                                pl: { xs: 3, md: 4 },
+                                position: 'relative',
+                            }}
+                        >
+                            <FormatQuote
+                                sx={{
+                                    fontSize: 64,
+                                    color: theme.colors.brand,
+                                    opacity: 0.15,
+                                    position: 'absolute',
+                                    top: -16,
+                                    left: 8,
+                                }}
+                            />
+                            <Stack spacing={3}>
+                                {[
+                                    'Qualifications is the minimum, but character is the anchor. Brilliance without boundaries is a liability.',
+                                    'For too long, the "Nigerian Factor" has been used as a convenient excuse for compromise. Across both the public and private sectors, we have been conditioned to believe that surviving the system means bending our principles, and that integrity is a theoretical luxury we cannot afford in the real world.',
+                                    'INTEGRITAS was built to dismantle that narrative.',
+                                    'We recognized that treating public ethics as an abstract moral aspiration was failing. Technical skills are entirely useless if you lack the moral courage to deploy them correctly. We built this Trust Utility to shift public ethics out of the realm of abstract morality and forge it into a non-negotiable institutional baseline.',
+                                ].map((para, i) => (
+                                    <Typography
+                                        key={i}
+                                        sx={{
+                                            fontSize: { xs: '0.95rem', md: '1.0625rem' },
+                                            color: i === 2 ? colors.textWhite : colors.textMuted,
+                                            lineHeight: 1.85,
+                                            fontWeight: i === 2 ? 600 : 400,
+                                        }}
+                                    >
+                                        {para}
+                                    </Typography>
+                                ))}
+                            </Stack>
+                        </Box>
+
+                        {/* Right column — remaining paragraphs + attribution */}
+                        <Box sx={{ flex: 1 }}>
+                            <Stack spacing={3}>
+                                {[
+                                    'This platform is not a passive online course; it is a proving ground. The 15-module pathway provides the exact frameworks required to navigate systemic pressure, maintain compliance, and reject extortion. But theoretical knowledge is only the start.',
+                                    'To earn the Integritas Associate credential, you must design a tactical blueprint to combat inefficiency in your specific field. To elevate to an Integritas Fellow, you must take that blueprint into the real world and deliver verifiable proof of impact. Earning this credential is a declaration of operational intent — it proves to employers, partners, and the public that you possess the resilience to lead without compromise. More importantly, it improves you.',
+                                    "That's why we do not want you to simply survive a broken system. We are calling on you to reform it.",
+                                    'The standard has been set. Welcome to the vanguard. Welcome to INTEGRITAS.',
+                                ].map((para, i) => (
+                                    <Typography
+                                        key={i}
+                                        sx={{
+                                            fontSize: { xs: '0.95rem', md: '1.0625rem' },
+                                            color: i === 3 ? colors.textWhite : colors.textMuted,
+                                            lineHeight: 1.85,
+                                            fontWeight: i === 3 ? 600 : 400,
+                                        }}
+                                    >
+                                        {para}
+                                    </Typography>
+                                ))}
+                            </Stack>
+
+                            <Divider sx={{ borderColor: colors.border, my: 4 }} />
+
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                <Avatar
+                                    sx={{
+                                        width: 56,
+                                        height: 56,
+                                        bgcolor: theme.colors.brand,
+                                        fontWeight: 700,
+                                        fontSize: '1.1rem',
+                                    }}
+                                >
+                                    UY
+                                </Avatar>
+                                <Box>
+                                    <Typography sx={{ fontWeight: 700, fontSize: '1rem', color: colors.textWhite }}>
+                                        Umar Yakubu
+                                    </Typography>
+                                    <Typography sx={{ fontSize: '0.8rem', color: colors.textMuted }}>
+                                        Founder, INTEGRITAS &nbsp;·&nbsp; Executive Director, CeFTPI
+                                    </Typography>
+                                </Box>
+                            </Box>
+                        </Box>
+                    </Box>
+                </Container>
+            </Box>
 
             {/* Testimonial Section (sliding) */}
             {/* Testimonial Section */}
