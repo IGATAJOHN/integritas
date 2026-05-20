@@ -9,8 +9,6 @@ import {
     Stack,
     IconButton,
     InputAdornment,
-    Tabs,
-    Tab,
     Collapse,
     Alert,
     FormHelperText,
@@ -45,8 +43,6 @@ const SignupPage = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false);
 
-    const [role, setRole] = useState('student');
-
     const [touched, setTouched] = useState({
         name: false,
         email: false,
@@ -62,10 +58,6 @@ const SignupPage = () => {
         password: '',
         password_confirmation: '',
     });
-
-    const handleRoleChange = (event, newValue) => {
-        if (newValue !== null) setRole(newValue);
-    };
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -160,8 +152,8 @@ const SignupPage = () => {
                 phone: formData.phone.trim(),
                 password: formData.password,
                 password_confirmation: formData.password_confirmation,
-                role: role === 'tutor' ? 'expert_tutor' : 'learner',
-                user_type: role === 'tutor' ? 'expert_tutor' : 'learner',
+                role: 'learner',
+                user_type: 'learner',
             });
 
             navigate('/verify');
