@@ -380,7 +380,7 @@ const SignupPage = () => {
                     </Typography> */}
 
                     {/* Role Tabs */}
-                    <Box sx={{ bgcolor: '#1E293B', borderRadius: 2, p: 0.5, mb: 3 }}>
+                    {/* <Box sx={{ bgcolor: '#1E293B', borderRadius: 2, p: 0.5, mb: 3 }}>
                         <Tabs
                             value={role}
                             onChange={handleRoleChange}
@@ -407,7 +407,7 @@ const SignupPage = () => {
                             <Tab label="Student" value="student" />
                             <Tab label="Tutor" value="tutor" />
                         </Tabs>
-                    </Box>
+                    </Box> */}
 
                     {/* Error Alert */}
                     <Collapse in={!!error}>
