@@ -15,3 +15,4 @@ export { default as InviteAcceptPage } from './InviteAcceptPage';
 export { default as TwoFactorChallengePage } from './TwoFactorChallengePage';
 export { default as ContactPage } from './ContactPage';
 export { default as DonatePage } from './DonatePage';
+export { default as EmailVerifiedPage } from './EmailVerifiedPage';

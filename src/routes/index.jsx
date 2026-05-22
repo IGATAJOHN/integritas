@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
-import { NotFound, LandingPage, AboutUsPage, PartnersPage, ContactPage, DonatePage, LoginPage, SignupPage, VerifyPage, ForgotPasswordPage, ResetPasswordPage, TutorAcceptInvitePage, CertificateVerifyPage, NotificationsPage, ProfileSettingsPage, InviteAcceptPage, TwoFactorChallengePage } from '../pages';
+import { NotFound, LandingPage, AboutUsPage, PartnersPage, ContactPage, DonatePage, LoginPage, SignupPage, VerifyPage, ForgotPasswordPage, ResetPasswordPage, TutorAcceptInvitePage, CertificateVerifyPage, NotificationsPage, ProfileSettingsPage, InviteAcceptPage, TwoFactorChallengePage, EmailVerifiedPage } from '../pages';
 import { adminRoutes } from '../modules/admin';
 import { tutorRoutes } from '../modules/tutor';
 import { learnerRoutes } from '../modules/learner';
@@ -70,6 +70,10 @@ const router = createBrowserRouter([
     {
         path: '/verify',
         element: <VerifyPage />,
+    },
+    {
+        path: '/email-verified',
+        element: <EmailVerifiedPage />,
     },
     {
         path: '/verify/:id/:hash',
