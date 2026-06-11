@@ -14,6 +14,7 @@ import { useAuth } from '../contexts';
 import { getDashboardRoute, isReturnToAllowedForUser } from '../utils';
 import { authService } from '../services/api';
 import logo from '../assets/images/integritas_logo.jpg';
+import loginBg from '../assets/images/LoginBg.png';
 import theme from '../styles/theme';
 
 const inputSx = {
@@ -90,7 +91,7 @@ const TwoFactorChallengePage = () => {
             <Box
                 sx={{
                     flex: { md: '0 0 45%' },
-                    backgroundImage: 'url(/src/assets/images/LoginBg.png)',
+                    backgroundImage: `url(${loginBg})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     backgroundRepeat: 'no-repeat',

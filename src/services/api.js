@@ -1,5 +1,11 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
-    (import.meta.env.DEV ? '/api/v1' : 'https://dev.giaftechnology.com/api/v1');
+const API_BASE_URL = (() => {
+    const base = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+    if (base.startsWith('/') && !import.meta.env.DEV) {
+        const origin = import.meta.env.VITE_BACKEND_ORIGIN || 'https://api.theintegritas.org';
+        return `${origin.replace(/\/$/, '')}${base}`;
+    }
+    return base;
+})();
 
 export const API_BASE = API_BASE_URL;
 

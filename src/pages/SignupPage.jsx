@@ -26,6 +26,7 @@ import {
 } from '@mui/icons-material';
 import logo from '../assets/images/integritas_logo.jpg';
 import icon from '../assets/images/integritas_logo.jpg';
+import loginBg from '../assets/images/LoginBg.png';
 import { getDashboardRoute } from '../utils';
 import TermsCondition from '../assets/INTEGRITAS_Terms_and_Conditions.pdf';
 import theme from '../styles/theme';
@@ -261,7 +262,7 @@ const SignupPage = () => {
             <Box
                 sx={{
                     flex: { md: '0 0 45%' },
-                    backgroundImage: 'url(/src/assets/images/LoginBg.png)',
+                    backgroundImage: `url(${loginBg})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     backgroundRepeat: 'no-repeat',

@@ -33,6 +33,7 @@ import {
     WorkspacePremiumOutlined,
     OndemandVideoOutlined,
 } from '@mui/icons-material';
+import logo from '../../../assets/images/integritas_logo.jpg';
 import appTheme from '../../../styles/theme';
 
 
@@ -146,7 +147,7 @@ const AdminSidebar = ({
                 >
                     <Box
                         component="img"
-                        src="/src/assets/images/integritas_logo.jpg"
+                        src={logo}
                         alt="Integritas Logo"
                         sx={{ height: 50, width: 50 }}
                     />
