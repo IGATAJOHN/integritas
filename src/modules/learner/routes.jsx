@@ -23,6 +23,7 @@ import {
     OrganizationLearningPaths,
     OrganizationAssignments,
     OrganizationReports,
+    LearnerProfile,
 } from './pages';
 
 
@@ -103,6 +104,10 @@ export const learnerRoutes = [
     {
         path: '/learner/courses/:courseSlug/project',
         element: <ProjectSubmission />,
+    },
+    {
+        path: '/learner/profile',
+        element: <LearnerProfile />,
     },
     {
         path: '/learner/certificates',

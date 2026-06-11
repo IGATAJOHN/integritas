@@ -369,23 +369,30 @@ const CourseDetail = () => {
             navigate('/login', { state: { from: location } });
             return;
         }
+        
+        if (courseData?.price > 0) {
+            // For paid courses/videos, navigate to Checkout so they can choose Card (Paystack) or Bank Transfer
+            navigate('/checkout', {
+                state: {
+                    courseId: courseData.id,
+                    courseSlug: courseData.slug,
+                    title: courseData.title,
+                    instructor: courseData.instructor,
+                    level: courseData.level,
+                    thumbnail: courseData.image || courseData.thumbnail || null,
+                    price: courseData.price,
+                    tax: courseData.tax || 0,
+                    fee: courseData.fee || 0,
+                }
+            });
+            return;
+        }
+
         setEnrolling(true);
         setEnrollError(null);
         try {
             const result = await learnerEnrollmentService.enrollInCourse(courseData.slug || courseData.id);
-            const paymentUrl = result?.authorization_url || result?.payment_url || result?.data?.authorization_url || result?.data?.payment_url;
-            const reference = result?.reference || result?.data?.reference;
-            if (paymentUrl) {
-                sessionStorage.setItem('pending_course_id', courseData.id);
-                if (courseData.slug) sessionStorage.setItem('pending_course_slug', courseData.slug);
-                if (reference) sessionStorage.setItem('pending_enrolment_reference', reference);
-                // Store course type so the return page navigates to the right hub
-                const courseType = String(courseData?.type || courseData?.track || '').toLowerCase();
-                sessionStorage.setItem('pending_course_type', courseType);
-                window.location.href = paymentUrl;
-            } else {
-                navigate('/payment-success', { state: { enrollment: result, course: { courseId: courseData.id, title: courseData.title, price: courseData.price, thumbnail: courseData.image } } });
-            }
+            navigate('/payment-success', { state: { enrollment: result, course: { courseId: courseData.id, title: courseData.title, price: courseData.price, thumbnail: courseData.image } } });
         } catch (err) {
             setEnrollError(getEnrollmentErrorMessage(err));
         } finally {
@@ -468,12 +475,6 @@ const CourseDetail = () => {
                                     }}
                                 />
                             ))}
-                            <Stack direction="row" alignItems="center" spacing={0.75} sx={{ ml: { xs: 0, sm: 1 } }}>
-                                <StarIcon sx={{ color: colors.warning, fontSize: 20 }} />
-                                <Typography sx={{ color: colors.textSecondary, fontSize: '0.875rem' }}>
-                                    ({courseData.reviewCount.toLocaleString()} reviews)
-                                </Typography>
-                            </Stack>
                         </Box>
                         )}
 
@@ -854,13 +855,11 @@ const CourseDetail = () => {
                             <CardContent sx={{ p: 2.5 }}>
                                 {/* Pricing */}
                                 <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
-                                    {courseData.price > 0 ? (
+                                {courseData.price > 0 ? (
                                         <Typography variant="h5" sx={{ fontWeight: 700 }}>
                                             {courseData.currency === 'NGN' ? '₦' : '$'}{Number(courseData.price).toLocaleString()}
                                         </Typography>
-                                    ) : (
-                                        <Typography variant="h5" sx={{ fontWeight: 700, color: colors.success }}>Free</Typography>
-                                    )}
+                                    ) : null}
                                     {accessInfo?.track && (
                                         <Chip
                                             label={accessInfo.track === 'foundational' ? 'Foundational' : 'Expert'}
@@ -942,7 +941,7 @@ const CourseDetail = () => {
                                     >
                                         {enrolling
                                             ? 'Processing…'
-                                            : (courseData?.price > 0 ? 'Enrol & Pay' : 'Enrol Free')}
+                                            : (courseData?.price > 0 ? 'Enrol & Pay' : 'Enrol Now')}
                                     </Button>
                                     </>
                                 )}

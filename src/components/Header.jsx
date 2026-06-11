@@ -468,6 +468,23 @@ const Header = () => {
                                             Go to Dashboard
                                         </Button>
                                         <Button
+                                            onClick={() => navigate('/learner/profile')}
+                                            variant="outlined"
+                                            sx={{
+                                                borderColor: isDark ? '#374151' : '#E2E8F0',
+                                                color: isDark ? '#D1D5DB' : '#475569',
+                                                textTransform: 'none',
+                                                fontWeight: 600,
+                                                borderRadius: '10px',
+                                                '&:hover': {
+                                                    borderColor: appTheme.colors.brand,
+                                                    bgcolor: 'rgba(17,82,212,0.05)',
+                                                },
+                                            }}
+                                        >
+                                            My Profile
+                                        </Button>
+                                        <Button
                                             onClick={handleLogout}
                                             variant="outlined"
                                             sx={{

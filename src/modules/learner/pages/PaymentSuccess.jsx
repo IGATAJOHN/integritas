@@ -37,6 +37,10 @@ const PaymentSuccess = () => {
     const [enrollment, setEnrollment] = useState(location.state?.enrollment || null);
     const [course, setCourse] = useState(location.state?.course || {});
 
+    const isBankTransfer = location.state?.paymentMethod === 'bank';
+    const bankReference = location.state?.bankReference || '';
+    const totalAmount = location.state?.total || course?.price || 0;
+
     const trxref = searchParams.get('trxref');
     const reference = searchParams.get('reference');
 
@@ -104,11 +108,11 @@ const PaymentSuccess = () => {
 
     // Build display data from real enrollment or fallback
     const orderDetails = {
-        id: enrollment?.id || trxref || reference || '—',
+        id: isBankTransfer ? bankReference : (enrollment?.id || trxref || reference || '—'),
         date: formatDate(enrollment?.enrolled_at || enrollment?.created_at),
         courseTitle: enrollment?.course?.title || course?.title || 'Your Course',
         instructor: enrollment?.course?.instructor || course?.instructor || '—',
-        price: course?.price ?? 0,
+        price: totalAmount || course?.price || 0,
     };
 
     return (
@@ -190,23 +194,64 @@ const PaymentSuccess = () => {
                         <Box sx={{
                             width: 72,
                             height: 72,
-                            bgcolor: alpha(theme.palette.primary.main, 0.1),
+                            bgcolor: alpha(isBankTransfer ? theme.palette.warning.main : theme.palette.primary.main, 0.1),
                             borderRadius: '50%',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             mb: 3
                         }}>
-                            <CheckCircle sx={{ fontSize: 40, color: '#3B82F6' }} />
+                            <CheckCircle sx={{ fontSize: 40, color: isBankTransfer ? '#F59E0B' : '#3B82F6' }} />
                         </Box>
 
                         <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, textAlign: 'center' }}>
-                            {verifyError ? 'Enrollment Processed' : 'Payment Successful!'}
+                            {isBankTransfer ? 'Bank Transfer Submitted' : verifyError ? 'Enrollment Processed' : 'Payment Successful!'}
                         </Typography>
 
-                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 6, textAlign: 'center' }}>
-                            Thank you for your purchase. You are now enrolled and can start learning.
+                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 6, textAlign: 'center', maxWidth: 500 }}>
+                            {isBankTransfer 
+                                ? 'Your enrollment is pending verification. Please make a bank transfer using the details and reference code below.' 
+                                : 'Thank you for your purchase. You are now enrolled and can start learning.'}
                         </Typography>
+
+                        {isBankTransfer && (
+                            <Box sx={{
+                                width: '100%',
+                                bgcolor: 'rgba(245, 158, 11, 0.08)',
+                                border: '1px dashed rgba(245, 158, 11, 0.3)',
+                                borderRadius: 1.5,
+                                p: 3,
+                                mb: 4
+                            }}>
+                                <Typography variant="subtitle2" sx={{ color: '#F59E0B', fontWeight: 700, mb: 2, letterSpacing: 0.5 }}>
+                                    PAYMENT INSTRUCTIONS
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', mb: 2 }}>
+                                    Please transfer exactly <strong>${totalAmount.toFixed(2)}</strong> to the following account:
+                                </Typography>
+                                <Stack spacing={1.5} sx={{ bgcolor: 'rgba(0,0,0,0.25)', p: 2, borderRadius: 1, mb: 2 }}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>Bank Name</Typography>
+                                        <Typography variant="body2" sx={{ fontWeight: 600 }}>First Bank of Nigeria</Typography>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>Account Name</Typography>
+                                        <Typography variant="body2" sx={{ fontWeight: 600 }}>Integritas</Typography>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>Account Number</Typography>
+                                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#10B981' }}>2034567890</Typography>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>Payment Reference</Typography>
+                                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#3B82F6' }}>{bankReference}</Typography>
+                                    </Box>
+                                </Stack>
+                                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', display: 'block', textAlign: 'center' }}>
+                                    IMPORTANT: You must include the reference code above in your transfer narration.
+                                </Typography>
+                            </Box>
+                        )}
 
                         {/* Order Details Card */}
                         <Box sx={{
@@ -253,8 +298,8 @@ const PaymentSuccess = () => {
                                         <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', display: 'block', mb: 0.5, fontSize: 10, letterSpacing: 0.5 }}>
                                             STATUS
                                         </Typography>
-                                        <Typography variant="body2" sx={{ color: '#10B981', fontWeight: 600 }}>
-                                            {enrollment?.status || 'Enrolled'}
+                                        <Typography variant="body2" sx={{ color: isBankTransfer ? '#F59E0B' : '#10B981', fontWeight: 600 }}>
+                                            {isBankTransfer ? 'Pending Approval' : (enrollment?.status || 'Enrolled')}
                                         </Typography>
                                     </Box>
                                 </Stack>

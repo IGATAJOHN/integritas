@@ -225,10 +225,10 @@ const CourseCard = ({ course, colors, access }) => {
                     </Box>
                 </Stack>
 
-                {/* Rating and Duration */}
+                {/* Duration */}
                 <Stack
                     direction="row"
-                    justifyContent="space-between"
+                    justifyContent="flex-end"
                     alignItems="center"
                     sx={{
                         mt: 'auto',
@@ -236,15 +236,6 @@ const CourseCard = ({ course, colors, access }) => {
                         borderTop: '1px solid rgba(255, 255, 255, 0.08)'
                     }}
                 >
-                    <Stack direction="row" alignItems="center" spacing={0.5}>
-                        <StarIcon sx={{ color: colors.warning, fontSize: 18 }} />
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: colors.text }}>
-                            {safeRating}
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: colors.textSecondary }}>
-                            ({safeReviews})
-                        </Typography>
-                    </Stack>
                     <Stack direction="row" alignItems="center" spacing={0.5}>
                         <ClockIcon sx={{ color: colors.textSecondary, fontSize: 18 }} />
                         <Typography variant="body2" sx={{ color: colors.textSecondary }}>

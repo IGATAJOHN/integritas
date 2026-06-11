@@ -73,6 +73,12 @@ const Checkout = () => {
         fee: stateData.fee || 0,
     };
 
+    const [bankReference] = useState(() => {
+        const randomHex = Math.random().toString(36).substring(2, 8).toUpperCase();
+        const cId = stateData.courseId || 'CRS';
+        return `INT-BANK-${cId}-${randomHex}`;
+    });
+
     const total = course.price + course.tax + course.fee;
     const hasSelectedCourse = Boolean(course.courseSlug || course.courseId);
 
@@ -84,6 +90,23 @@ const Checkout = () => {
         }
         setEnrolling(true);
         setEnrollError(null);
+
+        if (paymentMethod === 'bank') {
+            // Option B: Bank Transfer - redirect to PaymentSuccess with bank transfer state
+            setTimeout(() => {
+                setEnrolling(false);
+                navigate('/payment-success', {
+                    state: {
+                        paymentMethod: 'bank',
+                        bankReference,
+                        course,
+                        total
+                    }
+                });
+            }, 800);
+            return;
+        }
+
         try {
             const result = await learnerEnrollmentService.initiateEnrolment(slugOrId);
             const url = result?.authorization_url || result?.payment_url;
@@ -550,7 +573,7 @@ const Checkout = () => {
                                         <InputBase
                                             readOnly
                                             fullWidth
-                                            value="Integritas-7832-XK9"
+                                            value={bankReference}
                                             startAdornment={<InputAdornment position="start"><LocalOffer sx={{ color: 'rgba(255,255,255,0.3)' }} /></InputAdornment>}
                                             sx={{
                                                 bgcolor: 'rgba(255,255,255,0.03)',

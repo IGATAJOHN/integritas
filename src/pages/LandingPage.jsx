@@ -683,26 +683,46 @@ const LandingPage = () => {
                                     color: colors.textWhite,
                                 }}
                             >
-                                Foundational Courses
+                                Explore Our Learning Tracks
                             </Typography>
                             <Typography sx={{ color: colors.textMuted }}>
-                                Core courses recommended for every public service professional.
+                                From Foundational Courses to the exclusive Exemplar Series — a pathway built for integrity.
                             </Typography>
                         </Box>
-                        <Button
-                            component={Link}
-                            to="/explore"
-                            endIcon={<ArrowForward />}
-                            sx={{
-                                color: colors.primary,
-                                textTransform: 'none',
-                                fontWeight: 600,
-                                mt: { xs: 2, md: 0 },
-                                '&:hover': { bgcolor: 'transparent' },
-                            }}
-                        >
-                            View All Courses
-                        </Button>
+                        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mt: { xs: 2, md: 0 } }}>
+                            <Button
+                                component={Link}
+                                to="/learner/foundational"
+                                variant="outlined"
+                                endIcon={<ArrowForward />}
+                                sx={{
+                                    borderColor: colors.primary,
+                                    color: colors.primary,
+                                    textTransform: 'none',
+                                    fontWeight: 600,
+                                    borderRadius: '10px',
+                                    '&:hover': { bgcolor: colors.primaryLight },
+                                }}
+                            >
+                                Foundational Courses
+                            </Button>
+                            <Button
+                                component={Link}
+                                to="/explore/experta"
+                                variant="contained"
+                                endIcon={<ArrowForward />}
+                                sx={{
+                                    bgcolor: colors.primary,
+                                    '&:hover': { bgcolor: colors.primaryHover },
+                                    textTransform: 'none',
+                                    fontWeight: 600,
+                                    borderRadius: '10px',
+                                    color: '#FFFFFF',
+                                }}
+                            >
+                                Exemplar Series
+                            </Button>
+                        </Stack>
                     </Stack>
 
                     {coursesLoading ? (
@@ -1349,7 +1369,7 @@ const LandingPage = () => {
                         >
                             <Button
                                 component={Link}
-                                to="/donate"
+                                to="/learner/foundational"
                                 variant="contained"
                                 size="large"
                                 endIcon={<ArrowForward />}
@@ -1367,11 +1387,11 @@ const LandingPage = () => {
                                     whiteSpace: 'nowrap',
                                 }}
                             >
-                                Make a Donation
+                                Foundational Courses
                             </Button>
                             <Button
                                 component={Link}
-                                to="/contact"
+                                to="/explore/experta"
                                 variant="outlined"
                                 size="large"
                                 sx={{
@@ -1390,7 +1410,30 @@ const LandingPage = () => {
                                     whiteSpace: 'nowrap',
                                 }}
                             >
-                                Contact Us
+                                Exemplar Series
+                            </Button>
+                            <Button
+                                component={Link}
+                                to="/donate"
+                                variant="outlined"
+                                size="large"
+                                sx={{
+                                    borderColor: colors.borderLight,
+                                    color: colors.textWhite,
+                                    '&:hover': {
+                                        borderColor: theme.colors.brand,
+                                        bgcolor: colors.primaryLight,
+                                        color: colors.textWhite,
+                                    },
+                                    textTransform: 'none',
+                                    fontWeight: 600,
+                                    py: 1.5,
+                                    px: 3,
+                                    borderRadius: 2,
+                                    whiteSpace: 'nowrap',
+                                }}
+                            >
+                                Make a Donation
                             </Button>
                         </Stack>
                     </Box>

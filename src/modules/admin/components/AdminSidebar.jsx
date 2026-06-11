@@ -31,6 +31,7 @@ import {
     ReceiptLongOutlined,
     HistoryOutlined,
     WorkspacePremiumOutlined,
+    OndemandVideoOutlined,
 } from '@mui/icons-material';
 import appTheme from '../../../styles/theme';
 
@@ -63,6 +64,7 @@ const AdminSidebar = ({
     const navItems = [
         { path: '/admin', label: 'Dashboard', icon: <DashboardOutlined sx={{ fontSize: 22 }} /> },
         { path: '/admin/foundational', label: 'Foundational', icon: <WorkspacePremiumOutlined sx={{ fontSize: 22 }} /> },
+        { path: '/admin/exemplar-series', label: 'Exemplar Series', icon: <OndemandVideoOutlined sx={{ fontSize: 22 }} /> },
         {
             label: 'User Management',
             icon: <PeopleOutlined sx={{ fontSize: 22 }} />,

@@ -51,17 +51,17 @@ const contactInfo = [
     {
         icon: <Email />,
         label: 'Email',
-        value: 'contact@integritashub.com',
+        value: 'mail@fiscaltransparency.org',
     },
     {
         icon: <Phone />,
         label: 'Phone',
-        value: '+234 800 000 0000',
+        value: '+2348033278895',
     },
     {
         icon: <LocationOn />,
         label: 'Address',
-        value: 'Abuja, Nigeria',
+        value: 'No. 11 Ado Ekiti Close, Off Emeka Anyaouku Street, Area 11, Garki, Abuja',
     },
 ];
 
@@ -173,7 +173,7 @@ const ContactPage = () => {
                 >
                     Contact{' '}
                     <Box component="span" sx={{ color: colors.primary }}>
-                        Sales
+                        Us
                     </Box>
                 </Typography>
                 <Typography
@@ -185,8 +185,8 @@ const ContactPage = () => {
                         lineHeight: 1.7,
                     }}
                 >
-                    Interested in Integritas for your organization? Our team is ready to help you
-                    find the right solution for your public service training needs.
+                    Interested in integrity for your organization? Our team is ready to help you
+                    find the right solution for your needs.
                 </Typography>
             </Box>
 

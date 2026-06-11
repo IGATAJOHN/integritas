@@ -44,9 +44,9 @@ const mapSortBy = (value) => {
 };
 
 const PAGE_TITLES = {
-    foundational: { heading: 'Foundational Courses', sub: 'Core governance and policy foundations.' },
-    experta: { heading: 'Exemplar Series', sub: 'Advanced expert-level governance courses.' },
-    default: { heading: 'Explore Courses', sub: 'Discover governance and policy courses.' },
+    foundational: { heading: 'Foundational Courses', sub: 'Core integrity and policy foundations.' },
+    experta: { heading: 'Exemplar Series', sub: 'Advanced expert-level integrity videos and lessons.' },
+    default: { heading: 'Explore Courses', sub: 'Discover integrity and policy courses.' },
 };
 
 const Explore = ({ type }) => {
@@ -250,7 +250,9 @@ const Explore = ({ type }) => {
                         ) : (
                             <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2}>
                                 <Box sx={{ maxWidth: 760 }}>
-                                    <Typography sx={{ color: colors.primary, fontSize: '0.78rem', fontWeight: 700, mb: 1 }}>FEATURED COURSE</Typography>
+                                    <Typography sx={{ color: colors.primary, fontSize: '0.78rem', fontWeight: 700, mb: 1 }}>
+                                        {type === 'experta' ? 'FEATURED VIDEO' : 'FEATURED COURSE'}
+                                    </Typography>
                                     <Typography variant="h4" sx={{ color: colors.text, fontWeight: 800, mb: 1 }}>
                                         {featuredCourse?.title || 'No featured course available'}
                                     </Typography>

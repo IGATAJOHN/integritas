@@ -21,4 +21,4 @@ export { default as OrganizationInvitations } from './OrganizationInvitations';
 export { default as OrganizationLearningPaths } from './OrganizationLearningPaths';
 export { default as OrganizationReports } from './OrganizationReports';
 export { default as OrganizationOverview } from './OrganizationOverview';
-
+export { default as LearnerProfile } from './LearnerProfile';

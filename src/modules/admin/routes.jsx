@@ -18,6 +18,7 @@ import {
     AdminTransactions,
     AuditLogPage,
     FoundationalProgram,
+    ExemplarSeriesAdmin,
 } from './pages';
 
 const adminRoutes = {
@@ -93,6 +94,10 @@ const adminRoutes = {
         {
             path: 'foundational',
             element: <FoundationalProgram />,
+        },
+        {
+            path: 'exemplar-series',
+            element: <ExemplarSeriesAdmin />,
         },
         {
             path: 'kycreview',

@@ -17,3 +17,4 @@ export { default as FoundationalProgram } from './FoundationalProgram';
 export { default as AdminTransactions } from './AdminTransactions';
 export { default as AdminCbtQuestionsPage } from './AdminCbtQuestionsPage';
 export { default as AuditLogPage } from './AuditLogPage';
+export { default as ExemplarSeriesAdmin } from './ExemplarSeriesAdmin';

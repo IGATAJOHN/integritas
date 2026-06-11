@@ -93,13 +93,8 @@ const BrowseCourses = () => {
                                 <p className="course-description">{course.description}</p>
                                 <div className="course-meta">
                                     <span className="tutor">👤 {course.instructor}</span>
-                                    <span className="rating">⭐ {course.rating}</span>
-                                    <span className="students">👥 {course.reviews}</span>
                                 </div>
                                 <div className="course-footer">
-                                    <span className="price">
-                                        {course.price > 0 ? `$${course.price}` : 'Free'}
-                                    </span>
                                     <Button 
                                         variant="primary" 
                                         size="small" 

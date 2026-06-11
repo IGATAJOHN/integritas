@@ -29,20 +29,21 @@ import {
     VerifiedUserOutlined,
 } from '@mui/icons-material';
 import { useAuth } from '../../../contexts';
+import { useThemeMode } from '../../../contexts';
 import { courseCatalogService, learnerEnrollmentService } from '../services';
 import Header from '../../../components/Header';
 import theme from '../../../styles/theme';
 
-const colors = {
-    bg: '#080D19',
-    card: '#111827',
-    panel: '#1A2230',
-    border: '#374151',
-    text: '#FFFFFF',
-    muted: '#9CA3AF',
+const getColors = (isDark) => ({
+    bg: isDark ? '#080D19' : '#F8FAFC',
+    card: isDark ? '#111827' : '#FFFFFF',
+    panel: isDark ? '#1A2230' : '#F1F5F9',
+    border: isDark ? '#374151' : '#E2E8F0',
+    text: isDark ? '#FFFFFF' : '#1E293B',
+    muted: isDark ? '#9CA3AF' : '#64748B',
     brand: theme.colors.brand,
     success: '#10B981',
-};
+});
 
 const getCourseSlug = (course) => course?.slug || course?.raw?.slug || course?.raw_data?.slug || '';
 const getCourseId = (course) => course?.id || course?.raw?.id || course?.raw_data?.id;
@@ -82,6 +83,8 @@ const FoundationalHub = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { isAuthenticated } = useAuth();
+    const { isDark } = useThemeMode();
+    const colors = getColors(isDark);
     const [loading, setLoading] = useState(true);
     const [paying, setPaying] = useState(false);
     const [course, setCourse] = useState(null);
@@ -152,29 +155,25 @@ const FoundationalHub = () => {
     }, [load]);
 
     const startPayment = async () => {
-        if (!courseSlug) return;
+        if (!courseSlug || !course) return;
         if (!isAuthenticated) {
             navigate('/login', { state: { from: location } });
             return;
         }
-        setPaying(true);
-        try {
-            const result = await learnerEnrollmentService.initiateEnrolment(courseSlug);
-            const url = result?.authorization_url || result?.payment_url || result?.data?.authorization_url || result?.data?.payment_url;
-            const reference = result?.reference || result?.data?.reference;
-            sessionStorage.setItem('pending_course_slug', courseSlug);
-            if (reference) sessionStorage.setItem('pending_enrolment_reference', reference);
-            if (url) {
-                window.location.href = url;
-                return;
+        
+        navigate('/checkout', {
+            state: {
+                courseId: course.id,
+                courseSlug: courseSlug,
+                title: course.title,
+                instructor: getTutorName(tutors[0]),
+                level: course.level || 'Foundational',
+                thumbnail: course.image || course.thumbnail || null,
+                price: course.price || 0,
+                tax: course.tax || 0,
+                fee: course.fee || 0,
             }
-            setSnackbar({ open: true, message: 'Payment initialized. Check your enrolments shortly.', severity: 'success' });
-            await load();
-        } catch (err) {
-            setSnackbar({ open: true, message: getPaymentError(err), severity: 'error' });
-        } finally {
-            setPaying(false);
-        }
+        });
     };
 
     if (loading) {

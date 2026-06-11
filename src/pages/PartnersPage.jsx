@@ -131,7 +131,7 @@ const partners = [
 
 const benefits = [
     {
-        icon: <VerifiedUser sx={{ fontSize: 28 }} />,
+        icon: null,
         color: '#22D3EE',
         bgColor: 'rgba(34, 211, 238, 0.1)',
         title: 'Co-Branded Certification',
@@ -497,18 +497,20 @@ const PartnersPage = () => {
                                         '&:hover': { borderColor: colors.borderLight },
                                     }}
                                 >
-                                    <Avatar
-                                        sx={{
-                                            bgcolor: benefit.bgColor,
-                                            color: benefit.color,
-                                            width: 56,
-                                            height: 56,
-                                            borderRadius: 2,
-                                            flexShrink: 0,
-                                        }}
-                                    >
-                                        {benefit.icon}
-                                    </Avatar>
+                                    {benefit.icon && (
+                                        <Avatar
+                                            sx={{
+                                                bgcolor: benefit.bgColor,
+                                                color: benefit.color,
+                                                width: 56,
+                                                height: 56,
+                                                borderRadius: 2,
+                                                flexShrink: 0,
+                                            }}
+                                        >
+                                            {benefit.icon}
+                                        </Avatar>
+                                    )}
                                     <Box>
                                         <Typography sx={{ fontWeight: 700, color: colors.textWhite, mb: 0.75 }}>
                                             {benefit.title}
