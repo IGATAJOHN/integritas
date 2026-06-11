@@ -17,6 +17,9 @@ import {
     MenuItem,
     Stack,
     Typography,
+    Dialog,
+    DialogContent,
+    DialogTitle,
 } from '@mui/material';
 import {
     ArrowBack as ArrowBackIcon,
@@ -27,9 +30,11 @@ import {
     Search as SearchIcon,
     Sort as SortIcon,
     Star as StarIcon,
+    PlayArrow as PlayIcon,
+    Lock as LockIcon,
 } from '@mui/icons-material';
 import CourseCard from '../components/CourseCard';
-import { courseCatalogService } from '../services';
+import { courseCatalogService, learnerEnrollmentService } from '../services';
 import Header from '../../../components/Header';
 import { useThemeMode } from '../../../contexts';
 import appTheme from '../../../styles/theme';
@@ -77,6 +82,26 @@ const Explore = ({ type }) => {
     const [featuredCourse, setFeaturedCourse] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+
+    // Masterclass states
+    const [enrolledIds, setEnrolledIds] = useState(new Set());
+    const [activeTrailer, setActiveTrailer] = useState('');
+    const [activeUnlockTarget, setActiveUnlockTarget] = useState(null);
+    const [unlockLoading, setUnlockLoading] = useState(false);
+
+    // Fetch user enrollments on load to verify locked states
+    useEffect(() => {
+        const fetchEnrollments = async () => {
+            try {
+                const res = await learnerEnrollmentService.getEnrollments({ per_page: 100 });
+                const ids = new Set((res.data || []).map(e => String(e.course_id || e.course?.id || e.course?.slug)));
+                setEnrolledIds(ids);
+            } catch (err) {
+                console.error("Failed to load enrollments for locking:", err);
+            }
+        };
+        fetchEnrollments();
+    }, []);
 
     // Guards so featured course and categories are only populated from the
     // first unfiltered load — prevents re-render loops.
@@ -189,6 +214,59 @@ const Explore = ({ type }) => {
 
     const featuredCourseId = String(featuredCourse?.slug || featuredCourse?.id || '').trim();
 
+    // Grouping, unlocking, and course click handlers for Cinematic view
+    const groupedCourses = useMemo(() => {
+        const groups = {};
+        courses.forEach(course => {
+            const topic = course.topic || 'General Lessons';
+            if (!groups[topic]) groups[topic] = [];
+            groups[topic].push(course);
+        });
+        return groups;
+    }, [courses]);
+
+    const handleCourseClick = (course) => {
+        const isEnrolled = enrolledIds.has(String(course.id)) || enrolledIds.has(String(course.slug));
+        if (isEnrolled) {
+            navigate(`/explore/lesson/${course.slug || course.id}`);
+        } else {
+            setActiveUnlockTarget(course);
+        }
+    };
+
+    const handleUnlock = async (course) => {
+        if (!course) return;
+        try {
+            setUnlockLoading(true);
+            setError('');
+            
+            if (course.price === 0) {
+                await learnerEnrollmentService.enrolFreeExpertCourse(course.slug || course.id);
+                setEnrolledIds(prev => {
+                    const next = new Set(prev);
+                    next.add(String(course.id));
+                    if (course.slug) next.add(String(course.slug));
+                    return next;
+                });
+                setActiveUnlockTarget(null);
+                navigate(`/explore/lesson/${course.slug || course.id}`);
+            } else {
+                const res = await learnerEnrollmentService.initiateEnrolment(course.slug || course.id);
+                const redirectUrl = res?.authorization_url || res?.payment_url;
+                if (redirectUrl) {
+                    window.location.href = redirectUrl;
+                } else {
+                    throw new Error("Unable to get checkout URL from gateway.");
+                }
+            }
+        } catch (err) {
+            console.error("Initiate unlock failed:", err);
+            setError(err?.message || "Failed to unlock course. Please try again.");
+        } finally {
+            setUnlockLoading(false);
+        }
+    };
+
     // const renderFilters = () => (
     //     <Box>
     //         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
@@ -220,6 +298,344 @@ const Explore = ({ type }) => {
     //     </Box>
     // );
 
+    if (type === 'experta') {
+        return (
+            <Box sx={{ bgcolor: '#080D19', color: '#FFFFFF', minHeight: '100vh', pb: 8 }}>
+                <Header />
+                
+                {/* Hero Banner (Masterclass Cinema style) */}
+                <Box
+                    sx={{
+                        position: 'relative',
+                        height: { xs: '60vh', md: '75vh' },
+                        minHeight: '400px',
+                        maxHeight: '650px',
+                        backgroundImage: `url(${featuredCourse?.image || ''})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        display: 'flex',
+                        alignItems: 'flex-end',
+                        mb: 6,
+                        '&::after': {
+                            content: '""',
+                            position: 'absolute',
+                            left: 0,
+                            right: 0,
+                            top: 0,
+                            bottom: 0,
+                            background: 'linear-gradient(to top, #080D19 0%, rgba(8, 13, 25, 0.8) 40%, rgba(8, 13, 25, 0.2) 100%)',
+                            zIndex: 1,
+                        }
+                    }}
+                >
+                    {featuredCourse && (
+                        <Box
+                            sx={{
+                                position: 'relative',
+                                zIndex: 2,
+                                px: { xs: 3, md: 8 },
+                                pb: { xs: 4, md: 6 },
+                                maxWidth: '800px',
+                                textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+                            }}
+                        >
+                            <Chip 
+                                label="EXEMPLAR CLASS" 
+                                size="small"
+                                sx={{ 
+                                    bgcolor: 'rgba(37, 99, 235, 0.2)', 
+                                    color: '#3B82F6', 
+                                    fontWeight: 700, 
+                                    mb: 2,
+                                    border: '1px solid rgba(59, 130, 246, 0.3)'
+                                }} 
+                            />
+                            <Typography variant="h2" sx={{ fontWeight: 900, mb: 2, fontSize: { xs: '2rem', md: '3.5rem' }, lineHeight: 1.1 }}>
+                                {featuredCourse.title}
+                            </Typography>
+                            <Typography sx={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: { xs: '0.95rem', md: '1.1rem' }, mb: 3, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                {featuredCourse.description}
+                            </Typography>
+                            
+                            <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap', gap: 1 }}>
+                                {enrolledIds.has(String(featuredCourse.id)) || enrolledIds.has(String(featuredCourse.slug)) ? (
+                                    <Button
+                                        variant="contained"
+                                        startIcon={<PlayIcon />}
+                                        onClick={() => navigate(`/explore/lesson/${featuredCourse.slug || featuredCourse.id}`)}
+                                        sx={{ 
+                                            bgcolor: '#3B82F6', 
+                                            color: '#FFFFFF', 
+                                            px: 4, 
+                                            py: 1.5, 
+                                            textTransform: 'none', 
+                                            fontWeight: 700,
+                                            '&:hover': { bgcolor: '#2563EB' }
+                                        }}
+                                    >
+                                        Watch Lesson
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        variant="contained"
+                                        startIcon={<LockIcon />}
+                                        onClick={() => setActiveUnlockTarget(featuredCourse)}
+                                        sx={{ 
+                                            bgcolor: '#22C55E', 
+                                            color: '#FFFFFF', 
+                                            px: 4, 
+                                            py: 1.5, 
+                                            textTransform: 'none', 
+                                            fontWeight: 700,
+                                            '&:hover': { bgcolor: '#16A34A' }
+                                        }}
+                                    >
+                                        Unlock Class — {featuredCourse.price ? `₦${featuredCourse.price.toLocaleString()}` : 'Free'}
+                                    </Button>
+                                )}
+                                
+                                {featuredCourse.trailerUrl && (
+                                    <Button
+                                        variant="outlined"
+                                        onClick={() => setActiveTrailer(featuredCourse.trailerUrl)}
+                                        sx={{ 
+                                            borderColor: 'rgba(255, 255, 255, 0.5)', 
+                                            color: '#FFFFFF', 
+                                            px: 3, 
+                                            py: 1.5, 
+                                            textTransform: 'none', 
+                                            fontWeight: 700,
+                                            '&:hover': { borderColor: '#FFFFFF', bgcolor: 'rgba(255,255,255,0.1)' }
+                                        }}
+                                    >
+                                        Watch Trailer
+                                    </Button>
+                                )}
+                            </Stack>
+                        </Box>
+                    )}
+                </Box>
+
+                {/* Categories & Video Slider rows */}
+                <Box sx={{ px: { xs: 3, md: 8 } }}>
+                    {error && <Alert severity="error" sx={{ mb: 4, bgcolor: '#1E293B', color: '#EF4444' }}>{error}</Alert>}
+                    
+                    {loading && courses.length === 0 ? (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+                            <CircularProgress sx={{ color: '#3B82F6' }} />
+                        </Box>
+                    ) : Object.keys(groupedCourses).length === 0 ? (
+                        <Box sx={{ py: 6, textAlign: 'center', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 2 }}>
+                            <Typography sx={{ color: '#94A3B8' }}>No Exemplar classes available at the moment.</Typography>
+                        </Box>
+                    ) : (
+                        Object.entries(groupedCourses).map(([topic, topicCourses]) => (
+                            <Box key={topic} sx={{ mb: 6 }}>
+                                <Typography variant="h5" sx={{ fontWeight: 800, mb: 3, color: '#FFFFFF', borderLeft: '4px solid #3B82F6', pl: 1.5 }}>
+                                    {topic}
+                                </Typography>
+                                
+                                {/* Horizontal Scroll Container */}
+                                <Box 
+                                    sx={{ 
+                                        display: 'flex', 
+                                        gap: 3, 
+                                        overflowX: 'auto', 
+                                        pb: 2,
+                                        scrollBehavior: 'smooth',
+                                        '&::-webkit-scrollbar': { height: '6px' },
+                                        '&::-webkit-scrollbar-track': { bgcolor: 'rgba(255,255,255,0.02)' },
+                                        '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(255,255,255,0.15)', borderRadius: '10px' },
+                                        scrollbarWidth: 'thin',
+                                    }}
+                                >
+                                    {topicCourses.map((course) => {
+                                        const isEnrolled = enrolledIds.has(String(course.id)) || enrolledIds.has(String(course.slug));
+                                        return (
+                                            <Box 
+                                                key={course.id}
+                                                onClick={() => handleCourseClick(course)}
+                                                sx={{
+                                                    flex: '0 0 auto',
+                                                    width: { xs: '260px', md: '320px' },
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                    borderRadius: '12px',
+                                                    overflow: 'hidden',
+                                                    bgcolor: '#0C1322',
+                                                    border: '1px solid rgba(255, 255, 255, 0.05)',
+                                                    position: 'relative',
+                                                    '&:hover': {
+                                                        transform: 'translateY(-6px)',
+                                                        boxShadow: '0 12px 20px rgba(0,0,0,0.4)',
+                                                        borderColor: isEnrolled ? '#3B82F6' : '#22C55E',
+                                                    }
+                                                }}
+                                            >
+                                                {/* Card Media with overlay status */}
+                                                <Box sx={{ position: 'relative', height: { xs: '150px', md: '180px' } }}>
+                                                    <Box 
+                                                        component="img"
+                                                        src={course.image || '/src/assets/images/LoginBg.png'}
+                                                        alt={course.title}
+                                                        sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                    />
+                                                    
+                                                    {/* Gradient & Overlay icon */}
+                                                    <Box 
+                                                        sx={{
+                                                            position: 'absolute',
+                                                            top: 0, left: 0, right: 0, bottom: 0,
+                                                            background: 'linear-gradient(to top, rgba(12, 19, 34, 0.9) 0%, rgba(12, 19, 34, 0.3) 50%, rgba(12, 19, 34, 0.1) 100%)',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            transition: 'opacity 0.2s',
+                                                            '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.3)' }
+                                                        }}
+                                                    >
+                                                        {isEnrolled ? (
+                                                            <PlayIcon sx={{ color: '#ffffff', fontSize: 48, filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.5))' }} />
+                                                        ) : (
+                                                            <Box 
+                                                                sx={{ 
+                                                                    bgcolor: 'rgba(34, 197, 94, 0.85)', 
+                                                                    borderRadius: '50%', 
+                                                                    p: 1.5,
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    boxShadow: '0 4px 10px rgba(0,0,0,0.3)'
+                                                                }}
+                                                            >
+                                                                <LockIcon sx={{ color: '#FFFFFF', fontSize: 24 }} />
+                                                            </Box>
+                                                        )}
+                                                    </Box>
+
+                                                    {/* Duration Badge */}
+                                                    <Box sx={{ position: 'absolute', bottom: 10, right: 10, bgcolor: 'rgba(0,0,0,0.7)', px: 1, py: 0.25, borderRadius: '4px' }}>
+                                                        <Typography sx={{ color: '#FFFFFF', fontSize: '0.75rem', fontWeight: 600 }}>
+                                                            {course.duration}
+                                                        </Typography>
+                                                    </Box>
+                                                </Box>
+
+                                                {/* Text Info */}
+                                                <Box sx={{ p: 2.5 }}>
+                                                    <Typography variant="subtitle2" sx={{ color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', fontSize: '0.72rem', letterSpacing: '1px', mb: 0.5 }}>
+                                                        {course.instructor}
+                                                    </Typography>
+                                                    <Typography variant="h6" sx={{ color: '#FFFFFF', fontWeight: 700, fontSize: '1rem', mb: 1, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', minHeight: '44px' }}>
+                                                        {course.title}
+                                                    </Typography>
+                                                    <Typography sx={{ color: '#22C55E', fontWeight: 700, fontSize: '0.875rem' }}>
+                                                        {isEnrolled ? 'UNLOCKED' : course.price ? `₦${course.price.toLocaleString()}` : 'FREE'}
+                                                    </Typography>
+                                                </Box>
+                                            </Box>
+                                        );
+                                    })}
+                                </Box>
+                            </Box>
+                        ))
+                    )}
+                </Box>
+
+                {/* Video Trailer Dialog */}
+                <Dialog
+                    open={Boolean(activeTrailer)}
+                    onClose={() => setActiveTrailer('')}
+                    maxWidth="md"
+                    fullWidth
+                    PaperProps={{ sx: { bgcolor: '#080D19', border: '1px solid rgba(255,255,255,0.1)' } }}
+                >
+                    <Box sx={{ position: 'relative', pt: '56.25%', bgcolor: '#000000' }}>
+                        <IconButton 
+                            onClick={() => setActiveTrailer('')}
+                            sx={{ position: 'absolute', top: 10, right: 10, zIndex: 10, color: '#FFFFFF', bgcolor: 'rgba(0,0,0,0.5)', '&:hover': { bgcolor: 'rgba(0,0,0,0.8)' } }}
+                        >
+                            <CloseIcon />
+                        </IconButton>
+                        {activeTrailer && (
+                            <Box 
+                                component="video"
+                                controls
+                                autoPlay
+                                src={activeTrailer}
+                                sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', outline: 'none' }}
+                            />
+                        )}
+                    </Box>
+                </Dialog>
+
+                {/* Checkout & Lock Dialog */}
+                <Dialog
+                    open={Boolean(activeUnlockTarget)}
+                    onClose={() => setActiveUnlockTarget(null)}
+                    maxWidth="sm"
+                    fullWidth
+                    PaperProps={{ sx: { bgcolor: '#0C1322', color: '#FFFFFF', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)' } }}
+                >
+                    {activeUnlockTarget && (
+                        <Box sx={{ p: 4 }}>
+                            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+                                <Typography variant="h5" sx={{ fontWeight: 800 }}>Unlock Class</Typography>
+                                <IconButton onClick={() => setActiveUnlockTarget(null)} sx={{ color: '#94A3B8' }}><CloseIcon /></IconButton>
+                            </Stack>
+                            
+                            <Box sx={{ display: 'flex', gap: 3, mb: 3, flexDirection: { xs: 'column', sm: 'row' } }}>
+                                <Box 
+                                    component="img"
+                                    src={activeUnlockTarget.image || '/src/assets/images/LoginBg.png'}
+                                    sx={{ width: { xs: '100%', sm: '150px' }, height: '100px', objectFit: 'cover', borderRadius: '8px' }}
+                                />
+                                <Box>
+                                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>{activeUnlockTarget.title}</Typography>
+                                    <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem' }}>Instructor: {activeUnlockTarget.instructor}</Typography>
+                                    <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem' }}>Duration: {activeUnlockTarget.duration}</Typography>
+                                </Box>
+                            </Box>
+
+                            <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.9rem', mb: 4, lineHeight: 1.6 }}>
+                                {activeUnlockTarget.description}
+                            </Typography>
+
+                            <Divider sx={{ borderColor: 'rgba(255,255,255,0.08)', mb: 3 }} />
+
+                            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
+                                <Typography sx={{ color: '#94A3B8', fontSize: '1rem', fontWeight: 500 }}>Price to unlock:</Typography>
+                                <Typography variant="h4" sx={{ color: '#22C55E', fontWeight: 900 }}>
+                                    {activeUnlockTarget.price ? `₦${activeUnlockTarget.price.toLocaleString()}` : 'Free'}
+                                </Typography>
+                            </Stack>
+
+                            <Button
+                                fullWidth
+                                variant="contained"
+                                disabled={unlockLoading}
+                                onClick={() => handleUnlock(activeUnlockTarget)}
+                                sx={{
+                                    bgcolor: '#22C55E',
+                                    color: '#FFFFFF',
+                                    py: 1.8,
+                                    borderRadius: '10px',
+                                    fontSize: '1rem',
+                                    fontWeight: 700,
+                                    textTransform: 'none',
+                                    '&:hover': { bgcolor: '#16A34A' },
+                                    '&:disabled': { bgcolor: '#374151', color: '#9CA3AF' }
+                                }}
+                            >
+                                {unlockLoading ? 'Initiating Gate Checkout...' : activeUnlockTarget.price ? 'Pay via Gateway' : 'Access for Free'}
+                            </Button>
+                        </Box>
+                    )}
+                </Dialog>
+            </Box>
+        );
+    }
+
     return (
         <Box sx={{ bgcolor: colors.bg, color: colors.text, minHeight: '100%' }}>
             <Header />
@@ -230,16 +646,16 @@ const Explore = ({ type }) => {
                 </Stack>
                 {renderFilters()}
             </Drawer> */}
-
+ 
             <Box sx={{ display: 'flex' }}>
                 {/* Sidebar filters — desktop */}
                 {/* <Box sx={{ width: 280, p: 3, bgcolor: colors.paper, borderRight: `1px solid ${colors.border}`, display: { xs: 'none', md: 'block' } }}>
                     {renderFilters()}
                 </Box> */}
-
+ 
                 <Box sx={{ flex: 1, p: { xs: 2, md: 4 } }}>
                     {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-
+ 
                     {/* Featured Course Banner */}
                     <Card sx={{ bgcolor: colors.card, p: 3, mb: 3, border: `1px solid ${colors.border}` }}>
                         {!featuredCourse && loading ? (
@@ -295,7 +711,7 @@ const Explore = ({ type }) => {
                             </Stack>
                         )}
                     </Card>
-
+ 
                     {/* Heading + Search + Sort */}
                     <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'center' }} spacing={2} sx={{ mb: 2 }}>
                         <Box>
@@ -343,7 +759,7 @@ const Explore = ({ type }) => {
                             </Menu>
                         </Stack>
                     </Stack>
-
+ 
                     {/* Topic filter chips */}
                     <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', mb: 3 }}>
                         {topics.map((topic) => (
@@ -355,7 +771,7 @@ const Explore = ({ type }) => {
                             />
                         ))}
                     </Stack>
-
+ 
                     {/* Course grid */}
                     {loading ? (
                         <Box sx={{ minHeight: 180, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
