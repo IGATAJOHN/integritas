@@ -42,7 +42,17 @@ const Header = () => {
 
     const isActive = (to) =>
         to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
-    const { isAuthenticated, user } = useAuth();
+    const { isAuthenticated, user, logout } = useAuth();
+
+    const handleLogout = async () => {
+        try {
+            await logout();
+            navigate('/');
+        } catch (error) {
+            console.error('Logout error:', error);
+            navigate('/');
+        }
+    };
     
 
     const handleDrawerToggle = () => {
@@ -162,22 +172,43 @@ const Header = () => {
             {/* Action Buttons */}
             <Stack spacing={2} sx={{ p: 3 }}>
                 {isAuthenticated ? (
-                    <Button
-                        onClick={() => { handleDrawerToggle(); navigate('/learner'); }}
-                        variant="contained"
-                        fullWidth
-                        sx={{
-                            bgcolor: appTheme.colors.brand,
-                            '&:hover': { bgcolor: appTheme.colors.brandHover },
-                            textTransform: 'none',
-                            fontWeight: 600,
-                            borderRadius: '10px',
-                            color: '#FFFFFF',
-                            py: 1.5,
-                        }}
-                    >
-                        Go to Dashboard
-                    </Button>
+                    <>
+                        <Button
+                            onClick={() => { handleDrawerToggle(); navigate('/learner'); }}
+                            variant="contained"
+                            fullWidth
+                            sx={{
+                                bgcolor: appTheme.colors.brand,
+                                '&:hover': { bgcolor: appTheme.colors.brandHover },
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                borderRadius: '10px',
+                                color: '#FFFFFF',
+                                py: 1.5,
+                            }}
+                        >
+                            Go to Dashboard
+                        </Button>
+                        <Button
+                            onClick={() => { handleDrawerToggle(); handleLogout(); }}
+                            variant="outlined"
+                            fullWidth
+                            sx={{
+                                borderColor: '#EF4444',
+                                color: '#EF4444',
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                borderRadius: '10px',
+                                py: 1.5,
+                                '&:hover': {
+                                    borderColor: '#DC2626',
+                                    bgcolor: 'rgba(239, 68, 68, 0.08)',
+                                },
+                            }}
+                        >
+                            Logout
+                        </Button>
+                    </>
                 ) : (
                     <>
                         <Button
@@ -421,20 +452,39 @@ const Header = () => {
                             {/* Actions */}
                             <Stack direction="row" spacing={2} alignItems="center">
                                 {isAuthenticated ? (
-                                    <Button
-                                        onClick={() => navigate('/learner')}
-                                        variant="contained"
-                                        sx={{
-                                            bgcolor: appTheme.colors.brand,
-                                            '&:hover': { bgcolor: appTheme.colors.brandHover },
-                                            textTransform: 'none',
-                                            fontWeight: 600,
-                                            borderRadius: '10px',
-                                            color: '#FFFFFF',
-                                        }}
-                                    >
-                                        Go to Dashboard
-                                    </Button>
+                                    <>
+                                        <Button
+                                            onClick={() => navigate('/learner')}
+                                            variant="contained"
+                                            sx={{
+                                                bgcolor: appTheme.colors.brand,
+                                                '&:hover': { bgcolor: appTheme.colors.brandHover },
+                                                textTransform: 'none',
+                                                fontWeight: 600,
+                                                borderRadius: '10px',
+                                                color: '#FFFFFF',
+                                            }}
+                                        >
+                                            Go to Dashboard
+                                        </Button>
+                                        <Button
+                                            onClick={handleLogout}
+                                            variant="outlined"
+                                            sx={{
+                                                borderColor: '#EF4444',
+                                                color: '#EF4444',
+                                                textTransform: 'none',
+                                                fontWeight: 600,
+                                                borderRadius: '10px',
+                                                '&:hover': {
+                                                    borderColor: '#DC2626',
+                                                    bgcolor: 'rgba(239, 68, 68, 0.08)',
+                                                },
+                                            }}
+                                        >
+                                            Logout
+                                        </Button>
+                                    </>
                                 ) : (
                                     <>
                                         <Button
