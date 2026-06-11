@@ -85,6 +85,10 @@ const FoundationalHub = () => {
     const { isAuthenticated } = useAuth();
     const { isDark } = useThemeMode();
     const colors = getColors(isDark);
+    const buttonSx = {
+        bgcolor: colors.brand,
+        '&:hover': { bgcolor: '#0D42AF' },
+    };
     const [loading, setLoading] = useState(true);
     const [paying, setPaying] = useState(false);
     const [course, setCourse] = useState(null);
@@ -213,9 +217,9 @@ const FoundationalHub = () => {
                             {course?.description || course?.summary || 'Build the core governance and integrity foundations before moving into advanced learning.'}
                         </Typography>
                         <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap>
-                            <Metric icon={<MenuBookOutlined />} label="Modules" value={modules.length} />
-                            <Metric icon={<PlayArrow />} label="Lessons" value={lessonCount} />
-                            <Metric icon={<SchoolOutlined />} label="Tutors" value={tutors.length} />
+                            <Metric icon={<MenuBookOutlined />} label="Modules" value={modules.length} colors={colors} />
+                            <Metric icon={<PlayArrow />} label="Lessons" value={lessonCount} colors={colors} />
+                            <Metric icon={<SchoolOutlined />} label="Tutors" value={tutors.length} colors={colors} />
                         </Stack>
                     </Box>
 
@@ -348,12 +352,7 @@ const FoundationalHub = () => {
     );
 };
 
-const buttonSx = {
-    bgcolor: colors.brand,
-    '&:hover': { bgcolor: '#0D42AF' },
-};
-
-const Metric = ({ icon, label, value }) => (
+const Metric = ({ icon, label, value, colors }) => (
     <Stack direction="row" spacing={1.25} alignItems="center" sx={{ p: 1.5, bgcolor: colors.card, border: `1px solid ${colors.border}`, borderRadius: 1 }}>
         <Avatar sx={{ bgcolor: 'rgba(17,82,212,0.16)', color: colors.brand, width: 34, height: 34 }}>{icon}</Avatar>
         <Box>
