@@ -232,15 +232,15 @@ const PaymentSuccess = () => {
                                 <Stack spacing={1.5} sx={{ bgcolor: 'rgba(0,0,0,0.25)', p: 2, borderRadius: 1, mb: 2 }}>
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                         <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>Bank Name</Typography>
-                                        <Typography variant="body2" sx={{ fontWeight: 600 }}>First Bank of Nigeria</Typography>
+                                        <Typography variant="body2" sx={{ fontWeight: 600 }}>Moniepoint</Typography>
                                     </Box>
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                         <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>Account Name</Typography>
-                                        <Typography variant="body2" sx={{ fontWeight: 600 }}>Integritas</Typography>
+                                        <Typography variant="body2" sx={{ fontWeight: 600 }}>Center for Fiscal Transparency & Public Integrity - Integritas</Typography>
                                     </Box>
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                         <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>Account Number</Typography>
-                                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#10B981' }}>2034567890</Typography>
+                                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#10B981' }}>4005724739</Typography>
                                     </Box>
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                         <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>Payment Reference</Typography>

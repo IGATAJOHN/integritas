@@ -497,7 +497,7 @@ const Checkout = () => {
                                         <InputBase
                                             readOnly
                                             fullWidth
-                                            value="First Bank of Nigeria"
+                                            value="Moniepoint"
                                             startAdornment={<InputAdornment position="start"><AccountBalance sx={{ color: 'rgba(255,255,255,0.3)' }} /></InputAdornment>}
                                             sx={{
                                                 bgcolor: 'rgba(255,255,255,0.03)',
@@ -522,7 +522,7 @@ const Checkout = () => {
                                         <InputBase
                                             readOnly
                                             fullWidth
-                                            value="Integritas"
+                                            value="Center for Fiscal Transparency & Public Integrity - Integritas"
                                             startAdornment={<InputAdornment position="start"><Person sx={{ color: 'rgba(255,255,255,0.3)' }} /></InputAdornment>}
                                             sx={{
                                                 bgcolor: 'rgba(255,255,255,0.03)',
@@ -547,7 +547,7 @@ const Checkout = () => {
                                         <InputBase
                                             readOnly
                                             fullWidth
-                                            value="2034567890"
+                                            value="4005724739"
                                             startAdornment={<InputAdornment position="start"><CreditCard sx={{ color: 'rgba(255,255,255,0.3)' }} /></InputAdornment>}
                                             endAdornment={<InputAdornment position="end"><CheckCircle sx={{ color: '#10B981', fontSize: 18 }} /></InputAdornment>}
                                             sx={{
