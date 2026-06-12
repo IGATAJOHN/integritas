@@ -39,7 +39,9 @@ const defaultForm = {
     duration: '',
     status: 'draft',
     thumbnail_url: '',
+    thumbnailFile: null,
     video_url: '',
+    videoFile: null,
     tags: '',
     instructor: '',
 };
@@ -104,7 +106,9 @@ const ExemplarSeriesAdmin = () => {
             duration: video.duration || '',
             status: video.status || 'draft',
             thumbnail_url: video.thumbnail_url || '',
+            thumbnailFile: null,
             video_url: video.video_url || '',
+            videoFile: null,
             tags: Array.isArray(video.tags) ? video.tags.map(t => t.name || t).join(', ') : (video.tags || ''),
             instructor: video.instructor || video.tutor_name || '',
         });
@@ -114,17 +118,40 @@ const ExemplarSeriesAdmin = () => {
     const handleSave = async () => {
         if (!form.title.trim()) return showAlert('Title is required.', 'error');
         setSaving(true);
-        const payload = {
-            ...form,
-            track: TRACK,
-            tags: form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
-        };
+
+        const formData = new FormData();
+        formData.append('title', form.title.trim());
+        formData.append('description', form.description.trim());
+        formData.append('category', form.category);
+        formData.append('duration', form.duration.trim());
+        formData.append('status', form.status);
+        formData.append('instructor', form.instructor.trim());
+        formData.append('track', TRACK);
+
+        const tagList = form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
+        tagList.forEach((tag, idx) => {
+            formData.append(`tags[${idx}]`, tag);
+        });
+
+        if (form.videoFile) {
+            formData.append('video', form.videoFile);
+        } else if (form.video_url) {
+            formData.append('video_url', form.video_url);
+        }
+
+        if (form.thumbnailFile) {
+            formData.append('thumbnail', form.thumbnailFile);
+        } else if (form.thumbnail_url) {
+            formData.append('thumbnail_url', form.thumbnail_url);
+        }
+
         try {
             if (editTarget) {
-                await apiService.put(`/lms/courses/${editTarget.id}`, payload);
+                formData.append('_method', 'PUT');
+                await apiService.post(`/lms/courses/${editTarget.id}`, formData);
                 showAlert('Video updated successfully.');
             } else {
-                await apiService.post('/lms/courses', payload);
+                await apiService.post('/lms/courses', formData);
                 showAlert('Video created successfully.');
             }
             setDialogOpen(false);
@@ -365,12 +392,96 @@ const ExemplarSeriesAdmin = () => {
                             <TextField label="Instructor" size="small" fullWidth value={form.instructor}
                                 onChange={e => setForm(p => ({ ...p, instructor: e.target.value }))} />
                         </Stack>
-                        <TextField label="Thumbnail URL" size="small" fullWidth value={form.thumbnail_url}
-                            onChange={e => setForm(p => ({ ...p, thumbnail_url: e.target.value }))}
-                            InputProps={{ startAdornment: <InputAdornment position="start"><CloudUpload sx={{ fontSize: 18, color: textMuted }} /></InputAdornment> }} />
-                        <TextField label="Video URL / Embed URL" size="small" fullWidth value={form.video_url}
-                            onChange={e => setForm(p => ({ ...p, video_url: e.target.value }))}
-                            InputProps={{ startAdornment: <InputAdornment position="start"><PlayArrow sx={{ fontSize: 18, color: textMuted }} /></InputAdornment> }} />
+                        {/* Thumbnail File or URL */}
+                        <Box sx={{ border: `1.5px dashed ${border}`, p: 2, borderRadius: 2, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
+                            <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: text, mb: 1 }}>
+                                Thumbnail Image
+                            </Typography>
+                            
+                            <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1.5 }}>
+                                <Button
+                                    variant="outlined"
+                                    component="label"
+                                    size="small"
+                                    startIcon={<CloudUpload />}
+                                    sx={{ textTransform: 'none', color: brand, borderColor: brand }}
+                                >
+                                    Select Image File
+                                    <input
+                                        type="file"
+                                        hidden
+                                        accept="image/*"
+                                        onChange={e => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                                setForm(p => ({ ...p, thumbnailFile: file, thumbnail_url: '' }));
+                                            }
+                                        }}
+                                    />
+                                </Button>
+                                {form.thumbnailFile && (
+                                    <Typography sx={{ fontSize: '0.78rem', color: '#10B981', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '180px' }}>
+                                        ✓ {form.thumbnailFile.name}
+                                    </Typography>
+                                )}
+                            </Stack>
+                            
+                            <TextField
+                                label="Or Image URL"
+                                size="small"
+                                fullWidth
+                                value={form.thumbnail_url}
+                                disabled={!!form.thumbnailFile}
+                                onChange={e => setForm(p => ({ ...p, thumbnail_url: e.target.value }))}
+                                placeholder="https://example.com/image.jpg"
+                            />
+                        </Box>
+
+                        {/* Video File or URL */}
+                        <Box sx={{ border: `1.5px dashed ${border}`, p: 2, borderRadius: 2, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
+                            <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: text, mb: 1 }}>
+                                Video File
+                            </Typography>
+                            
+                            <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1.5 }}>
+                                <Button
+                                    variant="outlined"
+                                    component="label"
+                                    size="small"
+                                    startIcon={<OndemandVideo />}
+                                    sx={{ textTransform: 'none', color: brand, borderColor: brand }}
+                                >
+                                    Select Video File
+                                    <input
+                                        type="file"
+                                        hidden
+                                        accept="video/*"
+                                        onChange={e => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                                setForm(p => ({ ...p, videoFile: file, video_url: '' }));
+                                            }
+                                        }}
+                                    />
+                                </Button>
+                                {form.videoFile && (
+                                    <Typography sx={{ fontSize: '0.78rem', color: '#10B981', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '180px' }}>
+                                        ✓ {form.videoFile.name}
+                                    </Typography>
+                                )}
+                            </Stack>
+                            
+                            <TextField
+                                label="Or Video URL"
+                                size="small"
+                                fullWidth
+                                value={form.video_url}
+                                disabled={!!form.videoFile}
+                                onChange={e => setForm(p => ({ ...p, video_url: e.target.value }))}
+                                placeholder="https://example.com/video.mp4"
+                            />
+                        </Box>
+                        
                         <TextField label="Tags (comma-separated)" size="small" fullWidth value={form.tags}
                             onChange={e => setForm(p => ({ ...p, tags: e.target.value }))}
                             placeholder="anti-corruption, leadership, governance" />
