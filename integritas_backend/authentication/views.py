@@ -32,12 +32,7 @@ class RegisterView(views.APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        # Generate username from email if not provided
-        data = request.data.copy()
-        if 'username' not in data and 'email' in data:
-            data['username'] = data['email'].split('@')[0]
-        
-        serializer = RegisterSerializer(data=data)
+        serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
             token, _ = Token.objects.get_or_create(user=user)

@@ -19,19 +19,43 @@ class UserSerializer(serializers.ModelSerializer):
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
+    name = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'first_name', 'last_name', 'role']
+        fields = ['username', 'email', 'password', 'name', 'phone']
+        extra_kwargs = {
+            'username': {'required': False, 'allow_blank': True}
+        }
 
     def create(self, validated_data):
+        name = validated_data.pop('name', '')
+        first_name = ''
+        last_name = ''
+        if name:
+            parts = name.strip().split(' ', 1)
+            first_name = parts[0]
+            if len(parts) > 1:
+                last_name = parts[1]
+
+        email = validated_data['email']
+        username = validated_data.get('username') or email.split('@')[0]
+        
+        # Ensure username uniqueness
+        base_username = username
+        counter = 1
+        while User.objects.filter(username=username).exists():
+            username = f"{base_username}{counter}"
+            counter += 1
+
         user = User.objects.create_user(
-            username=validated_data['username'],
-            email=validated_data['email'],
+            username=username,
+            email=email,
             password=validated_data['password'],
-            first_name=validated_data.get('first_name', ''),
-            last_name=validated_data.get('last_name', ''),
-            role=validated_data.get('role', 'learner')
+            first_name=first_name,
+            last_name=last_name,
+            phone=validated_data.get('phone', ''),
+            role='learner'
         )
         # Create user profile automatically
         Profile.objects.create(user=user)

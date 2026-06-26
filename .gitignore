@@ -26,3 +26,15 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Django/Python files
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+db.sqlite3
+/integritas_backend/db.sqlite3
+/integritas_backend/media/
+/integritas_backend/staticfiles/
+
