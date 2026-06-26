@@ -12,10 +12,15 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     profile = ProfileSerializer(read_only=True)
+    account_state = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 'phone', 'profile']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 'phone', 'profile', 'account_state']
+
+    def get_account_state(self, obj):
+        # Always verified / active for local/Render testing bypass
+        return 'active'
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -57,6 +62,6 @@ class RegisterSerializer(serializers.ModelSerializer):
             phone=validated_data.get('phone', ''),
             role='learner'
         )
-        # Create user profile automatically
-        Profile.objects.create(user=user)
+        # Create user profile automatically (marked as verified for dev testing)
+        Profile.objects.create(user=user, is_verified=True)
         return user
