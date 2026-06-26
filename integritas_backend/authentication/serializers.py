@@ -16,12 +16,20 @@ class UserSerializer(serializers.ModelSerializer):
     email_verified = serializers.SerializerMethodField()
     email_verified_at = serializers.SerializerMethodField()
 
+    role = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = [
             'id', 'username', 'email', 'first_name', 'last_name', 'role', 
             'phone', 'profile', 'account_state', 'email_verified', 'email_verified_at'
         ]
+
+    def get_role(self, obj):
+        # Superusers automatically map as admin
+        if obj.is_superuser:
+            return 'admin'
+        return obj.role
 
     def get_account_state(self, obj):
         # Always verified / active for local/Render testing bypass
