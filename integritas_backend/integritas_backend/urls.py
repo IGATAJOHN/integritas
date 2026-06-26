@@ -12,6 +12,7 @@ urlpatterns = [
     # API endpoints under v1 namespace
     path('api/v1/auth/', include('authentication.urls')),
     path('api/v1/lms/', include('courses.urls')),
+    path('api/v1/catalogue/', include('courses.urls')), # route catalogue endpoint calls too
     path('api/v1/enrolment/', include('enrollments.urls')),
     path('api/v1/me/enrolments', MyEnrollmentsView.as_view(), name='my_enrolments'),
     path('api/v1/me/transactions', MyTransactionsView.as_view(), name='my_transactions'),

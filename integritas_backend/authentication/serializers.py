@@ -13,14 +13,26 @@ class ProfileSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     profile = ProfileSerializer(read_only=True)
     account_state = serializers.SerializerMethodField()
+    email_verified = serializers.SerializerMethodField()
+    email_verified_at = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 'phone', 'profile', 'account_state']
+        fields = [
+            'id', 'username', 'email', 'first_name', 'last_name', 'role', 
+            'phone', 'profile', 'account_state', 'email_verified', 'email_verified_at'
+        ]
 
     def get_account_state(self, obj):
         # Always verified / active for local/Render testing bypass
         return 'active'
+
+    def get_email_verified(self, obj):
+        return True
+
+    def get_email_verified_at(self, obj):
+        from django.utils import timezone
+        return timezone.now().isoformat()
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
