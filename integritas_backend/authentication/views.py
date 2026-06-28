@@ -892,6 +892,98 @@ class AdminAuditLogsView(views.APIView):
         })
 
 
+class ResendEmailVerificationView(views.APIView):
+    """
+    POST /auth/email/verify/resend
+    Generates a secure email verification token and sends the verification email.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        
+        # Generate token using TimestampSigner
+        from django.core.signing import TimestampSigner
+        signer = TimestampSigner()
+        signed_value = signer.sign(str(user.id))
+        # The signed value is "user_id:timestamp:signature". We extract the "timestamp:signature" part as the hash
+        token_hash = signed_value.split(':', 1)[1]
+        
+        # Build the frontend URL
+        frontend_domain = request.headers.get('origin') or request.META.get('HTTP_ORIGIN') or 'https://integritas-xi.vercel.app'
+        verification_link = f"{frontend_domain.rstrip('/')}/verify/{user.id}/{token_hash}"
+        
+        # Send email
+        from django.core.mail import send_mail
+        from django.conf import settings
+        
+        subject = "Verify Your Email Address - GGH Integritas"
+        html_message = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+            <h2 style="color: #1a202c; text-align: center;">Verify your email address</h2>
+            <p style="color: #4a5568; font-size: 16px; line-height: 1.5;">
+                Thank you for joining GGH Integritas! Please confirm your email address by clicking the link below to verify your account:
+            </p>
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{verification_link}" style="background-color: #3182ce; color: white; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 4px; display: inline-block;">Verify Email Address</a>
+            </div>
+            <p style="color: #718096; font-size: 14px;">
+                This link will expire in 24 hours. If you did not register for GGH Integritas, you can safely ignore this email.
+            </p>
+            <hr style="border: 0; border-top: 1px solid #edf2f7; margin: 20px 0;" />
+            <p style="color: #a0aec0; font-size: 12px; text-align: center;">
+                GGH Integritas Hub &copy; 2026
+            </p>
+        </div>
+        """
+        plain_message = f"Verify your email address by visiting this link: {verification_link}"
+        
+        try:
+            send_mail(
+                subject=subject,
+                message=plain_message,
+                from_email=settings.DEFAULT_FROM_EMAIL or settings.EMAIL_HOST_USER,
+                recipient_list=[user.email],
+                html_message=html_message,
+                fail_silently=False
+            )
+            return Response({'message': 'Verification email sent successfully.'})
+        except Exception as e:
+            return Response({'message': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class EmailVerifyView(views.APIView):
+    """
+    GET /auth/email/verify/{id}/{hash}
+    Verifies the email verification token and marks the email as verified.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, user_id, token_hash):
+        from django.core.signing import TimestampSigner, SignatureExpired, BadSignature
+        signer = TimestampSigner()
+        
+        # Reconstruct the signed value to verify: "user_id:token_hash"
+        value_to_verify = f"{user_id}:{token_hash}"
+        
+        try:
+            # Verify that it is valid and was signed within 24 hours (86400 seconds)
+            signer.unsign(value_to_verify, max_age=86400)
+        except (SignatureExpired, BadSignature):
+            return Response({'message': 'The verification link is invalid or has expired.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            user = User.objects.get(id=user_id)
+            profile, _ = Profile.objects.get_or_create(user=user)
+            profile.is_verified = True
+            profile.save()
+        except User.DoesNotExist:
+            return Response({'message': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+            
+        return Response({'message': 'Email verified successfully!'})
+
+
+
 
 
 
