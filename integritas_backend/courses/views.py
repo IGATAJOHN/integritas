@@ -1,6 +1,6 @@
 from rest_framework import viewsets, permissions
 from rest_framework.response import Response
-from .models import Course, Module, Lesson, Category
+from .models import Course, Module, Lesson, Category, ProjectSubmission, ProjectSubmissionFile
 
 from .serializers import CourseSerializer, ModuleSerializer, LessonSerializer
 
@@ -235,5 +235,204 @@ class CategoryDetailView(views.APIView):
         cat = get_object_or_404(Category, id=category_id)
         cat.delete()
         return Response({'success': True}, status=status.HTTP_200_OK)
+
+class LearnerCourseProjectView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, course_slug):
+        course = get_object_or_404(Course, slug=course_slug)
+        
+        brief = course.project_brief or "Design and implement a complete solution demonstrating key learnings from the course."
+        requirements = course.project_requirements or [
+            "Use clear architectural patterns.",
+            "Write comprehensive tests.",
+            "Include documentation explaining setup and usage instructions."
+        ]
+        
+        sub = ProjectSubmission.objects.filter(course=course, user=request.user).first()
+        sub_data = None
+        if sub:
+            files_data = [{
+                'id': f.id,
+                'name': f.name,
+                'url': f.file.url if f.file else '',
+                'size_bytes': f.size_bytes,
+                'virus_scan_status': f.scan_status
+            } for f in sub.files.all()]
+            
+            sub_data = {
+                'id': sub.id,
+                'description': sub.description,
+                'status': sub.status,
+                'score_percent': sub.score_percent,
+                'feedback': sub.feedback,
+                'submitted_at': sub.submitted_at.isoformat() if sub.submitted_at else None,
+                'graded_at': sub.graded_at.isoformat() if sub.graded_at else None,
+                'files': files_data
+            }
+            
+        return Response({
+            'brief': brief,
+            'requirements': requirements,
+            'submission': sub_data
+        })
+
+    def post(self, request, course_slug):
+        course = get_object_or_404(Course, slug=course_slug)
+        description = request.data.get('description', '')
+        
+        sub, created = ProjectSubmission.objects.update_or_create(
+            course=course,
+            user=request.user,
+            defaults={
+                'description': description,
+                'status': 'pending',
+                'score_percent': None,
+                'feedback': None
+            }
+        )
+        
+        uploaded_files = request.FILES.getlist('files[]')
+        for f in uploaded_files:
+            sub_file = ProjectSubmissionFile.objects.create(
+                submission=sub,
+                file=f,
+                name=f.name,
+                size_bytes=f.size,
+                scan_status='clean'
+            )
+            
+        files_data = [{
+            'id': f.id,
+            'name': f.name,
+            'url': f.file.url if f.file else '',
+            'size_bytes': f.size_bytes,
+            'virus_scan_status': f.scan_status
+        } for f in sub.files.all()]
+        
+        return Response({
+            'id': sub.id,
+            'description': sub.description,
+            'status': sub.status,
+            'score_percent': sub.score_percent,
+            'feedback': sub.feedback,
+            'submitted_at': sub.submitted_at.isoformat() if sub.submitted_at else None,
+            'graded_at': sub.graded_at.isoformat() if sub.graded_at else None,
+            'files': files_data
+        }, status=status.HTTP_200_OK)
+
+class AdminProjectSubmissionsView(views.APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        status_filter = request.query_params.get('status')
+        queryset = ProjectSubmission.objects.all().order_by('-submitted_at')
+        
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+            
+        per_page = int(request.query_params.get('per_page', 20))
+        page = int(request.query_params.get('page', 1))
+        
+        total = queryset.count()
+        start = (page - 1) * per_page
+        end = start + per_page
+        sliced = queryset[start:end]
+        
+        data = []
+        for sub in sliced:
+            files_data = [{
+                'id': f.id,
+                'name': f.name,
+                'url': f.file.url if f.file else '',
+                'size_bytes': f.size_bytes,
+                'virus_scan_status': f.scan_status
+            } for f in sub.files.all()]
+            
+            data.append({
+                'id': sub.id,
+                'status': sub.status,
+                'submitted_at': sub.submitted_at.isoformat() if sub.submitted_at else None,
+                'graded_at': sub.graded_at.isoformat() if sub.graded_at else None,
+                'score_percent': sub.score_percent,
+                'feedback': sub.feedback,
+                'learner': {
+                    'id': sub.user.id,
+                    'name': f"{sub.user.first_name} {sub.user.last_name}".strip() or sub.user.username,
+                    'email': sub.user.email
+                },
+                'course': {
+                    'id': sub.course.id,
+                    'title': sub.course.title
+                },
+                'files': files_data
+            })
+            
+        return Response({
+            'data': data,
+            'meta': {
+                'total': total,
+                'page': page,
+                'per_page': per_page
+            }
+        })
+
+class AdminProjectSubmissionDetailView(views.APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request, submission_id):
+        sub = get_object_or_404(ProjectSubmission, id=submission_id)
+        files_data = [{
+            'id': f.id,
+            'name': f.name,
+            'url': f.file.url if f.file else '',
+            'size_bytes': f.size_bytes,
+            'virus_scan_status': f.scan_status
+        } for f in sub.files.all()]
+        
+        return Response({
+            'id': sub.id,
+            'status': sub.status,
+            'description': sub.description,
+            'submitted_at': sub.submitted_at.isoformat() if sub.submitted_at else None,
+            'graded_at': sub.graded_at.isoformat() if sub.graded_at else None,
+            'score_percent': sub.score_percent,
+            'feedback': sub.feedback,
+            'learner': {
+                'id': sub.user.id,
+                'name': f"{sub.user.first_name} {sub.user.last_name}".strip() or sub.user.username,
+                'email': sub.user.email
+            },
+            'course': {
+                'id': sub.course.id,
+                'title': sub.course.title
+            },
+            'files': files_data
+        })
+
+class AdminProjectSubmissionGradeView(views.APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def post(self, request, submission_id):
+        sub = get_object_or_404(ProjectSubmission, id=submission_id)
+        passed = request.data.get('passed')
+        score_percent = request.data.get('score_percent')
+        feedback = request.data.get('feedback', '')
+        
+        from django.utils import timezone
+        sub.status = 'passed' if passed else 'failed'
+        sub.score_percent = score_percent
+        sub.feedback = feedback
+        sub.graded_at = timezone.now()
+        sub.save()
+        
+        return Response({
+            'id': sub.id,
+            'status': sub.status,
+            'score_percent': sub.score_percent,
+            'feedback': sub.feedback,
+            'graded_at': sub.graded_at.isoformat()
+        })
+
 
 

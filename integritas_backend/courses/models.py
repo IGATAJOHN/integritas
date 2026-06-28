@@ -1,5 +1,7 @@
 from django.db import models
 from django.utils.text import slugify
+from django.conf import settings
+
 
 
 class Course(models.Model):
@@ -26,7 +28,10 @@ class Course(models.Model):
     video_url = models.URLField(blank=True, null=True)  # Used for Exemplar Series single videos
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
     instructor = models.CharField(max_length=255, blank=True)
+    project_brief = models.TextField(blank=True, null=True)
+    project_requirements = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
 
     def __str__(self):
         return f"{self.title} ({self.get_track_display()})"
@@ -115,5 +120,34 @@ class Category(models.Model):
                 counter += 1
             self.slug = slug
         super().save(*args, **kwargs)
+
+class ProjectSubmission(models.Model):
+    STATUS_CHOICES = (
+        ('pending', 'Pending Review'),
+        ('passed', 'Passed'),
+        ('failed', 'Failed'),
+    )
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='project_submissions')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='project_submissions')
+    description = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    score_percent = models.IntegerField(null=True, blank=True)
+    feedback = models.TextField(blank=True, null=True)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    graded_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Project by {self.user.username} for {self.course.title} - {self.status}"
+
+class ProjectSubmissionFile(models.Model):
+    submission = models.ForeignKey(ProjectSubmission, on_delete=models.CASCADE, related_name='files')
+    file = models.FileField(upload_to='project_submissions/')
+    name = models.CharField(max_length=255)
+    size_bytes = models.PositiveIntegerField(default=0)
+    scan_status = models.CharField(max_length=20, default='clean')
+
+    def __str__(self):
+        return f"File {self.name} for submission {self.submission.id}"
+
 
 

@@ -16,7 +16,12 @@ from authentication.views import (
     AdminKycRejectView
 )
 from enrollments.views import MyEnrollmentsView, MyTransactionsView, AdminEnrollmentsView
-from courses.views import CategoryListView, CategoryDetailView
+from courses.views import (
+    CategoryListView, CategoryDetailView, LearnerCourseProjectView,
+    AdminProjectSubmissionsView, AdminProjectSubmissionDetailView,
+    AdminProjectSubmissionGradeView
+)
+
 
 
 
@@ -58,6 +63,12 @@ urlpatterns = [
     path('api/v1/admin/enrolments', AdminEnrollmentsView.as_view(), name='admin_enrolments'),
     path('api/v1/categories', CategoryListView.as_view(), name='categories'),
     path('api/v1/categories/<int:category_id>', CategoryDetailView.as_view(), name='category_detail'),
+    
+    # Project Submissions
+    path('api/v1/learner/courses/<str:course_slug>/project', LearnerCourseProjectView.as_view(), name='learner_course_project'),
+    path('api/v1/admin/project-submissions', AdminProjectSubmissionsView.as_view(), name='admin_project_submissions'),
+    path('api/v1/admin/project-submissions/<int:submission_id>', AdminProjectSubmissionDetailView.as_view(), name='admin_project_submission_detail'),
+    path('api/v1/admin/project-submissions/<int:submission_id>/grade', AdminProjectSubmissionGradeView.as_view(), name='admin_project_submission_grade'),
     
     # Tutor KYC / Profile / Earnings / Banking
     path('api/v1/me/expert/profile', TutorProfileView.as_view(), name='tutor_profile'),
