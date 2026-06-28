@@ -25,7 +25,7 @@ from enrollments.views import (
 from courses.views import (
     CategoryListView, CategoryDetailView, LearnerCourseProjectView,
     AdminProjectSubmissionsView, AdminProjectSubmissionDetailView,
-    AdminProjectSubmissionGradeView
+    AdminProjectSubmissionGradeView, LearnerCourseProgressView
 )
 
 
@@ -82,6 +82,7 @@ urlpatterns = [
     
     # Project Submissions
     path('api/v1/learner/courses/<str:course_slug>/project', LearnerCourseProjectView.as_view(), name='learner_course_project'),
+    path('api/v1/learner/courses/<str:course_slug>/progress', LearnerCourseProgressView.as_view(), name='learner_course_progress'),
     path('api/v1/admin/project-submissions', AdminProjectSubmissionsView.as_view(), name='admin_project_submissions'),
     path('api/v1/admin/project-submissions/<int:submission_id>', AdminProjectSubmissionDetailView.as_view(), name='admin_project_submission_detail'),
     path('api/v1/admin/project-submissions/<int:submission_id>/grade', AdminProjectSubmissionGradeView.as_view(), name='admin_project_submission_grade'),

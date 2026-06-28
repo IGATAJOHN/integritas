@@ -57,6 +57,11 @@ class ModuleDetailView(views.APIView):
 class CourseModulesView(views.APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
+    def get(self, request, course_id):
+        course = get_object_or_404(Course, id=course_id)
+        modules = course.modules.all().order_by('order')
+        return Response(ModuleSerializer(modules, many=True).data)
+
     def post(self, request, course_id):
         course = get_object_or_404(Course, id=course_id)
         serializer = ModuleSerializer(data=request.data)
@@ -447,6 +452,62 @@ class AdminProjectSubmissionGradeView(views.APIView):
             'feedback': sub.feedback,
             'graded_at': sub.graded_at.isoformat()
         })
+
+
+class LearnerCourseProgressView(views.APIView):
+    """
+    GET /learner/courses/{slug}/progress
+    Returns the authenticated learner's enrolment status and lesson completion
+    progress for the specified course (looked up by slug or numeric ID).
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, course_slug):
+        # Resolve course by slug or numeric id
+        if str(course_slug).isdigit():
+            course = get_object_or_404(Course, pk=course_slug)
+        else:
+            course = get_object_or_404(Course, slug=course_slug)
+
+        from enrollments.models import Enrollment
+        enrollment = Enrollment.objects.filter(user=request.user, course=course).first()
+
+        if not enrollment:
+            return Response({
+                'is_enrolled': False,
+                'has_access': False,
+                'status': None,
+                'progress_percent': 0,
+                'lessons_completed': 0,
+                'total_lessons': 0,
+                'course': {'id': course.id, 'slug': course.slug, 'title': course.title, 'track': course.track},
+                'enrolment': None,
+            })
+
+        # Count published lessons across all modules
+        total_lessons = Lesson.objects.filter(
+            module__course=course,
+            status='published'
+        ).count()
+
+        is_active = enrollment.status == 'active'
+        progress_percent = 100 if is_active and total_lessons > 0 else 0
+
+        return Response({
+            'is_enrolled': True,
+            'has_access': is_active,
+            'status': enrollment.status,
+            'progress_percent': progress_percent,
+            'lessons_completed': total_lessons if is_active else 0,
+            'total_lessons': total_lessons,
+            'course': {'id': course.id, 'slug': course.slug, 'title': course.title, 'track': course.track},
+            'enrolment': {
+                'id': enrollment.id,
+                'status': enrollment.status,
+                'enrolled_at': enrollment.enrolled_at.isoformat(),
+            },
+        })
+
 
 
 
