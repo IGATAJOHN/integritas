@@ -17,7 +17,9 @@ from authentication.views import (
 )
 from enrollments.views import (
     MyEnrollmentsView, MyTransactionsView, AdminEnrollmentsView,
-    AdminTransactionsView, AdminTransactionDetailView, AdminTransactionManualRefundView
+    AdminTransactionsView, AdminTransactionDetailView, AdminTransactionManualRefundView,
+    SupportTransactionFlagRefundView, AdminRefundRequestsListView,
+    AdminRefundRequestApproveView, AdminRefundRequestRejectView
 )
 from courses.views import (
     CategoryListView, CategoryDetailView, LearnerCourseProjectView,
@@ -67,6 +69,13 @@ urlpatterns = [
     path('api/v1/admin/transactions', AdminTransactionsView.as_view(), name='admin_transactions'),
     path('api/v1/admin/transactions/<int:transaction_id>', AdminTransactionDetailView.as_view(), name='admin_transaction_detail'),
     path('api/v1/admin/transactions/<int:transaction_id>/manual-refund', AdminTransactionManualRefundView.as_view(), name='admin_transaction_manual_refund'),
+    
+    # Refund Requests
+    path('api/v1/support/transactions/<int:transaction_id>/flag-refund', SupportTransactionFlagRefundView.as_view(), name='support_transaction_flag_refund'),
+    path('api/v1/admin/refund-requests', AdminRefundRequestsListView.as_view(), name='admin_refund_requests'),
+    path('api/v1/admin/refund-requests/<int:request_id>/approve', AdminRefundRequestApproveView.as_view(), name='admin_refund_request_approve'),
+    path('api/v1/admin/refund-requests/<int:request_id>/reject', AdminRefundRequestRejectView.as_view(), name='admin_refund_request_reject'),
+    
     path('api/v1/categories', CategoryListView.as_view(), name='categories'),
     path('api/v1/categories/<int:category_id>', CategoryDetailView.as_view(), name='category_detail'),
     
