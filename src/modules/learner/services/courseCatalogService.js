@@ -165,6 +165,12 @@ const normalizeCourse = (course = {}) => {
             course.duration_minutes
         ),
         image,
+        video_url: toTrimmedString(
+            course.video_url ||
+            course.trailer_url ||
+            course.preview_video_url ||
+            course.intro_video_url
+        ) || null,
         topics: categoryNames,
         topic: categoryNames[0] || '',
         trailerUrl: getImageUrl(
@@ -172,6 +178,8 @@ const normalizeCourse = (course = {}) => {
             course.preview_video_url ||
             course.intro_video_url
         ),
+        track: toTrimmedString(course.track || course.type_key || course.course_type) || null,
+        status: toTrimmedString(course.status) || null,
         createdAt: course.created_at || course.createdAt || null,
         price: toNumber(course.price, 0),
     };

@@ -210,6 +210,31 @@ const CourseLesson = () => {
                         if (targetIdentifier && targetIdentifier !== lessonId) {
                             navigate(`/explore/lesson/${courseId}/${targetIdentifier}`, { replace: true });
                         }
+                    } else {
+                        // No lessons found — check if this is an Exemplar Series course
+                        // that uses a course-level video_url instead of individual lessons.
+                        const courseTrack = String(data?.track || data?.raw?.track || data?.raw_data?.track || '').toLowerCase();
+                        const courseVideoUrl = data?.video_url || data?.raw?.video_url || data?.raw_data?.video_url || '';
+                        if ((courseTrack === 'experta' || courseTrack === 'expert') && courseVideoUrl) {
+                            const virtualLesson = normalizeLesson({
+                                id: `${courseId}-video`,
+                                slug: `${courseId}-video`,
+                                title: data?.title || 'Exemplar Video',
+                                video_url: courseVideoUrl,
+                                content: data?.description || data?.summary || '',
+                                order: 0,
+                                status: 'published',
+                            });
+                            const virtualModule = normalizeModule({
+                                id: `${courseId}-module`,
+                                title: data?.title || 'Exemplar Series',
+                                order: 0,
+                                lessons: [virtualLesson],
+                            });
+                            setModules([virtualModule]);
+                            setSelectedLessonId(virtualLesson.id);
+                            setCurrentLesson(virtualLesson);
+                        }
                     }
                     initialLessonLoaded.current = true;
                 }
