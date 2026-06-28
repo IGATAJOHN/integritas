@@ -97,10 +97,11 @@ const AuditLogPage = () => {
                     </Box>
                 </Stack>
                 <Button
+                    variant="contained"
                     startIcon={<RefreshOutlined />}
                     onClick={fetchLogs}
                     disabled={loading}
-                    sx={{ ...primaryButtonStyle, alignSelf: { xs: 'stretch', md: 'center' } }}
+                    sx={{ ...primaryButtonStyle, color: '#FFFFFF', textTransform: 'none', alignSelf: { xs: 'stretch', md: 'center' } }}
                 >
                     Refresh
                 </Button>
@@ -113,7 +114,7 @@ const AuditLogPage = () => {
                     <TextField placeholder="Actor ID" value={filters.actor_id} onChange={(e) => updateFilter('actor_id', e.target.value)} sx={textFieldStyle} size="small" />
                     <TextField placeholder="Resource type" value={filters.auditable_type} onChange={(e) => updateFilter('auditable_type', e.target.value)} sx={textFieldStyle} size="small" />
                     <TextField placeholder="Resource ID" value={filters.auditable_id} onChange={(e) => updateFilter('auditable_id', e.target.value)} sx={textFieldStyle} size="small" />
-                    <Button startIcon={<SearchOutlined />} onClick={fetchLogs} sx={{ ...primaryButtonStyle, minHeight: 40 }}>
+                    <Button variant="contained" startIcon={<SearchOutlined />} onClick={fetchLogs} sx={{ ...primaryButtonStyle, color: '#FFFFFF', textTransform: 'none', minHeight: 40 }}>
                         Search
                     </Button>
                 </Box>
