@@ -23,3 +23,11 @@ class CourseSerializer(serializers.ModelSerializer):
             'level', 'language', 'price', 'currency', 'duration_minutes',
             'thumbnail_url', 'video_url', 'status', 'instructor', 'modules'
         ]
+
+    def to_internal_value(self, data):
+        # Map frontend's 'type' to backend's 'track'
+        if 'type' in data and 'track' not in data:
+            data = data.copy()
+            data['track'] = data['type']
+        return super().to_internal_value(data)
+

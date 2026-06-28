@@ -30,3 +30,12 @@ class Profile(models.Model):
 
     def __str__(self):
         return f"Profile for {self.user.username}"
+
+class TutorInvite(models.Model):
+    email = models.EmailField(unique=True)
+    name = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Invite for {self.name} ({self.email})"
+

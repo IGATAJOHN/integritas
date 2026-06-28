@@ -1,4 +1,6 @@
 from django.db import models
+from django.utils.text import slugify
+
 
 class Course(models.Model):
     TRACK_CHOICES = (
@@ -11,7 +13,7 @@ class Course(models.Model):
         ('archived', 'Archived'),
     )
     title = models.CharField(max_length=255)
-    slug = models.SlugField(unique=True)
+    slug = models.SlugField(unique=True, blank=True)
     description = models.TextField(blank=True)
     summary = models.TextField(blank=True)
     track = models.CharField(max_length=30, choices=TRACK_CHOICES, default='foundational')
@@ -28,6 +30,20 @@ class Course(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.get_track_display()})"
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.title)
+            if not base_slug:
+                base_slug = "course"
+            slug = base_slug
+            counter = 1
+            while Course.objects.filter(slug=slug).exclude(id=self.id).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
+
 
 class Module(models.Model):
     STATUS_CHOICES = (
@@ -52,7 +68,7 @@ class Lesson(models.Model):
     )
     module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name='lessons')
     title = models.CharField(max_length=255)
-    slug = models.SlugField(unique=True)
+    slug = models.SlugField(unique=True, blank=True)
     content = models.TextField(blank=True)
     video_url = models.URLField(blank=True, null=True)
     order = models.PositiveIntegerField(default=0)
@@ -63,3 +79,17 @@ class Lesson(models.Model):
 
     def __str__(self):
         return f"{self.module.title} - {self.title}"
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.title)
+            if not base_slug:
+                base_slug = "lesson"
+            slug = base_slug
+            counter = 1
+            while Lesson.objects.filter(slug=slug).exclude(id=self.id).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
+
