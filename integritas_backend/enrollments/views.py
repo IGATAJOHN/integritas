@@ -1,5 +1,6 @@
 from rest_framework import status, views, permissions
 from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
 import uuid
 from .models import Enrollment, Transaction
 from .serializers import EnrollmentSerializer, TransactionSerializer
@@ -84,4 +85,62 @@ class AdminEnrollmentsView(views.APIView):
     def get(self, request):
         enrollments = Enrollment.objects.all()
         return Response(EnrollmentSerializer(enrollments, many=True).data)
+
+class AdminTransactionsView(views.APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        status_filter = request.query_params.get('status')
+        queryset = Transaction.objects.all().order_by('-created_at')
+        
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+            
+        per_page = int(request.query_params.get('per_page', 20))
+        page = int(request.query_params.get('page', 1))
+        
+        total = queryset.count()
+        start = (page - 1) * per_page
+        end = start + per_page
+        sliced = queryset[start:end]
+        
+        serializer = TransactionSerializer(sliced, many=True)
+        data = serializer.data
+        for item in data:
+            item['type'] = 'Payment'
+            
+        return Response({
+            'data': data,
+            'meta': {
+                'total': total,
+                'page': page,
+                'per_page': per_page
+            }
+        })
+
+class AdminTransactionDetailView(views.APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request, transaction_id):
+        tx = get_object_or_404(Transaction, id=transaction_id)
+        data = TransactionSerializer(tx).data
+        data['type'] = 'Payment'
+        return Response(data)
+
+class AdminTransactionManualRefundView(views.APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def post(self, request, transaction_id):
+        tx = get_object_or_404(Transaction, id=transaction_id)
+        
+        # Update transaction status to failed
+        tx.status = 'failed'
+        tx.save()
+        
+        Enrollment.objects.filter(user=tx.user, course=tx.course).update(status='cancelled')
+        
+        data = TransactionSerializer(tx).data
+        data['type'] = 'Payment'
+        return Response(data)
+
 

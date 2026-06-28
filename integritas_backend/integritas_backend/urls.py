@@ -15,7 +15,10 @@ from authentication.views import (
     TutorEarningsView, AdminKycQueueView, AdminKycDetailView, AdminKycApproveView,
     AdminKycRejectView
 )
-from enrollments.views import MyEnrollmentsView, MyTransactionsView, AdminEnrollmentsView
+from enrollments.views import (
+    MyEnrollmentsView, MyTransactionsView, AdminEnrollmentsView,
+    AdminTransactionsView, AdminTransactionDetailView, AdminTransactionManualRefundView
+)
 from courses.views import (
     CategoryListView, CategoryDetailView, LearnerCourseProjectView,
     AdminProjectSubmissionsView, AdminProjectSubmissionDetailView,
@@ -61,6 +64,9 @@ urlpatterns = [
     path('api/v1/enrolment/', include('enrollments.urls')),
     path('api/v1/support/users', SupportUsersView.as_view(), name='support_users'),
     path('api/v1/admin/enrolments', AdminEnrollmentsView.as_view(), name='admin_enrolments'),
+    path('api/v1/admin/transactions', AdminTransactionsView.as_view(), name='admin_transactions'),
+    path('api/v1/admin/transactions/<int:transaction_id>', AdminTransactionDetailView.as_view(), name='admin_transaction_detail'),
+    path('api/v1/admin/transactions/<int:transaction_id>/manual-refund', AdminTransactionManualRefundView.as_view(), name='admin_transaction_manual_refund'),
     path('api/v1/categories', CategoryListView.as_view(), name='categories'),
     path('api/v1/categories/<int:category_id>', CategoryDetailView.as_view(), name='category_detail'),
     

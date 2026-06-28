@@ -24,11 +24,12 @@ class UserSerializer(serializers.ModelSerializer):
     kyc_status = serializers.SerializerMethodField()
     is_foundational_tutor = serializers.SerializerMethodField()
     is_expert_tutor = serializers.SerializerMethodField()
+    name = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = [
-            'id', 'username', 'email', 'first_name', 'last_name', 'role', 
+            'id', 'username', 'email', 'first_name', 'last_name', 'name', 'role', 
             'phone', 'profile', 'account_state', 'email_verified', 'email_verified_at',
             'roles', 'permissions', 'kyc_status', 'is_foundational_tutor', 'is_expert_tutor'
         ]
@@ -79,6 +80,10 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_is_expert_tutor(self, obj):
         return obj.role == 'tutor' and not (obj.is_foundational or (hasattr(obj, 'profile') and obj.profile.is_verified))
+
+    def get_name(self, obj):
+        return f"{obj.first_name} {obj.last_name}".strip() or obj.username
+
 
 
 class RegisterSerializer(serializers.ModelSerializer):
