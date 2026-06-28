@@ -13,7 +13,7 @@ from authentication.views import (
     MyNotificationsUnreadCountView, MyNotificationsReadView, MyNotificationsReadAllView,
     SupportUsersView, TutorProfileView, TutorKycSubmitView, TutorKycUpdateView,
     TutorEarningsView, AdminKycQueueView, AdminKycDetailView, AdminKycApproveView,
-    AdminKycRejectView
+    AdminKycRejectView, AdminAuditLogsView
 )
 from enrollments.views import (
     MyEnrollmentsView, MyTransactionsView, AdminEnrollmentsView,
@@ -97,7 +97,10 @@ urlpatterns = [
     path('api/v1/admin/kyc-queue/<int:kyc_id>/approve', AdminKycApproveView.as_view(), name='admin_kyc_approve'),
     path('api/v1/admin/kyc-queue/<int:kyc_id>/reject', AdminKycRejectView.as_view(), name='admin_kyc_reject'),
     
-    path('api/v1/', include('quizzes.urls')), # quiz CBT endpoints registered under /api/v1 namespace
+    # Audit Logs
+    path('api/v1/admin/audit-logs', AdminAuditLogsView.as_view(), name='admin_audit_logs'),
+    
+    path('api/v1/', include('quizzes.urls')),
     path('api/v1/me/enrolments', MyEnrollmentsView.as_view(), name='my_enrolments'),
     path('api/v1/me/transactions', MyTransactionsView.as_view(), name='my_transactions'),
 

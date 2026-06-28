@@ -87,5 +87,19 @@ class KycSubmission(models.Model):
     def __str__(self):
         return f"KYC for {self.user.username} - {self.status}"
 
+class AuditLog(models.Model):
+    action = models.CharField(max_length=255)
+    actor_name = models.CharField(max_length=255, blank=True, null=True)
+    actor_id = models.IntegerField(blank=True, null=True)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    auditable_type = models.CharField(max_length=255, blank=True, null=True)
+    auditable_id = models.CharField(max_length=255, blank=True, null=True)
+    request_id = models.CharField(max_length=100, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.action} by {self.actor_name or 'System'} on {self.created_at}"
+
+
 
 

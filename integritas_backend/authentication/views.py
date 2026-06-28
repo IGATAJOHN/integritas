@@ -4,8 +4,8 @@ from rest_framework.authtoken.models import Token
 from django.db import models
 from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
-from .serializers import UserSerializer, RegisterSerializer
-from .models import User, Profile, TutorInvite, Notification, KycSubmission
+from .serializers import UserSerializer, RegisterSerializer, AuditLogSerializer
+from .models import User, Profile, TutorInvite, Notification, KycSubmission, AuditLog
 
 
 
@@ -846,6 +846,51 @@ class AdminKycRejectView(views.APIView):
         profile.save()
         
         return Response({'success': True})
+
+class AdminAuditLogsView(views.APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        action = request.query_params.get('action')
+        action_prefix = request.query_params.get('action_prefix')
+        actor_id = request.query_params.get('actor_id')
+        auditable_type = request.query_params.get('auditable_type')
+        auditable_id = request.query_params.get('auditable_id')
+        request_id = request.query_params.get('request_id')
+
+        queryset = AuditLog.objects.all().order_by('-created_at')
+
+        if action:
+            queryset = queryset.filter(action=action)
+        if action_prefix:
+            queryset = queryset.filter(action__startswith=action_prefix)
+        if actor_id:
+            queryset = queryset.filter(actor_id=actor_id)
+        if auditable_type:
+            queryset = queryset.filter(auditable_type__icontains=auditable_type)
+        if auditable_id:
+            queryset = queryset.filter(auditable_id=auditable_id)
+        if request_id:
+            queryset = queryset.filter(request_id=request_id)
+
+        per_page = int(request.query_params.get('per_page', 25))
+        page = int(request.query_params.get('page', 1))
+
+        total = queryset.count()
+        start = (page - 1) * per_page
+        end = start + per_page
+        sliced = queryset[start:end]
+
+        serializer = AuditLogSerializer(sliced, many=True)
+        return Response({
+            'data': serializer.data,
+            'meta': {
+                'total': total,
+                'page': page,
+                'per_page': per_page
+            }
+        })
+
 
 
 

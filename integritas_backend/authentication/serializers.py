@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Profile
+from .models import User, Profile, AuditLog
 
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
@@ -129,3 +129,14 @@ class RegisterSerializer(serializers.ModelSerializer):
         # Create user profile automatically (marked as verified for dev testing)
         Profile.objects.create(user=user, is_verified=True)
         return user
+
+class AuditLogSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = AuditLog
+        fields = [
+            'id', 'action', 'actor_name', 'actor_id', 'user',
+            'auditable_type', 'auditable_id', 'request_id', 'created_at'
+        ]
+
