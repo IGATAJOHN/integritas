@@ -4,14 +4,15 @@ import {
     TextField, InputAdornment, Chip, Avatar, Skeleton, Divider,
     Dialog, DialogTitle, DialogContent, DialogActions,
     IconButton, Alert, CircularProgress, Select, MenuItem,
-    FormControl, InputLabel,
+    FormControl, InputLabel, LinearProgress,
 } from '@mui/material';
 import {
     Add, Search, Edit, Delete, OndemandVideo, PlayArrow,
     Close, AccessTime, CloudUpload, CheckCircle, Visibility,
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
-import { apiService } from '../../../services/api';
+import { apiService, API_BASE } from '../../../services/api';
+import { getImageUrl } from '../../../utils';
 
 const TRACK = 'experta';
 
@@ -68,10 +69,62 @@ const ExemplarSeriesAdmin = () => {
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [deleting, setDeleting] = useState(false);
     const [alert, setAlert] = useState(null);
+    const [uploadProgress, setUploadProgress] = useState(null);
 
     const showAlert = (message, severity = 'success') => {
         setAlert({ message, severity });
         setTimeout(() => setAlert(null), 4000);
+    };
+
+    const uploadWithProgress = (url, method, formData) => {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open(method, url);
+            
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                try {
+                    const parsed = JSON.parse(userStr);
+                    if (parsed.token) {
+                        xhr.setRequestHeader('Authorization', `Bearer ${parsed.token}`);
+                    }
+                } catch (e) {}
+            }
+
+            xhr.upload.onprogress = (event) => {
+                if (event.lengthComputable) {
+                    const percent = Math.round((event.loaded / event.total) * 100);
+                    setUploadProgress(percent);
+                }
+            };
+
+            xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    let responseData = null;
+                    try {
+                        responseData = JSON.parse(xhr.responseText);
+                    } catch {
+                        responseData = xhr.responseText;
+                    }
+                    resolve(responseData);
+                } else {
+                    let errorMessage = 'Upload failed';
+                    try {
+                        const parsed = JSON.parse(xhr.responseText);
+                        errorMessage = parsed.message || parsed.detail || errorMessage;
+                    } catch {}
+                    const err = new Error(errorMessage);
+                    err.status = xhr.status;
+                    reject(err);
+                }
+            };
+
+            xhr.onerror = () => {
+                reject(new Error('Network error during upload.'));
+            };
+
+            xhr.send(formData);
+        });
     };
 
     const fetchVideos = useCallback(async () => {
@@ -146,12 +199,12 @@ const ExemplarSeriesAdmin = () => {
         }
 
         try {
+            setUploadProgress(0);
             if (editTarget) {
-                formData.append('_method', 'PUT');
-                await apiService.post(`/lms/courses/${editTarget.id}`, formData);
+                await uploadWithProgress(`${API_BASE}/lms/courses/${editTarget.id}`, 'PATCH', formData);
                 showAlert('Video updated successfully.');
             } else {
-                await apiService.post('/lms/courses', formData);
+                await uploadWithProgress(`${API_BASE}/lms/courses`, 'POST', formData);
                 showAlert('Video created successfully.');
             }
             setDialogOpen(false);
@@ -160,6 +213,7 @@ const ExemplarSeriesAdmin = () => {
             showAlert(err?.message || 'Failed to save. Please try again.', 'error');
         } finally {
             setSaving(false);
+            setUploadProgress(null);
         }
     };
 
@@ -302,7 +356,7 @@ const ExemplarSeriesAdmin = () => {
                                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                                         }}>
                                             {video.thumbnail_url ? (
-                                                <Box component="img" src={video.thumbnail_url} alt={video.title}
+                                                <Box component="img" src={getImageUrl(video.thumbnail_url)} alt={video.title}
                                                     sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                                     onError={e => { e.target.style.display = 'none'; }} />
                                             ) : (
@@ -426,6 +480,16 @@ const ExemplarSeriesAdmin = () => {
                                 )}
                             </Stack>
                             
+                            {(form.thumbnailFile || form.thumbnail_url) && (
+                                <Box sx={{ mb: 2, position: 'relative', width: '120px', height: '68px', borderRadius: 1, overflow: 'hidden', border: `1px solid ${border}` }}>
+                                    <img 
+                                        src={form.thumbnailFile ? URL.createObjectURL(form.thumbnailFile) : getImageUrl(form.thumbnail_url)} 
+                                        alt="Thumbnail Preview"
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                    />
+                                </Box>
+                            )}
+                            
                             <TextField
                                 label="Or Image URL"
                                 size="small"
@@ -487,14 +551,25 @@ const ExemplarSeriesAdmin = () => {
                             placeholder="anti-corruption, leadership, governance" />
                     </Stack>
                 </DialogContent>
-                <DialogActions sx={{ px: 3, pb: 3, pt: 1 }}>
-                    <Button onClick={() => setDialogOpen(false)} disabled={saving} sx={{ textTransform: 'none', color: textMuted }}>
-                        Cancel
-                    </Button>
-                    <Button variant="contained" onClick={handleSave} disabled={saving}
-                        sx={{ bgcolor: brand, '&:hover': { bgcolor: '#0D3FA8' }, textTransform: 'none', fontWeight: 600 }}>
-                        {saving ? <CircularProgress size={20} color="inherit" /> : (editTarget ? 'Save Changes' : 'Create Video')}
-                    </Button>
+                <DialogActions sx={{ px: 3, pb: 3, pt: 1, flexDirection: 'column', alignItems: 'stretch', gap: 2 }}>
+                    {uploadProgress !== null && (
+                        <Box sx={{ width: '100%', px: 1 }}>
+                            <Stack direction="row" justifyContent="space-between" mb={0.5}>
+                                <Typography sx={{ fontSize: '0.75rem', color: textMuted }}>Uploading files...</Typography>
+                                <Typography sx={{ fontSize: '0.75rem', color: text, fontWeight: 600 }}>{uploadProgress}%</Typography>
+                            </Stack>
+                            <LinearProgress variant="determinate" value={uploadProgress} sx={{ height: 6, borderRadius: 3, bgcolor: border, '& .MuiLinearProgress-bar': { bgcolor: '#22C55E' } }} />
+                        </Box>
+                    )}
+                    <Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ width: '100%' }}>
+                        <Button onClick={() => setDialogOpen(false)} disabled={saving} sx={{ textTransform: 'none', color: textMuted }}>
+                            Cancel
+                        </Button>
+                        <Button variant="contained" onClick={handleSave} disabled={saving}
+                            sx={{ bgcolor: brand, '&:hover': { bgcolor: '#0D3FA8' }, textTransform: 'none', fontWeight: 600 }}>
+                            {saving ? <CircularProgress size={20} color="inherit" /> : (editTarget ? 'Save Changes' : 'Create Video')}
+                        </Button>
+                    </Stack>
                 </DialogActions>
             </Dialog>
 

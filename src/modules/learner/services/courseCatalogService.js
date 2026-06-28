@@ -125,7 +125,7 @@ const normalizeCourse = (course = {}) => {
         course.created_by?.full_name ||
         course.tutors?.[0]?.name ||
         course.tutors?.[0]?.user?.name ||
-        course.instructor?.name ||
+        (course.instructor && typeof course.instructor === 'object' ? course.instructor.name : course.instructor) ||
         course.author?.name ||
         course.organization?.name ||
         course.org?.name

@@ -31,6 +31,34 @@ class CourseViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(track=track)
         return queryset
 
+    def perform_create(self, serializer):
+        course = serializer.save()
+        self.handle_file_uploads(course)
+
+    def perform_update(self, serializer):
+        course = serializer.save()
+        self.handle_file_uploads(course)
+
+    def handle_file_uploads(self, course):
+        thumbnail_file = self.request.FILES.get('thumbnail')
+        video_file = self.request.FILES.get('video')
+        
+        from django.core.files.storage import default_storage
+        updated = False
+        
+        if thumbnail_file:
+            filename = default_storage.save(f'thumbnails/{course.id}_{thumbnail_file.name}', thumbnail_file)
+            course.thumbnail_url = default_storage.url(filename)
+            updated = True
+            
+        if video_file:
+            filename = default_storage.save(f'videos/{course.id}_{video_file.name}', video_file)
+            course.video_url = default_storage.url(filename)
+            updated = True
+            
+        if updated:
+            course.save()
+
 from rest_framework import views, status
 from django.shortcuts import get_object_or_404
 
