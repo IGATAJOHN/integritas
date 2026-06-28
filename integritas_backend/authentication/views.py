@@ -5,7 +5,7 @@ from django.db import models
 from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
 from .serializers import UserSerializer, RegisterSerializer
-from .models import User, Profile, TutorInvite, Notification
+from .models import User, Profile, TutorInvite, Notification, KycSubmission
 
 
 
@@ -169,7 +169,8 @@ class AdminFoundationalTutorsView(views.APIView):
             first_name=first_name,
             last_name=last_name,
             phone=phone,
-            role='tutor'
+            role='tutor',
+            is_foundational=True
         )
         
         avatar_url = None
@@ -516,6 +517,336 @@ class SupportUsersView(views.APIView):
                 'per_page': per_page
             }
         })
+
+class TutorProfileView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        serializer = UserSerializer(request.user)
+        profile = getattr(request.user, 'profile', None)
+        skills = profile.skills if profile else []
+        if isinstance(skills, str):
+            import json
+            try:
+                skills = json.loads(skills)
+            except Exception:
+                skills = []
+                
+        data_payload = {
+            'phone': request.user.phone or '',
+            'country': profile.country if profile else '',
+            'state': profile.state if profile else '',
+            'city': profile.city if profile else '',
+            'address': profile.address if profile else '',
+            'bio': profile.bio if profile else '',
+            'highest_education': profile.highest_education if profile else '',
+            'skills': skills,
+            'bank_name': profile.bank_name if profile else '',
+            'account_name': profile.account_name if profile else '',
+            'account_number': profile.account_number if profile else '',
+        }
+        
+        response_data = serializer.data
+        response_data['data'] = data_payload
+        return Response(response_data)
+
+class TutorKycSubmitView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        gov_file = request.FILES.get('government_id')
+        qual_file = request.FILES.get('qualification')
+        photo_file = request.FILES.get('photo')
+        
+        from django.core.files.storage import default_storage
+        government_id_url = None
+        qualification_url = None
+        photo_url = None
+        
+        if gov_file:
+            filename = default_storage.save(f'kyc/{request.user.id}_gov_{gov_file.name}', gov_file)
+            government_id_url = default_storage.url(filename)
+        if qual_file:
+            filename = default_storage.save(f'kyc/{request.user.id}_qual_{qual_file.name}', qual_file)
+            qualification_url = default_storage.url(filename)
+        if photo_file:
+            filename = default_storage.save(f'kyc/{request.user.id}_photo_{photo_file.name}', photo_file)
+            photo_url = default_storage.url(filename)
+            
+        submission = KycSubmission.objects.create(
+            user=request.user,
+            status='submitted',
+            government_id=government_id_url,
+            qualification=qualification_url,
+            photo=photo_url
+        )
+        
+        return Response({
+            'id': submission.id,
+            'status': submission.status,
+            'submitted_at': submission.submitted_at.isoformat(),
+            'government_id': submission.government_id,
+            'qualification': submission.qualification,
+            'photo': submission.photo
+        }, status=status.HTTP_201_CREATED)
+
+class TutorKycUpdateView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def patch(self, request):
+        user = request.user
+        profile, _ = Profile.objects.get_or_create(user=user)
+        
+        data = request.data
+        
+        # Update User fields
+        if 'phone' in data:
+            user.phone = data['phone']
+            user.save()
+            
+        # Update Profile fields
+        if 'country' in data:
+            profile.country = data['country']
+        if 'state' in data:
+            profile.state = data['state']
+        if 'city' in data:
+            profile.city = data['city']
+        if 'address' in data:
+            profile.address = data['address']
+        if 'bio' in data:
+            profile.bio = data['bio']
+        if 'highest_education' in data:
+            profile.highest_education = data['highest_education']
+        if 'skills' in data:
+            skills = data['skills']
+            if isinstance(skills, str):
+                import json
+                try:
+                    skills = json.loads(skills)
+                except Exception:
+                    pass
+            profile.skills = skills
+        if 'bank_name' in data:
+            profile.bank_name = data['bank_name']
+        if 'account_name' in data:
+            profile.account_name = data['account_name']
+        if 'account_number' in data:
+            profile.account_number = data['account_number']
+            
+        profile.save()
+        
+        serializer = UserSerializer(user)
+        response_data = serializer.data
+        
+        skills = profile.skills
+        if isinstance(skills, str):
+            import json
+            try:
+                skills = json.loads(skills)
+            except Exception:
+                skills = []
+                
+        response_data['data'] = {
+            'phone': user.phone or '',
+            'country': profile.country or '',
+            'state': profile.state or '',
+            'city': profile.city or '',
+            'address': profile.address or '',
+            'bio': profile.bio or '',
+            'highest_education': profile.highest_education or '',
+            'skills': skills,
+            'bank_name': profile.bank_name or '',
+            'account_name': profile.account_name or '',
+            'account_number': profile.account_number or '',
+        }
+        return Response(response_data)
+
+class TutorEarningsView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        return Response({
+            'summary': {
+                'total_earned': 0.0,
+                'available_balance': 0.0,
+                'pending_payout': 0.0
+            },
+            'payouts': []
+        })
+
+class AdminKycQueueView(views.APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        status_filter = request.query_params.get('status')
+        role_filter = request.query_params.get('role')
+        q_filter = request.query_params.get('q')
+        
+        queryset = KycSubmission.objects.all().order_by('-submitted_at')
+        
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        if role_filter:
+            queryset = queryset.filter(user__role=role_filter)
+        if q_filter:
+            queryset = queryset.filter(
+                models.Q(user__first_name__icontains=q_filter) |
+                models.Q(user__last_name__icontains=q_filter) |
+                models.Q(user__email__icontains=q_filter)
+            )
+            
+        per_page = int(request.query_params.get('per_page', 20))
+        page = int(request.query_params.get('page', 1))
+        
+        total = queryset.count()
+        start = (page - 1) * per_page
+        end = start + per_page
+        sliced = queryset[start:end]
+        
+        data = []
+        for k in sliced:
+            profile = getattr(k.user, 'profile', None)
+            skills = profile.skills if profile else []
+            if isinstance(skills, str):
+                import json
+                try:
+                    skills = json.loads(skills)
+                except Exception:
+                    skills = []
+                    
+            docs = []
+            if k.government_id:
+                docs.append({'id': 'gov', 'name': 'Government ID', 'type': 'government_id', 'url': k.government_id})
+            if k.qualification:
+                docs.append({'id': 'qual', 'name': 'Qualification Certificate', 'type': 'qualification', 'url': k.qualification})
+            if k.photo:
+                docs.append({'id': 'photo', 'name': 'Photo', 'type': 'photo', 'url': k.photo})
+                
+            data.append({
+                'id': k.id,
+                'status': k.status,
+                'submitted_at': k.submitted_at.isoformat() if k.submitted_at else None,
+                'reviewed_at': k.reviewed_at.isoformat() if k.reviewed_at else None,
+                'review_note': k.review_note or '',
+                'user': {
+                    'id': k.user.id,
+                    'name': f"{k.user.first_name} {k.user.last_name}".strip() or k.user.username,
+                    'email': k.user.email
+                },
+                'data': {
+                    'phone': k.user.phone or '',
+                    'country': profile.country if profile else '',
+                    'state': profile.state if profile else '',
+                    'city': profile.city if profile else '',
+                    'address': profile.address if profile else '',
+                    'bio': profile.bio if profile else '',
+                    'highest_education': profile.highest_education if profile else '',
+                    'skills': skills,
+                    'bank_name': profile.bank_name if profile else '',
+                    'account_name': profile.account_name if profile else '',
+                    'account_number': profile.account_number if profile else '',
+                },
+                'documents': docs
+            })
+            
+        return Response({
+            'data': data,
+            'meta': {
+                'total': total,
+                'page': page,
+                'per_page': per_page
+            }
+        })
+
+class AdminKycDetailView(views.APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request, kyc_id):
+        k = get_object_or_404(KycSubmission, id=kyc_id)
+        profile = getattr(k.user, 'profile', None)
+        skills = profile.skills if profile else []
+        if isinstance(skills, str):
+            import json
+            try:
+                skills = json.loads(skills)
+            except Exception:
+                skills = []
+                
+        docs = []
+        if k.government_id:
+            docs.append({'id': 'gov', 'name': 'Government ID', 'type': 'government_id', 'url': k.government_id})
+        if k.qualification:
+            docs.append({'id': 'qual', 'name': 'Qualification Certificate', 'type': 'qualification', 'url': k.qualification})
+        if k.photo:
+            docs.append({'id': 'photo', 'name': 'Photo', 'type': 'photo', 'url': k.photo})
+            
+        return Response({
+            'id': k.id,
+            'status': k.status,
+            'submitted_at': k.submitted_at.isoformat() if k.submitted_at else None,
+            'reviewed_at': k.reviewed_at.isoformat() if k.reviewed_at else None,
+            'review_note': k.review_note or '',
+            'user': {
+                'id': k.user.id,
+                'name': f"{k.user.first_name} {k.user.last_name}".strip() or k.user.username,
+                'email': k.user.email
+            },
+            'data': {
+                'phone': k.user.phone or '',
+                'country': profile.country if profile else '',
+                'state': profile.state if profile else '',
+                'city': profile.city if profile else '',
+                'address': profile.address if profile else '',
+                'bio': profile.bio if profile else '',
+                'highest_education': profile.highest_education if profile else '',
+                'skills': skills,
+                'bank_name': profile.bank_name if profile else '',
+                'account_name': profile.account_name if profile else '',
+                'account_number': profile.account_number if profile else '',
+            },
+            'documents': docs
+        })
+
+class AdminKycApproveView(views.APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def post(self, request, kyc_id):
+        k = get_object_or_404(KycSubmission, id=kyc_id)
+        notes = request.data.get('notes', 'Approved.')
+        
+        from django.utils import timezone
+        k.status = 'approved'
+        k.reviewed_at = timezone.now()
+        k.review_note = notes
+        k.save()
+        
+        profile, _ = Profile.objects.get_or_create(user=k.user)
+        profile.is_verified = True
+        profile.save()
+        
+        return Response({'success': True})
+
+class AdminKycRejectView(views.APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def post(self, request, kyc_id):
+        k = get_object_or_404(KycSubmission, id=kyc_id)
+        notes = request.data.get('notes')
+        if not notes:
+            return Response({'message': 'Notes are required for rejection'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        from django.utils import timezone
+        k.status = 'rejected'
+        k.reviewed_at = timezone.now()
+        k.review_note = notes
+        k.save()
+        
+        profile, _ = Profile.objects.get_or_create(user=k.user)
+        profile.is_verified = False
+        profile.save()
+        
+        return Response({'success': True})
+
 
 
 

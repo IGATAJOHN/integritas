@@ -11,7 +11,9 @@ from authentication.views import (
     AdminStaffPermissionsView, AdminStaffResetPasswordView, AdminStaffSuspendView,
     AdminStaffUnsuspendView, AdminStaffAvatarView, MyNotificationsView,
     MyNotificationsUnreadCountView, MyNotificationsReadView, MyNotificationsReadAllView,
-    SupportUsersView
+    SupportUsersView, TutorProfileView, TutorKycSubmitView, TutorKycUpdateView,
+    TutorEarningsView, AdminKycQueueView, AdminKycDetailView, AdminKycApproveView,
+    AdminKycRejectView
 )
 from enrollments.views import MyEnrollmentsView, MyTransactionsView, AdminEnrollmentsView
 from courses.views import CategoryListView, CategoryDetailView
@@ -56,9 +58,23 @@ urlpatterns = [
     path('api/v1/admin/enrolments', AdminEnrollmentsView.as_view(), name='admin_enrolments'),
     path('api/v1/categories', CategoryListView.as_view(), name='categories'),
     path('api/v1/categories/<int:category_id>', CategoryDetailView.as_view(), name='category_detail'),
+    
+    # Tutor KYC / Profile / Earnings / Banking
+    path('api/v1/me/expert/profile', TutorProfileView.as_view(), name='tutor_profile'),
+    path('api/v1/me/expert/kyc', TutorKycSubmitView.as_view(), name='tutor_kyc_submit'),
+    path('api/v1/me/expert/banking', TutorKycUpdateView.as_view(), name='tutor_kyc_update'),
+    path('api/v1/me/expert/earnings', TutorEarningsView.as_view(), name='tutor_earnings'),
+    
+    # Admin KYC Queue
+    path('api/v1/admin/kyc-queue', AdminKycQueueView.as_view(), name='admin_kyc_queue'),
+    path('api/v1/admin/kyc-queue/<int:kyc_id>', AdminKycDetailView.as_view(), name='admin_kyc_detail'),
+    path('api/v1/admin/kyc-queue/<int:kyc_id>/approve', AdminKycApproveView.as_view(), name='admin_kyc_approve'),
+    path('api/v1/admin/kyc-queue/<int:kyc_id>/reject', AdminKycRejectView.as_view(), name='admin_kyc_reject'),
+    
     path('api/v1/', include('quizzes.urls')), # quiz CBT endpoints registered under /api/v1 namespace
     path('api/v1/me/enrolments', MyEnrollmentsView.as_view(), name='my_enrolments'),
     path('api/v1/me/transactions', MyTransactionsView.as_view(), name='my_transactions'),
+
 
 
 

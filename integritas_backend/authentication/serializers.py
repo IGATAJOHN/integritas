@@ -7,7 +7,10 @@ class ProfileSerializer(serializers.ModelSerializer):
         fields = [
             'bio', 'location', 'organisation', 'job_title',
             'linkedin_url', 'twitter_url', 'website_url',
-            'avatar_url', 'is_verified'
+            'avatar_url', 'is_verified',
+            'country', 'state', 'city', 'address',
+            'highest_education', 'skills',
+            'bank_name', 'account_name', 'account_number'
         ]
 
 class UserSerializer(serializers.ModelSerializer):
@@ -18,13 +21,16 @@ class UserSerializer(serializers.ModelSerializer):
     role = serializers.SerializerMethodField()
     roles = serializers.SerializerMethodField()
     permissions = serializers.SerializerMethodField()
+    kyc_status = serializers.SerializerMethodField()
+    is_foundational_tutor = serializers.SerializerMethodField()
+    is_expert_tutor = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = [
             'id', 'username', 'email', 'first_name', 'last_name', 'role', 
             'phone', 'profile', 'account_state', 'email_verified', 'email_verified_at',
-            'roles', 'permissions'
+            'roles', 'permissions', 'kyc_status', 'is_foundational_tutor', 'is_expert_tutor'
         ]
 
     def get_role(self, obj):
@@ -61,6 +67,19 @@ class UserSerializer(serializers.ModelSerializer):
         if obj.role in ['admin', 'super_admin', 'support'] or obj.is_superuser:
             return ['admins.manage', 'users.view', 'users.manage']
         return []
+
+    def get_kyc_status(self, obj):
+        latest = obj.kyc_submissions.order_by('-submitted_at').first()
+        if latest:
+            return latest.status
+        return 'draft'
+
+    def get_is_foundational_tutor(self, obj):
+        return obj.role == 'tutor' and (obj.is_foundational or (hasattr(obj, 'profile') and obj.profile.is_verified))
+
+    def get_is_expert_tutor(self, obj):
+        return obj.role == 'tutor' and not (obj.is_foundational or (hasattr(obj, 'profile') and obj.profile.is_verified))
+
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
