@@ -14,6 +14,8 @@ from authentication.views import (
     SupportUsersView
 )
 from enrollments.views import MyEnrollmentsView, MyTransactionsView, AdminEnrollmentsView
+from courses.views import CategoryListView, CategoryDetailView
+
 
 
 
@@ -52,9 +54,12 @@ urlpatterns = [
     path('api/v1/enrolment/', include('enrollments.urls')),
     path('api/v1/support/users', SupportUsersView.as_view(), name='support_users'),
     path('api/v1/admin/enrolments', AdminEnrollmentsView.as_view(), name='admin_enrolments'),
+    path('api/v1/categories', CategoryListView.as_view(), name='categories'),
+    path('api/v1/categories/<int:category_id>', CategoryDetailView.as_view(), name='category_detail'),
     path('api/v1/', include('quizzes.urls')), # quiz CBT endpoints registered under /api/v1 namespace
     path('api/v1/me/enrolments', MyEnrollmentsView.as_view(), name='my_enrolments'),
     path('api/v1/me/transactions', MyTransactionsView.as_view(), name='my_transactions'),
+
 
 
 

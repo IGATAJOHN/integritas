@@ -1,6 +1,7 @@
 from rest_framework import viewsets, permissions
 from rest_framework.response import Response
-from .models import Course, Module, Lesson
+from .models import Course, Module, Lesson, Category
+
 from .serializers import CourseSerializer, ModuleSerializer, LessonSerializer
 
 
@@ -135,4 +136,104 @@ class LessonVideoUploadView(views.APIView):
         lesson.video_url = video_url
         lesson.save()
         return Response(LessonSerializer(lesson).data, status=status.HTTP_200_OK)
+
+class CategoryListView(views.APIView):
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get(self, request):
+        queryset = Category.objects.all()
+        
+        per_page = int(request.query_params.get('per_page', 50))
+        page = int(request.query_params.get('page', 1))
+        
+        total = queryset.count()
+        start = (page - 1) * per_page
+        end = start + per_page
+        
+        sliced_qs = queryset[start:end]
+        data = [{
+            'id': cat.id,
+            'name': cat.name,
+            'slug': cat.slug,
+            'description': cat.description,
+            'parent_id': cat.parent_id
+        } for cat in sliced_qs]
+        
+        return Response({
+            'data': data,
+            'meta': {
+                'total': total,
+                'page': page,
+                'per_page': per_page
+            }
+        })
+
+    def post(self, request):
+        name = request.data.get('name')
+        description = request.data.get('description', '')
+        slug = request.data.get('slug', '')
+        parent_id = request.data.get('parent_id')
+        
+        if not name:
+            return Response({'message': 'Name is required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        parent = None
+        if parent_id:
+            parent = get_object_or_404(Category, id=parent_id)
+            
+        cat = Category.objects.create(
+            name=name,
+            description=description,
+            slug=slug,
+            parent=parent
+        )
+        
+        return Response({
+            'id': cat.id,
+            'name': cat.name,
+            'slug': cat.slug,
+            'description': cat.description,
+            'parent_id': cat.parent_id
+        }, status=status.HTTP_201_CREATED)
+
+class CategoryDetailView(views.APIView):
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get(self, request, category_id):
+        cat = get_object_or_404(Category, id=category_id)
+        return Response({
+            'id': cat.id,
+            'name': cat.name,
+            'slug': cat.slug,
+            'description': cat.description,
+            'parent_id': cat.parent_id
+        })
+
+    def patch(self, request, category_id):
+        cat = get_object_or_404(Category, id=category_id)
+        data = request.data
+        if 'name' in data:
+            cat.name = data['name']
+        if 'description' in data:
+            cat.description = data['description']
+        if 'slug' in data:
+            cat.slug = data['slug']
+        if 'parent_id' in data:
+            parent_id = data['parent_id']
+            cat.parent = get_object_or_404(Category, id=parent_id) if parent_id else None
+            
+        cat.save()
+        return Response({
+            'id': cat.id,
+            'name': cat.name,
+            'slug': cat.slug,
+            'description': cat.description,
+            'parent_id': cat.parent_id
+        })
+
+    def delete(self, request, category_id):
+        cat = get_object_or_404(Category, id=category_id)
+        cat.delete()
+        return Response({'success': True}, status=status.HTTP_200_OK)
+
 
