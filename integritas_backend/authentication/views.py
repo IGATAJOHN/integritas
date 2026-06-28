@@ -949,7 +949,10 @@ class ResendEmailVerificationView(views.APIView):
             )
             return Response({'message': 'Verification email sent successfully.'})
         except Exception as e:
-            return Response({'message': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                {'message': f'SMTP error: {str(e)}. Please ensure your Google App Password is correct.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class EmailVerifyView(views.APIView):
