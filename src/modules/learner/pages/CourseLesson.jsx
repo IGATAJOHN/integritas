@@ -263,6 +263,12 @@ const CourseLesson = () => {
         const cached = modules.flatMap((m) => m.lessons).find((l) => matchesLessonIdentifier(l, selectedLessonId));
         if (cached) setCurrentLesson(cached);
 
+        // Bypass API request for synthesized virtual lessons
+        if (selectedLessonId && String(selectedLessonId).endsWith('-video')) {
+            setLessonLoading(false);
+            return;
+        }
+
         setLessonLoading(true);
         setCurrentTime(0);
         setDuration(0);
@@ -295,6 +301,11 @@ const CourseLesson = () => {
         setSignedPlaybackUrl('');
         const slug = currentLesson?.slug;
         if (!slug) return undefined;
+
+        // Skip fetching playback URL for virtual lessons
+        if (slug.endsWith('-video')) {
+            return undefined;
+        }
 
         learnerLessonService
             .getPlaybackUrl(slug)
