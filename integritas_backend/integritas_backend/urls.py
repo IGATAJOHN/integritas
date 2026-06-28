@@ -19,7 +19,8 @@ from enrollments.views import (
     MyEnrollmentsView, MyTransactionsView, AdminEnrollmentsView,
     AdminTransactionsView, AdminTransactionDetailView, AdminTransactionManualRefundView,
     SupportTransactionFlagRefundView, AdminRefundRequestsListView,
-    AdminRefundRequestApproveView, AdminRefundRequestRejectView
+    AdminRefundRequestApproveView, AdminRefundRequestRejectView,
+    ExpertCourseEnrolView
 )
 from courses.views import (
     CategoryListView, CategoryDetailView, LearnerCourseProjectView,
@@ -103,6 +104,9 @@ urlpatterns = [
     path('api/v1/', include('quizzes.urls')),
     path('api/v1/me/enrolments', MyEnrollmentsView.as_view(), name='my_enrolments'),
     path('api/v1/me/transactions', MyTransactionsView.as_view(), name='my_transactions'),
+    
+    # Expert / Exemplar Series free enrolment
+    path('api/v1/learner/expert-courses/<str:course_slug>/enrol', ExpertCourseEnrolView.as_view(), name='expert_course_enrol'),
 
 
 

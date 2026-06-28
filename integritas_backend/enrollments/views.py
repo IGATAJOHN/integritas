@@ -79,6 +79,35 @@ class MyTransactionsView(views.APIView):
         transactions = Transaction.objects.filter(user=request.user)
         return Response(TransactionSerializer(transactions, many=True).data)
 
+class ExpertCourseEnrolView(views.APIView):
+    """
+    POST /learner/expert-courses/{slug}/enrol
+    Immediately enrols an authenticated learner in a free expert / experta course.
+    Returns the resulting enrolment object.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, course_slug):
+        try:
+            course = Course.objects.get(slug=course_slug, track='experta')
+        except Course.DoesNotExist:
+            return Response({'message': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if course.price > 0:
+            return Response(
+                {'message': 'This course requires payment. Use the standard enrolment flow.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        enrollment, created = Enrollment.objects.update_or_create(
+            user=request.user,
+            course=course,
+            defaults={'status': 'active'}
+        )
+
+        return Response(EnrollmentSerializer(enrollment).data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
 class AdminEnrollmentsView(views.APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
