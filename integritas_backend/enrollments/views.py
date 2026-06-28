@@ -77,3 +77,11 @@ class MyTransactionsView(views.APIView):
     def get(self, request):
         transactions = Transaction.objects.filter(user=request.user)
         return Response(TransactionSerializer(transactions, many=True).data)
+
+class AdminEnrollmentsView(views.APIView):
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get(self, request):
+        enrollments = Enrollment.objects.all()
+        return Response(EnrollmentSerializer(enrollments, many=True).data)
+

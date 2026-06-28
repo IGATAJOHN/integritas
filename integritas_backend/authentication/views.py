@@ -493,4 +493,29 @@ class MyNotificationsReadAllView(views.APIView):
         Notification.objects.filter(user=request.user).update(is_read=True)
         return Response({'success': True})
 
+class SupportUsersView(views.APIView):
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get(self, request):
+        queryset = User.objects.all()
+        
+        per_page = int(request.query_params.get('per_page', 100))
+        page = int(request.query_params.get('page', 1))
+        
+        total = queryset.count()
+        start = (page - 1) * per_page
+        end = start + per_page
+        
+        sliced_qs = queryset[start:end]
+        serializer = UserSerializer(sliced_qs, many=True)
+        return Response({
+            'data': serializer.data,
+            'meta': {
+                'total': total,
+                'page': page,
+                'per_page': per_page
+            }
+        })
+
+
 

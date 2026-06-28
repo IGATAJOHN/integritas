@@ -10,9 +10,11 @@ from authentication.views import (
     AdminStaffView, AdminStaffDetailView, AdminStaffRolesView,
     AdminStaffPermissionsView, AdminStaffResetPasswordView, AdminStaffSuspendView,
     AdminStaffUnsuspendView, AdminStaffAvatarView, MyNotificationsView,
-    MyNotificationsUnreadCountView, MyNotificationsReadView, MyNotificationsReadAllView
+    MyNotificationsUnreadCountView, MyNotificationsReadView, MyNotificationsReadAllView,
+    SupportUsersView
 )
-from enrollments.views import MyEnrollmentsView, MyTransactionsView
+from enrollments.views import MyEnrollmentsView, MyTransactionsView, AdminEnrollmentsView
+
 
 
 urlpatterns = [
@@ -48,9 +50,12 @@ urlpatterns = [
     path('api/v1/me/notifications/read-all', MyNotificationsReadAllView.as_view(), name='my_notifications_read_all'),
     
     path('api/v1/enrolment/', include('enrollments.urls')),
+    path('api/v1/support/users', SupportUsersView.as_view(), name='support_users'),
+    path('api/v1/admin/enrolments', AdminEnrollmentsView.as_view(), name='admin_enrolments'),
     path('api/v1/', include('quizzes.urls')), # quiz CBT endpoints registered under /api/v1 namespace
     path('api/v1/me/enrolments', MyEnrollmentsView.as_view(), name='my_enrolments'),
     path('api/v1/me/transactions', MyTransactionsView.as_view(), name='my_transactions'),
+
 
 
 ]
