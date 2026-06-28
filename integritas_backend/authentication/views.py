@@ -3,8 +3,10 @@ from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from django.db import models
 from django.contrib.auth import authenticate
+from django.shortcuts import get_object_or_404
 from .serializers import UserSerializer, RegisterSerializer
-from .models import User, Profile, TutorInvite
+from .models import User, Profile, TutorInvite, Notification
+
 
 
 class LoginView(views.APIView):
@@ -259,4 +261,236 @@ class AdminFoundationalTutorResetPasswordView(views.APIView):
         user.set_password(password)
         user.save()
         return Response({'message': 'Password reset successfully'})
+
+class AdminStaffView(views.APIView):
+    def get(self, request):
+        queryset = User.objects.filter(models.Q(role__in=['admin', 'super_admin', 'support']) | models.Q(is_staff=True) | models.Q(is_superuser=True))
+        
+        role = request.query_params.get('role')
+        if role:
+            queryset = queryset.filter(models.Q(role=role) | models.Q(roles_list__contains=role))
+            
+        q = request.query_params.get('q')
+        if q:
+            queryset = queryset.filter(
+                models.Q(first_name__icontains=q) |
+                models.Q(last_name__icontains=q) |
+                models.Q(email__icontains=q) |
+                models.Q(username__icontains=q)
+            )
+            
+        suspended = request.query_params.get('suspended')
+        if suspended == 'true':
+            queryset = queryset.filter(is_active=False)
+        elif suspended == 'false':
+            queryset = queryset.filter(is_active=True)
+            
+        per_page = int(request.query_params.get('per_page', 25))
+        page = int(request.query_params.get('page', 1))
+        
+        total = queryset.count()
+        start = (page - 1) * per_page
+        end = start + per_page
+        
+        sliced_qs = queryset[start:end]
+        serializer = UserSerializer(sliced_qs, many=True)
+        return Response({
+            'data': serializer.data,
+            'meta': {
+                'total': total,
+                'page': page,
+                'per_page': per_page
+            }
+        })
+
+    def post(self, request):
+        data = request.data
+        email = data.get('email')
+        name = data.get('name')
+        password = data.get('password')
+        phone = data.get('phone', '')
+        bio = data.get('bio', '')
+        role = data.get('role', 'admin')
+        
+        if not email or not password:
+            return Response({'message': 'Email and password are required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if User.objects.filter(email=email).exists():
+            return Response({'message': 'User with this email already exists'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        username = email.split('@')[0]
+        base_username = username
+        counter = 1
+        while User.objects.filter(username=username).exists():
+            username = f"{base_username}{counter}"
+            counter += 1
+            
+        first_name = ''
+        last_name = ''
+        if name:
+            parts = name.strip().split(' ', 1)
+            first_name = parts[0]
+            if len(parts) > 1:
+                last_name = parts[1]
+                
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            password=password,
+            first_name=first_name,
+            last_name=last_name,
+            phone=phone,
+            role=role,
+            is_staff=True
+        )
+        
+        profile = Profile.objects.create(
+            user=user,
+            bio=bio,
+            is_verified=True
+        )
+        
+        return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
+
+class AdminStaffDetailView(views.APIView):
+    def get(self, request, user_id):
+        user = get_object_or_404(User, id=user_id)
+        return Response(UserSerializer(user).data)
+
+    def patch(self, request, user_id):
+        user = get_object_or_404(User, id=user_id)
+        data = request.data
+        if 'name' in data:
+            name = data['name']
+            parts = name.strip().split(' ', 1)
+            user.first_name = parts[0]
+            user.last_name = parts[1] if len(parts) > 1 else ''
+            
+        if 'email' in data:
+            user.email = data['email']
+            
+        if 'phone' in data:
+            user.phone = data['phone']
+            
+        if 'role' in data:
+            user.role = data['role']
+            
+        user.save()
+        
+        profile, _ = Profile.objects.get_or_create(user=user)
+        if 'bio' in data:
+            profile.bio = data['bio']
+        profile.save()
+        
+        return Response(UserSerializer(user).data)
+
+    def delete(self, request, user_id):
+        user = get_object_or_404(User, id=user_id)
+        user.delete()
+        return Response({'success': True}, status=status.HTTP_200_OK)
+
+class AdminStaffRolesView(views.APIView):
+    def patch(self, request, user_id):
+        user = get_object_or_404(User, id=user_id)
+        roles = request.data.get('roles', [])
+        user.roles_list = roles
+        if roles:
+            user.role = roles[0]
+        user.save()
+        return Response(UserSerializer(user).data)
+
+class AdminStaffPermissionsView(views.APIView):
+    def patch(self, request, user_id):
+        user = get_object_or_404(User, id=user_id)
+        permissions = request.data.get('permissions', [])
+        user.permissions_list = permissions
+        user.save()
+        return Response(UserSerializer(user).data)
+
+class AdminStaffResetPasswordView(views.APIView):
+    def post(self, request, user_id):
+        user = get_object_or_404(User, id=user_id)
+        password = request.data.get('password')
+        if not password:
+            return Response({'message': 'Password is required'}, status=status.HTTP_400_BAD_REQUEST)
+        user.set_password(password)
+        user.save()
+        return Response({'message': 'Password reset successfully'})
+
+class AdminStaffSuspendView(views.APIView):
+    def post(self, request, user_id):
+        user = get_object_or_404(User, id=user_id)
+        user.is_active = False
+        user.save()
+        return Response(UserSerializer(user).data)
+
+class AdminStaffUnsuspendView(views.APIView):
+    def post(self, request, user_id):
+        user = get_object_or_404(User, id=user_id)
+        user.is_active = True
+        user.save()
+        return Response(UserSerializer(user).data)
+
+class AdminStaffAvatarView(views.APIView):
+    def post(self, request, user_id):
+        user = get_object_or_404(User, id=user_id)
+        avatar_file = request.FILES.get('avatar')
+        if not avatar_file:
+            return Response({'message': 'No avatar file provided'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        from django.core.files.storage import default_storage
+        filename = default_storage.save(f'avatars/{user.id}_{avatar_file.name}', avatar_file)
+        avatar_url = default_storage.url(filename)
+        
+        profile, _ = Profile.objects.get_or_create(user=user)
+        profile.avatar_url = avatar_url
+        profile.save()
+        
+        return Response(UserSerializer(user).data)
+
+class MyNotificationsView(views.APIView):
+    def get(self, request):
+        queryset = Notification.objects.filter(user=request.user).order_by('-created_at')
+        per_page = int(request.query_params.get('per_page', 20))
+        page = int(request.query_params.get('page', 1))
+        
+        total = queryset.count()
+        start = (page - 1) * per_page
+        end = start + per_page
+        
+        sliced_qs = queryset[start:end]
+        data = [{
+            'id': n.id,
+            'title': n.title,
+            'message': n.message,
+            'is_read': n.is_read,
+            'created_at': n.created_at.isoformat()
+        } for n in sliced_qs]
+        
+        return Response({
+            'data': data,
+            'meta': {
+                'total': total,
+                'page': page,
+                'per_page': per_page
+            }
+        })
+
+class MyNotificationsUnreadCountView(views.APIView):
+    def get(self, request):
+        count = Notification.objects.filter(user=request.user, is_read=False).count()
+        return Response({'unread_count': count})
+
+class MyNotificationsReadView(views.APIView):
+    def post(self, request, notification_id):
+        notification = get_object_or_404(Notification, id=notification_id, user=request.user)
+        notification.is_read = True
+        notification.save()
+        return Response({'success': True})
+
+class MyNotificationsReadAllView(views.APIView):
+    def post(self, request):
+        Notification.objects.filter(user=request.user).update(is_read=True)
+        return Response({'success': True})
+
 

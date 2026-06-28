@@ -6,10 +6,15 @@ class User(AbstractUser):
         ('learner', 'Learner'),
         ('tutor', 'Tutor'),
         ('admin', 'Admin'),
+        ('super_admin', 'Super Admin'),
+        ('support', 'Support'),
     )
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='learner')
     email = models.EmailField(unique=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
+    roles_list = models.JSONField(default=list, blank=True)
+    permissions_list = models.JSONField(default=list, blank=True)
+
 
     REQUIRED_FIELDS = ['email']
 
@@ -38,4 +43,15 @@ class TutorInvite(models.Model):
 
     def __str__(self):
         return f"Invite for {self.name} ({self.email})"
+
+class Notification(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Notification for {self.user.username}: {self.title}"
+
 

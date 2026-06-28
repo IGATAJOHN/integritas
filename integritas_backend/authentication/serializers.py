@@ -15,14 +15,16 @@ class UserSerializer(serializers.ModelSerializer):
     account_state = serializers.SerializerMethodField()
     email_verified = serializers.SerializerMethodField()
     email_verified_at = serializers.SerializerMethodField()
-
     role = serializers.SerializerMethodField()
+    roles = serializers.SerializerMethodField()
+    permissions = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = [
             'id', 'username', 'email', 'first_name', 'last_name', 'role', 
-            'phone', 'profile', 'account_state', 'email_verified', 'email_verified_at'
+            'phone', 'profile', 'account_state', 'email_verified', 'email_verified_at',
+            'roles', 'permissions'
         ]
 
     def get_role(self, obj):
@@ -32,7 +34,8 @@ class UserSerializer(serializers.ModelSerializer):
         return obj.role
 
     def get_account_state(self, obj):
-        # Always verified / active for local/Render testing bypass
+        if not obj.is_active:
+            return 'suspended'
         return 'active'
 
     def get_email_verified(self, obj):
@@ -41,6 +44,23 @@ class UserSerializer(serializers.ModelSerializer):
     def get_email_verified_at(self, obj):
         from django.utils import timezone
         return timezone.now().isoformat()
+
+    def get_roles(self, obj):
+        if obj.roles_list:
+            return obj.roles_list
+        result = []
+        if obj.role:
+            result.append(obj.role)
+        if obj.is_superuser and 'admin' not in result:
+            result.append('admin')
+        return result
+
+    def get_permissions(self, obj):
+        if obj.permissions_list:
+            return obj.permissions_list
+        if obj.role in ['admin', 'super_admin', 'support'] or obj.is_superuser:
+            return ['admins.manage', 'users.view', 'users.manage']
+        return []
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
