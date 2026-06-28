@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
     Box,
@@ -31,10 +31,17 @@ const LoginPage = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
     const [formData, setFormData] = useState({
-        email: '',
+        email: location.state?.email || '',
         password: '',
     });
+
+    useEffect(() => {
+        if (location.state?.signupSuccess) {
+            setSuccessMessage('Registration successful! Please log in to your account.');
+        }
+    }, [location.state]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -366,6 +373,23 @@ const LoginPage = () => {
                                 }}
                             />
                         </Box>
+
+                        {/* Success Alert */}
+                        {successMessage && (
+                            <Alert 
+                                severity="success" 
+                                sx={{ 
+                                    mb: 2,
+                                    bgcolor: '#1E293B',
+                                    color: '#10B981',
+                                    '& .MuiAlert-icon': {
+                                        color: '#10B981',
+                                    },
+                                }}
+                            >
+                                {successMessage}
+                            </Alert>
+                        )}
 
                         {/* Error Alert */}
                         {error && (

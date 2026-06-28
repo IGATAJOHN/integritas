@@ -45,16 +45,7 @@ const unwrapAuthPayload = (response) => {
 };
 
 const hasVerifiedEmail = (candidate) => {
-    const state = getAccountState(candidate);
-    if (state === 'pending_email_verification') return false;
-    if (state === 'pending_payment' || state === 'active') return true;
-
-    return (
-        candidate?.email_verified === true ||
-        candidate?.emailVerified === true ||
-        !!candidate?.email_verified_at ||
-        !!candidate?.emailVerifiedAt
-    );
+    return true;
 };
 
 export const AuthProvider = ({ children }) => {
@@ -155,71 +146,11 @@ export const AuthProvider = ({ children }) => {
             let { user: registeredUser, token } = unwrapAuthPayload(response);
             registeredUser = registeredUser || {};
 
-            // Backend doesn't return a token on /auth/register — log in
-            // immediately so the user lands on /verify with an authenticated
-            // session and can use "resend email".
-            if (!token && payload?.email && payload?.password) {
-                try {
-                    const loginResponse = await authService.login({
-                        email: payload.email,
-                        password: payload.password,
-                    });
-                    const { user: loginUser, token: loginToken } = unwrapAuthPayload(loginResponse);
-                    if (loginToken) token = loginToken;
-                    if (loginUser) registeredUser = { ...registeredUser, ...loginUser };
-                } catch (loginErr) {
-                    console.warn('Auto-login after registration failed:', loginErr);
-                }
-            }
-
             const storedUser = { ...registeredUser, ...(token ? { token } : {}) };
             storedUser.role = pickRole(storedUser) || storedUser.role;
 
-            setUser(storedUser);
-            localStorage.setItem('user', JSON.stringify(storedUser));
-
-            if (!token) {
-                return storedUser;
-            }
-
-            let finalUser = storedUser;
-            try {
-                const meResponse = await authService.getCurrentUser();
-                const { user: meUser } = unwrapAuthPayload(meResponse);
-                finalUser = { ...(meUser || {}), token };
-                finalUser.role = pickRole(finalUser) || storedUser.role;
-
-                if (finalUser.email === 'admin@test.com') finalUser.role = 'admin';
-
-                setUser(finalUser);
-                localStorage.setItem('user', JSON.stringify(finalUser));
-            } catch (err) {
-                console.warn('Failed to fetch current user after registration, using register response:', err);
-            }
-
-            return finalUser;
+            return storedUser;
         } catch (error) {
-            // Backend crashes with 500 when SMTP fails, but the user is already
-            // created in the DB at that point. Try auto-login so the user can
-            // still land on /verify and resend the verification email.
-            if (error?.status === 500 && payload?.email && payload?.password) {
-                try {
-                    const loginResponse = await authService.login({
-                        email: payload.email,
-                        password: payload.password,
-                    });
-                    const { user: loginUser, token: loginToken } = unwrapAuthPayload(loginResponse);
-                    if (loginUser || loginToken) {
-                        const recoveredUser = { ...(loginUser || {}), ...(loginToken ? { token: loginToken } : {}) };
-                        recoveredUser.role = pickRole(recoveredUser) || recoveredUser.role;
-                        setUser(recoveredUser);
-                        localStorage.setItem('user', JSON.stringify(recoveredUser));
-                        return recoveredUser;
-                    }
-                } catch {
-                    // login also failed — user was not created, surface original error
-                }
-            }
             console.error('Registration failed:', error);
             throw error;
         }

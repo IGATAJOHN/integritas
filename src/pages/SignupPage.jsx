@@ -147,7 +147,7 @@ const SignupPage = () => {
         setLoading(true);
 
         try {
-            const userData = await register({
+            await register({
                 name: formData.name.trim(),
                 email: formData.email.trim(),
                 phone: formData.phone.trim(),
@@ -157,7 +157,7 @@ const SignupPage = () => {
                 user_type: 'learner',
             });
 
-            navigate('/verify');
+            navigate('/login', { state: { email: formData.email, signupSuccess: true } });
         } catch (err) {
             console.error(err);
             setError(err?.message || 'Registration failed. Please try again.');
