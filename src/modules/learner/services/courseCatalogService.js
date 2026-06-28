@@ -350,7 +350,7 @@ export const courseCatalogService = {
     },
 
     listExpertiaCourses: async ({ per_page = 30, page, sort } = {}) => {
-        return courseCatalogService.listCourses({ per_page, page, sort, track: 'expert' });
+        return courseCatalogService.listCourses({ per_page, page, sort, track: 'experta' });
     },
 
 
