@@ -1,3 +1,4 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, permissions
 from rest_framework.response import Response
 from .models import Course, Module, Lesson, Category, ProjectSubmission, ProjectSubmissionFile
@@ -9,6 +10,19 @@ class CourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_object(self):
+        queryset = self.filter_queryset(self.get_queryset())
+        lookup_value = self.kwargs.get('pk')
+        
+        if lookup_value.isdigit():
+            filter_kwargs = {'pk': lookup_value}
+        else:
+            filter_kwargs = {'slug': lookup_value}
+            
+        obj = get_object_or_404(queryset, **filter_kwargs)
+        self.check_object_permissions(self.request, obj)
+        return obj
 
     def get_queryset(self):
         queryset = super().get_queryset()
