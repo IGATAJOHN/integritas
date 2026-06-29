@@ -15,7 +15,7 @@ class Course(models.Model):
         ('archived', 'Archived'),
     )
     title = models.CharField(max_length=255)
-    slug = models.SlugField(unique=True, blank=True)
+    slug = models.SlugField(max_length=255, unique=True, blank=True)
     description = models.TextField(blank=True)
     summary = models.TextField(blank=True)
     track = models.CharField(max_length=30, choices=TRACK_CHOICES, default='foundational')
@@ -38,7 +38,7 @@ class Course(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            base_slug = slugify(self.title)
+            base_slug = slugify(self.title)[:200]
             if not base_slug:
                 base_slug = "course"
             slug = base_slug
@@ -73,7 +73,7 @@ class Lesson(models.Model):
     )
     module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name='lessons')
     title = models.CharField(max_length=255)
-    slug = models.SlugField(unique=True, blank=True)
+    slug = models.SlugField(max_length=255, unique=True, blank=True)
     content = models.TextField(blank=True)
     video_url = models.URLField(blank=True, null=True)
     order = models.PositiveIntegerField(default=0)
@@ -87,7 +87,7 @@ class Lesson(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            base_slug = slugify(self.title)
+            base_slug = slugify(self.title)[:200]
             if not base_slug:
                 base_slug = "lesson"
             slug = base_slug
