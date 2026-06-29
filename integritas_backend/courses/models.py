@@ -78,6 +78,13 @@ class Lesson(models.Model):
     video_url = models.URLField(blank=True, null=True)
     order = models.PositiveIntegerField(default=0)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    assigned_tutor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='assigned_lessons'
+    )
 
     class Meta:
         ordering = ['order']
