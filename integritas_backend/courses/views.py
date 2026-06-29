@@ -26,7 +26,7 @@ class CourseViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        track = self.request.query_params.get('track', None)
+        track = self.request.query_params.get('track', None) or self.request.query_params.get('type', None)
         if track:
             queryset = queryset.filter(track=track)
         return queryset
