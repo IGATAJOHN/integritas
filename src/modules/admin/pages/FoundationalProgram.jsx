@@ -452,6 +452,7 @@ const FoundationalProgram = () => {
                             onUploadVideo={uploadVideo}
                             onUploadMaterial={uploadMaterial}
                             onQuiz={(lesson) => navigate(`/admin/content/courses/${getCourseId(course)}/lessons/${lesson.id}/quiz`)}
+                            onPreviewLesson={setPreviewLesson}
                             assignedTutorName={assignedTutorName}
                         />
                     )}
@@ -889,6 +890,7 @@ const ContentTab = ({
     onUploadVideo,
     onUploadMaterial,
     onQuiz,
+    onPreviewLesson,
     assignedTutorName,
 }) => (
     <Stack spacing={2}>
@@ -941,7 +943,7 @@ const ContentTab = ({
                                         onUploadVideo={onUploadVideo}
                                         onUploadMaterial={onUploadMaterial}
                                         onQuiz={onQuiz}
-                                        onPreviewLesson={setPreviewLesson}
+                                        onPreviewLesson={onPreviewLesson}
                                     />
                                 </TableCell>
                             </TableRow>
