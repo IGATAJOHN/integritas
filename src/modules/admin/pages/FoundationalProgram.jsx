@@ -75,10 +75,7 @@ const emptyLessonForm = { title: '', description: '', assigned_tutor_id: '' };
 
 const getCourseId = (course) => course?.id || course?.course_id || course?.slug;
 const getLessonVersionId = (lesson) => (
-    lesson?.current_version_id ||
-    lesson?.version_id ||
-    lesson?.current_version?.id ||
-    lesson?.published_version_id ||
+    lesson?.id ||
     null
 );
 

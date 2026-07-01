@@ -26,10 +26,7 @@ const emptyOptions = [
 ];
 
 const getVersionId = (lesson) => (
-    lesson?.current_version_id ||
-    lesson?.version_id ||
-    lesson?.current_version?.id ||
-    lesson?.published_version_id ||
+    lesson?.id ||
     null
 );
 

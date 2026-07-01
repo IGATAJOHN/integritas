@@ -80,11 +80,7 @@ const AdminCBTPage = () => {
         try {
             const detail = await adminCoursesService.getLesson(lessonId);
             setLesson(detail);
-            const vid =
-                detail?.current_version_id ??
-                detail?.version_id ??
-                detail?.current_version?.id ??
-                null;
+            const vid = detail?.id ?? null;
             setVersionId(vid);
             if (vid) {
                 const res = await adminCoursesService.listCbtQuestions(vid);
