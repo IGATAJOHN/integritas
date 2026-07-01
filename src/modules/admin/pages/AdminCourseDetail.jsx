@@ -340,6 +340,7 @@ const AdminCourseDetail = () => {
                 m.id === moduleId ? { ...m, is_published: !currentStatus } : m
             );
             setModules(updatedModules);
+            persistModules(updatedModules);
 
             if (currentStatus) {
                 await adminCoursesService.unpublishModule(courseId, moduleId);
@@ -350,9 +351,11 @@ const AdminCourseDetail = () => {
             }
         } catch {
             // Revert optimistic update on failure
-            setModules(prev => prev.map(m =>
+            const reverted = modules.map(m =>
                 m.id === moduleId ? { ...m, is_published: currentStatus } : m
-            ));
+            );
+            setModules(reverted);
+            persistModules(reverted);
             showSnackbar('Failed to update module status', 'error');
         }
     };
@@ -438,9 +441,11 @@ const AdminCourseDetail = () => {
         const toggle = (lessons) => lessons.map(l =>
             l.id === lessonId ? { ...l, published_at: currentStatus ? null : new Date().toISOString() } : l
         );
-        setModules(prev => prev.map(m =>
+        const updatedModules = modules.map(m =>
             m.id === moduleId ? { ...m, lessons: toggle(m.lessons || []) } : m
-        ));
+        );
+        setModules(updatedModules);
+        persistModules(updatedModules);
         try {
             if (currentStatus) {
                 await adminCoursesService.unpublishLesson(moduleId, lessonId);
@@ -451,9 +456,11 @@ const AdminCourseDetail = () => {
             }
         } catch {
             // Revert
-            setModules(prev => prev.map(m =>
+            const revertedModules = modules.map(m =>
                 m.id === moduleId ? { ...m, lessons: toggle(m.lessons || []) } : m
-            ));
+            );
+            setModules(revertedModules);
+            persistModules(revertedModules);
             showSnackbar('Failed to update lesson status', 'error');
         }
     };
