@@ -79,9 +79,9 @@ const LandingPage = () => {
     const { isDark } = useThemeMode();
     const colors = getColors(isDark);
 
-    const theme = useTheme();
-    const isMd = useMediaQuery(theme.breakpoints.up('md'));
-    const isSm = useMediaQuery(theme.breakpoints.up('sm'));
+    const muiTheme = useTheme();
+    const isMd = useMediaQuery(muiTheme.breakpoints.up('md'));
+    const isSm = useMediaQuery(muiTheme.breakpoints.up('sm'));
     const cardsToShow = isMd ? 3 : isSm ? 2 : 1;
 
     const [modules, setModules] = useState([]);
