@@ -363,10 +363,13 @@ const FoundationalProgram = () => {
 
     const uploadMaterial = async (lesson, file) => {
         if (!file) return;
+        const formData = new FormData();
+        formData.append('video', file);
         setActionLoading(true);
         try {
-            await adminCoursesService.addMaterial(lesson.id, file, { display_name: file.name });
-            showMessage('Lesson material uploaded.');
+            await adminCoursesService.uploadLessonMedia(lesson.id, formData);
+            showMessage('Lesson material uploaded successfully.');
+            await reloadCourseOnly();
         } catch (err) {
             showMessage(getErrorMessage(err, 'Failed to upload material.'), 'error');
         } finally {

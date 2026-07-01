@@ -99,10 +99,9 @@ const AssignedLessonEditor = () => {
         if (!file) return;
         setSaving(true);
         try {
-            await tutorAssignmentService.addMaterial(lessonId, file, file.name);
-            showMessage('Material uploaded.');
-            const res = await tutorAssignmentService.listMaterials(lessonId);
-            setMaterials(res.data || []);
+            await tutorAssignmentService.uploadLessonVideo(lessonId, file);
+            showMessage('Material uploaded successfully.');
+            await load();
         } catch (err) {
             showMessage(getErrorMessage(err, 'Failed to upload material.'), 'error');
         } finally {
@@ -172,6 +171,20 @@ const AssignedLessonEditor = () => {
                             <input hidden type="file" onChange={(event) => uploadMaterial(event.target.files?.[0])} />
                         </Button>
                     </Stack>
+
+                    {lesson?.video_url && (
+                        <Box sx={{ mt: 2, p: 1.5, border: '1px solid #1F2937', borderRadius: 1, bgcolor: '#0C1322', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Box sx={{ minWidth: 0, mr: 1 }}>
+                                <Typography variant="caption" sx={{ color: '#9CA3AF', display: 'block' }}>Current Media/Material File</Typography>
+                                <Typography noWrap variant="body2" sx={{ color: '#34D399', fontWeight: 600 }}>
+                                    {lesson.video_url.split('/').pop()}
+                                </Typography>
+                            </Box>
+                            <Button size="small" href={lesson.video_url} target="_blank" rel="noopener noreferrer" sx={{ color: '#A78BFA', textTransform: 'none' }}>
+                                View
+                            </Button>
+                        </Box>
+                    )}
 
                     <Typography sx={{ color: '#FFFFFF', fontWeight: 700, mt: 3, mb: 1 }}>Materials</Typography>
                     <Stack spacing={1}>
