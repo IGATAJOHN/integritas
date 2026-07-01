@@ -30,6 +30,7 @@ import {
     TableRow,
     Tabs,
     TextField,
+    Tooltip,
     Typography,
 } from '@mui/material';
 import {
@@ -47,6 +48,11 @@ import {
     Save,
     SchoolOutlined,
     UploadFile,
+    Visibility,
+    PlayCircleOutline,
+    GetApp,
+    InsertDriveFile,
+    MenuBook,
 } from '@mui/icons-material';
 import { adminCoursesService } from '../services/courseService';
 import { adminFoundationalTutorService } from '../services/foundationalTutorService';
@@ -142,6 +148,7 @@ const FoundationalProgram = () => {
     const [lessonForm, setLessonForm] = useState(emptyLessonForm);
     const [selectedModule, setSelectedModule] = useState(null);
     const [editingLesson, setEditingLesson] = useState(null);
+    const [previewLesson, setPreviewLesson] = useState(null);
 
     const modules = useMemo(() => normalizeModules(course), [course]);
     const lessons = useMemo(() => modules.flatMap((module) => (
@@ -458,10 +465,254 @@ const FoundationalProgram = () => {
             <CourseSetupDialog open={setupOpen} form={setupForm} setForm={setSetupForm} saving={actionLoading} onClose={() => setSetupOpen(false)} onSave={handleCreateCourse} />
             <ModuleDialog open={moduleOpen} form={moduleForm} setForm={setModuleForm} editing={!!editingModule} saving={actionLoading} onClose={() => setModuleOpen(false)} onSave={saveModule} />
             <LessonDialog open={lessonOpen} form={lessonForm} setForm={setLessonForm} tutors={tutors} editing={!!editingLesson} saving={actionLoading} onClose={() => setLessonOpen(false)} onSave={saveLesson} />
+            <LessonPreviewDialog lesson={previewLesson} onClose={() => setPreviewLesson(null)} />
             <Snackbar open={snackbar.open} autoHideDuration={4500} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}>
                 <Alert severity={snackbar.severity} sx={{ width: '100%' }}>{snackbar.message}</Alert>
             </Snackbar>
         </Box>
+    );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LESSON PREVIEW DIALOG
+// Opens when the admin clicks "Preview Lesson" from the action menu.
+// Fetches fresh lesson detail + materials from the API so the preview
+// is always up-to-date even if the course-list cache is stale.
+// ─────────────────────────────────────────────────────────────────────────────
+const LessonPreviewDialog = ({ lesson, onClose }) => {
+    const open = !!lesson;
+    const [detail, setDetail] = React.useState(null);
+    const [materialList, setMaterialList] = React.useState([]);
+    const [loading, setLoading] = React.useState(false);
+    const [error, setError] = React.useState('');
+
+    React.useEffect(() => {
+        if (!lesson) { setDetail(null); setMaterialList([]); setError(''); return; }
+        let cancelled = false;
+        const load = async () => {
+            setLoading(true); setError('');
+            try {
+                const [lessonData, mats] = await Promise.all([
+                    adminCoursesService.getLesson(lesson.id),
+                    adminCoursesService.listMaterials(lesson.id).catch(() => []),
+                ]);
+                if (cancelled) return;
+                setDetail(lessonData || lesson);
+                setMaterialList(Array.isArray(mats) ? mats : []);
+            } catch (err) {
+                if (!cancelled) { setError(getErrorMessage(err, 'Failed to load lesson details.')); setDetail(lesson); }
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        };
+        load();
+        return () => { cancelled = true; };
+    }, [lesson]);
+
+    const info = detail || lesson || {};
+    const isPublished = !!(info.published_at || info.is_published || info.status === 'published');
+    const videoUrl = info.video_url || info.video?.url || null;
+    const isVideoMp4 = videoUrl && (videoUrl.toLowerCase().includes('.mp4') || videoUrl.toLowerCase().includes('video'));
+
+    const getFileIcon = (mat) => {
+        const url = (mat.file_url || mat.url || '').toLowerCase();
+        if (url.endsWith('.pdf')) return <InsertDriveFile sx={{ color: '#F87171' }} />;
+        if (url.match(/\.(mp4|webm|ogg|mov)$/)) return <PlayCircleOutline sx={{ color: '#60A5FA' }} />;
+        return <MenuBook sx={{ color: '#FCD34D' }} />;
+    };
+
+    return (
+        <Dialog
+            open={open}
+            onClose={onClose}
+            maxWidth="md"
+            fullWidth
+            PaperProps={{
+                sx: {
+                    bgcolor: '#0F172A',
+                    backgroundImage: 'none',
+                    border: '1px solid rgba(99,102,241,0.25)',
+                    borderRadius: '16px',
+                    boxShadow: '0 25px 60px rgba(0,0,0,0.6)',
+                    overflow: 'hidden',
+                },
+            }}
+        >
+            {/* ── HEADER ── */}
+            <Box sx={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                px: 3, py: 2,
+                background: 'linear-gradient(135deg,rgba(99,102,241,0.15) 0%,rgba(16,185,129,0.08) 100%)',
+                borderBottom: '1px solid rgba(99,102,241,0.2)',
+            }}>
+                <Box>
+                    <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', color: '#FFFFFF' }}>
+                        {info.title || 'Lesson Preview'}
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 1, mt: 0.5, flexWrap: 'wrap', alignItems: 'center' }}>
+                        <Chip
+                            size="small"
+                            label={isPublished ? 'Published' : 'Draft'}
+                            sx={{
+                                color: isPublished ? '#34D399' : '#FBBF24',
+                                bgcolor: isPublished ? 'rgba(16,185,129,0.12)' : 'rgba(251,191,36,0.12)',
+                                fontWeight: 600, fontSize: '0.7rem',
+                            }}
+                        />
+                        {info.module?.title && (
+                            <Typography sx={{ color: '#9CA3AF', fontSize: '0.8rem' }}>
+                                {info.module.title}
+                            </Typography>
+                        )}
+                    </Box>
+                </Box>
+                <IconButton onClick={onClose} sx={{ color: '#9CA3AF', '&:hover': { color: '#FFFFFF', bgcolor: 'rgba(255,255,255,0.08)' } }}>
+                    <Close />
+                </IconButton>
+            </Box>
+
+            <DialogContent sx={{ p: 0, bgcolor: '#0F172A' }}>
+                {loading && (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
+                        <CircularProgress sx={{ color: '#6366F1' }} />
+                    </Box>
+                )}
+                {!loading && error && (
+                    <Box sx={{ p: 3 }}>
+                        <Alert severity="error">{error}</Alert>
+                    </Box>
+                )}
+                {!loading && (
+                    <Stack>
+                        {/* ── VIDEO PLAYER ── */}
+                        {videoUrl ? (
+                            <Box sx={{ position: 'relative', width: '100%', background: '#000', lineHeight: 0 }}>
+                                {isVideoMp4 ? (
+                                    <video
+                                        src={videoUrl}
+                                        controls
+                                        style={{ width: '100%', maxHeight: 380, outline: 'none', display: 'block' }}
+                                    />
+                                ) : (
+                                    <iframe
+                                        src={videoUrl}
+                                        title="Lesson Video"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowFullScreen
+                                        style={{ width: '100%', height: 360, border: 'none', display: 'block' }}
+                                    />
+                                )}
+                            </Box>
+                        ) : (
+                            <Box sx={{
+                                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                height: 160, bgcolor: 'rgba(255,255,255,0.03)', borderBottom: '1px solid #1F2937',
+                            }}>
+                                <PlayCircleOutline sx={{ fontSize: 48, color: '#374151', mb: 1 }} />
+                                <Typography sx={{ color: '#6B7280', fontSize: '0.85rem' }}>No video uploaded yet</Typography>
+                            </Box>
+                        )}
+
+                        {/* ── DESCRIPTION ── */}
+                        {info.description && (
+                            <Box sx={{ px: 3, py: 2.5, borderBottom: '1px solid #1F2937' }}>
+                                <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#6366F1', textTransform: 'uppercase', letterSpacing: 1, mb: 1 }}>
+                                    About this lesson
+                                </Typography>
+                                <Typography sx={{ color: '#D1D5DB', fontSize: '0.92rem', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                                    {info.description}
+                                </Typography>
+                            </Box>
+                        )}
+
+                        {/* ── MATERIALS ── */}
+                        <Box sx={{ px: 3, py: 2.5 }}>
+                            <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#6366F1', textTransform: 'uppercase', letterSpacing: 1, mb: 1.5 }}>
+                                Learning Materials ({materialList.length})
+                            </Typography>
+                            {materialList.length === 0 ? (
+                                <Box sx={{
+                                    display: 'flex', alignItems: 'center', gap: 1.5,
+                                    py: 2.5, px: 2, borderRadius: '10px',
+                                    bgcolor: 'rgba(255,255,255,0.03)',
+                                    border: '1px dashed #374151',
+                                }}>
+                                    <InsertDriveFile sx={{ color: '#4B5563' }} />
+                                    <Typography sx={{ color: '#6B7280', fontSize: '0.85rem' }}>
+                                        No materials have been uploaded for this lesson yet.
+                                    </Typography>
+                                </Box>
+                            ) : (
+                                <Stack spacing={1}>
+                                    {materialList.map((mat, idx) => {
+                                        const fileUrl = mat.file_url || mat.url || '';
+                                        const name = mat.display_name || mat.title || mat.file_name || `Material ${idx + 1}`;
+                                        return (
+                                            <Box
+                                                key={mat.id || idx}
+                                                sx={{
+                                                    display: 'flex', alignItems: 'center', gap: 1.5,
+                                                    py: 1.25, px: 2, borderRadius: '10px',
+                                                    bgcolor: 'rgba(99,102,241,0.06)',
+                                                    border: '1px solid rgba(99,102,241,0.15)',
+                                                    transition: 'background 0.2s',
+                                                    '&:hover': { bgcolor: 'rgba(99,102,241,0.12)' },
+                                                }}
+                                            >
+                                                {getFileIcon(mat)}
+                                                <Box sx={{ flex: 1, minWidth: 0 }}>
+                                                    <Typography sx={{ color: '#E5E7EB', fontSize: '0.88rem', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                        {name}
+                                                    </Typography>
+                                                    {mat.created_at && (
+                                                        <Typography sx={{ color: '#6B7280', fontSize: '0.75rem' }}>
+                                                            Uploaded {new Date(mat.created_at).toLocaleDateString()}
+                                                        </Typography>
+                                                    )}
+                                                </Box>
+                                                {fileUrl && (
+                                                    <Tooltip title="Download / Open">
+                                                        <IconButton
+                                                            size="small"
+                                                            component="a"
+                                                            href={fileUrl}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            sx={{ color: '#6366F1', '&:hover': { color: '#818CF8' } }}
+                                                        >
+                                                            <GetApp fontSize="small" />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                )}
+                                            </Box>
+                                        );
+                                    })}
+                                </Stack>
+                            )}
+                        </Box>
+                    </Stack>
+                )}
+            </DialogContent>
+
+            <DialogActions sx={{ bgcolor: '#0F172A', px: 3, py: 2, borderTop: '1px solid #1F2937', gap: 1 }}>
+                {videoUrl && (
+                    <Button
+                        component="a"
+                        href={videoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        startIcon={<PlayCircleOutline />}
+                        sx={{ color: '#60A5FA', textTransform: 'none', '&:hover': { bgcolor: 'rgba(96,165,250,0.08)' } }}
+                    >
+                        Open Video
+                    </Button>
+                )}
+                <Box sx={{ flex: 1 }} />
+                <Button onClick={onClose} sx={{ color: '#9CA3AF', textTransform: 'none', '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' } }}>
+                    Close
+                </Button>
+            </DialogActions>
+        </Dialog>
     );
 };
 
@@ -581,6 +832,7 @@ const LessonActionsMenu = ({
     onUploadVideo,
     onUploadMaterial,
     onQuiz,
+    onPreviewLesson,
 }) => {
     const published = !!(lesson.published_at || lesson.is_published || lesson.status === 'published');
 
@@ -588,6 +840,10 @@ const LessonActionsMenu = ({
         <ActionMenuButton label={`Actions for ${lesson.title || 'lesson'}`} disabled={disabled}>
             {(closeMenu) => (
                 <>
+                    <MenuItem onClick={() => { closeMenu(); onPreviewLesson(lesson); }}>
+                        <ListItemIcon sx={{ color: '#FCD34D', minWidth: 30 }}><Visibility fontSize="small" /></ListItemIcon>
+                        <ListItemText>Preview Lesson</ListItemText>
+                    </MenuItem>
                     <MenuItem onClick={() => { closeMenu(); onEditLesson(module, lesson); }}>
                         <ListItemIcon sx={{ color: '#93C5FD', minWidth: 30 }}><Edit fontSize="small" /></ListItemIcon>
                         <ListItemText>Edit Lesson</ListItemText>
@@ -685,6 +941,7 @@ const ContentTab = ({
                                         onUploadVideo={onUploadVideo}
                                         onUploadMaterial={onUploadMaterial}
                                         onQuiz={onQuiz}
+                                        onPreviewLesson={setPreviewLesson}
                                     />
                                 </TableCell>
                             </TableRow>
