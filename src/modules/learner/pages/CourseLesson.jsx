@@ -40,6 +40,9 @@ import {
     SignalCellularAlt as LevelIcon,
     Subtitles,
     VolumeUp,
+    InsertDriveFile,
+    GetApp,
+    MenuBook,
 } from '@mui/icons-material';
 import logo from '../../../assets/images/integritas_logo.jpg';
 import { courseCatalogService, learnerEnrollmentService, learnerLessonService } from '../services';
@@ -658,6 +661,36 @@ const CourseLesson = () => {
                         {(lessonLoading || !currentLesson) ? (
                             <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#111827' }}>
                                 <CircularProgress size={48} />
+                            </Box>
+                        ) : currentLesson?.type === 'document' || currentLesson?.type === 'file' ? (
+                            <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: '#1F2937', p: 4, textAlign: 'center' }}>
+                                <InsertDriveFile sx={{ fontSize: 64, color: '#178A83', mb: 2 }} />
+                                <Typography variant="h6" sx={{ color: '#fff', fontWeight: 650, mb: 1 }}>
+                                    {currentLesson.title} - Study Document
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: '#9CA3AF', mb: 3, maxWidth: 400 }}>
+                                    This lesson includes a document attachment. Click the button below to download and read the study material.
+                                </Typography>
+                                <Button
+                                    variant="contained"
+                                    href={videoSrc}
+                                    target="_blank"
+                                    download
+                                    startIcon={<GetApp />}
+                                    sx={{ bgcolor: '#178A83', '&:hover': { bgcolor: '#116B65' } }}
+                                >
+                                    Download Material
+                                </Button>
+                            </Box>
+                        ) : currentLesson?.type === 'text' ? (
+                            <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: '#1F2937', p: 4, textAlign: 'center' }}>
+                                <MenuBook sx={{ fontSize: 64, color: '#178A83', mb: 2 }} />
+                                <Typography variant="h6" sx={{ color: '#fff', fontWeight: 650, mb: 1 }}>
+                                    {currentLesson.title}
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: '#9CA3AF', maxWidth: 450 }}>
+                                    This is a reading/article-based lesson. Please review the text and key learning outcomes below.
+                                </Typography>
                             </Box>
                         ) : !videoSrc ? (
                             <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: '#111827', gap: 1.5 }}>

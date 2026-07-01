@@ -229,6 +229,82 @@ const AdminCbtQuestionsPage = () => {
         }
     };
 
+    const handleCsvUpload = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        setSaving(true);
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const text = e.target.result;
+            const lines = text.split('\n');
+            let successCount = 0;
+            let failCount = 0;
+
+            for (let line of lines) {
+                if (!line.trim()) continue;
+                
+                // Parse CSV line considering basic quoting
+                const parts = [];
+                let current = '';
+                let inQuotes = false;
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        parts.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                parts.push(current.trim());
+
+                if (parts.length < 7) continue;
+
+                const csvPrompt = parts[0].replace(/^"|"$/g, '').trim();
+                const csvPoints = Number(parts[1]) || 1;
+                const opt1 = parts[2].replace(/^"|"$/g, '').trim();
+                const opt2 = parts[3].replace(/^"|"$/g, '').trim();
+                const opt3 = parts[4].replace(/^"|"$/g, '').trim();
+                const opt4 = parts[5].replace(/^"|"$/g, '').trim();
+                const correctIdx = Number(parts[6]) || 0;
+
+                if (!csvPrompt) continue;
+
+                const csvOptions = [
+                    { body: opt1, is_correct: correctIdx === 0 },
+                    { body: opt2, is_correct: correctIdx === 1 },
+                    { body: opt3, is_correct: correctIdx === 2 },
+                    { body: opt4, is_correct: correctIdx === 3 },
+                ];
+
+                try {
+                    await adminCoursesService.addCbtQuestion(versionId, {
+                        prompt: csvPrompt,
+                        points: csvPoints,
+                        options: csvOptions,
+                    });
+                    successCount++;
+                } catch (err) {
+                    failCount++;
+                }
+            }
+
+            try {
+                const res = await adminCoursesService.listCbtQuestions(versionId);
+                setQuestions(res.data || []);
+                showMessage(`CSV Import complete. Added ${successCount} questions.${failCount > 0 ? ` Failed to add ${failCount} questions.` : ''}`);
+            } catch (err) {
+                showMessage('CSV imported but failed to reload question list.', 'error');
+            } finally {
+                setSaving(false);
+            }
+        };
+        reader.readAsText(file);
+    };
+
     return (
         <Box sx={{ p: { xs: 2, md: 4 }, bgcolor: '#0C1322', minHeight: 'calc(100vh - 70px)', width: '100%' }}>
             <Breadcrumbs separator={<NavigateNext sx={{ fontSize: 16, color: '#9CA3AF' }} />} sx={{ mb: 3 }}>
@@ -290,7 +366,7 @@ const AdminCbtQuestionsPage = () => {
             ) : (
                 <Stack direction={{ xs: 'column', lg: 'row' }} spacing={3} alignItems="flex-start">
                     <Box sx={{ flex: 1, minWidth: 0, width: '100%' }}>
-                        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+                        <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 2 }}>
                             <Typography sx={{ color: '#E5E7EB', fontWeight: 700 }}>
                                 Questions
                             </Typography>
@@ -299,6 +375,30 @@ const AdminCbtQuestionsPage = () => {
                                 size="small"
                                 sx={{ bgcolor: 'rgba(167,139,250,0.12)', color: '#C4B5FD', fontWeight: 600 }}
                             />
+                            <Box sx={{ flexGrow: 1 }} />
+                            <Button
+                                component="label"
+                                variant="outlined"
+                                size="small"
+                                sx={{
+                                    borderColor: 'rgba(167,139,250,0.4)',
+                                    color: '#C4B5FD',
+                                    textTransform: 'none',
+                                    fontWeight: 600,
+                                    '&:hover': {
+                                        borderColor: '#A78BFA',
+                                        bgcolor: 'rgba(167,139,250,0.06)'
+                                    }
+                                }}
+                            >
+                                Import CSV
+                                <input
+                                    type="file"
+                                    accept=".csv"
+                                    hidden
+                                    onChange={handleCsvUpload}
+                                />
+                            </Button>
                         </Stack>
 
                         {questions.length === 0 ? (

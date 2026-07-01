@@ -304,8 +304,12 @@ const LandingPage = () => {
                                 </Button>
 
                                 <Button
-                                    component={Link}
-                                    to="#"
+                                    onClick={() => {
+                                        const el = document.getElementById('learning-journey');
+                                        if (el) {
+                                            el.scrollIntoView({ behavior: 'smooth' });
+                                        }
+                                    }}
                                     variant="outlined"
                                     size="large"
                                     sx={{
@@ -578,7 +582,7 @@ const LandingPage = () => {
 
 
             {/* The Learning Journey Section */}
-            <Box sx={{ py: { xs: 8, md: 12 }, px: { xs: 2, md: 4, lg: 6 }, bgcolor: colors.bgDarker }}>
+            <Box id="learning-journey" sx={{ py: { xs: 8, md: 12 }, px: { xs: 2, md: 4, lg: 6 }, bgcolor: colors.bgDarker }}>
                 <Container maxWidth="lg">
                     {/* Section Header */}
                     <Box sx={{ textAlign: 'center', mb: 6 }}>
