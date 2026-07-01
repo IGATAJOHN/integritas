@@ -21,6 +21,9 @@ import {
     Notes,
     Person,
     VolunteerActivism,
+    ContentCopy,
+    Check,
+    AccountBalance,
 } from '@mui/icons-material';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -57,6 +60,8 @@ const initialForm = {
     note: '',
 };
 
+const PAYSTACK_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_41ad7c39050d2bbd4eb07c7428f5bc651586bd22';
+
 const DonatePage = () => {
     const { isDark } = useThemeMode();
     const colors = getColors(isDark);
@@ -66,8 +71,28 @@ const DonatePage = () => {
     const [form, setForm] = useState(initialForm);
     const [errors, setErrors] = useState({});
     const [snackOpen, setSnackOpen] = useState(false);
+    const [copied, setCopied] = useState(false);
+    const [paying, setPaying] = useState(false);
 
     const donationAmount = selectedAmount || Number(customAmount || 0);
+
+    React.useEffect(() => {
+        const script = document.createElement('script');
+        script.src = 'https://js.paystack.co/v1/inline.js';
+        script.async = true;
+        document.body.appendChild(script);
+        return () => {
+            if (document.body.contains(script)) {
+                document.body.removeChild(script);
+            }
+        };
+    }, []);
+
+    const handleCopyAccountNumber = () => {
+        navigator.clipboard.writeText('4005724739');
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
 
     const inputSx = {
         '& .MuiFilledInput-root': {
@@ -147,9 +172,55 @@ const DonatePage = () => {
             return;
         }
 
-        setSnackOpen(true);
-        setForm(initialForm);
-        setErrors({});
+        if (paying) return;
+
+        if (!window.PaystackPop) {
+            setErrors({ amount: 'Payment gateway is loading, please try again in a moment.' });
+            return;
+        }
+
+        setPaying(true);
+
+        try {
+            const handler = window.PaystackPop.setup({
+                key: PAYSTACK_KEY,
+                email: form.email.trim(),
+                amount: donationAmount * 100, // Paystack is in kobo
+                currency: 'NGN',
+                metadata: {
+                    custom_fields: [
+                        {
+                            display_name: "Donor Name",
+                            variable_name: "donor_name",
+                            value: form.name.trim()
+                        },
+                        {
+                            display_name: "Organization",
+                            variable_name: "organization",
+                            value: form.organization.trim()
+                        },
+                        {
+                            display_name: "Note",
+                            variable_name: "note",
+                            value: form.note.trim()
+                        }
+                    ]
+                },
+                callback: function(response) {
+                    setPaying(false);
+                    setSnackOpen(true);
+                    setForm(initialForm);
+                    setErrors({});
+                },
+                onClose: function() {
+                    setPaying(false);
+                }
+            });
+            handler.openIframe();
+        } catch (err) {
+            setPaying(false);
+            setErrors({ amount: err?.message || 'Failed to initialize payment.' });
+        }
     };
 
     return (
@@ -347,6 +418,87 @@ const DonatePage = () => {
                                     sx={inputSx}
                                 />
                             </Box>
+
+                            {/* Bank Details section */}
+                            <Divider sx={{ borderColor: colors.border, my: 4 }} />
+
+                            <Typography
+                                variant="h3"
+                                sx={{
+                                    color: colors.textWhite,
+                                    fontSize: '1.25rem',
+                                    fontWeight: 700,
+                                    mb: 1.5,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 1
+                                }}
+                            >
+                                <AccountBalance sx={{ color: colors.primary }} />
+                                Bank Transfer Details
+                            </Typography>
+                            <Typography sx={{ color: colors.textMuted, fontSize: '0.875rem', lineHeight: 1.6, mb: 3 }}>
+                                Alternatively, you can make a direct bank transfer to our official account:
+                            </Typography>
+
+                            <Box
+                                sx={{
+                                    bgcolor: colors.bgDarker,
+                                    border: `1px solid ${colors.border}`,
+                                    borderRadius: 2.5,
+                                    p: 3,
+                                    position: 'relative',
+                                }}
+                            >
+                                <Stack spacing={2.5}>
+                                    <Box>
+                                        <Typography variant="caption" sx={{ color: colors.textDark, display: 'block', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em', mb: 0.5 }}>
+                                            Bank Name
+                                        </Typography>
+                                        <Typography sx={{ color: colors.textWhite, fontWeight: 600, fontSize: '0.95rem' }}>
+                                            Moniepoint
+                                        </Typography>
+                                    </Box>
+
+                                    <Box>
+                                        <Typography variant="caption" sx={{ color: colors.textDark, display: 'block', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em', mb: 0.5 }}>
+                                            Account Name
+                                        </Typography>
+                                        <Typography sx={{ color: colors.textWhite, fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.4 }}>
+                                            Center for Fiscal Transparency & Public Integrity - Integritas
+                                        </Typography>
+                                    </Box>
+
+                                    <Box>
+                                        <Typography variant="caption" sx={{ color: colors.textDark, display: 'block', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em', mb: 0.5 }}>
+                                            Account Number
+                                        </Typography>
+                                        <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+                                            <Typography sx={{ color: colors.textWhite, fontWeight: 700, fontSize: '1.25rem', letterSpacing: '0.05em' }}>
+                                                4005724739
+                                            </Typography>
+                                            <Button
+                                                size="small"
+                                                variant="outlined"
+                                                onClick={handleCopyAccountNumber}
+                                                startIcon={copied ? <Check /> : <ContentCopy />}
+                                                sx={{
+                                                    textTransform: 'none',
+                                                    borderColor: copied ? '#10B981' : colors.primary,
+                                                    color: copied ? '#10B981' : colors.primary,
+                                                    fontWeight: 600,
+                                                    '&:hover': {
+                                                        borderColor: copied ? '#10B981' : colors.primary,
+                                                        bgcolor: copied ? 'rgba(16,185,129,0.05)' : `${colors.primary}10`,
+                                                    }
+                                                }}
+                                            >
+                                                {copied ? 'Copied' : 'Copy'}
+                                            </Button>
+                                        </Stack>
+                                    </Box>
+                                </Stack>
+                            </Box>
                         </Box>
 
                         <Box sx={{ flex: 1, width: '100%' }}>
@@ -362,7 +514,7 @@ const DonatePage = () => {
                                 Donor Details
                             </Typography>
                             <Typography sx={{ color: colors.textMuted, lineHeight: 1.7, mb: 4 }}>
-                                This form is prepared for the payment flow, but it does not submit to a backend yet.
+                                Fill in your details below to proceed to the secure payment portal.
                             </Typography>
 
                             <Stack spacing={3}>
@@ -461,7 +613,8 @@ const DonatePage = () => {
                                     type="submit"
                                     variant="contained"
                                     size="large"
-                                    endIcon={<ArrowForward />}
+                                    disabled={paying}
+                                    endIcon={paying ? null : <ArrowForward />}
                                     sx={{
                                         bgcolor: colors.primary,
                                         '&:hover': { bgcolor: colors.primaryHover, color: '#FFFFFF' },
@@ -473,7 +626,7 @@ const DonatePage = () => {
                                         px: 4,
                                     }}
                                 >
-                                    Continue Donation
+                                    {paying ? 'Processing...' : 'Continue Donation'}
                                 </Button>
                             </Stack>
                         </Box>
@@ -527,7 +680,7 @@ const DonatePage = () => {
                     severity="success"
                     sx={{ width: '100%' }}
                 >
-                    Donation details received. Payment integration coming soon.
+                    Thank you! Your donation was successful. We appreciate your support for Integritas.
                 </Alert>
             </Snackbar>
         </Box>

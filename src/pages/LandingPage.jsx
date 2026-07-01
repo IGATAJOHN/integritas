@@ -13,6 +13,8 @@ import {
     Avatar,
     IconButton,
     Skeleton,
+    useTheme,
+    useMediaQuery,
 } from '@mui/material';
 import {
     School,
@@ -54,12 +56,106 @@ const getColors = (isDark) => ({
 });
 
 
+const FALLBACK_MODULES = [
+    { id: 1, title: 'Introduction to Public Ethics & Integrity', description: 'Understand the foundational pillars of public service ethics, accountability, and the consequences of moral compromise.', tutor: 'Dr. Joe Abah' },
+    { id: 2, title: 'Systemic Pressure & Decision Making', description: 'Learn tactical frameworks to withstand systemic institutional pressures and make uncompromised decisions under stress.', tutor: 'Mrs. Obiageli Ezekwesili' },
+    { id: 3, title: 'Anti-Corruption Frameworks in Nigeria', description: 'Analyze the legal and structural anti-corruption instruments in Nigeria, including EFCC, ICPC, and the Code of Conduct Bureau.', tutor: 'Prof. Bolaji Owasanoye' },
+    { id: 4, title: 'Public Procurement & Fiscal Responsibility', description: 'Master public finance management laws, procurement processes, and tools to identify and plug institutional leakage.', tutor: 'Mr. Soji Apampa' },
+    { id: 5, title: 'Code of Conduct & Public Service Rules', description: 'In-depth study of conflict of interest, asset declaration guidelines, and statutory regulations governing public service.', tutor: 'Barr. Femi Falana' },
+    { id: 6, title: 'Whistleblowing & Safeguarding Protocols', description: 'How to report wrongdoing safely, navigate reporting channels, and understand protection rights under current legal policies.', tutor: 'Dr. Chido Onumah' },
+    { id: 7, title: 'Open Contracting & Transparency Indices', description: 'Utilizing open data standards and the Transparency and Integrity Index (TII) to audit public spending and contracts.', tutor: 'Seun Onigbinde' },
+    { id: 8, title: 'Managing Extortion & Kickbacks', description: 'Practical negotiation skills and behavioral tactics to refuse bribery and extortion requests without losing operational capacity.', tutor: 'Mallam Nuhu Ribadu' },
+    { id: 9, title: 'Corporate Governance & Business Ethics', description: 'Building clean business models, supply chain integrity, and maintaining ethical competence in private-public interactions.', tutor: 'Toyin Sanni' },
+    { id: 10, title: 'Asset Declaration & Verification', description: 'A step-by-step operational guide to declaring assets correctly, verifying declarations, and maintaining financial clarity.', tutor: 'Ekpo Nta' },
+    { id: 11, title: 'Compliance in Supply Chain Management', description: 'Auditing procurement lines, verification of vendor compliance, and establishing ethical guardrails in enterprise operations.', tutor: 'Dr. Alimou Diallo' },
+    { id: 12, title: 'Digital Tools for Transparency & Civic Audit', description: 'Leveraging GovTech platforms, civic audits, and digital tools to monitor public works and report execution anomalies.', tutor: 'Gbenga Sesan' },
+    { id: 13, title: 'Financial Crime Investigation & Forensic Audit', description: 'Fundamentals of tracking money trails, detecting shell companies, and recognizing white-collar financial crimes.', tutor: 'Mr. Ibrahim Magu' },
+    { id: 14, title: 'Restoring Trust in Public Institutions', description: 'Rebuilding institutional legitimacy through open communication, merit-based governance, and public service competence.', tutor: 'Prof. Attahiru Jega' },
+    { id: 15, title: 'Integritas Action Plan & Capstone', description: 'Synthesize your training into a practical, tactical blueprint to resolve a specific inefficiency in your field of work.', tutor: 'Dr. Igata John' },
+];
+
+
 const LandingPage = () => {
     const { isDark } = useThemeMode();
     const colors = getColors(isDark);
 
+    const theme = useTheme();
+    const isMd = useMediaQuery(theme.breakpoints.up('md'));
+    const isSm = useMediaQuery(theme.breakpoints.up('sm'));
+    const cardsToShow = isMd ? 3 : isSm ? 2 : 1;
+
+    const [modules, setModules] = useState([]);
+    const [modulesLoading, setModulesLoading] = useState(true);
+    const [slideIndex, setSlideIndex] = useState(0);
+
+    const handlePrev = () => {
+        setSlideIndex((prev) => {
+            if (prev <= 0) return Math.max(0, modules.length - cardsToShow);
+            return prev - 1;
+        });
+    };
+
+    const handleNext = () => {
+        setSlideIndex((prev) => {
+            if (prev >= modules.length - cardsToShow) return 0;
+            return prev + 1;
+        });
+    };
+
     const [essentialCourses, setEssentialCourses] = useState([]);
     const [coursesLoading, setCoursesLoading] = useState(true);
+
+    useEffect(() => {
+        const loadModules = async () => {
+            setModulesLoading(true);
+            try {
+                const list = await courseCatalogService.listFoundationalCourses({ per_page: 25 });
+                const courses = list.data || [];
+                const selected = courses.find((item) => ['foundational course', 'foundational courses'].includes(String(item.title || '').trim().toLowerCase())) || courses[0];
+                if (selected) {
+                    const slug = selected.slug || selected.id;
+                    const detail = await courseCatalogService.getCourseById(slug);
+                    const courseTutors = await courseCatalogService.listCourseTutors(slug).catch(() => ({ data: [] }));
+                    
+                    const loadedModules = detail.modules || detail.course_modules || [];
+                    if (loadedModules.length > 0) {
+                        const mapped = loadedModules.map((mod, idx) => {
+                            let tutorName = 'Foundational Tutor';
+                            if (mod.lessons && mod.lessons.length > 0) {
+                                const firstLesson = mod.lessons[0];
+                                const id = String(firstLesson?.assigned_tutor_id || firstLesson?.tutor_id || firstLesson?.assigned_tutor?.id || firstLesson?.tutor?.id || '');
+                                const assigned = firstLesson?.assigned_tutor || firstLesson?.tutor || (courseTutors.data || []).find((tutor) => String(tutor.id || tutor.user_id) === id);
+                                if (assigned) {
+                                    tutorName = assigned.name || assigned.full_name || `${assigned.first_name || ''} ${assigned.last_name || ''}`.trim() || assigned.email || tutorName;
+                                }
+                            }
+                            if (tutorName === 'Foundational Tutor' && (courseTutors.data || []).length > 0) {
+                                const tutor = (courseTutors.data || [])[idx % (courseTutors.data || []).length];
+                                tutorName = tutor?.name || tutor?.full_name || `${tutor?.first_name || ''} ${tutor?.last_name || ''}`.trim() || tutor?.email || tutorName;
+                            }
+                            return {
+                                id: mod.id || idx,
+                                title: mod.title || `Module ${idx + 1}`,
+                                description: mod.description || (mod.lessons && mod.lessons.length > 0 ? mod.lessons.map(l => l.title).join(', ') : 'Governance and compliance modules built for integrity.'),
+                                tutor: tutorName
+                            };
+                        });
+                        setModules(mapped);
+                    } else {
+                        setModules(FALLBACK_MODULES);
+                    }
+                } else {
+                    setModules(FALLBACK_MODULES);
+                }
+            } catch {
+                setModules(FALLBACK_MODULES);
+            } finally {
+                setModulesLoading(false);
+            }
+        };
+
+        loadModules();
+    }, []);
 
     useEffect(() => {
         // Show a small mix of foundational + featured courses on the landing page.
@@ -232,39 +328,51 @@ const LandingPage = () => {
                                 </Button>
                             </Stack>
 
-                            {/* Trust text */}
-                            <Typography
-                                sx={{
-                                    fontSize: '0.75rem',
-                                    color: colors.textDark,
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.1em',
-                                    fontWeight: 500,
-                                }}
-                            >
-                                Trusted by officials from
-                            </Typography>
                         </Box>
 
-                        {/* Right - Hero Image */}
+                        {/* Right - Welcome Address Video */}
                         <Box
                             sx={{
                                 flex: '0 0 auto',
+                                width: '100%',
                                 maxWidth: { xs: '100%', lg: '50%' },
-                                display: { xs: 'none', lg: 'block' },
+                                display: 'flex',
+                                justifyContent: 'center',
                             }}
                         >
                             <Box
-                                component="img"
-                                src={heroImage}
-                                alt="Integritas Platform Dashboard"
                                 sx={{
                                     width: '100%',
                                     maxWidth: 550,
-                                    height: 'auto',
-                                    borderRadius: 2,
+                                    aspectRatio: '16/9',
+                                    borderRadius: 3,
+                                    overflow: 'hidden',
+                                    bgcolor: '#080D19',
+                                    border: `1px solid ${colors.border}`,
+                                    boxShadow: '0 20px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05)',
+                                    transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                                    '&:hover': {
+                                        transform: 'translateY(-4px) scale(1.01)',
+                                        boxShadow: `0 30px 60px rgba(0,0,0,0.6), 0 0 20px ${theme.colors.brand}22`,
+                                        borderColor: 'rgba(17, 82, 212, 0.4)',
+                                    },
                                 }}
-                            />
+                            >
+                                <Box
+                                    component="video"
+                                    controls
+                                    poster={heroImage}
+                                    src="/welcome_address.mp4"
+                                    sx={{
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: 'cover',
+                                        display: 'block',
+                                    }}
+                                >
+                                    Your browser does not support the video tag.
+                                </Box>
+                            </Box>
                         </Box>
                     </Box>
                 </Container>
@@ -677,229 +785,213 @@ const LandingPage = () => {
                             <Typography
                                 variant="h2"
                                 sx={{
-                                    fontSize: { xs: '1.75rem', md: '2rem' },
-                                    fontWeight: 700,
-                                    mb: 1,
+                                    fontSize: { xs: '1.75rem', md: '2.25rem' },
+                                    fontWeight: 850,
+                                    mb: 1.5,
                                     color: colors.textWhite,
+                                    letterSpacing: '-0.02em',
                                 }}
                             >
-                                Explore Our Learning Tracks
+                                Foundational Track Modules
                             </Typography>
-                            <Typography sx={{ color: colors.textMuted }}>
-                                From Foundational Courses to the exclusive Exemplar Series — a pathway built for integrity.
+                            <Typography sx={{ color: colors.textMuted, fontSize: '1rem', maxWidth: 600 }}>
+                                Master the 15 core modules that bridge international compliance standards with local realities.
                             </Typography>
                         </Box>
-                        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mt: { xs: 2, md: 0 } }}>
+                        <Stack direction="row" spacing={1.5} sx={{ mt: { xs: 3, md: 0 } }} alignItems="center">
+                            <IconButton
+                                onClick={handlePrev}
+                                sx={{
+                                    bgcolor: colors.bgCard,
+                                    border: `1px solid ${colors.border}`,
+                                    color: colors.textWhite,
+                                    width: 44,
+                                    height: 44,
+                                    transition: 'all 0.3s',
+                                    '&:hover': {
+                                        bgcolor: colors.primary,
+                                        borderColor: colors.primary,
+                                        transform: 'scale(1.05)',
+                                    },
+                                }}
+                                disabled={modules.length === 0}
+                            >
+                                <ChevronLeft />
+                            </IconButton>
+                            <IconButton
+                                onClick={handleNext}
+                                sx={{
+                                    bgcolor: colors.bgCard,
+                                    border: `1px solid ${colors.border}`,
+                                    color: colors.textWhite,
+                                    width: 44,
+                                    height: 44,
+                                    transition: 'all 0.3s',
+                                    '&:hover': {
+                                        bgcolor: colors.primary,
+                                        borderColor: colors.primary,
+                                        transform: 'scale(1.05)',
+                                    },
+                                }}
+                                disabled={modules.length === 0}
+                            >
+                                <ChevronRight />
+                            </IconButton>
                             <Button
                                 component={Link}
                                 to="/learner/foundational"
-                                variant="outlined"
-                                endIcon={<ArrowForward />}
-                                sx={{
-                                    borderColor: colors.primary,
-                                    color: colors.primary,
-                                    textTransform: 'none',
-                                    fontWeight: 600,
-                                    borderRadius: '10px',
-                                    '&:hover': { bgcolor: colors.primaryLight },
-                                }}
-                            >
-                                Foundational Courses
-                            </Button>
-                            <Button
-                                component={Link}
-                                to="/explore/experta"
                                 variant="contained"
                                 endIcon={<ArrowForward />}
                                 sx={{
+                                    ml: 1,
                                     bgcolor: colors.primary,
                                     '&:hover': { bgcolor: colors.primaryHover },
                                     textTransform: 'none',
-                                    fontWeight: 600,
+                                    fontWeight: 700,
+                                    py: 1.25,
+                                    px: 2.5,
                                     borderRadius: '10px',
                                     color: '#FFFFFF',
                                 }}
                             >
-                                Exemplar Series
+                                Go to Hub
                             </Button>
                         </Stack>
                     </Stack>
 
-                    {coursesLoading ? (
+                    {modulesLoading ? (
                         <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
                             {[1, 2, 3].map(i => (
                                 <Box key={i} sx={{ flex: 1 }}>
-                                    <Skeleton variant="rounded" height={200} sx={{ mb: 1, bgcolor: colors.border }} />
+                                    <Skeleton variant="rounded" height={240} sx={{ mb: 1, bgcolor: colors.border, borderRadius: 3 }} />
                                     <Skeleton variant="text" height={28} sx={{ bgcolor: colors.border }} />
                                     <Skeleton variant="text" height={20} sx={{ bgcolor: colors.border }} />
                                     <Skeleton variant="text" width="60%" height={20} sx={{ bgcolor: colors.border }} />
                                 </Box>
                             ))}
                         </Stack>
-                    ) : essentialCourses.length === 0 ? (
+                    ) : modules.length === 0 ? (
                         <Box sx={{ textAlign: 'center', py: 6 }}>
                             <Typography sx={{ color: colors.textMuted, mb: 2 }}>
-                                No foundational courses available at this time.
+                                No foundational course modules available at this time.
                             </Typography>
-                            <Button
-                                component={Link}
-                                to="/explore/courses"
-                                variant="outlined"
-                                endIcon={<ArrowForward />}
-                                sx={{
-                                    borderColor: colors.primary,
-                                    color: colors.primary,
-                                    textTransform: 'none',
-                                    fontWeight: 600,
-                                    borderRadius: '10px',
-                                    '&:hover': { bgcolor: colors.primaryLight },
-                                }}
-                            >
-                                Browse All Courses
-                            </Button>
                         </Box>
                     ) : (
-                        <Stack
-                            direction={{ xs: 'column', md: 'row' }}
-                            spacing={3}
-                            sx={{ width: '100%' }}
-                        >
-                            {essentialCourses.map((course) => (
-                                <Box key={course.id} sx={{ flex: 1 }}>
-                                    <Card
-                                        component={Link}
-                                        to={`/explore/course/${course.id}`}
+                        <Box sx={{ overflow: 'hidden', width: '100%', px: 1.5, mx: 'auto' }}>
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    mx: -1.5,
+                                    transition: 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+                                    transform: `translateX(-${slideIndex * (100 / cardsToShow)}%)`,
+                                }}
+                            >
+                                {modules.map((mod, idx) => (
+                                    <Box
+                                        key={mod.id}
                                         sx={{
-                                            bgcolor: colors.bgCard,
-                                            border: `1px solid ${colors.border}`,
-                                            borderRadius: 3,
-                                            overflow: 'hidden',
-                                            height: '100%',
-                                            textDecoration: 'none',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            transition: 'all 0.3s',
-                                            '&:hover': {
-                                                transform: 'translateY(-4px)',
-                                                borderColor: colors.borderLight,
+                                            flexShrink: 0,
+                                            width: {
+                                                xs: '100%',
+                                                sm: '50%',
+                                                md: '33.3333%'
                                             },
+                                            px: 1.5,
+                                            boxSizing: 'border-box',
                                         }}
                                     >
-                                        <Box sx={{ position: 'relative' }}>
-                                            {course.image ? (
-                                                <CardMedia
-                                                    component="img"
-                                                    height="200"
-                                                    image={course.image}
-                                                    alt={course.title}
-                                                    onError={(e) => {
-                                                        e.currentTarget.style.display = 'none';
-                                                        e.currentTarget.nextElementSibling.style.display = 'flex';
-                                                    }}
-                                                />
-                                            ) : null}
-                                            <Box sx={{
-                                                height: 200,
-                                                bgcolor: '#111827',
-                                                display: course.image ? 'none' : 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                            }}>
-                                                <School sx={{ fontSize: 64, color: 'rgba(255,255,255,0.15)' }} />
-                                            </Box>
-                                            {course.duration && course.duration !== 'TBD' && (
-                                                <Box
+                                        <Card
+                                            sx={{
+                                                bgcolor: colors.bgCard,
+                                                border: `1px solid ${colors.border}`,
+                                                borderRadius: 3,
+                                                p: { xs: 3, md: 3.5 },
+                                                height: '100%',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                justifyContent: 'space-between',
+                                                minHeight: 300,
+                                                transition: 'all 0.3s',
+                                                '&:hover': {
+                                                    transform: 'translateY(-4px)',
+                                                    borderColor: colors.borderLight,
+                                                    boxShadow: '0 12px 30px rgba(0,0,0,0.4)',
+                                                },
+                                            }}
+                                        >
+                                            <Box>
+                                                <Box sx={{ mb: 2 }}>
+                                                    <Typography
+                                                        sx={{
+                                                            display: 'inline-block',
+                                                            fontSize: '0.75rem',
+                                                            fontWeight: 700,
+                                                            color: colors.primary,
+                                                            textTransform: 'uppercase',
+                                                            letterSpacing: '0.1em',
+                                                            bgcolor: `${colors.primary}15`,
+                                                            px: 1.5,
+                                                            py: 0.5,
+                                                            borderRadius: 1,
+                                                        }}
+                                                    >
+                                                        Module {String(idx + 1).padStart(2, '0')}
+                                                    </Typography>
+                                                </Box>
+                                                <Typography
+                                                    variant="h3"
                                                     sx={{
-                                                        position: 'absolute',
-                                                        top: 16,
-                                                        right: 16,
-                                                        bgcolor: 'rgba(0,0,0,0.6)',
-                                                        color: '#FFFFFF',
-                                                        px: 1.5,
-                                                        py: 0.5,
-                                                        borderRadius: 1,
-                                                        fontSize: '0.75rem',
-                                                        fontWeight: 500,
+                                                        fontSize: '1.15rem',
+                                                        fontWeight: 700,
+                                                        color: colors.textWhite,
+                                                        mb: 1.5,
+                                                        lineHeight: 1.4,
                                                     }}
                                                 >
-                                                    {course.duration}
+                                                    {mod.title}
+                                                </Typography>
+                                                <Typography
+                                                    sx={{
+                                                        fontSize: '0.875rem',
+                                                        color: colors.textMuted,
+                                                        lineHeight: 1.6,
+                                                        mb: 3,
+                                                        display: '-webkit-box',
+                                                        WebkitLineClamp: 3,
+                                                        WebkitBoxOrient: 'vertical',
+                                                        overflow: 'hidden',
+                                                    }}
+                                                >
+                                                    {mod.description}
+                                                </Typography>
+                                            </Box>
+
+                                            <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: 'auto', pt: 2, borderTop: `1px solid ${colors.border}` }}>
+                                                <Avatar
+                                                    sx={{
+                                                        width: 36,
+                                                        height: 36,
+                                                        bgcolor: colors.primary,
+                                                        fontSize: '0.85rem',
+                                                        fontWeight: 600,
+                                                    }}
+                                                >
+                                                    {mod.tutor ? mod.tutor.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'FT'}
+                                                </Avatar>
+                                                <Box>
+                                                    <Typography sx={{ fontSize: '0.7rem', color: colors.textDark, fontWeight: 650, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                                        Tutor
+                                                    </Typography>
+                                                    <Typography sx={{ fontSize: '0.875rem', color: colors.textWhite, fontWeight: 600 }}>
+                                                        {mod.tutor}
+                                                    </Typography>
                                                 </Box>
-                                            )}
-                                        </Box>
-                                        <CardContent sx={{ p: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
-                                            {course.topic && (
-                                                <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 2 }}>
-                                                    <School sx={{ fontSize: 14, color: '#F97316' }} />
-                                                    <Typography
-                                                        sx={{
-                                                            fontSize: '0.75rem',
-                                                            fontWeight: 600,
-                                                            color: '#F97316',
-                                                            textTransform: 'uppercase',
-                                                            letterSpacing: '0.05em',
-                                                        }}
-                                                    >
-                                                        {course.topic}
-                                                    </Typography>
-                                                </Stack>
-                                            )}
-
-                                            <Typography
-                                                sx={{
-                                                    fontSize: '1.125rem',
-                                                    fontWeight: 600,
-                                                    color: colors.textWhite,
-                                                    mb: 1.5
-                                                }}
-                                            >
-                                                {course.title}
-                                            </Typography>
-                                            <Typography
-                                                sx={{
-                                                    fontSize: '0.875rem',
-                                                    color: colors.textMuted,
-                                                    lineHeight: 1.6,
-                                                    mb: 3,
-                                                    minHeight: 60,
-                                                    flex: 1,
-                                                }}
-                                            >
-                                                {course.description}
-                                            </Typography>
-
-                                            <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                                <Stack direction="row" spacing={1.5} alignItems="center">
-                                                    <Avatar
-                                                        sx={{
-                                                            width: 32,
-                                                            height: 32,
-                                                            bgcolor: colors.primary,
-                                                            fontSize: '0.75rem',
-                                                        }}
-                                                    >
-                                                        {course.instructor ? course.instructor.split(' ').map(n => n[0]).join('') : 'IH'}
-                                                    </Avatar>
-                                                    <Typography sx={{ fontSize: '0.875rem', color: colors.textMuted }}>
-                                                        {course.instructor || 'Integritas'}
-                                                    </Typography>
-                                                </Stack>
-                                                {course.price > 0 && (
-                                                    <Typography
-                                                        sx={{
-                                                            fontSize: '1.125rem',
-                                                            fontWeight: 700,
-                                                            color: colors.textWhite,
-                                                        }}
-                                                    >
-                                                        ${course.price}
-                                                    </Typography>
-                                                )}
                                             </Stack>
-                                        </CardContent>
-                                    </Card>
-                                </Box>
-                            ))}
-                        </Stack>
+                                        </Card>
+                                    </Box>
+                                ))}
+                            </Box>
+                        </Box>
                     )}
                 </Box>
             </Box>
@@ -977,7 +1069,7 @@ const LandingPage = () => {
                             />
                             <Stack spacing={3}>
                                 {[
-                                    'Qualifications is the minimum, but character is the anchor. Brilliance without boundaries is a liability.',
+                                    'Qualifications are the minimum, but character is the anchor. Brilliance without boundaries is a liability.',
                                     'For too long, the "Nigerian Factor" has been used as a convenient excuse for compromise. Across both the public and private sectors, we have been conditioned to believe that surviving the system means bending our principles, and that integrity is a theoretical luxury we cannot afford in the real world.',
                                     'INTEGRITAS was built to dismantle that narrative.',
                                     'We recognized that treating public ethics as an abstract moral aspiration was failing. Technical skills are entirely useless if you lack the moral courage to deploy them correctly. We built this Trust Utility to shift public ethics out of the realm of abstract morality and forge it into a non-negotiable institutional baseline.',
@@ -1001,7 +1093,7 @@ const LandingPage = () => {
                         <Box sx={{ flex: 1 }}>
                             <Stack spacing={3}>
                                 {[
-                                    'This platform is not a passive online course; it is a proving ground. The 15-module pathway provides the exact frameworks required to navigate systemic pressure, maintain compliance, and reject extortion. But theoretical knowledge is only the start.',
+                                    'This platform is a ground from transition of perceptivity to action and engagement. The 15-module pathway provides the exact frameworks required to navigate systemic pressure, maintain rigorous training on integrity, ethics, service and competence. But theoretical knowledge is only the start.',
                                     'To earn the Integritas Associate credential, you must design a tactical blueprint to combat inefficiency in your specific field. To elevate to an Integritas Fellow, you must take that blueprint into the real world and deliver verifiable proof of impact. Earning this credential is a declaration of operational intent — it proves to employers, partners, and the public that you possess the resilience to lead without compromise. More importantly, it improves you.',
                                     "That's why we do not want you to simply survive a broken system. We are calling on you to reform it.",
                                     'The standard has been set. Welcome to the vanguard. Welcome to INTEGRITAS.',
