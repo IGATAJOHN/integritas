@@ -84,17 +84,35 @@ const matchesLessonIdentifier = (lesson, identifier) => {
     return [lesson?.id, lesson?.lesson_id, lesson?.slug].some((candidate) => String(candidate || '') === value);
 };
 
-const normalizeLesson = (lesson) => ({
-    ...lesson,
-    id: String(lesson.id || lesson.lesson_id || lesson.slug || ''),
-    slug: lesson.slug || lesson.lesson_slug || '',
-    title: String(lesson.title || lesson.name || 'Untitled Lesson'),
-    duration: lesson.duration || lesson.duration_minutes || 0,
-    order: lesson.order || lesson.position || 0,
-    video_url: lesson.video_url || lesson.video || '',
-    description: lesson.description || lesson.summary || '',
-    content: lesson.content || '',
-});
+const normalizeLesson = (lesson) => {
+    const videoUrl = lesson.video_url || lesson.video || '';
+    const content = lesson.content || '';
+    let derivedType = 'video';
+
+    if (videoUrl) {
+        const lowerUrl = videoUrl.toLowerCase();
+        const docExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.zip', '.rar', '.txt', '.csv'];
+        const isDoc = docExtensions.some(ext => lowerUrl.endsWith(ext) || lowerUrl.includes(ext + '?') || lowerUrl.includes(ext + '#'));
+        if (isDoc) {
+            derivedType = 'document';
+        }
+    } else if (content.trim()) {
+        derivedType = 'text';
+    }
+
+    return {
+        ...lesson,
+        id: String(lesson.id || lesson.lesson_id || lesson.slug || ''),
+        slug: lesson.slug || lesson.lesson_slug || '',
+        title: String(lesson.title || lesson.name || 'Untitled Lesson'),
+        duration: lesson.duration || lesson.duration_minutes || 0,
+        order: lesson.order || lesson.position || 0,
+        video_url: videoUrl,
+        description: lesson.description || lesson.summary || '',
+        content: content,
+        type: lesson.type || lesson.lesson_type || derivedType,
+    };
+};
 
 const normalizeModule = (module) => ({
     ...module,
@@ -651,26 +669,35 @@ const CourseLesson = () => {
                             <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#111827' }}>
                                 <CircularProgress size={48} />
                             </Box>
-                        ) : currentLesson?.type === 'document' || currentLesson?.type === 'file' ? (
-                            <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: '#1F2937', p: 4, textAlign: 'center' }}>
-                                <InsertDriveFile sx={{ fontSize: 64, color: '#178A83', mb: 2 }} />
-                                <Typography variant="h6" sx={{ color: '#fff', fontWeight: 650, mb: 1 }}>
-                                    {currentLesson.title} - Study Document
-                                </Typography>
-                                <Typography variant="body2" sx={{ color: '#9CA3AF', mb: 3, maxWidth: 400 }}>
-                                    This lesson includes a document attachment. Click the button below to download and read the study material.
-                                </Typography>
-                                <Button
-                                    variant="contained"
-                                    href={videoSrc}
-                                    target="_blank"
-                                    download
-                                    startIcon={<GetApp />}
-                                    sx={{ bgcolor: '#178A83', '&:hover': { bgcolor: '#116B65' } }}
-                                >
-                                    Download Material
-                                </Button>
-                            </Box>
+                        ) : (currentLesson?.type === 'document' || currentLesson?.type === 'file') ? (
+                            (videoSrc && videoSrc.toLowerCase().includes('.pdf')) ? (
+                                <Box
+                                    component="iframe"
+                                    src={videoSrc}
+                                    sx={{ width: '100%', height: '100%', border: 'none', display: 'block', bgcolor: '#FFFFFF' }}
+                                />
+                            ) : (
+                                <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: '#1F2937', p: 4, textAlign: 'center' }}>
+                                    <InsertDriveFile sx={{ fontSize: 64, color: '#178A83', mb: 2 }} />
+                                    <Typography variant="h6" sx={{ color: '#fff', fontWeight: 650, mb: 1 }}>
+                                        {currentLesson.title} - Study Document
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ color: '#9CA3AF', mb: 3, maxWidth: 400 }}>
+                                        This lesson includes a document attachment. Click the button below to download and read the study material.
+                                    </Typography>
+                                    <Button
+                                        variant="contained"
+                                        href={videoSrc}
+                                        target="_blank"
+                                        download
+                                        startIcon={<GetApp />}
+                                        sx={{ bgcolor: '#178A83', '&:hover': { bgcolor: '#116B65' } }}
+                                    >
+                                        Download Material
+                                    </Button>
+                                </Box>
+                            )
+                        )
                         ) : currentLesson?.type === 'text' ? (
                             <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: '#1F2937', p: 4, textAlign: 'center' }}>
                                 <MenuBook sx={{ fontSize: 64, color: '#178A83', mb: 2 }} />
