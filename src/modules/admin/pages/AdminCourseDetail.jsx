@@ -439,7 +439,11 @@ const AdminCourseDetail = () => {
     const handlePublishLesson = async (moduleId, lessonId, currentStatus) => {
         // Optimistic update
         const toggle = (lessons) => lessons.map(l =>
-            l.id === lessonId ? { ...l, published_at: currentStatus ? null : new Date().toISOString() } : l
+            l.id === lessonId ? { 
+                ...l, 
+                published_at: currentStatus ? null : new Date().toISOString(),
+                status: currentStatus ? 'draft' : 'published'
+            } : l
         );
         const updatedModules = modules.map(m =>
             m.id === moduleId ? { ...m, lessons: toggle(m.lessons || []) } : m
@@ -893,8 +897,8 @@ const AdminCourseDetail = () => {
                                                             </Tooltip>
                                                             <Switch
                                                                 size="small"
-                                                                checked={!!lesson.published_at}
-                                                                onChange={() => handlePublishLesson(mod.id, lesson.id, !!lesson.published_at)}
+                                                                checked={!!(lesson.published_at || lesson.status === 'published')}
+                                                                onChange={() => handlePublishLesson(mod.id, lesson.id, !!(lesson.published_at || lesson.status === 'published'))}
                                                                 color="success"
                                                             />
                                                             <IconButton size="small" sx={{ color: '#EF4444' }} onClick={() => handleDeleteLesson(lesson.id)}>

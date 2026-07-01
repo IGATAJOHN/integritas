@@ -738,8 +738,8 @@ const CourseDashboard = () => {
                                                                 />
                                                                 <IconButton
                                                                     size="small"
-                                                                    onClick={(e) => { e.stopPropagation(); lesson.is_published ? handleUnpublishLesson(mod.id, lesson.id) : handlePublishLesson(mod.id, lesson.id); }}
-                                                                    sx={{ color: lesson.is_published ? '#10B981' : '#6B7280', mr: 1 }}
+                                                                    onClick={(e) => { e.stopPropagation(); (lesson.is_published || lesson.status === 'published') ? handleUnpublishLesson(mod.id, lesson.id) : handlePublishLesson(mod.id, lesson.id); }}
+                                                                    sx={{ color: (lesson.is_published || lesson.status === 'published') ? '#10B981' : '#6B7280', mr: 1 }}
                                                                 >
                                                                     <Publish fontSize="small" />
                                                                 </IconButton>

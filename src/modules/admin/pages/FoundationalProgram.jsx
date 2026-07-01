@@ -582,7 +582,7 @@ const LessonActionsMenu = ({
     onUploadMaterial,
     onQuiz,
 }) => {
-    const published = lesson.published_at || lesson.is_published;
+    const published = !!(lesson.published_at || lesson.is_published || lesson.status === 'published');
 
     return (
         <ActionMenuButton label={`Actions for ${lesson.title || 'lesson'}`} disabled={disabled}>
@@ -672,7 +672,7 @@ const ContentTab = ({
                                 <TableCell sx={{ ...tableBodyCellStyle, color: '#FFFFFF' }}>{lesson.title}</TableCell>
                                 <TableCell sx={{ ...tableBodyCellStyle, color: '#D1D5DB' }}>{assignedTutorName(lesson)}</TableCell>
                                 <TableCell sx={tableBodyCellStyle}>
-                                    <Chip size="small" label={lesson.published_at || lesson.is_published ? 'Published' : 'Draft'} sx={{ color: lesson.published_at || lesson.is_published ? '#34D399' : '#FBBF24', bgcolor: lesson.published_at || lesson.is_published ? 'rgba(16,185,129,0.12)' : 'rgba(251,191,36,0.12)' }} />
+                                    <Chip size="small" label={lesson.published_at || lesson.is_published || lesson.status === 'published' ? 'Published' : 'Draft'} sx={{ color: lesson.published_at || lesson.is_published || lesson.status === 'published' ? '#34D399' : '#FBBF24', bgcolor: lesson.published_at || lesson.is_published || lesson.status === 'published' ? 'rgba(16,185,129,0.12)' : 'rgba(251,191,36,0.12)' }} />
                                 </TableCell>
                                 <TableCell sx={tableBodyCellStyle} align="right">
                                     <LessonActionsMenu
