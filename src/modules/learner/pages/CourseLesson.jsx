@@ -697,7 +697,6 @@ const CourseLesson = () => {
                                     </Button>
                                 </Box>
                             )
-                        )
                         ) : currentLesson?.type === 'text' ? (
                             <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: '#1F2937', p: 4, textAlign: 'center' }}>
                                 <MenuBook sx={{ fontSize: 64, color: '#178A83', mb: 2 }} />
