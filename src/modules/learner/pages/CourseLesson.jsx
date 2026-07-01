@@ -178,18 +178,7 @@ const CourseLesson = () => {
                     const rawModules = Array.isArray(modulesRes?.data) ? modulesRes.data
                         : Array.isArray(modulesRes) ? modulesRes : [];
 
-                    moduleList = await Promise.all(
-                        rawModules.map(async (m) => {
-                            try {
-                                const lessonsRes = await apiService.get(`/lms/modules/${m.id}/lessons`);
-                                const rawLessons = Array.isArray(lessonsRes?.data) ? lessonsRes.data
-                                    : Array.isArray(lessonsRes) ? lessonsRes : [];
-                                return normalizeModule({ ...m, lessons: rawLessons });
-                            } catch {
-                                return normalizeModule({ ...m, lessons: [] });
-                            }
-                        })
-                    );
+                    moduleList = rawModules.map((m) => normalizeModule(m));
                 }
                 if (!active) return;
 

@@ -270,27 +270,8 @@ const CourseDetail = () => {
                             : [],
                     });
 
-                    // Fetch lessons for modules that don't already include them
-                    const modulesMissingLessons = rawModules.filter(
-                        (m) => !Array.isArray(m.lessons) || m.lessons.length === 0
-                    );
-                    if (modulesMissingLessons.length > 0) {
-                        Promise.all(rawModules.map(async (m) => {
-                            if (Array.isArray(m.lessons) && m.lessons.length > 0) return m;
-                            try {
-                                const lessonsRes = await apiService.get(`/lms/modules/${m.id}/lessons`);
-                                const rawLessons = Array.isArray(lessonsRes?.data)
-                                    ? lessonsRes.data
-                                    : Array.isArray(lessonsRes) ? lessonsRes : [];
-                                return { ...m, lessons: rawLessons };
-                            } catch {
-                                return { ...m, lessons: [] };
-                            }
-                        })).then((modulesWithLessons) => {
-                            if (!active) return;
-                            setCourseData((prev) => prev ? { ...prev, modules: modulesWithLessons } : prev);
-                        });
-                    }
+                    // Lessons are already embedded inside the modules returned by the backend serializer
+                    // so no additional fetching of lessons is needed.
                 } else {
                     setError('Course not found');
                 }
