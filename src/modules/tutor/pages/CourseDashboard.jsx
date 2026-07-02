@@ -565,7 +565,7 @@ const CourseDashboard = () => {
                 <Stack direction="row" spacing={2}>
                     <Button
                         variant="outlined"
-                        onClick={() => window.open(`/courses/${courseId}/preview`, '_blank')}
+                        onClick={() => window.open(`/explore/course/${courseId}`, '_blank')}
                         sx={{
                             borderColor: '#374151',
                             color: '#fff',
