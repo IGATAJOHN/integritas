@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import {
     Alert,
@@ -150,6 +151,9 @@ const FoundationalProgram = () => {
     const [selectedModule, setSelectedModule] = useState(null);
     const [editingLesson, setEditingLesson] = useState(null);
     const [previewLesson, setPreviewLesson] = useState(null);
+    const [uploadingLessonId, setUploadingLessonId] = useState(null);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [expandedLessonPreviewId, setExpandedLessonPreviewId] = useState(null);
 
     const modules = useMemo(() => normalizeModules(course), [course]);
     const lessons = useMemo(() => modules.flatMap((module) => (
@@ -355,32 +359,82 @@ const FoundationalProgram = () => {
 
     const uploadVideo = async (lesson, file) => {
         if (!file) return;
+        const userStr = localStorage.getItem('user');
+        const token = userStr ? JSON.parse(userStr)?.token : null;
+        const baseUrl = (import.meta.env.VITE_API_BASE_URL || 'https://integritas-backend.onrender.com/api/v1').replace(/\/$/, '');
+        
         const formData = new FormData();
         formData.append('video', file);
+        
+        setUploadingLessonId(lesson.id);
+        setUploadProgress(0);
         setActionLoading(true);
+        
         try {
-            await adminCoursesService.uploadLessonMedia(lesson.id, formData);
+            await axios.post(
+                `${baseUrl}/admin/lessons/${lesson.id}/video`,
+                formData,
+                {
+                    headers: {
+                        'Authorization': token ? `Bearer ${token}` : '',
+                        'Accept': 'application/json',
+                    },
+                    onUploadProgress: (progressEvent) => {
+                        const percentCompleted = Math.round(
+                            (progressEvent.loaded * 100) / progressEvent.total
+                        );
+                        setUploadProgress(percentCompleted);
+                    },
+                }
+            );
             showMessage('Lesson video uploaded.');
             await reloadCourseOnly();
         } catch (err) {
             showMessage(getErrorMessage(err, 'Failed to upload video.'), 'error');
         } finally {
+            setUploadingLessonId(null);
+            setUploadProgress(0);
             setActionLoading(false);
         }
     };
 
     const uploadMaterial = async (lesson, file) => {
         if (!file) return;
+        const userStr = localStorage.getItem('user');
+        const token = userStr ? JSON.parse(userStr)?.token : null;
+        const baseUrl = (import.meta.env.VITE_API_BASE_URL || 'https://integritas-backend.onrender.com/api/v1').replace(/\/$/, '');
+        
         const formData = new FormData();
         formData.append('video', file);
+        
+        setUploadingLessonId(lesson.id);
+        setUploadProgress(0);
         setActionLoading(true);
+        
         try {
-            await adminCoursesService.uploadLessonMedia(lesson.id, formData);
+            await axios.post(
+                `${baseUrl}/admin/lessons/${lesson.id}/video`,
+                formData,
+                {
+                    headers: {
+                        'Authorization': token ? `Bearer ${token}` : '',
+                        'Accept': 'application/json',
+                    },
+                    onUploadProgress: (progressEvent) => {
+                        const percentCompleted = Math.round(
+                            (progressEvent.loaded * 100) / progressEvent.total
+                        );
+                        setUploadProgress(percentCompleted);
+                    },
+                }
+            );
             showMessage('Lesson material uploaded successfully.');
             await reloadCourseOnly();
         } catch (err) {
             showMessage(getErrorMessage(err, 'Failed to upload material.'), 'error');
         } finally {
+            setUploadingLessonId(null);
+            setUploadProgress(0);
             setActionLoading(false);
         }
     };
@@ -455,6 +509,10 @@ const FoundationalProgram = () => {
                             onQuiz={(lesson) => navigate(`/admin/content/courses/${getCourseId(course)}/lessons/${lesson.id}/quiz`)}
                             onPreviewLesson={setPreviewLesson}
                             assignedTutorName={assignedTutorName}
+                            uploadingLessonId={uploadingLessonId}
+                            uploadProgress={uploadProgress}
+                            expandedLessonPreviewId={expandedLessonPreviewId}
+                            setExpandedLessonPreviewId={setExpandedLessonPreviewId}
                         />
                     )}
                     {tab === 2 && <TutorsTab tutors={tutors} onManage={() => navigate('/admin/users/tutors?tab=foundational')} />}
@@ -914,6 +972,10 @@ const ContentTab = ({
     onQuiz,
     onPreviewLesson,
     assignedTutorName,
+    uploadingLessonId,
+    uploadProgress,
+    expandedLessonPreviewId,
+    setExpandedLessonPreviewId,
 }) => (
     <Stack spacing={2}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -947,29 +1009,94 @@ const ContentTab = ({
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {(module.lessons || []).map((lesson) => (
-                            <TableRow key={lesson.id}>
-                                <TableCell sx={{ ...tableBodyCellStyle, color: '#FFFFFF' }}>{lesson.title}</TableCell>
-                                <TableCell sx={{ ...tableBodyCellStyle, color: '#D1D5DB' }}>{assignedTutorName(lesson)}</TableCell>
-                                <TableCell sx={tableBodyCellStyle}>
-                                    <Chip size="small" label={lesson.published_at || lesson.is_published || lesson.status === 'published' ? 'Published' : 'Draft'} sx={{ color: lesson.published_at || lesson.is_published || lesson.status === 'published' ? '#34D399' : '#FBBF24', bgcolor: lesson.published_at || lesson.is_published || lesson.status === 'published' ? 'rgba(16,185,129,0.12)' : 'rgba(251,191,36,0.12)' }} />
-                                </TableCell>
-                                <TableCell sx={tableBodyCellStyle} align="right">
-                                    <LessonActionsMenu
-                                        module={module}
-                                        lesson={lesson}
-                                        disabled={actionLoading}
-                                        onEditLesson={onEditLesson}
-                                        onDeleteLesson={onDeleteLesson}
-                                        onPublishLesson={onPublishLesson}
-                                        onUploadVideo={onUploadVideo}
-                                        onUploadMaterial={onUploadMaterial}
-                                        onQuiz={onQuiz}
-                                        onPreviewLesson={onPreviewLesson}
-                                    />
-                                </TableCell>
-                            </TableRow>
-                        ))}
+                        {(module.lessons || []).map((lesson) => {
+                            const hasVideo = !!(lesson.video_url || lesson.video);
+                            const videoUrl = hasVideo ? getVideoUrl(lesson.video_url || lesson.video) : null;
+                            const isExpanded = expandedLessonPreviewId === lesson.id;
+
+                            return (
+                                <React.Fragment key={lesson.id}>
+                                    <TableRow sx={{ borderBottom: isExpanded ? 'none' : undefined }}>
+                                        <TableCell sx={{ ...tableBodyCellStyle, color: '#FFFFFF' }}>
+                                            <Stack spacing={0.5}>
+                                                <Stack direction="row" alignItems="center" spacing={1}>
+                                                    <Typography sx={{ fontWeight: 500 }}>{lesson.title}</Typography>
+                                                    {hasVideo && (
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={() => setExpandedLessonPreviewId(isExpanded ? null : lesson.id)}
+                                                            sx={{
+                                                                color: isExpanded ? '#EF4444' : '#60A5FA',
+                                                                '&:hover': { bgcolor: 'rgba(96,165,250,0.1)' },
+                                                                ml: 1,
+                                                                p: 0.5
+                                                            }}
+                                                            title={isExpanded ? "Close Video Preview" : "Watch Video Preview"}
+                                                        >
+                                                            {isExpanded ? <Close sx={{ fontSize: 18 }} /> : <PlayCircleOutline sx={{ fontSize: 18 }} />}
+                                                        </IconButton>
+                                                    )}
+                                                </Stack>
+
+                                                {/* Uploading progress bar */}
+                                                {uploadingLessonId === lesson.id && (
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.5, maxWidth: 280 }}>
+                                                        <LinearProgress variant="determinate" value={uploadProgress} sx={{ flex: 1, height: 6, borderRadius: 3, bgcolor: '#1F2937', '& .MuiLinearProgress-bar': { bgcolor: '#38BDF8' } }} />
+                                                        <Typography sx={{ color: '#38BDF8', fontSize: '0.75rem', fontWeight: 650 }}>{uploadProgress}%</Typography>
+                                                    </Box>
+                                                )}
+                                            </Stack>
+                                        </TableCell>
+                                        <TableCell sx={{ ...tableBodyCellStyle, color: '#D1D5DB' }}>{assignedTutorName(lesson)}</TableCell>
+                                        <TableCell sx={tableBodyCellStyle}>
+                                            <Chip size="small" label={lesson.published_at || lesson.is_published || lesson.status === 'published' ? 'Published' : 'Draft'} sx={{ color: lesson.published_at || lesson.is_published || lesson.status === 'published' ? '#34D399' : '#FBBF24', bgcolor: lesson.published_at || lesson.is_published || lesson.status === 'published' ? 'rgba(16,185,129,0.12)' : 'rgba(251,191,36,0.12)' }} />
+                                        </TableCell>
+                                        <TableCell sx={tableBodyCellStyle} align="right">
+                                            <LessonActionsMenu
+                                                module={module}
+                                                lesson={lesson}
+                                                disabled={actionLoading}
+                                                onEditLesson={onEditLesson}
+                                                onDeleteLesson={onDeleteLesson}
+                                                onPublishLesson={onPublishLesson}
+                                                onUploadVideo={onUploadVideo}
+                                                onUploadMaterial={onUploadMaterial}
+                                                onQuiz={onQuiz}
+                                                onPreviewLesson={onPreviewLesson}
+                                            />
+                                        </TableCell>
+                                    </TableRow>
+
+                                    {/* Inline video / document preview row */}
+                                    {isExpanded && videoUrl && (
+                                        <TableRow sx={{ bgcolor: 'rgba(0,0,0,0.2)' }}>
+                                            <TableCell colSpan={4} sx={{ p: 2, borderBottom: '1px solid #1F2937' }}>
+                                                <Box sx={{ maxWidth: 500, mx: 'auto', borderRadius: 2, overflow: 'hidden', border: '1px solid rgba(99,102,241,0.25)', bgcolor: '#000' }}>
+                                                    {videoUrl.toLowerCase().includes('.pdf') ? (
+                                                        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: '#1E293B' }}>
+                                                            <Stack direction="row" spacing={1.5} alignItems="center">
+                                                                <InsertDriveFile sx={{ color: '#F87171' }} />
+                                                                <Typography sx={{ color: '#E5E7EB', fontSize: '0.875rem' }}>PDF Material</Typography>
+                                                            </Stack>
+                                                            <Button size="small" component="a" href={videoUrl} target="_blank" rel="noopener noreferrer" startIcon={<GetApp />} sx={{ color: '#60A5FA', textTransform: 'none' }}>Open PDF</Button>
+                                                        </Box>
+                                                    ) : videoUrl.toLowerCase().includes('.mp4') || videoUrl.toLowerCase().includes('.webm') ? (
+                                                        <video src={videoUrl} controls style={{ width: '100%', display: 'block', maxHeight: 280 }} />
+                                                    ) : (
+                                                        <iframe
+                                                            src={videoUrl.replace('watch?v=', 'embed/').replace('vimeo.com/', 'player.vimeo.com/video/')}
+                                                            title="Video Preview"
+                                                            allowFullScreen
+                                                            style={{ width: '100%', height: 280, border: 'none', display: 'block' }}
+                                                        />
+                                                    )}
+                                                </Box>
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </React.Fragment>
+                            );
+                        })}
                         <TableRow>
                             <TableCell colSpan={4} sx={{ borderBottom: 'none' }}>
                                 <Button fullWidth startIcon={<Add />} onClick={() => onAddLesson(module)} sx={{ color: theme.colors.brand, textTransform: 'none' }}>
