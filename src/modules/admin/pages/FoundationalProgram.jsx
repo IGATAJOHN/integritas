@@ -804,44 +804,67 @@ const LessonActionsMenu = ({
     onPreviewLesson,
 }) => {
     const published = !!(lesson.published_at || lesson.is_published || lesson.status === 'published');
+    const videoInputRef = React.useRef(null);
+    const materialInputRef = React.useRef(null);
 
     return (
-        <ActionMenuButton label={`Actions for ${lesson.title || 'lesson'}`} disabled={disabled}>
-            {(closeMenu) => (
-                <>
-                    <MenuItem onClick={() => { closeMenu(); onPreviewLesson(lesson); }}>
-                        <ListItemIcon sx={{ color: '#FCD34D', minWidth: 30 }}><Visibility fontSize="small" /></ListItemIcon>
-                        <ListItemText>Preview Lesson</ListItemText>
-                    </MenuItem>
-                    <MenuItem onClick={() => { closeMenu(); onEditLesson(module, lesson); }}>
-                        <ListItemIcon sx={{ color: '#93C5FD', minWidth: 30 }}><Edit fontSize="small" /></ListItemIcon>
-                        <ListItemText>Edit Lesson</ListItemText>
-                    </MenuItem>
-                    <MenuItem component="label">
-                        <ListItemIcon sx={{ color: '#38BDF8', minWidth: 30 }}><UploadFile fontSize="small" /></ListItemIcon>
-                        <ListItemText>Upload Video</ListItemText>
-                        <input hidden type="file" accept="video/*" onChange={(event) => { closeMenu(); onUploadVideo(lesson, event.target.files?.[0]); }} />
-                    </MenuItem>
-                    <MenuItem component="label">
-                        <ListItemIcon sx={{ color: '#FBBF24', minWidth: 30 }}><MenuBookOutlined fontSize="small" /></ListItemIcon>
-                        <ListItemText>Upload Material</ListItemText>
-                        <input hidden type="file" onChange={(event) => { closeMenu(); onUploadMaterial(lesson, event.target.files?.[0]); }} />
-                    </MenuItem>
-                    <MenuItem onClick={() => { closeMenu(); onQuiz(lesson); }}>
-                        <ListItemIcon sx={{ color: '#A78BFA', minWidth: 30 }}><Quiz fontSize="small" /></ListItemIcon>
-                        <ListItemText>Manage CBT</ListItemText>
-                    </MenuItem>
-                    <MenuItem onClick={() => { closeMenu(); onPublishLesson(lesson, !published); }}>
-                        <ListItemIcon sx={{ color: '#34D399', minWidth: 30 }}><Save fontSize="small" /></ListItemIcon>
-                        <ListItemText>{published ? 'Unpublish' : 'Publish'}</ListItemText>
-                    </MenuItem>
-                    <MenuItem onClick={() => { closeMenu(); onDeleteLesson(lesson); }}>
-                        <ListItemIcon sx={{ color: '#FCA5A5', minWidth: 30 }}><Delete fontSize="small" /></ListItemIcon>
-                        <ListItemText>Delete Lesson</ListItemText>
-                    </MenuItem>
-                </>
-            )}
-        </ActionMenuButton>
+        <>
+            <input
+                ref={videoInputRef}
+                type="file"
+                accept="video/*"
+                style={{ display: 'none' }}
+                onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) onUploadVideo(lesson, file);
+                    event.target.value = '';
+                }}
+            />
+            <input
+                ref={materialInputRef}
+                type="file"
+                style={{ display: 'none' }}
+                onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) onUploadMaterial(lesson, file);
+                    event.target.value = '';
+                }}
+            />
+            <ActionMenuButton label={`Actions for ${lesson.title || 'lesson'}`} disabled={disabled}>
+                {(closeMenu) => (
+                    <>
+                        <MenuItem onClick={() => { closeMenu(); onPreviewLesson(lesson); }}>
+                            <ListItemIcon sx={{ color: '#FCD34D', minWidth: 30 }}><Visibility fontSize="small" /></ListItemIcon>
+                            <ListItemText>Preview Lesson</ListItemText>
+                        </MenuItem>
+                        <MenuItem onClick={() => { closeMenu(); onEditLesson(module, lesson); }}>
+                            <ListItemIcon sx={{ color: '#93C5FD', minWidth: 30 }}><Edit fontSize="small" /></ListItemIcon>
+                            <ListItemText>Edit Lesson</ListItemText>
+                        </MenuItem>
+                        <MenuItem onClick={() => { closeMenu(); videoInputRef.current?.click(); }}>
+                            <ListItemIcon sx={{ color: '#38BDF8', minWidth: 30 }}><UploadFile fontSize="small" /></ListItemIcon>
+                            <ListItemText>Upload Video</ListItemText>
+                        </MenuItem>
+                        <MenuItem onClick={() => { closeMenu(); materialInputRef.current?.click(); }}>
+                            <ListItemIcon sx={{ color: '#FBBF24', minWidth: 30 }}><MenuBookOutlined fontSize="small" /></ListItemIcon>
+                            <ListItemText>Upload Material</ListItemText>
+                        </MenuItem>
+                        <MenuItem onClick={() => { closeMenu(); onQuiz(lesson); }}>
+                            <ListItemIcon sx={{ color: '#A78BFA', minWidth: 30 }}><Quiz fontSize="small" /></ListItemIcon>
+                            <ListItemText>Manage CBT</ListItemText>
+                        </MenuItem>
+                        <MenuItem onClick={() => { closeMenu(); onPublishLesson(lesson, !published); }}>
+                            <ListItemIcon sx={{ color: '#34D399', minWidth: 30 }}><Save fontSize="small" /></ListItemIcon>
+                            <ListItemText>{published ? 'Unpublish' : 'Publish'}</ListItemText>
+                        </MenuItem>
+                        <MenuItem onClick={() => { closeMenu(); onDeleteLesson(lesson); }}>
+                            <ListItemIcon sx={{ color: '#FCA5A5', minWidth: 30 }}><Delete fontSize="small" /></ListItemIcon>
+                            <ListItemText>Delete Lesson</ListItemText>
+                        </MenuItem>
+                    </>
+                )}
+            </ActionMenuButton>
+        </>
     );
 };
 
