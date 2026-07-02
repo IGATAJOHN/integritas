@@ -80,7 +80,7 @@ const DEFAULT_COURSE = {
 };
 
 const emptyModuleForm = { title: '', description: '' };
-const emptyLessonForm = { title: '', description: '', assigned_tutor_id: '' };
+const emptyLessonForm = { title: '', description: '', assigned_tutor_id: '', video_url: '', material_url: '' };
 
 const getCourseId = (course) => course?.id || course?.course_id || course?.slug;
 const getLessonVersionId = (lesson) => (
@@ -290,6 +290,8 @@ const FoundationalProgram = () => {
             title: lesson?.title || '',
             description: lesson?.description || lesson?.summary || '',
             assigned_tutor_id: getAssignedTutorId(lesson),
+            video_url: lesson?.video_url || '',
+            material_url: lesson?.material_url || '',
         });
         setLessonOpen(true);
     };
@@ -305,6 +307,8 @@ const FoundationalProgram = () => {
                 title: lessonForm.title.trim(),
                 description: lessonForm.description.trim() || undefined,
                 assigned_tutor_id: lessonForm.assigned_tutor_id || null,
+                video_url: lessonForm.video_url.trim() || null,
+                material_url: lessonForm.material_url.trim() || null,
             };
             if (editingLesson) {
                 await adminCoursesService.updateLesson(editingLesson.id, payload);
@@ -1385,6 +1389,30 @@ const LessonDialog = ({ open, form, setForm, tutors, editing, saving, onClose, o
                             ))}
                         </Select>
                     </FormControl>
+                </Box>
+                <Box>
+                    <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#E5E7EB', mb: 0.75 }}>
+                        Video URL <Box component="span" sx={{ color: '#9CA3AF', fontWeight: 400 }}>- optional (YouTube, Vimeo, or direct link)</Box>
+                    </Typography>
+                    <TextField
+                        placeholder="e.g. https://www.youtube.com/watch?v=..."
+                        value={form.video_url}
+                        onChange={(event) => setForm((prev) => ({ ...prev, video_url: event.target.value }))}
+                        sx={textFieldStyle}
+                        fullWidth
+                    />
+                </Box>
+                <Box>
+                    <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#E5E7EB', mb: 0.75 }}>
+                        Study Material URL <Box component="span" sx={{ color: '#9CA3AF', fontWeight: 400 }}>- optional (Direct PDF/document link)</Box>
+                    </Typography>
+                    <TextField
+                        placeholder="e.g. https://example.com/materials/ethics.pdf"
+                        value={form.material_url}
+                        onChange={(event) => setForm((prev) => ({ ...prev, material_url: event.target.value }))}
+                        sx={textFieldStyle}
+                        fullWidth
+                    />
                 </Box>
                 <Box>
                     <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#E5E7EB', mb: 0.75 }}>
