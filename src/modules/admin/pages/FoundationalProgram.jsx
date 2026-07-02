@@ -872,11 +872,11 @@ const LessonActionsMenu = ({
                             <ListItemIcon sx={{ color: '#93C5FD', minWidth: 30 }}><Edit fontSize="small" /></ListItemIcon>
                             <ListItemText>Edit Lesson</ListItemText>
                         </MenuItem>
-                        <MenuItem onClick={() => { closeMenu(); videoInputRef.current?.click(); }}>
+                        <MenuItem onClick={() => { closeMenu(); setTimeout(() => videoInputRef.current?.click(), 150); }}>
                             <ListItemIcon sx={{ color: '#38BDF8', minWidth: 30 }}><UploadFile fontSize="small" /></ListItemIcon>
                             <ListItemText>Upload Video</ListItemText>
                         </MenuItem>
-                        <MenuItem onClick={() => { closeMenu(); materialInputRef.current?.click(); }}>
+                        <MenuItem onClick={() => { closeMenu(); setTimeout(() => materialInputRef.current?.click(), 150); }}>
                             <ListItemIcon sx={{ color: '#FBBF24', minWidth: 30 }}><MenuBookOutlined fontSize="small" /></ListItemIcon>
                             <ListItemText>Upload Material</ListItemText>
                         </MenuItem>
