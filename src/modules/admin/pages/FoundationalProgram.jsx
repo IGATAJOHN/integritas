@@ -68,6 +68,7 @@ import {
     tableHeaderCellStyle,
     textFieldStyle,
 } from '../../../styles/formStyles';
+import { getVideoUrl } from '../../../utils';
 import theme from '../../../styles/theme';
 
 const DEFAULT_COURSE = {
@@ -508,7 +509,8 @@ const LessonPreviewDialog = ({ lesson, onClose }) => {
     const isPublished = !!(info.published_at || info.is_published || info.status === 'published');
 
     // Resolve the video/content URL from all possible backend field names
-    const videoUrl = info.video_url || info.video || info.playback_url || info.content_url || null;
+    const rawVideoUrl = info.video_url || (typeof info.video === 'string' ? info.video : info.video?.url || info.video?.playback_url) || info.playback_url || info.content_url || null;
+    const videoUrl = rawVideoUrl ? getVideoUrl(rawVideoUrl) : null;
     const lessonType = info.type || info.content_type || 'video';
     const isDocument = lessonType === 'document' || lessonType === 'file' || lessonType === 'pdf';
     const isPdf = videoUrl && videoUrl.toLowerCase().includes('.pdf');
