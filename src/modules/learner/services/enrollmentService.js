@@ -126,6 +126,7 @@ export const learnerEnrollmentService = {
     enrollInCourse: async (courseSlugOrId) => learnerEnrollmentService.initiateEnrolment(courseSlugOrId),
     getEnrollments: async (opts) => learnerEnrollmentService.getMyEnrolments(opts),
     getMyEnrolledCourses: async (opts) => learnerEnrollmentService.getMyEnrolments(opts),
+    getMyEnrollments: async (opts) => learnerEnrollmentService.getMyEnrolments(opts),
 
     /**
      * Replaces the legacy /payments/verify-status?reference=ENR_... call.

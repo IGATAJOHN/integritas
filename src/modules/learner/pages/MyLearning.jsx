@@ -46,7 +46,7 @@ const MyLearning = () => {
     const loadEnrollments = useCallback(() => {
         let active = true;
 
-        learnerEnrollmentService.getMyEnrollments({ per_page: 50 })
+        learnerEnrollmentService.getEnrollments({ per_page: 50 })
             .then((res) => {
                 if (!active) return;
                 setEnrollments(res.data || []);
