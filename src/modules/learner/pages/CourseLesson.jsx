@@ -670,33 +670,25 @@ const CourseLesson = () => {
                                 <CircularProgress size={48} />
                             </Box>
                         ) : (currentLesson?.type === 'document' || currentLesson?.type === 'file') ? (
-                            (videoSrc && videoSrc.toLowerCase().includes('.pdf')) ? (
-                                <Box
-                                    component="iframe"
-                                    src={videoSrc}
-                                    sx={{ width: '100%', height: '100%', border: 'none', display: 'block', bgcolor: '#FFFFFF' }}
-                                />
-                            ) : (
-                                <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: '#1F2937', p: 4, textAlign: 'center' }}>
-                                    <InsertDriveFile sx={{ fontSize: 64, color: '#178A83', mb: 2 }} />
-                                    <Typography variant="h6" sx={{ color: '#fff', fontWeight: 650, mb: 1 }}>
-                                        {currentLesson.title} - Study Document
-                                    </Typography>
-                                    <Typography variant="body2" sx={{ color: '#9CA3AF', mb: 3, maxWidth: 400 }}>
-                                        This lesson includes a document attachment. Click the button below to download and read the study material.
-                                    </Typography>
-                                    <Button
-                                        variant="contained"
-                                        href={videoSrc}
-                                        target="_blank"
-                                        download
-                                        startIcon={<GetApp />}
-                                        sx={{ bgcolor: '#178A83', '&:hover': { bgcolor: '#116B65' } }}
-                                    >
-                                        Download Material
-                                    </Button>
-                                </Box>
-                            )
+                            <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: '#1F2937', p: 4, textAlign: 'center' }}>
+                                <InsertDriveFile sx={{ fontSize: 64, color: '#178A83', mb: 2 }} />
+                                <Typography variant="h6" sx={{ color: '#fff', fontWeight: 650, mb: 1 }}>
+                                    {currentLesson.title} - Study Document
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: '#9CA3AF', mb: 3, maxWidth: 400 }}>
+                                    This lesson includes a document attachment. Click the button below to view or download the study material.
+                                </Typography>
+                                <Button
+                                    variant="contained"
+                                    href={videoSrc}
+                                    target="_blank"
+                                    download
+                                    startIcon={<GetApp />}
+                                    sx={{ bgcolor: '#178A83', '&:hover': { bgcolor: '#116B65' } }}
+                                >
+                                    Open / Download Material
+                                </Button>
+                            </Box>
                         ) : currentLesson?.type === 'text' ? (
                             <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: '#1F2937', p: 4, textAlign: 'center' }}>
                                 <MenuBook sx={{ fontSize: 64, color: '#178A83', mb: 2 }} />

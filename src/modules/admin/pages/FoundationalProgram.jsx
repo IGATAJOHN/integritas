@@ -593,8 +593,37 @@ const LessonPreviewDialog = ({ lesson, onClose }) => {
                                 <Typography sx={{ color: '#6B7280', fontSize: '0.85rem' }}>No video or file uploaded yet</Typography>
                             </Box>
                         ) : isPdf ? (
-                            <Box sx={{ width: '100%', height: 420, bgcolor: '#000', lineHeight: 0 }}>
-                                <iframe src={videoUrl} title="Lesson PDF" style={{ width: '100%', height: '100%', border: 'none', display: 'block' }} />
+                            <Box sx={{
+                                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                py: 6, px: 3, bgcolor: 'rgba(239,68,68,0.05)', borderBottom: '1px solid #1F2937', textAlign: 'center',
+                            }}>
+                                <InsertDriveFile sx={{ fontSize: 64, color: '#F87171', mb: 2 }} />
+                                <Typography variant="h6" sx={{ color: '#FFFFFF', fontWeight: 700, mb: 1 }}>
+                                    PDF Study Material
+                                </Typography>
+                                <Typography sx={{ color: '#9CA3AF', fontSize: '0.875rem', mb: 3, maxWidth: 400 }}>
+                                    This lesson contains a PDF study document. Click the button below to view or download it in a new tab.
+                                </Typography>
+                                <Button
+                                    variant="contained"
+                                    component="a"
+                                    href={videoUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    startIcon={<GetApp />}
+                                    sx={{
+                                        bgcolor: '#EF4444',
+                                        color: '#FFFFFF',
+                                        textTransform: 'none',
+                                        fontWeight: 600,
+                                        px: 4,
+                                        py: 1.25,
+                                        borderRadius: 2,
+                                        '&:hover': { bgcolor: '#DC2626' }
+                                    }}
+                                >
+                                    Open PDF Document
+                                </Button>
                             </Box>
                         ) : isEmbed ? (
                             <Box sx={{ position: 'relative', width: '100%', background: '#000', lineHeight: 0 }}>
