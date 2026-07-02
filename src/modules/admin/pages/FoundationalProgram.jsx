@@ -414,7 +414,7 @@ const FoundationalProgram = () => {
         
         try {
             await axios.post(
-                `${baseUrl}/admin/lessons/${lesson.id}/video`,
+                `${baseUrl}/admin/lessons/${lesson.id}/material`,
                 formData,
                 {
                     headers: {
@@ -570,6 +570,9 @@ const LessonPreviewDialog = ({ lesson, onClose }) => {
     // Resolve the video/content URL from all possible backend field names
     const rawVideoUrl = info.video_url || (typeof info.video === 'string' ? info.video : info.video?.url || info.video?.playback_url) || info.playback_url || info.content_url || null;
     const videoUrl = rawVideoUrl ? getVideoUrl(rawVideoUrl) : null;
+    const rawMaterialUrl = info.material_url || null;
+    const materialUrl = rawMaterialUrl ? getVideoUrl(rawMaterialUrl) : null;
+    
     const lessonType = info.type || info.content_type || 'video';
     const isDocument = lessonType === 'document' || lessonType === 'file' || lessonType === 'pdf';
     const isPdf = videoUrl && videoUrl.toLowerCase().includes('.pdf');
@@ -580,6 +583,14 @@ const LessonPreviewDialog = ({ lesson, onClose }) => {
 
     // Build a synthetic "materials" list from what the lesson actually has
     const derivedMaterials = [];
+    if (materialUrl) {
+        derivedMaterials.push({
+            id: 'material-file',
+            display_name: info.title ? `${info.title} - Study Document` : 'Study Document',
+            file_url: materialUrl,
+            created_at: info.updated_at || info.created_at,
+        });
+    }
     if (videoUrl && isDocument) {
         derivedMaterials.push({
             id: 'main-file',
@@ -646,12 +657,61 @@ const LessonPreviewDialog = ({ lesson, onClose }) => {
                 {!loading && (
                     <Stack>
                         {/* ── MEDIA AREA ── */}
-                        {!videoUrl ? (
+                        {(!videoUrl && !materialUrl) ? (
                             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 180, bgcolor: 'rgba(255,255,255,0.02)', borderBottom: '1px solid #1F2937' }}>
                                 <PlayCircleOutline sx={{ fontSize: 52, color: '#374151', mb: 1 }} />
                                 <Typography sx={{ color: '#6B7280', fontSize: '0.85rem' }}>No video or file uploaded yet</Typography>
                             </Box>
-                        ) : isPdf ? (
+                        ) : videoUrl ? (
+                            isPdf ? (
+                                <Box sx={{
+                                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                    py: 6, px: 3, bgcolor: 'rgba(239,68,68,0.05)', borderBottom: '1px solid #1F2937', textAlign: 'center',
+                                }}>
+                                    <InsertDriveFile sx={{ fontSize: 64, color: '#F87171', mb: 2 }} />
+                                    <Typography variant="h6" sx={{ color: '#FFFFFF', fontWeight: 700, mb: 1 }}>
+                                        PDF Study Material
+                                    </Typography>
+                                    <Typography sx={{ color: '#9CA3AF', fontSize: '0.875rem', mb: 3, maxWidth: 400 }}>
+                                        This lesson contains a PDF study document. Click the button below to view or download it in a new tab.
+                                    </Typography>
+                                    <Button
+                                        variant="contained"
+                                        component="a"
+                                        href={videoUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        startIcon={<GetApp />}
+                                        sx={{
+                                            bgcolor: '#EF4444',
+                                            color: '#FFFFFF',
+                                            textTransform: 'none',
+                                            fontWeight: 600,
+                                            px: 4,
+                                            py: 1.25,
+                                            borderRadius: 2,
+                                            '&:hover': { bgcolor: '#DC2626' }
+                                        }}
+                                    >
+                                        Open PDF Document
+                                    </Button>
+                                </Box>
+                            ) : isEmbed ? (
+                                <Box sx={{ position: 'relative', width: '100%', background: '#000', lineHeight: 0 }}>
+                                    <iframe
+                                        src={isYouTube ? videoUrl.replace('watch?v=', 'embed/') : videoUrl.replace('vimeo.com/', 'player.vimeo.com/video/')}
+                                        title="Lesson Video"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowFullScreen
+                                        style={{ width: '100%', height: 360, border: 'none', display: 'block' }}
+                                    />
+                                </Box>
+                            ) : (
+                                <Box sx={{ width: '100%', background: '#000', lineHeight: 0 }}>
+                                    <video src={videoUrl} controls style={{ width: '100%', maxHeight: 380, outline: 'none', display: 'block' }} />
+                                </Box>
+                            )
+                        ) : (
                             <Box sx={{
                                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                                 py: 6, px: 3, bgcolor: 'rgba(239,68,68,0.05)', borderBottom: '1px solid #1F2937', textAlign: 'center',
@@ -666,7 +726,7 @@ const LessonPreviewDialog = ({ lesson, onClose }) => {
                                 <Button
                                     variant="contained"
                                     component="a"
-                                    href={videoUrl}
+                                    href={materialUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     startIcon={<GetApp />}
@@ -683,30 +743,6 @@ const LessonPreviewDialog = ({ lesson, onClose }) => {
                                 >
                                     Open PDF Document
                                 </Button>
-                            </Box>
-                        ) : isEmbed ? (
-                            <Box sx={{ position: 'relative', width: '100%', background: '#000', lineHeight: 0 }}>
-                                <iframe
-                                    src={isYouTube ? videoUrl.replace('watch?v=', 'embed/') : videoUrl.replace('vimeo.com/', 'player.vimeo.com/video/')}
-                                    title="Lesson Video"
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                    allowFullScreen
-                                    style={{ width: '100%', height: 360, border: 'none', display: 'block' }}
-                                />
-                            </Box>
-                        ) : isMp4 ? (
-                            <Box sx={{ width: '100%', background: '#000', lineHeight: 0 }}>
-                                <video src={videoUrl} controls style={{ width: '100%', maxHeight: 380, outline: 'none', display: 'block' }} />
-                            </Box>
-                        ) : isDocument ? (
-                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 180, bgcolor: 'rgba(248,113,113,0.05)', borderBottom: '1px solid #1F2937' }}>
-                                <InsertDriveFile sx={{ fontSize: 52, color: '#F87171', mb: 1 }} />
-                                <Typography sx={{ color: '#E5E7EB', fontWeight: 600, mb: 0.5 }}>Document Lesson</Typography>
-                                <Typography sx={{ color: '#6B7280', fontSize: '0.8rem' }}>Click "Open File" below to view</Typography>
-                            </Box>
-                        ) : (
-                            <Box sx={{ width: '100%', background: '#000', lineHeight: 0 }}>
-                                <video src={videoUrl} controls style={{ width: '100%', maxHeight: 380, outline: 'none', display: 'block' }} />
                             </Box>
                         )}
 
@@ -1013,6 +1049,8 @@ const ContentTab = ({
                         {(module.lessons || []).map((lesson) => {
                             const hasVideo = !!(lesson.video_url || lesson.video);
                             const videoUrl = hasVideo ? getVideoUrl(lesson.video_url || lesson.video) : null;
+                            const hasMaterial = !!lesson.material_url;
+                            const materialUrl = hasMaterial ? getVideoUrl(lesson.material_url) : null;
                             const isExpanded = expandedLessonPreviewId === lesson.id;
 
                             return (
@@ -1035,6 +1073,24 @@ const ContentTab = ({
                                                             title={isExpanded ? "Close Video Preview" : "Watch Video Preview"}
                                                         >
                                                             {isExpanded ? <Close sx={{ fontSize: 18 }} /> : <PlayCircleOutline sx={{ fontSize: 18 }} />}
+                                                        </IconButton>
+                                                    )}
+                                                    {hasMaterial && (
+                                                        <IconButton
+                                                            size="small"
+                                                            component="a"
+                                                            href={materialUrl}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            sx={{
+                                                                color: '#F87171',
+                                                                '&:hover': { bgcolor: 'rgba(248,113,113,0.1)' },
+                                                                ml: 0.5,
+                                                                p: 0.5
+                                                            }}
+                                                            title="Open Study Material (PDF)"
+                                                        >
+                                                            <InsertDriveFile sx={{ fontSize: 18 }} />
                                                         </IconButton>
                                                     )}
                                                 </Stack>

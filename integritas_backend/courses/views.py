@@ -184,6 +184,25 @@ class LessonVideoUploadView(views.APIView):
         lesson.save()
         return Response(LessonSerializer(lesson).data, status=status.HTTP_200_OK)
 
+class LessonMaterialUploadView(views.APIView):
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def post(self, request, lesson_id):
+        lesson = get_object_or_404(Lesson, id=lesson_id)
+        material_file = request.FILES.get('video')
+        if not material_file:
+            material_file = request.FILES.get('material')
+        if not material_file:
+            return Response({'message': 'No material file provided'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        from django.core.files.storage import default_storage
+        filename = default_storage.save(f'materials/{lesson.id}_{material_file.name}', material_file)
+        material_url = default_storage.url(filename)
+        
+        lesson.material_url = material_url
+        lesson.save()
+        return Response(LessonSerializer(lesson).data, status=status.HTTP_200_OK)
+
 class CategoryListView(views.APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 

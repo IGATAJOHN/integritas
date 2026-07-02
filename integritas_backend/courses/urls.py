@@ -3,7 +3,8 @@ from rest_framework.routers import SimpleRouter
 from .views import (
     CourseViewSet, ModuleDetailView, CourseModulesView, CourseModulesReorderView,
     ModuleLessonsView, ModuleLessonsReorderView, LessonDetailView,
-    LessonPublishView, LessonUnpublishView, LessonVideoUploadView
+    LessonPublishView, LessonUnpublishView, LessonVideoUploadView,
+    LessonMaterialUploadView
 )
 
 router = SimpleRouter(trailing_slash=False)
@@ -24,5 +25,6 @@ urlpatterns = [
     path('lessons/<int:lesson_id>/publish', LessonPublishView.as_view(), name='lesson_publish'),
     path('lessons/<int:lesson_id>/unpublish', LessonUnpublishView.as_view(), name='lesson_unpublish'),
     path('lessons/<int:lesson_id>/video', LessonVideoUploadView.as_view(), name='lesson_video_upload'),
+    path('lessons/<int:lesson_id>/material', LessonMaterialUploadView.as_view(), name='lesson_material_upload'),
 ]
 

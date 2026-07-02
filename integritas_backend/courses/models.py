@@ -76,6 +76,7 @@ class Lesson(models.Model):
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     content = models.TextField(blank=True)
     video_url = models.URLField(blank=True, null=True)
+    material_url = models.URLField(blank=True, null=True)
     order = models.PositiveIntegerField(default=0)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
     assigned_tutor = models.ForeignKey(

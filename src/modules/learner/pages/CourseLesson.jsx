@@ -403,6 +403,7 @@ const CourseLesson = () => {
     }
 
     const videoSrc = signedPlaybackUrl || getVideoUrl(currentLesson?.video_url || currentLesson?.video || '');
+    const materialSrc = currentLesson?.material_url ? getVideoUrl(currentLesson.material_url) : null;
 
     const isYouTube = /youtube\.com|youtu\.be/.test(videoSrc);
     const isVimeo = /vimeo\.com/.test(videoSrc);
@@ -791,6 +792,19 @@ const CourseLesson = () => {
                                     sx={{ bgcolor: colors.success, textTransform: 'none', '&:hover': { bgcolor: '#059669' } }}
                                 >
                                     Take Assessment
+                                </Button>
+                            )}
+                            {materialSrc && (
+                                <Button
+                                    variant="outlined"
+                                    component="a"
+                                    href={materialSrc}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    startIcon={<InsertDriveFile />}
+                                    sx={{ borderColor: '#60A5FA', color: '#60A5FA', textTransform: 'none', '&:hover': { borderColor: '#93C5FD', bgcolor: 'rgba(96,165,250,0.05)' } }}
+                                >
+                                    View Material
                                 </Button>
                             )}
                             <Button
