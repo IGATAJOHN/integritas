@@ -86,7 +86,7 @@ const extractTextFromPdf = async (file) => {
     return fullText;
 };
 
-const parseAIText = (text) => {
+const parseAITextLineByLine = (text) => {
     const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
     const extracted = [];
     let currentQuestion = null;
@@ -158,6 +158,126 @@ const parseAIText = (text) => {
         extracted.push(currentQuestion);
     }
 
+    return extracted;
+};
+
+const parseAIText = (text) => {
+    // Clean up double spaces or tabs to make it easier to parse
+    const cleanText = text.replace(/\s+/g, ' ');
+    
+    // Find all matches for question starts
+    const questionRegex = /(?:^|\s)(?:Question\s*|Q\s*)?(\d+)[\.\)\:]\s+/gi;
+    const segments = [];
+    let match;
+    const matches = [];
+    
+    while ((match = questionRegex.exec(cleanText)) !== null) {
+        matches.push({
+            index: match.index,
+            number: match[1],
+            matchedLength: match[0].length
+        });
+    }
+    
+    if (matches.length === 0) {
+        // Fall back to line-by-line parsing if no question numbers are found
+        return parseAITextLineByLine(text);
+    }
+    
+    const extracted = [];
+    
+    for (let i = 0; i < matches.length; i++) {
+        const start = matches[i].index + matches[i].matchedLength;
+        const end = (i + 1 < matches.length) ? matches[i + 1].index : cleanText.length;
+        const questionText = cleanText.substring(start, end).trim();
+        
+        // Find options: A) or A. or [A] or A -
+        const optionRegex = /\b([A-Ea-e])[\.\)\-\:\s]\s*/g;
+        let optMatch;
+        const optMatches = [];
+        
+        while ((optMatch = optionRegex.exec(questionText)) !== null) {
+            optMatches.push({
+                index: optMatch.index,
+                letter: optMatch[1].toUpperCase(),
+                matchedLength: optMatch[0].length
+            });
+        }
+        
+        let promptText = questionText;
+        const options = [];
+        
+        if (optMatches.length >= 2) {
+            promptText = questionText.substring(0, optMatches[0].index).trim();
+            
+            for (let j = 0; j < optMatches.length; j++) {
+                const optStart = optMatches[j].index + optMatches[j].matchedLength;
+                let optEnd = (j + 1 < optMatches.length) ? optMatches[j + 1].index : questionText.length;
+                
+                const optionSegment = questionText.substring(optStart, optEnd).trim();
+                
+                const answerMarkerRegex = /(Correct\s*Answer|Answer|Key)[\s\:\-]*([A-Ea-e])/i;
+                const markerMatch = optionSegment.match(answerMarkerRegex);
+                
+                let optionBody = optionSegment;
+                if (markerMatch) {
+                    optionBody = optionSegment.substring(0, markerMatch.index).trim();
+                }
+                
+                options.push({
+                    letter: optMatches[j].letter,
+                    body: optionBody,
+                    is_correct: false
+                });
+            }
+        }
+        
+        const answerMatch = questionText.match(/(?:Correct\s*Answer|Answer|Key|Ans)[\s\:\-]*([A-Ea-e])/i);
+        let correctLetter = '';
+        if (answerMatch) {
+            correctLetter = answerMatch[1].toUpperCase();
+        }
+        
+        if (correctLetter) {
+            options.forEach(opt => {
+                if (opt.letter === correctLetter) {
+                    opt.is_correct = true;
+                }
+            });
+        } else {
+            options.forEach(opt => {
+                if (opt.body.startsWith('*')) {
+                    opt.body = opt.body.substring(1).trim();
+                    opt.is_correct = true;
+                } else if (opt.body.endsWith('*')) {
+                    opt.body = opt.body.slice(0, -1).trim();
+                    opt.is_correct = true;
+                }
+            });
+        }
+        
+        options.forEach(opt => {
+            opt.body = opt.body.replace(/(?:Explanation|Exp)[\s\:\-]+.*/gi, '').trim();
+            opt.body = opt.body.replace(/Page\s+\d+\s+of\s+\d+/gi, '').trim();
+            opt.body = opt.body.trim();
+        });
+        
+        promptText = promptText.replace(/(?:Explanation|Exp)[\s\:\-]+.*/gi, '').trim();
+        promptText = promptText.replace(/Page\s+\d+\s+of\s+\d+/gi, '').trim();
+        promptText = promptText.trim();
+        
+        if (options.length >= 2) {
+            extracted.push({
+                prompt: promptText,
+                points: 1,
+                options: options.map(opt => ({
+                    body: opt.body,
+                    is_correct: opt.is_correct
+                }))
+            });
+        }
+    }
+    
     return extracted;
 };
 
