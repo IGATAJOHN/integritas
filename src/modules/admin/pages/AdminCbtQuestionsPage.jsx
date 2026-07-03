@@ -94,8 +94,8 @@ const parseAIText = (text) => {
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
 
-        // Check if this line is a question (starts with a number followed by dot/parenthesis/space)
-        const questionMatch = line.match(/^(\d+)[\.\)\s]+(.*)/);
+        // Check if this line is a question (starts with a number followed by dot/parenthesis/space, or Q1/Question 1)
+        const questionMatch = line.match(/^(?:Question\s*|Q\s*)?(\d+)[\.\)\:\s]+(.*)/i);
         if (questionMatch) {
             if (currentQuestion && currentQuestion.options.length >= 2) {
                 extracted.push(currentQuestion);
@@ -108,8 +108,10 @@ const parseAIText = (text) => {
             continue;
         }
 
-        // Check if this line is an option (starts with A-E followed by dot/parenthesis/space)
-        const optionMatch = line.match(/^([A-Ea-e\*]+)[\.\)\s]+(.*)/) || line.match(/^\[([xX\s\*])\][\s]+(.*)/);
+        // Check if this line is an option (starts with A-E/bullet/symbol followed by dot/parenthesis/space)
+        const optionMatch = line.match(/^([A-Ea-e\*]+)[\.\)\s]+(.*)/) || 
+                             line.match(/^\[([xX\s\*])\][\s]+(.*)/) ||
+                             line.match(/^([\-\•\*])\s+(.*)/);
         if (currentQuestion && optionMatch) {
             let optionText = optionMatch[2].trim();
             let isCorrect = false;

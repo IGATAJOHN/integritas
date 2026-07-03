@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import Header from '../../../components/Header';
 import { useAuth, useThemeMode } from '../../../contexts';
 import { apiService } from '../../../services/api';
+import { learnerEnrollmentService } from '../services';
 import theme from '../../../styles/theme';
 
 const getColors = (isDark) => ({
@@ -64,10 +65,8 @@ const LearnerProfile = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const res = await apiService.get('/lms/enrollments/me', { params: { per_page: 50 } });
-                const items = Array.isArray(res?.data) ? res.data
-                    : Array.isArray(res?.data?.data) ? res.data.data
-                    : Array.isArray(res) ? res : [];
+                const res = await learnerEnrollmentService.getMyEnrollments({ per_page: 50 });
+                const items = Array.isArray(res) ? res : [];
                 const filtered = items.filter(e => e.course?.track !== 'experta');
                 setEnrollments(filtered);
             } catch {
