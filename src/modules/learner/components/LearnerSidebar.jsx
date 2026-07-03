@@ -49,19 +49,6 @@ const LearnerSidebar = ({ onClose }) => {
         { label: 'Dashboard', icon: <DashboardIcon />, path: '/learner', private: true },
         { label: 'Foundational', icon: <CoursesIcon />, path: '/learner/foundational', private: true },
         { label: 'My Learning', icon: <CoursesIcon />, path: '/explore/my-learning', private: true },
-        {
-            label: 'Organization',
-            icon: <OrganizationIcon sx={{ fontSize: 22 }} />,
-            private: true,
-            children: [
-                { label: 'Overview', path: '/learner/organization/overview' },
-                { label: 'Invitations', path: '/learner/organization/invite' },
-                { label: 'Learning Paths', path: '/learner/organization/learning-paths' },
-                { label: 'Assignments', path: '/learner/organization/assignments' },
-                { label: 'My Assignments', path: '/learner/organization/my-assignments' },
-                { label: 'Reports', path: '/learner/organization/reports' },
-            ],
-        },
         // { label: 'Achievements', icon: <AchievementsIcon />, path: '/achievements', private: true }, // hidden until implemented
         // { label: 'Resources', icon: <ResourcesIcon />, path: '/resources' }, // hidden until implemented
     ];
