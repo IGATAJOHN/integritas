@@ -36,7 +36,7 @@ import {
 import CourseCard from '../components/CourseCard';
 import { courseCatalogService, learnerEnrollmentService } from '../services';
 import Header from '../../../components/Header';
-import { useThemeMode } from '../../../contexts';
+import { useAuth, useThemeMode } from '../../../contexts';
 import appTheme from '../../../styles/theme';
 
 const SORT_OPTIONS = ['Most Popular', 'Newest', 'Highest Rated', 'Price: Low to High'];
@@ -57,6 +57,7 @@ const PAGE_TITLES = {
 const Explore = ({ type }) => {
     const navigate = useNavigate();
     const { isDark } = useThemeMode();
+    const { isAuthenticated } = useAuth();
 
     const colors = {
         bg: isDark ? '#080D19' : '#F1F5F9',
@@ -88,6 +89,7 @@ const Explore = ({ type }) => {
     const [activeTrailer, setActiveTrailer] = useState('');
     const [activeUnlockTarget, setActiveUnlockTarget] = useState(null);
     const [unlockLoading, setUnlockLoading] = useState(false);
+    const [dialogError, setDialogError] = useState('');
 
     // Fetch user enrollments on load to verify locked states
     useEffect(() => {
@@ -236,8 +238,13 @@ const Explore = ({ type }) => {
 
     const handleUnlock = async (course) => {
         if (!course) return;
+        if (!isAuthenticated) {
+            setDialogError("You must be logged in to unlock courses. Please log in or register to continue.");
+            return;
+        }
         try {
             setUnlockLoading(true);
+            setDialogError('');
             setError('');
             
             if (course.price === 0) {
@@ -261,7 +268,10 @@ const Explore = ({ type }) => {
             }
         } catch (err) {
             console.error("Initiate unlock failed:", err);
-            setError(err?.message || "Failed to unlock course. Please try again.");
+            const msg = err?.status === 401 
+                ? "You must be logged in to unlock courses. Please log in or register to continue."
+                : (err?.message || "Failed to unlock course. Please try again.");
+            setDialogError(msg);
         } finally {
             setUnlockLoading(false);
         }
@@ -572,7 +582,7 @@ const Explore = ({ type }) => {
                 {/* Checkout & Lock Dialog */}
                 <Dialog
                     open={Boolean(activeUnlockTarget)}
-                    onClose={() => setActiveUnlockTarget(null)}
+                    onClose={() => { setActiveUnlockTarget(null); setDialogError(''); }}
                     maxWidth="sm"
                     fullWidth
                     PaperProps={{ sx: { bgcolor: '#0C1322', color: '#FFFFFF', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)' } }}
@@ -581,8 +591,23 @@ const Explore = ({ type }) => {
                         <Box sx={{ p: 4 }}>
                             <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
                                 <Typography variant="h5" sx={{ fontWeight: 800 }}>Unlock Class</Typography>
-                                <IconButton onClick={() => setActiveUnlockTarget(null)} sx={{ color: '#94A3B8' }}><CloseIcon /></IconButton>
+                                <IconButton onClick={() => { setActiveUnlockTarget(null); setDialogError(''); }} sx={{ color: '#94A3B8' }}><CloseIcon /></IconButton>
                             </Stack>
+
+                            {dialogError && (
+                                <Alert 
+                                    severity="error" 
+                                    sx={{ 
+                                        mb: 3, 
+                                        bgcolor: '#1E293B', 
+                                        color: '#EF4444', 
+                                        border: '1px solid rgba(239, 68, 68, 0.2)',
+                                        '& .MuiAlert-icon': { color: '#EF4444' }
+                                    }}
+                                >
+                                    <Typography variant="body2" sx={{ fontWeight: 500 }}>{dialogError}</Typography>
+                                </Alert>
+                            )}
                             
                             <Box sx={{ display: 'flex', gap: 3, mb: 3, flexDirection: { xs: 'column', sm: 'row' } }}>
                                 <Box 
@@ -614,20 +639,34 @@ const Explore = ({ type }) => {
                                 fullWidth
                                 variant="contained"
                                 disabled={unlockLoading}
-                                onClick={() => handleUnlock(activeUnlockTarget)}
+                                onClick={() => {
+                                    if (!isAuthenticated) {
+                                        setActiveUnlockTarget(null);
+                                        setDialogError('');
+                                        navigate('/login', { state: { from: window.location.pathname + window.location.search } });
+                                    } else {
+                                        handleUnlock(activeUnlockTarget);
+                                    }
+                                }}
                                 sx={{
-                                    bgcolor: '#22C55E',
+                                    bgcolor: !isAuthenticated ? '#3B82F6' : '#22C55E',
                                     color: '#FFFFFF',
                                     py: 1.8,
                                     borderRadius: '10px',
                                     fontSize: '1rem',
                                     fontWeight: 700,
                                     textTransform: 'none',
-                                    '&:hover': { bgcolor: '#16A34A' },
+                                    '&:hover': { bgcolor: !isAuthenticated ? '#2563EB' : '#16A34A' },
                                     '&:disabled': { bgcolor: '#374151', color: '#9CA3AF' }
                                 }}
                             >
-                                {unlockLoading ? 'Initiating Gate Checkout...' : activeUnlockTarget.price ? 'Pay via Gateway' : 'Access for Free'}
+                                {unlockLoading 
+                                    ? 'Initiating Gate Checkout...' 
+                                    : !isAuthenticated 
+                                        ? 'Log In to Unlock' 
+                                        : activeUnlockTarget.price 
+                                            ? 'Pay via Gateway' 
+                                            : 'Access for Free'}
                             </Button>
                         </Box>
                     )}
