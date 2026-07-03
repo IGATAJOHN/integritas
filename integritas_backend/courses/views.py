@@ -612,5 +612,60 @@ class LearnerCourseProgressView(views.APIView):
         })
 
 
+class LearnerLessonDetailView(views.APIView):
+    """
+    GET /learner/lessons/{slug}
+    Returns details of the specified lesson by slug, including quiz availability.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, lesson_slug):
+        lesson = get_object_or_404(Lesson, slug=lesson_slug)
+        serializer = LessonSerializer(lesson)
+        data = serializer.data
+        
+        # Check if there is a quiz
+        has_quiz = False
+        try:
+            has_quiz = hasattr(lesson, 'quiz') and lesson.quiz is not None
+        except Exception:
+            pass
+        data['has_quiz'] = has_quiz
+        
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class LearnerLessonPlaybackUrlView(views.APIView):
+    """
+    GET /learner/lessons/{slug}/video/playback-url
+    Returns the video playback URL.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, lesson_slug):
+        lesson = get_object_or_404(Lesson, slug=lesson_slug)
+        video_url = lesson.video_url
+        if not video_url and hasattr(lesson, 'video') and lesson.video:
+            video_url = lesson.video.url
+            
+        return Response({
+            "url": video_url or "",
+            "playback_url": video_url or "",
+            "video_url": video_url or "",
+        }, status=status.HTTP_200_OK)
+
+
+class LearnerLessonPlaybackView(views.APIView):
+    """
+    POST /learner/lessons/{slug}/video/playback
+    Mock-records the user's playback position.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, lesson_slug):
+        return Response({"status": "success", "message": "Position recorded."}, status=status.HTTP_200_OK)
+
+
+
 
 
