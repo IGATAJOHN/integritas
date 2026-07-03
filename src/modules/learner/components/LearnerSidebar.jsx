@@ -16,6 +16,7 @@ import {
     ExpandLess,
     ExpandMore,
     Folder as ResourcesIcon,
+    Home as HomeIcon,
     Logout as LogoutIcon,
     MenuBook as CoursesIcon,
     EmojiEvents as AchievementsIcon,
@@ -46,6 +47,7 @@ const LearnerSidebar = ({ onClose }) => {
     };
 
     const menuItems = [
+        { label: 'Home', icon: <HomeIcon />, path: '/' },
         { label: 'Dashboard', icon: <DashboardIcon />, path: '/learner', private: true },
         { label: 'Foundational', icon: <CoursesIcon />, path: '/learner/foundational', private: true },
         { label: 'My Learning', icon: <CoursesIcon />, path: '/explore/my-learning', private: true },
@@ -62,6 +64,7 @@ const LearnerSidebar = ({ onClose }) => {
     ];
 
     const isActiveLink = (path) => {
+        if (path === '/') return location.pathname === '/';
         if (path === '/learner') return location.pathname === '/learner';
         return location.pathname.startsWith(path);
     };

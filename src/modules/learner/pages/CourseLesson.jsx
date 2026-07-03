@@ -25,6 +25,21 @@ import {
     AccessTime as ClockIcon,
     ArrowBack,
     CalendarToday as CalendarIcon,
+    ChevronLeft,
+    ChevronRight,
+    Close,
+    Description,
+    EmojiEvents,
+    Fullscreen,
+    GetApp,
+    InsertDriveFile,
+    MenuBook,
+    Pause,
+    PlayArrow,
+    PlayCircleOutline,
+    VolumeUp,
+    LockOutlined,
+    CheckCircle,
     CardMembershipOutlined as CertificateIcon,
     CheckCircle,
     ChevronLeft,
@@ -145,6 +160,7 @@ const CourseLesson = () => {
     const [selectedLessonId, setSelectedLessonId] = useState(lessonId || null);
     const [currentLesson, setCurrentLesson] = useState(null);
     const [enrollmentData, setEnrollmentData] = useState(null);
+    const [progressData, setProgressData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [lessonLoading, setLessonLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -179,6 +195,7 @@ const CourseLesson = () => {
                 try {
                     const progress = await learnerEnrollmentService.getCourseProgress(courseId);
                     if (!active) return;
+                    setProgressData(progress);
                     setEnrollmentData(progress?.enrolment || progress?.enrollment || progress);
                     moduleList = extractModules(progress);
                 } catch {
@@ -372,6 +389,8 @@ const CourseLesson = () => {
         ? Number(enrollmentData.progress_percent)
         : 0;
     const completedLessons = Math.round((progressPercent / 100) * totalLessons);
+
+    const isLocked = courseData?.track === 'experta' && progressData && !progressData.has_access;
 
     const currentModule = modules.find((m) =>
         m.lessons.some((l) => matchesLessonIdentifier(l, selectedLessonId))
@@ -656,200 +675,251 @@ const CourseLesson = () => {
 
                 {/* MAIN CONTENT — video + lesson info */}
                 <Box sx={{ flex: 1, overflowY: 'auto', p: { xs: 2, md: 4 } }}>
-                    {/* Video Player */}
-                    <Box sx={{
-                        position: 'relative',
-                        width: '100%',
-                        aspectRatio: '16/9',
-                        bgcolor: '#000',
-                        borderRadius: 2,
-                        overflow: 'hidden',
-                        mb: 3,
-                    }}>
-                        {(lessonLoading || !currentLesson) ? (
-                            <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#111827' }}>
-                                <CircularProgress size={48} />
-                            </Box>
-                        ) : (currentLesson?.type === 'document' || currentLesson?.type === 'file') ? (
-                            <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: '#1F2937', p: 4, textAlign: 'center' }}>
-                                <InsertDriveFile sx={{ fontSize: 64, color: '#178A83', mb: 2 }} />
-                                <Typography variant="h6" sx={{ color: '#fff', fontWeight: 650, mb: 1 }}>
-                                    {currentLesson.title} - Study Document
-                                </Typography>
-                                <Typography variant="body2" sx={{ color: '#9CA3AF', mb: 3, maxWidth: 400 }}>
-                                    This lesson includes a document attachment. Click the button below to view or download the study material.
-                                </Typography>
-                                <Button
-                                    variant="contained"
-                                    href={videoSrc}
-                                    target="_blank"
-                                    download
-                                    startIcon={<GetApp />}
-                                    sx={{ bgcolor: '#178A83', '&:hover': { bgcolor: '#116B65' } }}
-                                >
-                                    Open / Download Material
-                                </Button>
-                            </Box>
-                        ) : currentLesson?.type === 'text' ? (
-                            <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: '#1F2937', p: 4, textAlign: 'center' }}>
-                                <MenuBook sx={{ fontSize: 64, color: '#178A83', mb: 2 }} />
-                                <Typography variant="h6" sx={{ color: '#fff', fontWeight: 650, mb: 1 }}>
-                                    {currentLesson.title}
-                                </Typography>
-                                <Typography variant="body2" sx={{ color: '#9CA3AF', maxWidth: 450 }}>
-                                    This is a reading/article-based lesson. Please review the text and key learning outcomes below.
-                                </Typography>
-                            </Box>
-                        ) : !videoSrc ? (
-                            <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: '#111827', gap: 1.5 }}>
-                                <PlayCircleOutline sx={{ fontSize: 56, color: colors.textSecondary }} />
-                                <Typography sx={{ color: colors.textSecondary, fontSize: '0.9rem' }}>No video available for this lesson</Typography>
-                            </Box>
-                        ) : isEmbed ? (
-                            <Box
-                                component="iframe"
-                                src={getEmbedUrl(videoSrc)}
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                                allowFullScreen
-                                sx={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
-                            />
-                        ) : (
-                            <>
-                                <Box
-                                    component="video"
-                                    ref={videoRef}
-                                    src={videoSrc}
-                                    onTimeUpdate={() => setCurrentTime(videoRef.current?.currentTime || 0)}
-                                    onDurationChange={() => setDuration(videoRef.current?.duration || 0)}
-                                    onPlay={() => setIsPlaying(true)}
-                                    onPause={() => setIsPlaying(false)}
-                                    onEnded={() => setIsPlaying(false)}
-                                    sx={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain' }}
-                                />
-                                {/* Controls */}
-                                <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, bgcolor: 'rgba(0,0,0,0.8)', p: 1.5 }}>
-                                    <Slider
-                                        value={duration ? (currentTime / duration) * 100 : 0}
-                                        onChange={handleSeek}
-                                        sx={{
-                                            color: colors.primary,
-                                            height: 4,
-                                            p: 0,
-                                            mb: 1,
-                                            '& .MuiSlider-thumb': { width: 12, height: 12, '&:hover': { boxShadow: 'none' } },
-                                            '& .MuiSlider-rail': { bgcolor: 'rgba(255,255,255,0.3)' },
-                                        }}
-                                    />
-                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                        <Stack direction="row" alignItems="center" spacing={0.5}>
-                                            <IconButton size="small" sx={{ color: '#fff' }} onClick={handlePlayPause}>
-                                                {isPlaying ? <Pause fontSize="small" /> : <PlayArrow fontSize="small" />}
-                                            </IconButton>
-                                            <IconButton size="small" sx={{ color: '#fff' }} onClick={() => { if (videoRef.current) videoRef.current.muted = !videoRef.current.muted; }}>
-                                                <VolumeUp fontSize="small" />
-                                            </IconButton>
-                                            <Typography variant="caption" sx={{ color: '#fff', ml: 0.5 }}>
-                                                {formatTime(currentTime)} / {formatTime(duration)}
-                                            </Typography>
-                                        </Stack>
-                                        <Stack direction="row" alignItems="center" spacing={0.25}>
-                                            <IconButton size="small" sx={{ color: '#fff' }}><Subtitles fontSize="small" /></IconButton>
-                                            <IconButton size="small" sx={{ color: '#fff' }}><Settings fontSize="small" /></IconButton>
-                                            <IconButton size="small" sx={{ color: '#fff' }} onClick={() => videoRef.current?.requestFullscreen?.()}><Fullscreen fontSize="small" /></IconButton>
-                                        </Stack>
-                                    </Box>
-                                </Box>
-                            </>
-                        )}
-                    </Box>
-
-                    {/* Lesson header + nav */}
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2.5, flexWrap: 'wrap', gap: 1.5 }}>
-                        <Box>
-                            <Typography variant="h5" sx={{ fontWeight: 700, color: colors.text, mb: 0.5 }}>
-                                {currentLesson?.title || 'Select a lesson'}
-                            </Typography>
-                            {currentLesson?.updated_at && (
-                                <Typography variant="body2" sx={{ color: colors.textSecondary }}>
-                                    Last updated {new Date(currentLesson.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                </Typography>
+                    {isLocked ? (
+                        <Box sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            minHeight: '60vh',
+                            textAlign: 'center',
+                            p: 4,
+                            bgcolor: colors.card,
+                            border: `1px solid ${colors.border}`,
+                            borderRadius: 3,
+                            boxShadow: 1
+                        }}>
+                            <LockOutlined sx={{ fontSize: 72, color: colors.primary, mb: 3 }} />
+                            {!progressData?.foundational_completed ? (
+                                <>
+                                    <Typography variant="h5" sx={{ fontWeight: 700, color: colors.text, mb: 2 }}>
+                                        Foundational Course Required
+                                    </Typography>
+                                    <Typography variant="body1" sx={{ color: colors.textSecondary, mb: 4, maxWidth: 480, lineHeight: 1.6 }}>
+                                        To gain access to the Exemplar Series videos, you must first complete the Foundational Course program and its assessments.
+                                    </Typography>
+                                    <Button
+                                        variant="contained"
+                                        onClick={() => navigate('/learner')}
+                                        sx={{ bgcolor: colors.primary, textTransform: 'none', fontWeight: 600, px: 4, py: 1.25, borderRadius: 2 }}
+                                    >
+                                        Go to Foundational Hub
+                                    </Button>
+                                </>
+                            ) : (
+                                <>
+                                    <Typography variant="h5" sx={{ fontWeight: 700, color: colors.text, mb: 2 }}>
+                                        Exemplar Video Premium Access
+                                    </Typography>
+                                    <Typography variant="body1" sx={{ color: colors.textSecondary, mb: 4, maxWidth: 480, lineHeight: 1.6 }}>
+                                        This video is a premium release in the Exemplar Series. Unlock lifetime access to watch this video and take its certification assessment.
+                                    </Typography>
+                                    <Button
+                                        variant="contained"
+                                        onClick={() => navigate('/checkout', {
+                                            state: {
+                                                courseId: courseData?.id,
+                                                price: courseData?.price || 0,
+                                                title: courseData?.title,
+                                                thumbnail: courseData?.thumbnail_url,
+                                                track: courseData?.track
+                                            }
+                                        })}
+                                        sx={{ bgcolor: colors.primary, textTransform: 'none', fontWeight: 600, px: 4, py: 1.25, borderRadius: 2 }}
+                                    >
+                                        Enroll & Pay ₦{Number(courseData?.price || 0).toLocaleString('en-NG')}
+                                    </Button>
+                                </>
                             )}
                         </Box>
-                        <Stack direction="row" spacing={1}>
-                            <Button
-                                variant="outlined"
-                                startIcon={<ChevronLeft />}
-                                disabled={!prevLesson}
-                                onClick={() => prevLesson && handleSelectLesson(prevLesson)}
-                                sx={{ borderColor: 'rgba(255,255,255,0.15)', color: colors.text, textTransform: 'none', '&:hover': { borderColor: 'rgba(255,255,255,0.3)' }, '&.Mui-disabled': { color: colors.textSecondary, borderColor: 'rgba(255,255,255,0.06)' } }}
-                            >
-                                Previous
-                            </Button>
-                            {currentLesson?.slug && (
-                                <Button
-                                    variant="contained"
-                                    onClick={() => navigate(`/learner/lessons/${currentLesson.slug}/cbt`)}
-                                    sx={{ bgcolor: colors.success, textTransform: 'none', '&:hover': { bgcolor: '#059669' } }}
-                                >
-                                    Take Assessment
-                                </Button>
-                            )}
-                            {materialSrc && (
-                                <Button
-                                    variant="outlined"
-                                    component="a"
-                                    href={materialSrc}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    startIcon={<InsertDriveFile />}
-                                    sx={{ borderColor: '#60A5FA', color: '#60A5FA', textTransform: 'none', '&:hover': { borderColor: '#93C5FD', bgcolor: 'rgba(96,165,250,0.05)' } }}
-                                >
-                                    View Material
-                                </Button>
-                            )}
-                            <Button
-                                variant="contained"
-                                endIcon={<ChevronRight />}
-                                disabled={!nextLesson}
-                                onClick={() => nextLesson && handleSelectLesson(nextLesson)}
-                                sx={{ bgcolor: colors.primary, textTransform: 'none', '&:hover': { bgcolor: '#1D4ED8' } }}
-                            >
-                                Next Lesson
-                            </Button>
-                        </Stack>
-                    </Box>
-
-                    <Divider sx={{ borderColor: colors.border, mb: 3 }} />
-
-                    {/* Lesson description */}
-                    {currentLesson?.description && (
-                        <Typography variant="body1" sx={{ color: colors.text, lineHeight: 1.8, mb: 3 }}>
-                            {currentLesson.description}
-                        </Typography>
-                    )}
-
-                    {/* Key Learning Outcomes */}
-                    {(() => {
-                        const content = currentLesson?.content;
-                        if (!content) return null;
-                        const items = Array.isArray(content) ? content : [];
-                        if (items.length === 0) return null;
-                        return (
-                            <Box sx={{ mb: 3 }}>
-                                <Typography variant="subtitle1" sx={{ fontWeight: 700, color: colors.text, mb: 1.5 }}>
-                                    Key Learning Outcomes
-                                </Typography>
-                                {items.map((item, i) => (
-                                    <Box key={i} sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
-                                        <Typography variant="body2" sx={{ color: colors.textSecondary, mr: 1 }}>•</Typography>
-                                        <Typography variant="body2" sx={{ color: colors.textSecondary }}>
-                                            {typeof item === 'string' ? item : JSON.stringify(item)}
+                    ) : (
+                        <>
+                            {/* Video Player */}
+                            <Box sx={{
+                                position: 'relative',
+                                width: '100%',
+                                aspectRatio: '16/9',
+                                bgcolor: '#000',
+                                borderRadius: 2,
+                                overflow: 'hidden',
+                                mb: 3,
+                            }}>
+                                {(lessonLoading || !currentLesson) ? (
+                                    <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#111827' }}>
+                                        <CircularProgress size={48} />
+                                    </Box>
+                                ) : (currentLesson?.type === 'document' || currentLesson?.type === 'file') ? (
+                                    <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: '#1F2937', p: 4, textAlign: 'center' }}>
+                                        <InsertDriveFile sx={{ fontSize: 64, color: '#178A83', mb: 2 }} />
+                                        <Typography variant="h6" sx={{ color: '#fff', fontWeight: 650, mb: 1 }}>
+                                            {currentLesson.title} - Study Document
+                                        </Typography>
+                                        <Typography variant="body2" sx={{ color: '#9CA3AF', mb: 3, maxWidth: 400 }}>
+                                            This lesson includes a document attachment. Click the button below to view or download the study material.
+                                        </Typography>
+                                        <Button
+                                            variant="contained"
+                                            href={videoSrc}
+                                            target="_blank"
+                                            download
+                                            startIcon={<GetApp />}
+                                            sx={{ bgcolor: '#178A83', '&:hover': { bgcolor: '#116B65' } }}
+                                        >
+                                            Open / Download Material
+                                        </Button>
+                                    </Box>
+                                ) : currentLesson?.type === 'text' ? (
+                                    <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: '#1F2937', p: 4, textAlign: 'center' }}>
+                                        <MenuBook sx={{ fontSize: 64, color: '#178A83', mb: 2 }} />
+                                        <Typography variant="h6" sx={{ color: '#fff', fontWeight: 650, mb: 1 }}>
+                                            {currentLesson.title}
+                                        </Typography>
+                                        <Typography variant="body2" sx={{ color: '#9CA3AF', maxWidth: 450 }}>
+                                            This is a reading/article-based lesson. Please review the text and key learning outcomes below.
                                         </Typography>
                                     </Box>
-                                ))}
+                                ) : !videoSrc ? (
+                                    <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: '#111827', gap: 1.5 }}>
+                                        <PlayCircleOutline sx={{ fontSize: 56, color: colors.textSecondary }} />
+                                        <Typography sx={{ color: colors.textSecondary, fontSize: '0.9rem' }}>No video available for this lesson</Typography>
+                                    </Box>
+                                ) : isEmbed ? (
+                                    <Box
+                                        component="iframe"
+                                        src={getEmbedUrl(videoSrc)}
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                                        allowFullScreen
+                                        sx={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+                                    />
+                                ) : (
+                                    <>
+                                        <Box
+                                            component="video"
+                                            ref={videoRef}
+                                            src={videoSrc}
+                                            onTimeUpdate={() => setCurrentTime(videoRef.current?.currentTime || 0)}
+                                            onDurationChange={() => setDuration(videoRef.current?.duration || 0)}
+                                            onPlay={() => setIsPlaying(true)}
+                                            onPause={() => setIsPlaying(false)}
+                                            onEnded={() => setIsPlaying(false)}
+                                            sx={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain' }}
+                                        />
+                                        {/* Controls */}
+                                        <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, bgcolor: 'rgba(0,0,0,0.8)', p: 1.5 }}>
+                                            <Slider
+                                                value={duration ? (currentTime / duration) * 100 : 0}
+                                                onChange={handleSeek}
+                                                sx={{
+                                                    color: colors.primary,
+                                                    height: 4,
+                                                    p: 0,
+                                                    mb: 1,
+                                                    '& .MuiSlider-thumb': { width: 12, height: 12, '&:hover': { boxShadow: 'none' } },
+                                                    '& .MuiSlider-rail': { bgcolor: 'rgba(255,255,255,0.3)' },
+                                                }}
+                                            />
+                                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                <Stack direction="row" alignItems="center" spacing={0.5}>
+                                                    <IconButton size="small" sx={{ color: '#fff' }} onClick={handlePlayPause}>
+                                                        {isPlaying ? <Pause fontSize="small" /> : <PlayArrow fontSize="small" />}
+                                                    </IconButton>
+                                                    <IconButton size="small" sx={{ color: '#fff' }} onClick={() => { if (videoRef.current) videoRef.current.muted = !videoRef.current.muted; }}>
+                                                        <VolumeUp fontSize="small" />
+                                                    </IconButton>
+                                                    <Typography variant="caption" sx={{ color: '#fff', ml: 1 }}>
+                                                        {formatTime(currentTime)} / {formatTime(duration)}
+                                                    </Typography>
+                                                </Stack>
+                                                <IconButton size="small" sx={{ color: '#fff' }} onClick={handleFullscreen}>
+                                                    <Fullscreen fontSize="small" />
+                                                </IconButton>
+                                            </Box>
+                                        </Box>
+                                    </>
+                                )}
                             </Box>
-                        );
-                    })()}
+
+                            {/* Lesson Title & Material Download */}
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2, mb: 3 }}>
+                                <Box>
+                                    <Typography variant="h5" sx={{ fontWeight: 700, color: colors.text, mb: 1 }}>
+                                        {currentLesson?.title || 'Select a lesson'}
+                                    </Typography>
+                                    {currentModule?.title && (
+                                        <Typography variant="subtitle2" sx={{ color: colors.textSecondary }}>
+                                            {currentModule.title}
+                                        </Typography>
+                                    )}
+                                </Box>
+                                <Stack direction="row" spacing={1.5} alignItems="center">
+                                    {materialSrc && (
+                                        <Button
+                                            variant="outlined"
+                                            component="a"
+                                            href={materialSrc}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            startIcon={<InsertDriveFile />}
+                                            sx={{ borderColor: '#60A5FA', color: '#60A5FA', textTransform: 'none', '&:hover': { borderColor: '#93C5FD', bgcolor: 'rgba(96,165,250,0.05)' } }}
+                                        >
+                                            View Material
+                                        </Button>
+                                    )}
+                                    {courseData?.track === 'experta' ? (
+                                        <Button
+                                            variant="outlined"
+                                            onClick={() => navigate('/explore')}
+                                            sx={{ borderColor: colors.border, color: colors.textSecondary, textTransform: 'none', '&:hover': { borderColor: '#fff' } }}
+                                        >
+                                            Back to Exemplar Series
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            variant="contained"
+                                            endIcon={<ChevronRight />}
+                                            disabled={!nextLesson}
+                                            onClick={() => nextLesson && handleSelectLesson(nextLesson)}
+                                            sx={{ bgcolor: colors.primary, textTransform: 'none', '&:hover': { bgcolor: '#1D4ED8' } }}
+                                        >
+                                            Next Lesson
+                                        </Button>
+                                    )}
+                                </Stack>
+                            </Box>
+
+                            <Divider sx={{ borderColor: colors.border, mb: 3 }} />
+
+                            {/* Lesson description */}
+                            {currentLesson?.description && (
+                                <Typography variant="body1" sx={{ color: colors.text, lineHeight: 1.8, mb: 3 }}>
+                                    {currentLesson.description}
+                                </Typography>
+                            )}
+
+                            {/* Key Learning Outcomes */}
+                            {(() => {
+                                const content = currentLesson?.content;
+                                if (!content) return null;
+                                const items = Array.isArray(content) ? content : [];
+                                if (items.length === 0) return null;
+                                return (
+                                    <Box sx={{ mb: 3 }}>
+                                        <Typography variant="subtitle1" sx={{ fontWeight: 700, color: colors.text, mb: 1.5 }}>
+                                            Key Learning Outcomes
+                                        </Typography>
+                                        {items.map((item, i) => (
+                                            <Box key={i} sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
+                                                <Typography variant="body2" sx={{ color: colors.textSecondary, mr: 1 }}>•</Typography>
+                                                <Typography variant="body2" sx={{ color: colors.textSecondary }}>
+                                                    {typeof item === 'string' ? item : JSON.stringify(item)}
+                                                </Typography>
+                                            </Box>
+                                        ))}
+                                    </Box>
+                                );
+                            })()}
+                        </>
+                    )}
                 </Box>
 
                 {/* Course completion CTA — shown when on the last lesson */}

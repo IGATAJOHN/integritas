@@ -73,6 +73,7 @@ const DonatePage = () => {
     const [snackOpen, setSnackOpen] = useState(false);
     const [copied, setCopied] = useState(false);
     const [paying, setPaying] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState('card'); // 'card' or 'bank'
 
     const donationAmount = selectedAmount || Number(customAmount || 0);
 
@@ -417,218 +418,279 @@ const DonatePage = () => {
                                     }}
                                     sx={inputSx}
                                 />
-                            </Box>
-
-                            {/* Bank Details section */}
+                            </Box>                            {/* Payment Method Selection */}
                             <Divider sx={{ borderColor: colors.border, my: 4 }} />
-
                             <Typography
-                                variant="h3"
                                 sx={{
                                     color: colors.textWhite,
-                                    fontSize: '1.25rem',
+                                    fontSize: '0.875rem',
                                     fontWeight: 700,
-                                    mb: 1.5,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 1
+                                    mb: 2,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.05em'
                                 }}
                             >
-                                <AccountBalance sx={{ color: colors.primary }} />
-                                Bank Transfer Details
+                                Payment Method
                             </Typography>
-                            <Typography sx={{ color: colors.textMuted, fontSize: '0.875rem', lineHeight: 1.6, mb: 3 }}>
-                                Alternatively, you can make a direct bank transfer to our official account:
-                            </Typography>
-
-                            <Box
-                                sx={{
-                                    bgcolor: colors.bgDarker,
-                                    border: `1px solid ${colors.border}`,
-                                    borderRadius: 2.5,
-                                    p: 3,
-                                    position: 'relative',
-                                }}
-                            >
-                                <Stack spacing={2.5}>
-                                    <Box>
-                                        <Typography variant="caption" sx={{ color: colors.textDark, display: 'block', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em', mb: 0.5 }}>
-                                            Bank Name
-                                        </Typography>
-                                        <Typography sx={{ color: colors.textWhite, fontWeight: 600, fontSize: '0.95rem' }}>
-                                            Moniepoint
-                                        </Typography>
-                                    </Box>
-
-                                    <Box>
-                                        <Typography variant="caption" sx={{ color: colors.textDark, display: 'block', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em', mb: 0.5 }}>
-                                            Account Name
-                                        </Typography>
-                                        <Typography sx={{ color: colors.textWhite, fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.4 }}>
-                                            Center for Fiscal Transparency & Public Integrity - Integritas
-                                        </Typography>
-                                    </Box>
-
-                                    <Box>
-                                        <Typography variant="caption" sx={{ color: colors.textDark, display: 'block', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em', mb: 0.5 }}>
-                                            Account Number
-                                        </Typography>
-                                        <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
-                                            <Typography sx={{ color: colors.textWhite, fontWeight: 700, fontSize: '1.25rem', letterSpacing: '0.05em' }}>
-                                                4005724739
-                                            </Typography>
-                                            <Button
-                                                size="small"
-                                                variant="outlined"
-                                                onClick={handleCopyAccountNumber}
-                                                startIcon={copied ? <Check /> : <ContentCopy />}
-                                                sx={{
-                                                    textTransform: 'none',
-                                                    borderColor: copied ? '#10B981' : colors.primary,
-                                                    color: copied ? '#10B981' : colors.primary,
-                                                    fontWeight: 600,
-                                                    '&:hover': {
-                                                        borderColor: copied ? '#10B981' : colors.primary,
-                                                        bgcolor: copied ? 'rgba(16,185,129,0.05)' : `${colors.primary}10`,
-                                                    }
-                                                }}
-                                            >
-                                                {copied ? 'Copied' : 'Copy'}
-                                            </Button>
-                                        </Stack>
-                                    </Box>
-                                </Stack>
-                            </Box>
+                            <Stack direction="row" spacing={2} sx={{ mb: 4 }}>
+                                <Button
+                                    type="button"
+                                    variant={paymentMethod === 'card' ? 'contained' : 'outlined'}
+                                    onClick={() => setPaymentMethod('card')}
+                                    sx={{
+                                        flex: 1,
+                                        textTransform: 'none',
+                                        fontWeight: 700,
+                                        borderRadius: 2,
+                                        py: 1.5,
+                                        bgcolor: paymentMethod === 'card' ? colors.primary : 'transparent',
+                                        borderColor: paymentMethod === 'card' ? 'transparent' : colors.border,
+                                        color: paymentMethod === 'card' ? '#fff' : colors.textWhite,
+                                        '&:hover': {
+                                            bgcolor: paymentMethod === 'card' ? colors.primaryHover : 'rgba(255,255,255,0.05)',
+                                            borderColor: colors.border
+                                        }
+                                    }}
+                                >
+                                    Pay Online (Paystack)
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant={paymentMethod === 'bank' ? 'contained' : 'outlined'}
+                                    onClick={() => setPaymentMethod('bank')}
+                                    sx={{
+                                        flex: 1,
+                                        textTransform: 'none',
+                                        fontWeight: 700,
+                                        borderRadius: 2,
+                                        py: 1.5,
+                                        bgcolor: paymentMethod === 'bank' ? colors.primary : 'transparent',
+                                        borderColor: paymentMethod === 'bank' ? 'transparent' : colors.border,
+                                        color: paymentMethod === 'bank' ? '#fff' : colors.textWhite,
+                                        '&:hover': {
+                                            bgcolor: paymentMethod === 'bank' ? colors.primaryHover : 'rgba(255,255,255,0.05)',
+                                            borderColor: colors.border
+                                        }
+                                    }}
+                                >
+                                    Bank Transfer
+                                </Button>
+                            </Stack>
                         </Box>
 
                         <Box sx={{ flex: 1, width: '100%' }}>
-                            <Typography
-                                variant="h2"
-                                sx={{
-                                    color: colors.textWhite,
-                                    fontSize: { xs: '1.5rem', md: '1.875rem' },
-                                    fontWeight: 700,
-                                    mb: 1,
-                                }}
-                            >
-                                Donor Details
-                            </Typography>
-                            <Typography sx={{ color: colors.textMuted, lineHeight: 1.7, mb: 4 }}>
-                                Fill in your details below to proceed to the secure payment portal.
-                            </Typography>
-
-                            <Stack spacing={3}>
-                                <Box>
-                                    {fieldLabel('Full Name')}
-                                    <TextField
-                                        variant="filled"
-                                        name="name"
-                                        value={form.name}
-                                        onChange={handleFormChange}
-                                        placeholder="Your name"
-                                        error={!!errors.name}
-                                        helperText={errors.name}
-                                        fullWidth
-                                        InputProps={{
-                                            disableUnderline: true,
-                                            startAdornment: (
-                                                <InputAdornment position="start">
-                                                    <Person />
-                                                </InputAdornment>
-                                            ),
+                            {paymentMethod === 'bank' ? (
+                                <Box sx={{ bgcolor: colors.bgCard, p: 1 }}>
+                                    <Typography
+                                        variant="h3"
+                                        sx={{
+                                            color: colors.textWhite,
+                                            fontSize: '1.25rem',
+                                            fontWeight: 700,
+                                            mb: 1.5,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 1
                                         }}
-                                        sx={inputSx}
-                                    />
-                                </Box>
+                                    >
+                                        <AccountBalance sx={{ color: colors.primary }} />
+                                        Bank Transfer Details
+                                    </Typography>
+                                    <Typography sx={{ color: colors.textMuted, fontSize: '0.875rem', lineHeight: 1.6, mb: 3 }}>
+                                        Make a direct bank transfer to our official account:
+                                    </Typography>
 
-                                <Box>
-                                    {fieldLabel('Email Address')}
-                                    <TextField
-                                        variant="filled"
-                                        name="email"
-                                        type="email"
-                                        value={form.email}
-                                        onChange={handleFormChange}
-                                        placeholder="you@example.com"
-                                        error={!!errors.email}
-                                        helperText={errors.email}
-                                        fullWidth
-                                        InputProps={{
-                                            disableUnderline: true,
-                                            startAdornment: (
-                                                <InputAdornment position="start">
-                                                    <Email />
-                                                </InputAdornment>
-                                            ),
+                                    <Box
+                                        sx={{
+                                            bgcolor: colors.bgDarker,
+                                            border: `1px solid ${colors.border}`,
+                                            borderRadius: 2.5,
+                                            p: 3,
+                                            position: 'relative',
                                         }}
-                                        sx={inputSx}
-                                    />
-                                </Box>
+                                    >
+                                        <Stack spacing={2.5}>
+                                            <Box>
+                                                <Typography variant="caption" sx={{ color: colors.textDark, display: 'block', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em', mb: 0.5 }}>
+                                                    Bank Name
+                                                </Typography>
+                                                <Typography sx={{ color: colors.textWhite, fontWeight: 600, fontSize: '0.95rem' }}>
+                                                    Moniepoint
+                                                </Typography>
+                                            </Box>
 
-                                <Box>
-                                    {fieldLabel('Organization (optional)')}
-                                    <TextField
-                                        variant="filled"
-                                        name="organization"
-                                        value={form.organization}
-                                        onChange={handleFormChange}
-                                        placeholder="Your organization"
-                                        fullWidth
-                                        InputProps={{
-                                            disableUnderline: true,
-                                            startAdornment: (
-                                                <InputAdornment position="start">
-                                                    <Business />
-                                                </InputAdornment>
-                                            ),
+                                            <Box>
+                                                <Typography variant="caption" sx={{ color: colors.textDark, display: 'block', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em', mb: 0.5 }}>
+                                                    Account Name
+                                                </Typography>
+                                                <Typography sx={{ color: colors.textWhite, fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.4 }}>
+                                                    Center for Fiscal Transparency & Public Integrity - Integritas
+                                                </Typography>
+                                            </Box>
+
+                                            <Box>
+                                                <Typography variant="caption" sx={{ color: colors.textDark, display: 'block', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em', mb: 0.5 }}>
+                                                    Account Number
+                                                </Typography>
+                                                <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+                                                    <Typography sx={{ color: colors.textWhite, fontWeight: 700, fontSize: '1.25rem', letterSpacing: '0.05em' }}>
+                                                        4005724739
+                                                    </Typography>
+                                                    <Button
+                                                        type="button"
+                                                        size="small"
+                                                        variant="outlined"
+                                                        onClick={handleCopyAccountNumber}
+                                                        startIcon={copied ? <Check /> : <ContentCopy />}
+                                                        sx={{
+                                                            textTransform: 'none',
+                                                            borderColor: copied ? '#10B981' : colors.primary,
+                                                            color: copied ? '#10B981' : colors.primary,
+                                                            fontWeight: 600,
+                                                            '&:hover': {
+                                                                borderColor: copied ? '#10B981' : colors.primary,
+                                                                bgcolor: copied ? 'rgba(16,185,129,0.05)' : `${colors.primary}10`,
+                                                            }
+                                                        }}
+                                                    >
+                                                        {copied ? 'Copied' : 'Copy'}
+                                                    </Button>
+                                                </Stack>
+                                            </Box>
+                                        </Stack>
+                                    </Box>
+                                </Box>
+                            ) : (
+                                <>
+                                    <Typography
+                                        variant="h2"
+                                        sx={{
+                                            color: colors.textWhite,
+                                            fontSize: { xs: '1.5rem', md: '1.875rem' },
+                                            fontWeight: 700,
+                                            mb: 1,
                                         }}
-                                        sx={inputSx}
-                                    />
-                                </Box>
+                                    >
+                                        Donor Details
+                                    </Typography>
+                                    <Typography sx={{ color: colors.textMuted, lineHeight: 1.7, mb: 4 }}>
+                                        Fill in your details below to proceed to the secure payment portal.
+                                    </Typography>
 
-                                <Box>
-                                    {fieldLabel('Note (optional)')}
-                                    <TextField
-                                        variant="filled"
-                                        name="note"
-                                        value={form.note}
-                                        onChange={handleFormChange}
-                                        placeholder="Leave a short note"
-                                        multiline
-                                        rows={4}
-                                        fullWidth
-                                        InputProps={{
-                                            disableUnderline: true,
-                                            startAdornment: (
-                                                <InputAdornment position="start" sx={{ alignSelf: 'flex-start', mt: 1.5 }}>
-                                                    <Notes />
-                                                </InputAdornment>
-                                            ),
-                                        }}
-                                        sx={inputSx}
-                                    />
-                                </Box>
+                                    <Stack spacing={3}>
+                                        <Box>
+                                            {fieldLabel('Full Name')}
+                                            <TextField
+                                                variant="filled"
+                                                name="name"
+                                                value={form.name}
+                                                onChange={handleFormChange}
+                                                placeholder="Your name"
+                                                error={!!errors.name}
+                                                helperText={errors.name}
+                                                fullWidth
+                                                InputProps={{
+                                                    disableUnderline: true,
+                                                    startAdornment: (
+                                                        <InputAdornment position="start">
+                                                            <Person />
+                                                        </InputAdornment>
+                                                    ),
+                                                }}
+                                                sx={inputSx}
+                                            />
+                                        </Box>
 
-                                <Button
-                                    type="submit"
-                                    variant="contained"
-                                    size="large"
-                                    disabled={paying}
-                                    endIcon={paying ? null : <ArrowForward />}
-                                    sx={{
-                                        bgcolor: colors.primary,
-                                        '&:hover': { bgcolor: colors.primaryHover, color: '#FFFFFF' },
-                                        textTransform: 'none',
-                                        fontWeight: 700,
-                                        py: 1.5,
-                                        borderRadius: 2,
-                                        alignSelf: 'flex-start',
-                                        px: 4,
-                                    }}
-                                >
-                                    {paying ? 'Processing...' : 'Continue Donation'}
-                                </Button>
-                            </Stack>
+                                        <Box>
+                                            {fieldLabel('Email Address')}
+                                            <TextField
+                                                variant="filled"
+                                                name="email"
+                                                type="email"
+                                                value={form.email}
+                                                onChange={handleFormChange}
+                                                placeholder="you@example.com"
+                                                error={!!errors.email}
+                                                helperText={errors.email}
+                                                fullWidth
+                                                InputProps={{
+                                                    disableUnderline: true,
+                                                    startAdornment: (
+                                                        <InputAdornment position="start">
+                                                            <Email />
+                                                        </InputAdornment>
+                                                    ),
+                                                }}
+                                                sx={inputSx}
+                                            />
+                                        </Box>
+
+                                        <Box>
+                                            {fieldLabel('Organization (optional)')}
+                                            <TextField
+                                                variant="filled"
+                                                name="organization"
+                                                value={form.organization}
+                                                onChange={handleFormChange}
+                                                placeholder="Your organization"
+                                                fullWidth
+                                                InputProps={{
+                                                    disableUnderline: true,
+                                                    startAdornment: (
+                                                        <InputAdornment position="start">
+                                                            <Business />
+                                                        </InputAdornment>
+                                                    ),
+                                                }}
+                                                sx={inputSx}
+                                            />
+                                        </Box>
+
+                                        <Box>
+                                            {fieldLabel('Note (optional)')}
+                                            <TextField
+                                                variant="filled"
+                                                name="note"
+                                                value={form.note}
+                                                onChange={handleFormChange}
+                                                placeholder="Leave a short note"
+                                                multiline
+                                                rows={4}
+                                                fullWidth
+                                                InputProps={{
+                                                    disableUnderline: true,
+                                                    startAdornment: (
+                                                        <InputAdornment position="start" sx={{ alignSelf: 'flex-start', mt: 1.5 }}>
+                                                            <Notes />
+                                                        </InputAdornment>
+                                                    ),
+                                                }}
+                                                sx={inputSx}
+                                            />
+                                        </Box>
+
+                                        <Button
+                                            type="submit"
+                                            variant="contained"
+                                            size="large"
+                                            disabled={paying}
+                                            endIcon={paying ? null : <ArrowForward />}
+                                            sx={{
+                                                bgcolor: colors.primary,
+                                                '&:hover': { bgcolor: colors.primaryHover, color: '#FFFFFF' },
+                                                textTransform: 'none',
+                                                fontWeight: 700,
+                                                py: 1.5,
+                                                borderRadius: 2,
+                                                alignSelf: 'flex-start',
+                                                px: 4,
+                                            }}
+                                        >
+                                            {paying ? 'Processing...' : 'Continue Donation'}
+                                        </Button>
+                                    </Stack>
+                                </>
+                            )}
                         </Box>
                     </Stack>
                 </Box>

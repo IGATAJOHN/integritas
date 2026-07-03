@@ -99,3 +99,145 @@ class QuizAttemptView(views.APIView):
             'passed': attempt.passed,
             'created_at': attempt.created_at.isoformat()
         }, status=status.HTTP_201_CREATED)
+
+
+import random
+
+class LearnerStartAttemptView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, lesson_slug):
+        if str(lesson_slug).isdigit():
+            lesson = get_object_or_404(Lesson, pk=lesson_slug)
+        else:
+            lesson = get_object_or_404(Lesson, slug=lesson_slug)
+
+        quiz, _ = Quiz.objects.get_or_create(lesson=lesson)
+        questions = list(quiz.questions.all())
+        random.shuffle(questions)
+
+        questions_payload = []
+        questions_data = []
+
+        for q in questions:
+            options = list(q.options.all())
+            random.shuffle(options)
+            
+            questions_payload.append({
+                'id': q.id,
+                'text': q.text,
+                'options': [{'id': o.id, 'text': o.text} for o in options]
+            })
+            
+            questions_data.append({
+                'question_id': q.id,
+                'option_ids': [o.id for o in options]
+            })
+
+        attempt = Attempt.objects.create(
+            user=request.user,
+            quiz=quiz,
+            score=0,
+            passed=False,
+            questions_data=questions_data
+        )
+
+        return Response({
+            'id': attempt.id,
+            'questions': questions_payload,
+            'attempts_remaining': 3
+        })
+
+class LearnerGetAttemptView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, attempt_id):
+        attempt = get_object_or_404(Attempt, pk=attempt_id, user=request.user)
+        questions_payload = []
+        for item in attempt.questions_data:
+            q_id = item.get('question_id')
+            opt_ids = item.get('option_ids', [])
+            try:
+                q = Question.objects.get(pk=q_id)
+                options = []
+                for o_id in opt_ids:
+                    try:
+                        options.append(Option.objects.get(pk=o_id))
+                    except Option.DoesNotExist:
+                        pass
+                questions_payload.append({
+                    'id': q.id,
+                    'text': q.text,
+                    'options': [{'id': o.id, 'text': o.text} for o in options]
+                })
+            except Question.DoesNotExist:
+                pass
+
+        return Response({
+            'id': attempt.id,
+            'questions': questions_payload,
+            'passed': attempt.passed,
+            'score': attempt.score,
+            'attempts_remaining': 3
+        })
+
+class LearnerSubmitAttemptView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, attempt_id):
+        attempt = get_object_or_404(Attempt, pk=attempt_id, user=request.user)
+        quiz = attempt.quiz
+        answers_indices = request.data.get('answers', [])
+        
+        total_points = 0
+        score_points = 0
+        
+        questions_data = attempt.questions_data
+        for idx, item in enumerate(questions_data):
+            q_id = item.get('question_id')
+            opt_ids = item.get('option_ids', [])
+            try:
+                question = Question.objects.get(pk=q_id)
+                total_points += question.points
+                
+                if idx < len(answers_indices):
+                    selected_opt_idx = answers_indices[idx]
+                    if 0 <= selected_opt_idx < len(opt_ids):
+                        selected_option_id = opt_ids[selected_opt_idx]
+                        option = Option.objects.filter(pk=selected_option_id, question=question).first()
+                        if option and option.is_correct:
+                            score_points += question.points
+            except Question.DoesNotExist:
+                pass
+
+        score_percentage = int((score_points / total_points) * 100) if total_points > 0 else 100
+        passed = score_percentage >= quiz.passing_score
+        
+        attempt.score = score_percentage
+        attempt.passed = passed
+        attempt.save()
+
+        # Find next lesson
+        current_lesson = quiz.lesson
+        course = current_lesson.module.course
+        all_lessons = list(Lesson.objects.filter(
+            module__course=course,
+            status='published'
+        ).order_by('module__order', 'order', 'id'))
+        
+        next_lesson_slug = None
+        try:
+            idx = all_lessons.index(current_lesson)
+            if idx + 1 < len(all_lessons):
+                next_lesson_slug = all_lessons[idx + 1].slug
+        except ValueError:
+            pass
+
+        return Response({
+            'id': attempt.id,
+            'passed': attempt.passed,
+            'score': attempt.score,
+            'pass_mark': quiz.passing_score,
+            'attempts_remaining': 3,
+            'next_lesson_slug': next_lesson_slug
+        })

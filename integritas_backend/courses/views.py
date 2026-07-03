@@ -34,10 +34,33 @@ class CourseViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         course = serializer.save()
         self.handle_file_uploads(course)
+        self.ensure_exemplar_lesson(course)
 
     def perform_update(self, serializer):
         course = serializer.save()
         self.handle_file_uploads(course)
+        self.ensure_exemplar_lesson(course)
+
+    def ensure_exemplar_lesson(self, course):
+        if course.track == 'experta':
+            module, _ = Module.objects.get_or_create(
+                course=course,
+                defaults={'title': 'Exemplar Content', 'status': 'published'}
+            )
+            lesson, _ = Lesson.objects.get_or_create(
+                module=module,
+                defaults={
+                    'title': course.title,
+                    'video_url': course.video_url or '',
+                    'material_url': course.material_url or '',
+                    'status': 'published'
+                }
+            )
+            if lesson.title != course.title or lesson.video_url != course.video_url or lesson.material_url != course.material_url:
+                lesson.title = course.title
+                lesson.video_url = course.video_url or ''
+                lesson.material_url = course.material_url or ''
+                lesson.save()
 
     def handle_file_uploads(self, course):
         thumbnail_file = self.request.FILES.get('thumbnail')
@@ -519,6 +542,33 @@ class LearnerCourseProgressView(views.APIView):
         from enrollments.models import Enrollment
         enrollment = Enrollment.objects.filter(user=request.user, course=course).first()
 
+        # Check foundational course completion
+        foundational_completed = False
+        foundational_courses = Course.objects.filter(track='foundational')
+        if not foundational_courses.exists():
+            foundational_completed = True
+        else:
+            for f_course in foundational_courses:
+                f_enrollment = Enrollment.objects.filter(user=request.user, course=f_course, status='active').first()
+                if f_enrollment:
+                    from quizzes.models import Quiz, Attempt
+                    f_lessons = Lesson.objects.filter(module__course=f_course, status='published')
+                    f_lesson_ids = list(f_lessons.values_list('id', flat=True))
+                    if f_lesson_ids:
+                        passed_quizzes_count = Quiz.objects.filter(
+                            lesson_id__in=f_lesson_ids,
+                            attempts__user=request.user,
+                            attempts__passed=True
+                        ).distinct().count()
+                        total_quizzes_count = Quiz.objects.filter(lesson_id__in=f_lesson_ids).count()
+                        if total_quizzes_count > 0 and passed_quizzes_count >= total_quizzes_count:
+                            foundational_completed = True
+                            break
+                    else:
+                        # If there are no lessons yet, count it as completed for convenience
+                        foundational_completed = True
+                        break
+
         if not enrollment:
             return Response({
                 'is_enrolled': False,
@@ -527,8 +577,9 @@ class LearnerCourseProgressView(views.APIView):
                 'progress_percent': 0,
                 'lessons_completed': 0,
                 'total_lessons': 0,
-                'course': {'id': course.id, 'slug': course.slug, 'title': course.title, 'track': course.track},
+                'course': {'id': course.id, 'slug': course.slug, 'title': course.title, 'track': course.track, 'price': str(course.price)},
                 'enrolment': None,
+                'foundational_completed': foundational_completed,
             })
 
         # Count published lessons across all modules
@@ -538,21 +589,26 @@ class LearnerCourseProgressView(views.APIView):
         ).count()
 
         is_active = enrollment.status == 'active'
+        has_access = is_active
+        if course.track == 'experta' and not foundational_completed:
+            has_access = False
+
         progress_percent = 100 if is_active and total_lessons > 0 else 0
 
         return Response({
             'is_enrolled': True,
-            'has_access': is_active,
+            'has_access': has_access,
             'status': enrollment.status,
             'progress_percent': progress_percent,
             'lessons_completed': total_lessons if is_active else 0,
             'total_lessons': total_lessons,
-            'course': {'id': course.id, 'slug': course.slug, 'title': course.title, 'track': course.track},
+            'course': {'id': course.id, 'slug': course.slug, 'title': course.title, 'track': course.track, 'price': str(course.price)},
             'enrolment': {
                 'id': enrollment.id,
                 'status': enrollment.status,
                 'enrolled_at': enrollment.enrolled_at.isoformat(),
             },
+            'foundational_completed': foundational_completed,
         })
 
 

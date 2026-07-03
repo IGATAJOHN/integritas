@@ -77,6 +77,7 @@ const DEFAULT_COURSE = {
     title: 'Foundational Courses',
     summary: 'Foundational governance and integrity programme.',
     description: 'Foundational governance and integrity programme.',
+    price: '0',
 };
 
 const emptyModuleForm = { title: '', description: '' };
@@ -1279,6 +1280,7 @@ const CourseSetupDialog = ({ open, form, setForm, saving, onClose, onSave }) => 
                 <TextField label="Title" value={form.title} onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))} sx={textFieldStyle} fullWidth />
                 <TextField label="Summary" value={form.summary} onChange={(event) => setForm((prev) => ({ ...prev, summary: event.target.value }))} sx={textFieldStyle} fullWidth />
                 <TextField label="Description" value={form.description} onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))} sx={textFieldStyle} fullWidth multiline minRows={3} />
+                <TextField label="Price (₦)" value={form.price} onChange={(event) => setForm((prev) => ({ ...prev, price: event.target.value }))} sx={textFieldStyle} fullWidth />
             </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 2, borderTop: '1px solid #374151' }}>

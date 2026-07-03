@@ -68,7 +68,8 @@ const LearnerProfile = () => {
                 const items = Array.isArray(res?.data) ? res.data
                     : Array.isArray(res?.data?.data) ? res.data.data
                     : Array.isArray(res) ? res : [];
-                setEnrollments(items);
+                const filtered = items.filter(e => e.course?.track !== 'experta');
+                setEnrollments(filtered);
             } catch {
                 setEnrollments([]);
             } finally {

@@ -8,8 +8,9 @@ import {
 } from '@mui/material';
 import {
     Add, Search, Edit, Delete, OndemandVideo, PlayArrow,
-    Close, AccessTime, CloudUpload, CheckCircle, Visibility,
+    Close, AccessTime, CloudUpload, CheckCircle, Visibility, Quiz,
 } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
 import { apiService, API_BASE } from '../../../services/api';
 import { getImageUrl } from '../../../utils';
@@ -45,9 +46,11 @@ const defaultForm = {
     videoFile: null,
     tags: '',
     instructor: '',
+    price: '0',
 };
 
 const ExemplarSeriesAdmin = () => {
+    const navigate = useNavigate();
     const muiTheme = useTheme();
     const isDark = muiTheme.palette.mode === 'dark';
 
@@ -164,6 +167,7 @@ const ExemplarSeriesAdmin = () => {
             videoFile: null,
             tags: Array.isArray(video.tags) ? video.tags.map(t => t.name || t).join(', ') : (video.tags || ''),
             instructor: video.instructor || video.tutor_name || '',
+            price: video.price != null ? String(video.price) : '0',
         });
         setDialogOpen(true);
     };
@@ -179,6 +183,7 @@ const ExemplarSeriesAdmin = () => {
         formData.append('duration', form.duration.trim());
         formData.append('status', form.status);
         formData.append('instructor', form.instructor.trim());
+        formData.append('price', form.price || '0');
         formData.append('track', TRACK);
 
         const tagList = form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
@@ -388,7 +393,29 @@ const ExemplarSeriesAdmin = () => {
                                             </Stack>
                                         </Box>
                                         {/* Actions */}
-                                        <Stack direction="row" spacing={1} flexShrink={0}>
+                                        <Stack direction="row" spacing={1.5} alignItems="center" flexShrink={0}>
+                                            {video.modules?.[0]?.lessons?.[0]?.id && (
+                                                <Button
+                                                    size="small"
+                                                    variant="outlined"
+                                                    startIcon={<Quiz />}
+                                                    onClick={() => navigate(`/admin/content/courses/${video.id}/lessons/${video.modules[0].lessons[0].id}/quiz`)}
+                                                    sx={{
+                                                        borderColor: '#10B981',
+                                                        color: '#10B981',
+                                                        textTransform: 'none',
+                                                        fontWeight: 600,
+                                                        px: 1.5,
+                                                        borderRadius: 1.5,
+                                                        '&:hover': {
+                                                            borderColor: '#10B981',
+                                                            bgcolor: 'rgba(16, 185, 129, 0.05)'
+                                                        }
+                                                    }}
+                                                >
+                                                    Manage CBT
+                                                </Button>
+                                            )}
                                             <IconButton onClick={() => openEdit(video)} size="small"
                                                 sx={{ color: brand, border: `1px solid ${border}`, borderRadius: 1.5 }}>
                                                 <Edit fontSize="small" />
@@ -445,6 +472,8 @@ const ExemplarSeriesAdmin = () => {
                                 onChange={e => setForm(p => ({ ...p, duration: e.target.value }))} />
                             <TextField label="Instructor" size="small" fullWidth value={form.instructor}
                                 onChange={e => setForm(p => ({ ...p, instructor: e.target.value }))} />
+                            <TextField label="Price (₦)" size="small" fullWidth value={form.price}
+                                onChange={e => setForm(p => ({ ...p, price: e.target.value }))} />
                         </Stack>
                         {/* Thumbnail File or URL */}
                         <Box sx={{ border: `1.5px dashed ${border}`, p: 2, borderRadius: 2, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>

@@ -644,15 +644,15 @@ const Checkout = () => {
                                 <Stack spacing={1.5} sx={{ mb: 3 }}>
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                         <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>Subtotal</Typography>
-                                        <Typography variant="body2" sx={{ color: '#fff', fontWeight: 600 }}>${course.price.toFixed(2)}</Typography>
+                                        <Typography variant="body2" sx={{ color: '#fff', fontWeight: 600 }}>₦{course.price.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</Typography>
                                     </Box>
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                         <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>Tax (VAT 10%)</Typography>
-                                        <Typography variant="body2" sx={{ color: '#fff', fontWeight: 600 }}>${course.tax.toFixed(2)}</Typography>
+                                        <Typography variant="body2" sx={{ color: '#fff', fontWeight: 600 }}>₦{course.tax.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</Typography>
                                     </Box>
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                         <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>Processing Fee</Typography>
-                                        <Typography variant="body2" sx={{ color: '#fff', fontWeight: 600 }}>${course.fee.toFixed(2)}</Typography>
+                                        <Typography variant="body2" sx={{ color: '#fff', fontWeight: 600 }}>₦{course.fee.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</Typography>
                                     </Box>
                                 </Stack>
 
@@ -661,7 +661,7 @@ const Checkout = () => {
                                 {/* Total */}
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
                                     <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#fff' }}>Total Amount</Typography>
-                                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#fff' }}>${total.toFixed(2)}</Typography>
+                                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#fff' }}>₦{total.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</Typography>
                                 </Box>
 
                                 {/* Promo Code */}

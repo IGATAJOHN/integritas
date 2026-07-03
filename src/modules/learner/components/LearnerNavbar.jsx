@@ -46,6 +46,7 @@ const LearnerNavbar = ({ onMobileMenuToggle }) => {
     };
 
     const navLinks = [
+        { label: 'Home', path: '/' },
         { label: 'Dashboard', path: '/learner' },
         { label: 'Foundational', path: '/learner/foundational' },
         // { label: 'My Learning', path: '/explore/my-learning' },
@@ -53,6 +54,7 @@ const LearnerNavbar = ({ onMobileMenuToggle }) => {
     ];
 
     const isActiveLink = (path) => {
+        if (path === '/') return location.pathname === '/';
         if (path === '/learner') return location.pathname === '/learner';
         return location.pathname.startsWith(path);
     };
@@ -98,7 +100,7 @@ const LearnerNavbar = ({ onMobileMenuToggle }) => {
                     direction="row"
                     alignItems="center"
                     spacing={1.5}
-                    onClick={() => navigate('/learner')}
+                    onClick={() => navigate('/')}
                     sx={{ cursor: 'pointer' }}
                 >
                     <Box

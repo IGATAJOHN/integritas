@@ -162,9 +162,8 @@ const benefits = [
 
 const stats = [
     { value: '120+', label: 'Partner Institutions' },
-    { value: '30+', label: 'Countries Reached' },
-    { value: '200+', label: 'Joint Programs' },
-    { value: '15k+', label: 'Professionals Trained' },
+    { value: '15k+', label: 'Persons Trained' },
+    { value: '25k+', label: 'Platform Users' },
 ];
 
 const PartnersPage = () => {
@@ -252,8 +251,9 @@ const PartnersPage = () => {
                             Become a Partner
                         </Button> */}
                         <Button
-                            component={Link}
-                            to="/explore/courses"
+                            onClick={() => {
+                                document.getElementById('partners-section')?.scrollIntoView({ behavior: 'smooth' });
+                            }}
                             variant="outlined"
                             sx={{
                                 borderColor: colors.borderLight,
@@ -267,7 +267,7 @@ const PartnersPage = () => {
                                 '&:hover': { borderColor: colors.textWhite, color:'#fff', bgcolor: 'transparent' },
                             }}
                         >
-                            View Courses
+                            View Partners
                         </Button>
                     </Stack>
                 </Container>
@@ -302,7 +302,7 @@ const PartnersPage = () => {
             </Box>
 
             {/* Partner Categories */}
-            <Box sx={{ py: { xs: 8, md: 12 }, bgcolor: colors.bgDarker, borderBottom: `1px solid ${colors.border}` }}>
+            <Box id="partners-section" sx={{ py: { xs: 8, md: 12 }, bgcolor: colors.bgDarker, borderBottom: `1px solid ${colors.border}` }}>
                 <Container maxWidth="lg">
                     <Box sx={{ textAlign: 'center', mb: 7 }}>
                         <Typography

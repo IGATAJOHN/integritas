@@ -168,6 +168,10 @@ const ModernDashboardLayout = ({ sidebarItems = [], title = 'Dashboard' }) => {
                                 </Stack>
                             </Box>
                             <Button
+                                component="a"
+                                href="https://calendar.google.com/"
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 variant="outlined"
                                 startIcon={<CalendarIcon />}
                                 sx={{

@@ -22,7 +22,7 @@ class Course(models.Model):
     level = models.CharField(max_length=50, default='Beginner')
     language = models.CharField(max_length=50, default='English')
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    currency = models.CharField(max_length=10, default='USD')
+    currency = models.CharField(max_length=10, default='NGN')
     duration_minutes = models.IntegerField(default=0)
     thumbnail_url = models.URLField(blank=True, null=True)
     video_url = models.URLField(blank=True, null=True)  # Used for Exemplar Series single videos

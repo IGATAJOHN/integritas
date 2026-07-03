@@ -141,6 +141,10 @@ const LearnerDashboard = () => {
                     </Stack>
                 </Box>
                 <Button
+                    component="a"
+                    href="https://calendar.google.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     variant="outlined"
                     startIcon={<CalendarToday />}
                     sx={{

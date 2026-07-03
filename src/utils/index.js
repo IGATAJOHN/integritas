@@ -53,10 +53,12 @@ export const getRelativeTime = (date) => {
  * @param {string} locale - Locale string
  * @returns {string} - Formatted currency string
  */
-export const formatCurrency = (amount, currency = 'USD', locale = 'en-US') => {
+export const formatCurrency = (amount, currency = 'NGN', locale = 'en-NG') => {
     return new Intl.NumberFormat(locale, {
         style: 'currency',
         currency,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
     }).format(amount);
 };
 
