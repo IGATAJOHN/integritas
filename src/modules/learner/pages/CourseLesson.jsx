@@ -1072,6 +1072,7 @@ const CourseLesson = () => {
                         </>
                     )}
                 </Box>
+            </Box>
             {/* Material Viewer Dialog */}
             <Dialog
                 open={materialViewerOpen}
