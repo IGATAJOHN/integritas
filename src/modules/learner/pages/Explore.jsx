@@ -202,7 +202,20 @@ const Explore = ({ type }) => {
     // `categories` intentionally excluded — slug is derived from activeTopic directly.
     // `featuredCourse` intentionally excluded — guarded by featuredSet ref.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [activeTopic, minimumRating, searchTerm, selectedLevels, sortBy]);
+    }, [activeTopic, minimumRating, searchTerm, selectedLevels, sortBy, type]);
+
+    useEffect(() => {
+        featuredSet.current = false;
+        categoriesSet.current = false;
+        setFeaturedCourse(null);
+        setCourses([]);
+        setSearchTerm('');
+        setSortBy('Most Popular');
+        setActiveTopic('All Topics');
+        setSelectedLevels([]);
+        setMinimumRating(0);
+        setError('');
+    }, [type]);
 
     const resetFilters = () => {
         setActiveTopic('All Topics');
