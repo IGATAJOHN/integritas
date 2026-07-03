@@ -2,6 +2,8 @@ from rest_framework import status, views, permissions
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 import uuid
+import requests
+from django.conf import settings
 from .models import Enrollment, Transaction, RefundRequest
 from .serializers import EnrollmentSerializer, TransactionSerializer, RefundRequestSerializer
 from courses.models import Course
@@ -28,21 +30,60 @@ class InitiateEnrollmentView(views.APIView):
             )
             return Response(EnrollmentSerializer(enrollment).data, status=status.HTTP_201_CREATED)
             
-        transaction = Transaction.objects.create(
-            user=request.user,
-            course=course,
-            reference=reference,
-            payment_method='card',
-            amount=course.price,
-            status='pending'
-        )
+        paystack_key = getattr(settings, 'PAYSTACK_SECRET_KEY', None)
+        if not paystack_key:
+            return Response(
+                {'message': 'Paystack payment gateway is not configured on the server. Please set PAYSTACK_SECRET_KEY.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+            
+        callback_url = request.data.get('callback_url')
+        if not callback_url:
+            callback_url = f"{request.scheme}://{request.get_host()}/enrolment/return"
+            
+        paystack_url = "https://api.paystack.co/transaction/initialize"
+        headers = {
+            "Authorization": f"Bearer {paystack_key}",
+            "Content-Type": "application/json"
+        }
+        # Paystack amount is in kobo (price * 100)
+        payload = {
+            "email": request.user.email,
+            "amount": int(course.price * 100),
+            "reference": reference,
+            "callback_url": callback_url
+        }
         
-        authorization_url = f"https://checkout.paystack.com/{reference}"
-        
-        return Response({
-            'authorization_url': authorization_url,
-            'reference': reference
-        }, status=status.HTTP_200_OK)
+        try:
+            res = requests.post(paystack_url, json=payload, headers=headers, timeout=15)
+            res_data = res.json()
+            if res.status_code == 200 and res_data.get('status') is True:
+                authorization_url = res_data['data']['authorization_url']
+                
+                # Save transaction locally in pending status
+                Transaction.objects.create(
+                    user=request.user,
+                    course=course,
+                    reference=reference,
+                    payment_method='card',
+                    amount=course.price,
+                    status='pending'
+                )
+                return Response({
+                    'authorization_url': authorization_url,
+                    'reference': reference
+                }, status=status.HTTP_200_OK)
+            else:
+                error_msg = res_data.get('message', 'Unknown Paystack error')
+                return Response(
+                    {'message': f'Failed to initialize Paystack transaction: {error_msg}'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except Exception as e:
+            return Response(
+                {'message': f'Connection to Paystack failed: {str(e)}'},
+                status=status.HTTP_502_BAD_GATEWAY
+            )
 
 class VerifyEnrollmentView(views.APIView):
     def post(self, request):
@@ -52,22 +93,70 @@ class VerifyEnrollmentView(views.APIView):
         except Transaction.DoesNotExist:
             return Response({'message': 'Transaction not found'}, status=status.HTTP_404_NOT_FOUND)
             
-        transaction.status = 'success'
-        transaction.save()
-        
-        enrollment, _ = Enrollment.objects.update_or_create(
-            user=transaction.user,
-            course=transaction.course,
-            defaults={'status': 'active'}
-        )
-        if enrollment.status != 'active':
-            enrollment.status = 'active'
-            enrollment.save()
+        if transaction.status == 'success':
+            enrollment, _ = Enrollment.objects.update_or_create(
+                user=transaction.user,
+                course=transaction.course,
+                defaults={'status': 'active'}
+            )
+            return Response({
+                'status': 'success',
+                'enrolment': EnrollmentSerializer(enrollment).data
+            }, status=status.HTTP_200_OK)
             
-        return Response({
-            'status': 'success',
-            'enrolment': EnrollmentSerializer(enrollment).data
-        })
+        paystack_key = getattr(settings, 'PAYSTACK_SECRET_KEY', None)
+        if not paystack_key:
+            return Response(
+                {'message': 'Paystack payment gateway is not configured on the server. Please set PAYSTACK_SECRET_KEY.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+            
+        paystack_url = f"https://api.paystack.co/transaction/verify/{reference}"
+        headers = {
+            "Authorization": f"Bearer {paystack_key}"
+        }
+        
+        try:
+            res = requests.get(paystack_url, headers=headers, timeout=15)
+            res_data = res.json()
+            if res.status_code == 200 and res_data.get('status') is True:
+                paystack_status = res_data['data']['status']
+                if paystack_status == 'success':
+                    transaction.status = 'success'
+                    transaction.save()
+                    
+                    enrollment, _ = Enrollment.objects.update_or_create(
+                        user=transaction.user,
+                        course=transaction.course,
+                        defaults={'status': 'active'}
+                    )
+                    return Response({
+                        'status': 'success',
+                        'enrolment': EnrollmentSerializer(enrollment).data
+                    }, status=status.HTTP_200_OK)
+                elif paystack_status in ['failed', 'abandoned']:
+                    transaction.status = 'failed'
+                    transaction.save()
+                    return Response({
+                        'status': 'failed',
+                        'message': f'Payment was not completed. Status: {paystack_status}'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    return Response({
+                        'status': 'pending',
+                        'message': 'Payment is still pending verification.'
+                    }, status=status.HTTP_200_OK)
+            else:
+                error_msg = res_data.get('message', 'Verification failed')
+                return Response(
+                    {'message': f'Paystack verification error: {error_msg}'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except Exception as e:
+            return Response(
+                {'message': f'Connection to Paystack failed: {str(e)}'},
+                status=status.HTTP_502_BAD_GATEWAY
+            )
 
 class MyEnrollmentsView(views.APIView):
     def get(self, request):
