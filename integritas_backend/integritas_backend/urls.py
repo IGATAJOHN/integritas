@@ -2,6 +2,8 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.static import serve
+from django.views.decorators.clickjacking import xframe_options_exempt
 
 from authentication.views import (
     MeView, AdminTutorsView, AdminTutorInvitesView, AdminTutorInviteRevokeView,
@@ -119,6 +121,11 @@ urlpatterns = [
 
 ]
 
+# Serve media files and exempt them from X-Frame-Options to support iframe embedding
+urlpatterns += [
+    path('media/<path:path>', xframe_options_exempt(serve), {'document_root': settings.MEDIA_ROOT}),
+]
+
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
