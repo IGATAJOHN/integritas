@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import {
     Box, Typography, Stack, Card, CardContent, Avatar,
-    Button, TextField, Divider, Chip, Grid, CircularProgress,
+    Button, TextField, Divider, Chip, CircularProgress,
     Alert, Tab, Tabs, LinearProgress, IconButton, Tooltip,
 } from '@mui/material';
+import Grid from '@mui/material/Grid';
 import {
     Edit, Save, Cancel, School, CheckCircle, AccessTime,
     EmojiEvents, Person, Email, Phone, LocationOn, LinkedIn,

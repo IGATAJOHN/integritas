@@ -7,9 +7,9 @@ import {
     Button,
     Stack,
     Avatar,
-    Grid,
     Chip,
 } from '@mui/material';
+import Grid from '@mui/material/Grid';
 import {
     Handshake,
     ArrowForward,

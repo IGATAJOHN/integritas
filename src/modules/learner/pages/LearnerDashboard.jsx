@@ -3,7 +3,6 @@ import {
     Box,
     Typography,
     Button,
-    Grid,
     Card,
     CardContent,
     LinearProgress,
@@ -15,6 +14,7 @@ import {
     useTheme,
     alpha
 } from '@mui/material';
+import Grid from '@mui/material/Grid';
 import {
     CalendarToday as CalendarIcon,
     PlayArrow,
