@@ -16,14 +16,18 @@ import {
     Stack,
     Button,
     Divider,
-    Container
+    Container,
+    Dialog,
+    DialogTitle,
+    DialogContent
 } from '@mui/material';
 import {
     Menu as MenuIcon,
     ExitToApp as LogoutIcon,
     Settings as SettingsIcon,
     CalendarToday as CalendarIcon,
-    Person as PersonIcon
+    Person as PersonIcon,
+    Close as CloseIcon
 } from '@mui/icons-material';
 import { useAuth } from '../contexts';
 import logo from '../assets/images/integritas_logo.jpg';
@@ -51,6 +55,7 @@ const ModernDashboardLayout = ({ sidebarItems = [], title = 'Dashboard' }) => {
     // Check if the screen size is mobile (less than md breakpoint)
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [calendarOpen, setCalendarOpen] = useState(false);
 
     const location = useLocation();
     const navigate = useNavigate();
@@ -168,12 +173,9 @@ const ModernDashboardLayout = ({ sidebarItems = [], title = 'Dashboard' }) => {
                                 </Stack>
                             </Box>
                             <Button
-                                component="a"
-                                href="https://calendar.google.com/"
-                                target="_blank"
-                                rel="noopener noreferrer"
                                 variant="outlined"
                                 startIcon={<CalendarIcon />}
+                                onClick={() => setCalendarOpen(true)}
                                 sx={{
                                     borderColor: theme.palette.divider,
                                     color: theme.palette.text.primary,
@@ -190,6 +192,52 @@ const ModernDashboardLayout = ({ sidebarItems = [], title = 'Dashboard' }) => {
                     <Outlet />
                 </Container>
             </Box>
+
+            {/* Calendar Viewer Dialog */}
+            <Dialog
+                open={calendarOpen}
+                onClose={() => setCalendarOpen(false)}
+                maxWidth="md"
+                fullWidth
+                PaperProps={{
+                    sx: {
+                        bgcolor: '#0C1322',
+                        color: '#FFFFFF',
+                        borderRadius: '16px',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        height: '80vh',
+                    }
+                }}
+            >
+                <DialogTitle sx={{ m: 0, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                        Integritas Platform Calendar
+                    </Typography>
+                    <Stack direction="row" spacing={1}>
+                        <Button
+                            variant="outlined"
+                            href="https://calendar.google.com/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            sx={{ color: '#60A5FA', borderColor: '#3B82F6', textTransform: 'none', '&:hover': { borderColor: '#60A5FA', bgcolor: 'rgba(59,130,246,0.05)' } }}
+                        >
+                            Open in Google Calendar
+                        </Button>
+                        <IconButton onClick={() => setCalendarOpen(false)} sx={{ color: '#94A3B8' }}>
+                            <CloseIcon />
+                        </IconButton>
+                    </Stack>
+                </DialogTitle>
+                <DialogContent sx={{ p: 0, overflow: 'hidden', height: '100%' }}>
+                    <iframe
+                        src="https://calendar.google.com/calendar/embed?src=en.ng%23holiday%40group.v.calendar.google.com&ctz=Africa%2FLagos"
+                        style={{ border: '0', width: '100%', height: '100%' }}
+                        frameBorder="0"
+                        scrolling="no"
+                        title="Integritas Calendar"
+                    />
+                </DialogContent>
+            </Dialog>
         </Box>
     );
 };

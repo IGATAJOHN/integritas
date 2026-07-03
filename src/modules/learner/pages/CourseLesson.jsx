@@ -20,6 +20,9 @@ import {
     Stack,
     Typography,
     alpha,
+    Dialog,
+    DialogTitle,
+    DialogContent,
 } from '@mui/material';
 import {
     AccessTime as ClockIcon,
@@ -163,6 +166,7 @@ const CourseLesson = () => {
 
     // Bunny CDN signed playback URL — re-fetched when the lesson changes.
     const [signedPlaybackUrl, setSignedPlaybackUrl] = useState('');
+    const [materialViewerOpen, setMaterialViewerOpen] = useState(false);
     const lastReportedPosition = useRef(0);
 
     const initialLessonLoaded = useRef(false);
@@ -750,24 +754,36 @@ const CourseLesson = () => {
                                         <CircularProgress size={48} />
                                     </Box>
                                 ) : (currentLesson?.type === 'document' || currentLesson?.type === 'file') ? (
-                                    <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: '#1F2937', p: 4, textAlign: 'center' }}>
-                                        <InsertDriveFile sx={{ fontSize: 64, color: '#178A83', mb: 2 }} />
-                                        <Typography variant="h6" sx={{ color: '#fff', fontWeight: 650, mb: 1 }}>
-                                            {currentLesson.title} - Study Document
-                                        </Typography>
-                                        <Typography variant="body2" sx={{ color: '#9CA3AF', mb: 3, maxWidth: 400 }}>
-                                            This lesson includes a document attachment. Click the button below to view or download the study material.
-                                        </Typography>
-                                        <Button
-                                            variant="contained"
-                                            href={videoSrc}
-                                            target="_blank"
-                                            download
-                                            startIcon={<GetApp />}
-                                            sx={{ bgcolor: '#178A83', '&:hover': { bgcolor: '#116B65' } }}
-                                        >
-                                            Open / Download Material
-                                        </Button>
+                                    <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#1F2937' }}>
+                                        {videoSrc && (videoSrc.toLowerCase().includes('.pdf') || videoSrc.toLowerCase().endsWith('.pdf')) ? (
+                                            <iframe
+                                                src={`${videoSrc}#toolbar=0`}
+                                                title={currentLesson.title}
+                                                width="100%"
+                                                height="100%"
+                                                style={{ border: 'none', background: '#323639' }}
+                                            />
+                                        ) : (
+                                            <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 4, textAlign: 'center' }}>
+                                                <InsertDriveFile sx={{ fontSize: 64, color: '#178A83', mb: 2 }} />
+                                                <Typography variant="h6" sx={{ color: '#fff', fontWeight: 650, mb: 1 }}>
+                                                    {currentLesson.title} - Study Document
+                                                </Typography>
+                                                <Typography variant="body2" sx={{ color: '#9CA3AF', mb: 3, maxWidth: 400 }}>
+                                                    This lesson includes a document attachment. Click the button below to view or download the study material.
+                                                </Typography>
+                                                <Button
+                                                    variant="contained"
+                                                    href={videoSrc}
+                                                    target="_blank"
+                                                    download
+                                                    startIcon={<GetApp />}
+                                                    sx={{ bgcolor: '#178A83', '&:hover': { bgcolor: '#116B65' } }}
+                                                >
+                                                    Open / Download Material
+                                                </Button>
+                                            </Box>
+                                        )}
                                     </Box>
                                 ) : currentLesson?.type === 'text' ? (
                                     <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: '#1F2937', p: 4, textAlign: 'center' }}>
@@ -856,10 +872,7 @@ const CourseLesson = () => {
                                     {materialSrc && (
                                         <Button
                                             variant="outlined"
-                                            component="a"
-                                            href={materialSrc}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
+                                            onClick={() => setMaterialViewerOpen(true)}
                                             startIcon={<InsertDriveFile />}
                                             sx={{ borderColor: '#60A5FA', color: '#60A5FA', textTransform: 'none', '&:hover': { borderColor: '#93C5FD', bgcolor: 'rgba(96,165,250,0.05)' } }}
                                         >
@@ -1059,8 +1072,80 @@ const CourseLesson = () => {
                         </>
                     )}
                 </Box>
-
-            </Box>
+            {/* Material Viewer Dialog */}
+            <Dialog
+                open={materialViewerOpen}
+                onClose={() => setMaterialViewerOpen(false)}
+                maxWidth="lg"
+                fullWidth
+                PaperProps={{
+                    sx: {
+                        bgcolor: '#0C1322',
+                        color: '#FFFFFF',
+                        borderRadius: '16px',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        height: '85vh',
+                    }
+                }}
+            >
+                <DialogTitle sx={{ m: 0, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                        {currentLesson?.title || 'Lesson Material'}
+                    </Typography>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                        {materialSrc && (
+                            <Button
+                                variant="outlined"
+                                href={materialSrc}
+                                download
+                                startIcon={<GetApp />}
+                                sx={{ color: '#178A83', borderColor: '#178A83', '&:hover': { borderColor: '#116B65', bgcolor: 'rgba(23,138,131,0.05)' } }}
+                            >
+                                Download
+                            </Button>
+                        )}
+                        <IconButton onClick={() => setMaterialViewerOpen(false)} sx={{ color: '#94A3B8' }}>
+                            <Close />
+                        </IconButton>
+                    </Stack>
+                </DialogTitle>
+                <DialogContent sx={{ p: 0, overflow: 'hidden', height: '100%' }}>
+                    {materialSrc ? (
+                        materialSrc.toLowerCase().endsWith('.pdf') || materialSrc.toLowerCase().includes('.pdf') ? (
+                            <iframe
+                                src={`${materialSrc}#toolbar=0`}
+                                title={currentLesson?.title || 'Material'}
+                                width="100%"
+                                height="100%"
+                                style={{ border: 'none', background: '#323639' }}
+                            />
+                        ) : (
+                            <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 4, textAlign: 'center' }}>
+                                <InsertDriveFile sx={{ fontSize: 64, color: '#178A83', mb: 2 }} />
+                                <Typography variant="h6" sx={{ color: '#fff', fontWeight: 650, mb: 1 }}>
+                                    {currentLesson?.title || 'Lesson Material'}
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: '#9CA3AF', mb: 3, maxWidth: 400 }}>
+                                    This material type cannot be displayed inline. Click the button below to download and view it.
+                                </Typography>
+                                <Button
+                                    variant="contained"
+                                    href={materialSrc}
+                                    download
+                                    startIcon={<GetApp />}
+                                    sx={{ bgcolor: '#178A83', '&:hover': { bgcolor: '#116B65' } }}
+                                >
+                                    Download Material
+                                </Button>
+                            </Box>
+                        )
+                    ) : (
+                        <Box sx={{ p: 4, textAlign: 'center' }}>
+                            <Typography sx={{ color: '#94A3B8' }}>No material source available.</Typography>
+                        </Box>
+                    )}
+                </DialogContent>
+            </Dialog>
         </Box>
     );
 };
