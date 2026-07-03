@@ -443,6 +443,18 @@ const CourseLesson = () => {
         v.currentTime = time;
         setCurrentTime(time);
     };
+
+    const handleFullscreen = () => {
+        const v = videoRef.current;
+        if (!v) return;
+        if (v.requestFullscreen) {
+            v.requestFullscreen();
+        } else if (v.webkitRequestFullscreen) {
+            v.webkitRequestFullscreen();
+        } else if (v.msRequestFullscreen) {
+            v.msRequestFullscreen();
+        }
+    };
     const tags = Array.isArray(courseData?.raw?.tags) ? courseData.raw.tags : [];
     const cert = courseData?.raw?.certificate;
     const hasCertificate = cert?.enabled ?? Boolean(cert);
