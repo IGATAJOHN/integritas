@@ -24,6 +24,8 @@ import {
     primaryButtonStyle,
     scrollableModalBody,
     textFieldStyle,
+    selectStyle,
+    selectMenuProps,
 } from '../../../styles/formStyles';
 
 const AdminCourseDetail = () => {
@@ -89,6 +91,17 @@ const AdminCourseDetail = () => {
     const [rejectionReason, setRejectionReason] = useState('');
     const [deleteCourseDialogOpen, setDeleteCourseDialogOpen] = useState(false);
     const [deleteCourseError, setDeleteCourseError] = useState('');
+
+    // Course Edit State
+    const [editDetailsOpen, setEditDetailsOpen] = useState(false);
+    const [detailsForm, setDetailsForm] = useState({
+        title: '',
+        summary: '',
+        description: '',
+        level: 'all',
+        language: 'english',
+        price: '0.00',
+    });
 
     // Snackbar
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
@@ -708,6 +721,46 @@ const AdminCourseDetail = () => {
 
     const getCourseCurrency = (courseData = {}) => courseData.currency || courseData.pricing?.currency || courseData.fees?.currency || 'NGN';
 
+    const openEditDetailsModal = () => {
+        if (!course) return;
+        setDetailsForm({
+            title: course.title || '',
+            summary: course.summary || '',
+            description: course.description || '',
+            level: course.level || 'all',
+            language: course.language || 'english',
+            price: getCoursePrice(course).toString(),
+        });
+        setEditDetailsOpen(true);
+    };
+
+    const handleUpdateCourseDetails = async (e) => {
+        if (e) e.preventDefault();
+        if (!detailsForm.title.trim()) {
+            showSnackbar('Course title is required', 'error');
+            return;
+        }
+        setActionLoading(true);
+        try {
+            const payload = {
+                title: detailsForm.title.trim(),
+                summary: detailsForm.summary.trim(),
+                description: detailsForm.description.trim(),
+                level: detailsForm.level,
+                language: detailsForm.language,
+                price: detailsForm.price === '' ? 0.00 : parseFloat(detailsForm.price),
+            };
+            const updated = await adminCoursesService.updateCourse(courseId, payload);
+            setCourse(updated);
+            setEditDetailsOpen(false);
+            showSnackbar('Course details updated successfully');
+        } catch (err) {
+            showSnackbar(err?.message || 'Failed to update course details', 'error');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
     if (loading) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', bgcolor: '#0F1729' }}>
@@ -961,7 +1014,26 @@ const AdminCourseDetail = () => {
             {/* TAB 1: DETAILS */}
             {activeTab === 1 && (
                 <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>Course Details</Typography>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>Course Details</Typography>
+                        <Button
+                            variant="outlined"
+                            onClick={openEditDetailsModal}
+                            startIcon={<Edit />}
+                            sx={{
+                                textTransform: 'none',
+                                borderColor: '#178A83',
+                                color: '#178A83',
+                                '&:hover': {
+                                    borderColor: '#126E68',
+                                    bgcolor: 'rgba(23, 138, 131, 0.05)',
+                                },
+                                fontWeight: 600,
+                            }}
+                        >
+                            Edit Details
+                        </Button>
+                    </Stack>
                     <Stack spacing={3}>
                         <Paper sx={{ ...paperStyle, padding: 2 }}>
                             <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 1 }}>Thumbnail</Typography>
@@ -1415,6 +1487,141 @@ const AdminCourseDetail = () => {
                         sx={{ textTransform: 'none', fontWeight: 600 }}
                     >
                         {actionLoading ? 'Deleting...' : 'Delete Permanently'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Edit Course Details Dialog */}
+            <Dialog
+                open={editDetailsOpen}
+                onClose={() => !actionLoading && setEditDetailsOpen(false)}
+                maxWidth="sm"
+                fullWidth
+                PaperProps={{
+                    sx: {
+                        bgcolor: modalBg,
+                        border: `1px solid ${modalBorder}`,
+                        borderRadius: 2,
+                    },
+                }}
+            >
+                <DialogTitle sx={{ borderBottom: `1px solid ${modalBorder}`, pb: 2 }}>
+                    <Stack direction="row" alignItems="center" justifyContent="space-between">
+                        <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', color: '#fff' }}>Edit Course Details</Typography>
+                        <IconButton
+                            onClick={() => setEditDetailsOpen(false)}
+                            disabled={actionLoading}
+                            size="small"
+                            sx={{ color: 'text.secondary' }}
+                        >
+                            <Close fontSize="small" />
+                        </IconButton>
+                    </Stack>
+                </DialogTitle>
+                <DialogContent sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                    <Box>
+                        <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: labelColor, mb: 0.75 }}>
+                            Course Title <Box component="span" sx={{ color: '#EF4444' }}>*</Box>
+                        </Typography>
+                        <TextField
+                            fullWidth
+                            placeholder="e.g. Integrity & Anti-Corruption Foundational Program Course"
+                            value={detailsForm.title}
+                            onChange={e => setDetailsForm(prev => ({ ...prev, title: e.target.value }))}
+                            sx={textFieldStyle}
+                        />
+                    </Box>
+
+                    <Box>
+                        <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: labelColor, mb: 0.75 }}>Summary</Typography>
+                        <TextField
+                            fullWidth
+                            placeholder="Short overview of the course..."
+                            value={detailsForm.summary}
+                            onChange={e => setDetailsForm(prev => ({ ...prev, summary: e.target.value }))}
+                            sx={textFieldStyle}
+                        />
+                    </Box>
+
+                    <Box>
+                        <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: labelColor, mb: 0.75 }}>Description</Typography>
+                        <TextField
+                            fullWidth
+                            multiline
+                            rows={4}
+                            placeholder="Full detailed course description..."
+                            value={detailsForm.description}
+                            onChange={e => setDetailsForm(prev => ({ ...prev, description: e.target.value }))}
+                            sx={textFieldStyle}
+                        />
+                    </Box>
+
+                    <Stack direction="row" spacing={2}>
+                        <Box sx={{ flex: 1 }}>
+                            <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: labelColor, mb: 0.75 }}>Level</Typography>
+                            <Select
+                                fullWidth
+                                value={detailsForm.level}
+                                onChange={e => setDetailsForm(prev => ({ ...prev, level: e.target.value }))}
+                                sx={selectStyle}
+                                MenuProps={selectMenuProps}
+                            >
+                                <MenuItem value="all">All Levels</MenuItem>
+                                <MenuItem value="beginner">Beginner</MenuItem>
+                                <MenuItem value="intermediate">Intermediate</MenuItem>
+                                <MenuItem value="advanced">Advanced</MenuItem>
+                            </Select>
+                        </Box>
+                        <Box sx={{ flex: 1 }}>
+                            <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: labelColor, mb: 0.75 }}>Language</Typography>
+                            <Select
+                                fullWidth
+                                value={detailsForm.language}
+                                onChange={e => setDetailsForm(prev => ({ ...prev, language: e.target.value }))}
+                                sx={selectStyle}
+                                MenuProps={selectMenuProps}
+                            >
+                                <MenuItem value="english">English</MenuItem>
+                                <MenuItem value="french">French</MenuItem>
+                                <MenuItem value="spanish">Spanish</MenuItem>
+                            </Select>
+                        </Box>
+                    </Stack>
+
+                    <Box>
+                        <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: labelColor, mb: 0.75 }}>
+                            Price (₦) <Box component="span" sx={{ color: '#EF4444' }}>*</Box>
+                        </Typography>
+                        <TextField
+                            fullWidth
+                            type="number"
+                            placeholder="e.g. 6000.00"
+                            value={detailsForm.price}
+                            onChange={e => setDetailsForm(prev => ({ ...prev, price: e.target.value }))}
+                            inputProps={{ min: 0, step: "0.01" }}
+                            sx={textFieldStyle}
+                        />
+                    </Box>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2.5, borderTop: `1px solid ${modalBorder}`, pt: 2, gap: 1 }}>
+                    <Button
+                        onClick={() => setEditDetailsOpen(false)}
+                        disabled={actionLoading}
+                        sx={{ textTransform: 'none', color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleUpdateCourseDetails}
+                        disabled={actionLoading}
+                        sx={{
+                            ...primaryButtonStyle,
+                            textTransform: 'none',
+                            fontWeight: 600,
+                        }}
+                    >
+                        {actionLoading ? 'Saving...' : 'Save Changes'}
                     </Button>
                 </DialogActions>
             </Dialog>
