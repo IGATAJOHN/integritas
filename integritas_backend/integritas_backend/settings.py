@@ -121,8 +121,14 @@ REST_FRAMEWORK = {
 }
 
 # CORS Settings
+from corsheaders.defaults import default_headers
+
 CORS_ALLOW_ALL_ORIGINS = True # Change to specific domains in production
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'idempotency-key',
+]
+
 
 # Disable automatic slash redirection for REST API endpoints
 APPEND_SLASH = False
