@@ -1,6 +1,8 @@
 from django.shortcuts import get_object_or_404
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, views, status
 from rest_framework.response import Response
+from rest_framework.decorators import action
+from django.utils import timezone
 from .models import Course, Module, Lesson, Category, ProjectSubmission, ProjectSubmissionFile
 
 from .serializers import CourseSerializer, ModuleSerializer, LessonSerializer
@@ -10,6 +12,22 @@ class CourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    @action(detail=True, methods=['post'])
+    def publish(self, request, pk=None):
+        course = self.get_object()
+        course.status = 'published'
+        course.published_at = timezone.now()
+        course.save()
+        return Response({'status': 'published'})
+
+    @action(detail=True, methods=['post'])
+    def unpublish(self, request, pk=None):
+        course = self.get_object()
+        course.status = 'draft'
+        course.published_at = None
+        course.save()
+        return Response({'status': 'draft'})
 
     def get_object(self):
         queryset = self.filter_queryset(self.get_queryset())
