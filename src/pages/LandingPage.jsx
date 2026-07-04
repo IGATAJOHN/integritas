@@ -111,7 +111,7 @@ const LandingPage = () => {
             try {
                 const list = await courseCatalogService.listFoundationalCourses({ per_page: 25 });
                 const courses = list.data || [];
-                const selected = courses.find((item) => ['foundational course', 'foundational courses'].includes(String(item.title || '').trim().toLowerCase())) || courses[0];
+                const selected = courses.find((item) => String(item.title || '').toLowerCase().includes('foundational')) || courses[0];
                 if (selected) {
                     const slug = selected.slug || selected.id;
                     const detail = await courseCatalogService.getCourseById(slug);

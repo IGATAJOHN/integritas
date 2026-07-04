@@ -216,7 +216,7 @@ export const adminCoursesService = {
     getFoundationalCourse: async () => {
         const list = await adminCoursesService.listCourses({ type: 'foundational', per_page: 25 });
         const courses = list.data || [];
-        const exact = courses.find((course) => ['foundational course', 'foundational courses'].includes(String(course.title || '').trim().toLowerCase()));
+        const exact = courses.find((course) => String(course.title || '').toLowerCase().includes('foundational'));
         const course = exact || courses[0] || null;
         if (!course) return { course: null, courses, duplicates: [] };
         const detail = await adminCoursesService.getCourseDetail(course.id || course.slug);

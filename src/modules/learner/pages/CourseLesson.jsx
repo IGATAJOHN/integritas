@@ -473,7 +473,7 @@ const CourseLesson = () => {
         courseData?.raw?.type ||
         ''
     ).toLowerCase() === 'foundational' ||
-        ['foundational course', 'foundational courses'].includes(String(courseData?.title || '').trim().toLowerCase());
+        String(courseData?.title || '').toLowerCase().includes('foundational');
     const courseOverviewPath = isFoundationalCourse ? '/learner/foundational' : `/explore/course/${courseId}`;
     const learningListPath = isFoundationalCourse ? '/learner/foundational' : '/explore/my-learning';
 
