@@ -15,7 +15,24 @@ class InitiateEnrollmentView(views.APIView):
             course = Course.objects.get(slug=course_slug)
         except Course.DoesNotExist:
             return Response({'message': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
-        
+
+        # --- Prerequisite gate: Exemplar Series requires active Foundational enrollment ---
+        if course.track == 'experta':
+            has_foundational = Enrollment.objects.filter(
+                user=request.user,
+                course__track='foundational',
+                status='active'
+            ).exists()
+            if not has_foundational:
+                return Response(
+                    {
+                        'message': 'You must complete enrollment in the Foundational Course before you can access Exemplar Series courses.',
+                        'error_code': 'FOUNDATIONAL_REQUIRED'
+                    },
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        # ----------------------------------------------------------------------------
+
         existing = Enrollment.objects.filter(user=request.user, course=course).first()
         if existing and existing.status == 'active':
             return Response(EnrollmentSerializer(existing).data)
@@ -181,6 +198,22 @@ class ExpertCourseEnrolView(views.APIView):
             course = Course.objects.get(slug=course_slug, track='experta')
         except Course.DoesNotExist:
             return Response({'message': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # --- Prerequisite gate: Exemplar Series requires active Foundational enrollment ---
+        has_foundational = Enrollment.objects.filter(
+            user=request.user,
+            course__track='foundational',
+            status='active'
+        ).exists()
+        if not has_foundational:
+            return Response(
+                {
+                    'message': 'You must complete enrollment in the Foundational Course before you can access Exemplar Series courses.',
+                    'error_code': 'FOUNDATIONAL_REQUIRED'
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+        # ----------------------------------------------------------------------------
 
         if course.price > 0:
             return Response(

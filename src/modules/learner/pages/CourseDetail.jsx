@@ -35,7 +35,8 @@ import {
     PlayLesson as LessonsIcon,
     Verified as VerifiedIcon,
     Language as WorldIcon,
-    AlternateEmail as EmailIcon
+    AlternateEmail as EmailIcon,
+    LockOutlined as LockIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../../contexts';
 import { useLocation } from 'react-router-dom';
@@ -206,8 +207,10 @@ const CourseDetail = () => {
     const [enrollError, setEnrollError] = useState(null);
     const [accessInfo, setAccessInfo] = useState(null);
     const [isEnrolled, setIsEnrolled] = useState(false);
+    const [hasFoundationalEnrollment, setHasFoundationalEnrollment] = useState(false);
     const courseSlug = courseData?.slug || '';
     const courseLessonCount = countLessons(courseData?.modules || [], courseData?.lessonsCount);
+    const isExpertaCourse = String(courseData?.type || courseData?.track || '').toLowerCase() === 'experta';
 
     useEffect(() => {
         let active = true;
@@ -321,7 +324,10 @@ const CourseDetail = () => {
                 // Fallback: scan enrolments list
                 learnerEnrollmentService.getEnrollments({ per_page: 50 })
                     .then((res) => {
-                        const match = (res.data || []).find(
+                        const allEnrolments = res.data || [];
+
+                        // Check if this specific course is enrolled
+                        const match = allEnrolments.find(
                             e =>
                                 e.course?.slug === courseSlug ||
                                 String(e.course?.id) === String(courseData?.id) ||
@@ -330,6 +336,14 @@ const CourseDetail = () => {
                         if (match && ENROLLED_STATUSES.includes(String(match.status || '').toLowerCase())) {
                             setIsEnrolled(true);
                         }
+
+                        // Check if ANY foundational course is actively enrolled
+                        const foundationalEnrolled = allEnrolments.some(
+                            e =>
+                                ENROLLED_STATUSES.includes(String(e.status || '').toLowerCase()) &&
+                                String(e.course?.track || e.course?.type || '').toLowerCase() === 'foundational'
+                        );
+                        setHasFoundationalEnrollment(foundationalEnrolled);
                     })
                     .catch(() => {});
             });
@@ -350,6 +364,12 @@ const CourseDetail = () => {
             navigate('/login', { state: { from: location } });
             return;
         }
+
+        // Gate: experta courses require an active foundational enrollment
+        if (isExpertaCourse && !hasFoundationalEnrollment) {
+            setEnrollError('You must enroll in the Foundational Course before accessing Exemplar Series courses.');
+            return;
+        }
         
         if (courseData?.price > 0) {
             // For paid courses/videos, navigate to Checkout so they can choose Card (Paystack) or Bank Transfer
@@ -364,6 +384,7 @@ const CourseDetail = () => {
                     price: courseData.price,
                     tax: courseData.tax || 0,
                     fee: courseData.fee || 0,
+                    track: courseData.type || courseData.track || '',
                 }
             });
             return;
@@ -886,6 +907,66 @@ const CourseDetail = () => {
                                     >
                                         Continue Learning
                                     </Button>
+                                ) : isExpertaCourse && !hasFoundationalEnrollment ? (
+                                    // LOCKED STATE — student must pay for foundational first
+                                    <Box>
+                                        <Box
+                                            sx={{
+                                                bgcolor: isDark ? 'rgba(239,68,68,0.08)' : 'rgba(239,68,68,0.05)',
+                                                border: `1px solid rgba(239,68,68,0.25)`,
+                                                borderRadius: 2,
+                                                p: 2,
+                                                mb: 2,
+                                                display: 'flex',
+                                                alignItems: 'flex-start',
+                                                gap: 1.5,
+                                            }}
+                                        >
+                                            <LockIcon sx={{ color: '#EF4444', fontSize: '1.3rem', mt: 0.2, flexShrink: 0 }} />
+                                            <Box>
+                                                <Typography sx={{ color: '#EF4444', fontWeight: 700, fontSize: '0.85rem', mb: 0.5 }}>
+                                                    Foundational Enrollment Required
+                                                </Typography>
+                                                <Typography sx={{ color: colors.textSecondary, fontSize: '0.78rem', lineHeight: 1.6 }}>
+                                                    You must complete payment for the Foundational Course before you can unlock Exemplar Series courses.
+                                                </Typography>
+                                            </Box>
+                                        </Box>
+                                        <Button
+                                            fullWidth
+                                            variant="contained"
+                                            onClick={() => navigate('/explore?track=foundational')}
+                                            sx={{
+                                                bgcolor: appTheme.colors.brand,
+                                                py: 1.25,
+                                                fontWeight: 600,
+                                                textTransform: 'none',
+                                                borderRadius: 1,
+                                                mb: 1.5,
+                                                fontSize: '0.95rem',
+                                                '&:hover': { bgcolor: '#0e42b0' }
+                                            }}
+                                        >
+                                            Enroll in Foundational Course First
+                                        </Button>
+                                        <Button
+                                            fullWidth
+                                            variant="outlined"
+                                            disabled
+                                            startIcon={<LockIcon />}
+                                            sx={{
+                                                borderColor: 'rgba(239,68,68,0.3)',
+                                                color: 'rgba(239,68,68,0.5)',
+                                                py: 1.25,
+                                                fontWeight: 600,
+                                                textTransform: 'none',
+                                                borderRadius: 1,
+                                                fontSize: '0.9rem',
+                                            }}
+                                        >
+                                            Locked — Foundational First
+                                        </Button>
+                                    </Box>
                                 ) : (
                                     <>
                                     <Box

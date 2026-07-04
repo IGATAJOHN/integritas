@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
     Box,
@@ -78,6 +78,37 @@ const Checkout = () => {
         const cId = stateData.courseId || 'CRS';
         return `INT-BANK-${cId}-${randomHex}`;
     });
+
+    // Determine if this is an Exemplar Series course
+    const courseTrack = String(stateData.track || stateData.type || '').toLowerCase();
+    const isExpertaCourse = courseTrack === 'experta';
+
+    // Gate: if this is an Exemplar Series course, verify the student has an active
+    // foundational enrollment before allowing them to proceed with checkout.
+    useEffect(() => {
+        if (!isExpertaCourse) return;
+        const ENROLLED_STATUSES = ['active', 'enrolled', 'in_progress', 'completed'];
+        learnerEnrollmentService.getEnrollments({ per_page: 50 })
+            .then((res) => {
+                const allEnrolments = res.data || [];
+                const hasFoundational = allEnrolments.some(
+                    e =>
+                        ENROLLED_STATUSES.includes(String(e.status || '').toLowerCase()) &&
+                        String(e.course?.track || e.course?.type || '').toLowerCase() === 'foundational'
+                );
+                if (!hasFoundational) {
+                    navigate('/explore?track=foundational', {
+                        state: {
+                            alert: 'You must complete payment for the Foundational Course before you can unlock Exemplar Series courses.'
+                        }
+                    });
+                }
+            })
+            .catch(() => {
+                // If we cannot verify, let the backend reject it with 403
+            });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const total = course.price + course.tax + course.fee;
     const hasSelectedCourse = Boolean(course.courseSlug || course.courseId);
