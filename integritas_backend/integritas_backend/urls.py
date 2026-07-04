@@ -115,6 +115,10 @@ urlpatterns = [
     # Expert / Exemplar Series free enrolment
     path('api/v1/learner/expert-courses/<str:course_slug>/enrol', ExpertCourseEnrolView.as_view(), name='expert_course_enrol'),
 
+    # Site-wide settings (hero video, etc.)
+    path('api/v1/site/', include('site_settings.urls')),
+
+
 
 
 

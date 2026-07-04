@@ -30,6 +30,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useThemeMode } from '../contexts';
 import { courseCatalogService } from '../modules/learner/services';
+import { apiService } from '../services/api';
 
 import heroImage from "../assets/images/hero-screen.png"
 import theme from '../styles/theme';
@@ -87,6 +88,19 @@ const LandingPage = () => {
     const [modules, setModules] = useState([]);
     const [modulesLoading, setModulesLoading] = useState(true);
     const [slideIndex, setSlideIndex] = useState(0);
+    const [heroVideoUrl, setHeroVideoUrl] = useState('/welcome_address.mp4');
+
+    // Fetch the admin-uploaded hero video URL on mount
+    useEffect(() => {
+        apiService.get('/site/hero-video')
+            .then((res) => {
+                const data = res?.data ?? res;
+                if (data?.hero_video_url) {
+                    setHeroVideoUrl(data.hero_video_url);
+                }
+            })
+            .catch(() => {}); // silently fall back to default
+    }, []);
 
     const handlePrev = () => {
         setSlideIndex((prev) => {
@@ -366,7 +380,7 @@ const LandingPage = () => {
                                     component="video"
                                     controls
                                     poster={heroImage}
-                                    src="/welcome_address.mp4"
+                                    src={heroVideoUrl}
                                     sx={{
                                         width: '100%',
                                         height: '100%',

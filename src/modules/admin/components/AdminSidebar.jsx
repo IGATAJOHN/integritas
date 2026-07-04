@@ -89,7 +89,7 @@ const AdminSidebar = ({
         { path: '/admin/transactions', label: 'Transactions', icon: <ReceiptLongOutlined sx={{ fontSize: 22 }} /> },
         { path: '/admin/audit-logs', label: 'Audit Logs', icon: <HistoryOutlined sx={{ fontSize: 22 }} /> },
         // { path: '/admin/analytics', label: 'Analytics', icon: <BarChartOutlined sx={{ fontSize: 22 }} /> },
-        // { path: '/admin/settings', label: 'Settings', icon: <SettingsOutlined sx={{ fontSize: 22 }} /> },
+        { path: '/admin/settings', label: 'Settings', icon: <SettingsOutlined sx={{ fontSize: 22 }} /> },
     ];
 
     const isActive = (path) => {

@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     'courses',
     'quizzes',
     'enrollments',
+    'site_settings',
 ]
 
 MIDDLEWARE = [
