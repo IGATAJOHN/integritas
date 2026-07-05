@@ -1,6 +1,5 @@
 import time
 import hashlib
-import hmac
 import os
 
 from rest_framework import views, permissions, status
@@ -8,6 +7,20 @@ from rest_framework.response import Response
 from django.conf import settings as django_settings
 
 from .models import SiteSettings
+
+
+# ── Custom permission: checks app role field, not Django's is_staff ───────────
+
+class IsAdminRole(permissions.BasePermission):
+    """
+    Allows access only to users whose `role` field is 'admin' or 'super_admin'.
+    This matches the app's custom role system (not Django's is_staff flag).
+    """
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        role = str(getattr(request.user, 'role', '') or '').lower()
+        return role in ('admin', 'super_admin')
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
@@ -53,7 +66,7 @@ class CloudinarySignatureView(views.APIView):
     Admin-only. Returns a short-lived signed upload credential so the browser
     can upload directly to Cloudinary without routing the file through Django.
     """
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsAdminRole]
 
     def get(self, request):
         cloud_name, api_key, api_secret = _get_cloudinary_creds()
@@ -100,7 +113,7 @@ class HeroVideoView(views.APIView):
     def get_permissions(self):
         if self.request.method == 'GET':
             return [permissions.AllowAny()]
-        return [permissions.IsAdminUser()]
+        return [IsAdminRole()]
 
     def get(self, request):
         site = SiteSettings.get_solo()

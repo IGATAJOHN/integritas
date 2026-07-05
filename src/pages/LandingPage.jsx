@@ -94,12 +94,16 @@ const LandingPage = () => {
     useEffect(() => {
         apiService.get('/site/hero-video')
             .then((res) => {
-                const data = res?.data ?? res;
-                if (data?.hero_video_url) {
-                    setHeroVideoUrl(data.hero_video_url);
+                // apiService returns unwrapped data directly
+                const url = res?.hero_video_url || res?.data?.hero_video_url || null;
+                if (url) {
+                    setHeroVideoUrl(url);
                 }
             })
-            .catch(() => {}); // silently fall back to default
+            .catch((err) => {
+                // Log so it's visible in browser DevTools, but don't break the page
+                console.warn('[Hero Video] Could not fetch hero video URL:', err?.message || err);
+            });
     }, []);
 
     const handlePrev = () => {
@@ -377,6 +381,7 @@ const LandingPage = () => {
                                 }}
                             >
                                 <Box
+                                    key={heroVideoUrl}
                                     component="video"
                                     controls
                                     poster={heroImage}
