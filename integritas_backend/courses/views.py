@@ -214,14 +214,21 @@ class LessonVideoUploadView(views.APIView):
     def post(self, request, lesson_id):
         lesson = get_object_or_404(Lesson, id=lesson_id)
 
-        # Accept a pre-uploaded Cloudinary URL (direct-upload pattern — no file
-        # passes through this server, eliminating size/timeout limits on Render).
+        # 1. Try to read as a pre-uploaded Cloudinary URL (new flow)
         video_url = (request.data.get('video_url') or '').strip()
         public_id = (request.data.get('public_id') or '').strip()
 
+        # 2. If not provided, fallback to standard file upload (old flow)
+        if not video_url:
+            video_file = request.FILES.get('video') or request.FILES.get('file')
+            if video_file:
+                from django.core.files.storage import default_storage
+                filename = default_storage.save(f'videos/{lesson.id}_{video_file.name}', video_file)
+                video_url = default_storage.url(filename)
+
         if not video_url:
             return Response(
-                {'message': 'Missing required field: video_url (upload the video directly to Cloudinary first)'},
+                {'message': 'Missing required field: video_url or video file'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -232,22 +239,29 @@ class LessonVideoUploadView(views.APIView):
         return Response(LessonSerializer(lesson).data, status=status.HTTP_200_OK)
 
 
+
 class LessonMaterialUploadView(views.APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def post(self, request, lesson_id):
         lesson = get_object_or_404(Lesson, id=lesson_id)
-        material_file = request.FILES.get('video')
-        if not material_file:
-            material_file = request.FILES.get('material')
-        if not material_file:
-            return Response({'message': 'No material file provided'}, status=status.HTTP_400_BAD_REQUEST)
 
-        from django.core.files.storage import default_storage
-        filename = default_storage.save(f'materials/{lesson.id}_{material_file.name}', material_file)
-        # default_storage.url() returns a full Cloudinary CDN URL when
-        # MediaCloudinaryStorage is active, or a local /media/ path in dev.
-        material_url = default_storage.url(filename)
+        # 1. Try to read as a pre-uploaded Cloudinary URL (new flow)
+        material_url = (request.data.get('material_url') or '').strip()
+
+        # 2. If not provided, fallback to standard file upload (old flow)
+        if not material_url:
+            material_file = request.FILES.get('video') or request.FILES.get('material') or request.FILES.get('file')
+            if material_file:
+                from django.core.files.storage import default_storage
+                filename = default_storage.save(f'materials/{lesson.id}_{material_file.name}', material_file)
+                material_url = default_storage.url(filename)
+
+        if not material_url:
+            return Response(
+                {'message': 'Missing required field: material_url or material file'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         # Ensure URL is always absolute (Cloudinary URLs are already absolute)
         if material_url and not material_url.startswith('http'):
@@ -256,6 +270,7 @@ class LessonMaterialUploadView(views.APIView):
         lesson.material_url = material_url
         lesson.save()
         return Response(LessonSerializer(lesson).data, status=status.HTTP_200_OK)
+
 
 
 class CategoryListView(views.APIView):

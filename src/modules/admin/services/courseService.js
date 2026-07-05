@@ -255,6 +255,80 @@ export const adminCoursesService = {
         return saveRes.status === 204 ? null : saveRes.json();
     },
 
+    uploadLessonMaterial: async (lessonId, file, onProgress = null) => {
+        if (!file) throw new Error('No study material file provided for upload.');
+
+        const resourceType = 'raw';
+        const folder = 'integritas/materials';
+
+        // 1. Get signed upload credential from backend
+        const sigRes = await apiService.get(
+            `/site/cloudinary-signature?resource_type=${resourceType}&folder=${encodeURIComponent(folder)}`
+        );
+        const sig = sigRes?.data ?? sigRes;
+
+        if (!sig?.signature || !sig?.upload_url) {
+            throw new Error(
+                sig?.message ||
+                'Could not get Cloudinary upload credentials. Ensure CLOUDINARY_URL is set on Render.'
+            );
+        }
+
+        // 2. Upload file directly to Cloudinary
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('api_key', sig.api_key);
+        formData.append('timestamp', sig.timestamp);
+        formData.append('folder', sig.folder);
+        formData.append('signature', sig.signature);
+        formData.append('overwrite', 'true');
+        formData.append('resource_type', resourceType);
+
+        const cloudinaryResult = await new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', sig.upload_url);
+
+            if (onProgress) {
+                xhr.upload.addEventListener('progress', (e) => {
+                    if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+                });
+            }
+
+            xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try { resolve(JSON.parse(xhr.responseText)); } catch { resolve({}); }
+                } else {
+                    try {
+                        const err = JSON.parse(xhr.responseText);
+                        reject(new Error(err?.error?.message || `Cloudinary upload failed (${xhr.status})`));
+                    } catch {
+                        reject(new Error(`Cloudinary upload failed (${xhr.status})`));
+                    }
+                }
+            };
+            xhr.onerror = () => reject(new Error('Network error during upload. Check your connection.'));
+            xhr.send(formData);
+        });
+
+        const materialUrl = cloudinaryResult.secure_url;
+        if (!materialUrl) throw new Error('Cloudinary did not return a study material URL.');
+
+        // 3. Save URL to backend (LessonMaterialUploadView accepts JSON now)
+        const saveRes = await authFetch(`/admin/lessons/${encodeURIComponent(lessonId)}/material`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ material_url: materialUrl }),
+        });
+
+        if (!saveRes.ok) {
+            let msg = 'Failed to save material URL';
+            try { const d = await saveRes.json(); msg = d.message || msg; } catch { /* ignore */ }
+            throw new Error(msg);
+        }
+        return saveRes.status === 204 ? null : saveRes.json();
+    },
+
+
 
     // ===== MATERIALS =====
     listMaterials: async (lessonId) => {

@@ -1379,28 +1379,97 @@ const LessonDialog = ({ open, form, setForm, tutors, editing, saving, onClose, o
                 </Box>
                 <Box>
                     <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#E5E7EB', mb: 0.75 }}>
-                        Video URL <Box component="span" sx={{ color: '#9CA3AF', fontWeight: 400 }}>- optional (YouTube, Vimeo, or direct link)</Box>
+                        Video Source <Box component="span" sx={{ color: '#9CA3AF', fontWeight: 400 }}>- external URL or file upload</Box>
                     </Typography>
-                    <TextField
-                        placeholder="e.g. https://www.youtube.com/watch?v=..."
-                        value={form.video_url}
-                        onChange={(event) => setForm((prev) => ({ ...prev, video_url: event.target.value }))}
-                        sx={textFieldStyle}
-                        fullWidth
-                    />
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                        <TextField
+                            placeholder={form.video_file ? `Will upload: ${form.video_file.name}` : "e.g. https://www.youtube.com/watch?v=..."}
+                            value={form.video_url}
+                            onChange={(event) => setForm((prev) => ({ ...prev, video_url: event.target.value, video_file: null }))}
+                            sx={{ ...textFieldStyle, flexGrow: 1 }}
+                            disabled={!!form.video_file}
+                            fullWidth
+                        />
+                        <Button
+                            variant="outlined"
+                            component="label"
+                            sx={{
+                                color: '#178A83',
+                                borderColor: '#178A83',
+                                textTransform: 'none',
+                                whiteSpace: 'nowrap',
+                                height: '40px',
+                                px: 2.25,
+                                '&:hover': { borderColor: '#116B65', bgcolor: 'rgba(23,138,131,0.05)' }
+                            }}
+                        >
+                            Upload File
+                            <input
+                                type="file"
+                                accept="video/*"
+                                hidden
+                                onChange={(e) => {
+                                    const file = e.target.files[0];
+                                    if (file) {
+                                        setForm((prev) => ({ ...prev, video_file: file, video_url: '' }));
+                                    }
+                                }}
+                            />
+                        </Button>
+                    </Stack>
+                    {form.video_file && (
+                        <Typography variant="caption" sx={{ color: '#178A83', mt: 0.5, display: 'block', fontWeight: 500 }}>
+                            ✓ Video file selected: {form.video_file.name}
+                        </Typography>
+                    )}
                 </Box>
                 <Box>
                     <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#E5E7EB', mb: 0.75 }}>
-                        Study Material URL <Box component="span" sx={{ color: '#9CA3AF', fontWeight: 400 }}>- optional (Direct PDF/document link)</Box>
+                        Study Material <Box component="span" sx={{ color: '#9CA3AF', fontWeight: 400 }}>- external URL or PDF/Doc upload</Box>
                     </Typography>
-                    <TextField
-                        placeholder="e.g. https://example.com/materials/ethics.pdf"
-                        value={form.material_url}
-                        onChange={(event) => setForm((prev) => ({ ...prev, material_url: event.target.value }))}
-                        sx={textFieldStyle}
-                        fullWidth
-                    />
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                        <TextField
+                            placeholder={form.material_file ? `Will upload: ${form.material_file.name}` : "e.g. https://example.com/ethics.pdf"}
+                            value={form.material_url}
+                            onChange={(event) => setForm((prev) => ({ ...prev, material_url: event.target.value, material_file: null }))}
+                            sx={{ ...textFieldStyle, flexGrow: 1 }}
+                            disabled={!!form.material_file}
+                            fullWidth
+                        />
+                        <Button
+                            variant="outlined"
+                            component="label"
+                            sx={{
+                                color: '#178A83',
+                                borderColor: '#178A83',
+                                textTransform: 'none',
+                                whiteSpace: 'nowrap',
+                                height: '40px',
+                                px: 2.25,
+                                '&:hover': { borderColor: '#116B65', bgcolor: 'rgba(23,138,131,0.05)' }
+                            }}
+                        >
+                            Upload File
+                            <input
+                                type="file"
+                                accept=".pdf,.doc,.docx,.zip"
+                                hidden
+                                onChange={(e) => {
+                                    const file = e.target.files[0];
+                                    if (file) {
+                                        setForm((prev) => ({ ...prev, material_file: file, material_url: '' }));
+                                    }
+                                }}
+                            />
+                        </Button>
+                    </Stack>
+                    {form.material_file && (
+                        <Typography variant="caption" sx={{ color: '#178A83', mt: 0.5, display: 'block', fontWeight: 500 }}>
+                            ✓ Study material selected: {form.material_file.name}
+                        </Typography>
+                    )}
                 </Box>
+
                 <Box>
                     <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#E5E7EB', mb: 0.75 }}>
                         Description <Box component="span" sx={{ color: '#9CA3AF', fontWeight: 400 }}>- optional</Box>
