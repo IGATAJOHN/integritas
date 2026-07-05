@@ -365,44 +365,29 @@ const FoundationalProgram = () => {
 
     const uploadVideo = async (lesson, file) => {
         if (!file) return;
-        const userStr = localStorage.getItem('user');
-        const token = userStr ? JSON.parse(userStr)?.token : null;
-        const baseUrl = (import.meta.env.VITE_API_BASE_URL || 'https://integritas-backend.onrender.com/api/v1').replace(/\/$/, '');
-        
-        const formData = new FormData();
-        formData.append('video', file);
         
         setUploadingLessonId(lesson.id);
         setUploadProgress(0);
         setActionLoading(true);
         
         try {
-            await axios.post(
-                `${baseUrl}/admin/lessons/${lesson.id}/video`,
-                formData,
-                {
-                    headers: {
-                        'Authorization': token ? `Bearer ${token}` : '',
-                        'Accept': 'application/json',
-                    },
-                    onUploadProgress: (progressEvent) => {
-                        const percentCompleted = Math.round(
-                            (progressEvent.loaded * 100) / progressEvent.total
-                        );
-                        setUploadProgress(percentCompleted);
-                    },
-                }
+            await adminCoursesService.uploadLessonMedia(
+                lesson.id,
+                file,
+                'video',
+                (percent) => setUploadProgress(percent)
             );
             showMessage('Lesson video uploaded.');
             await reloadCourseOnly();
         } catch (err) {
-            showMessage(getErrorMessage(err, 'Failed to upload video.'), 'error');
+            showMessage(err.message || 'Failed to upload video.', 'error');
         } finally {
             setUploadingLessonId(null);
             setUploadProgress(0);
             setActionLoading(false);
         }
     };
+
 
     const uploadMaterial = async (lesson, file) => {
         if (!file) return;
