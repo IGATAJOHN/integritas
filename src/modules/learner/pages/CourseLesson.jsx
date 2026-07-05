@@ -755,9 +755,9 @@ const CourseLesson = () => {
                                     </Box>
                                 ) : (currentLesson?.type === 'document' || currentLesson?.type === 'file') ? (
                                     <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#1F2937' }}>
-                                        {videoSrc && (videoSrc.toLowerCase().includes('.pdf') || videoSrc.toLowerCase().endsWith('.pdf')) ? (
+                                        {materialSrc && (materialSrc.toLowerCase().includes('.pdf') || materialSrc.toLowerCase().endsWith('.pdf')) ? (
                                             <iframe
-                                                src={`${videoSrc}#toolbar=0`}
+                                                src={`${materialSrc}#toolbar=0`}
                                                 title={currentLesson.title}
                                                 width="100%"
                                                 height="100%"
@@ -774,7 +774,7 @@ const CourseLesson = () => {
                                                 </Typography>
                                                 <Button
                                                     variant="contained"
-                                                    href={videoSrc}
+                                                    href={materialSrc || '#'}
                                                     target="_blank"
                                                     download
                                                     startIcon={<GetApp />}
