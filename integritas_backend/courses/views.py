@@ -213,17 +213,24 @@ class LessonVideoUploadView(views.APIView):
 
     def post(self, request, lesson_id):
         lesson = get_object_or_404(Lesson, id=lesson_id)
-        video_file = request.FILES.get('video')
-        if not video_file:
-            return Response({'message': 'No video file provided'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        from django.core.files.storage import default_storage
-        filename = default_storage.save(f'videos/{lesson.id}_{video_file.name}', video_file)
-        video_url = default_storage.url(filename)
-        
+
+        # Accept a pre-uploaded Cloudinary URL (direct-upload pattern — no file
+        # passes through this server, eliminating size/timeout limits on Render).
+        video_url = (request.data.get('video_url') or '').strip()
+        public_id = (request.data.get('public_id') or '').strip()
+
+        if not video_url:
+            return Response(
+                {'message': 'Missing required field: video_url (upload the video directly to Cloudinary first)'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         lesson.video_url = video_url
+        if public_id and hasattr(lesson, 'video_public_id'):
+            lesson.video_public_id = public_id
         lesson.save()
         return Response(LessonSerializer(lesson).data, status=status.HTTP_200_OK)
+
 
 class LessonMaterialUploadView(views.APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]

@@ -62,9 +62,13 @@ def _cloudinary_signature(params: dict, api_secret: str) -> str:
 
 class CloudinarySignatureView(views.APIView):
     """
-    GET /api/v1/site/cloudinary-signature
+    GET /api/v1/site/cloudinary-signature?resource_type=video&folder=integritas/lessons
     Admin-only. Returns a short-lived signed upload credential so the browser
     can upload directly to Cloudinary without routing the file through Django.
+
+    Query params:
+        resource_type  — 'video' (default) | 'raw' (PDF/docs) | 'image'
+        folder         — Cloudinary folder (default: 'integritas/hero')
     """
     permission_classes = [IsAdminRole]
 
@@ -83,13 +87,18 @@ class CloudinarySignatureView(views.APIView):
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
+        resource_type = request.query_params.get('resource_type', 'video')
+        if resource_type not in ('video', 'raw', 'image'):
+            resource_type = 'video'
+
+        folder = request.query_params.get('folder', 'integritas/hero')
+
         timestamp = int(time.time())
-        folder = 'integritas/hero'
         params = {
             'timestamp': timestamp,
             'folder': folder,
             'overwrite': 'true',
-            'resource_type': 'video',
+            'resource_type': resource_type,
         }
         signature = _cloudinary_signature(params, api_secret)
 
@@ -98,8 +107,9 @@ class CloudinarySignatureView(views.APIView):
             'api_key': api_key,
             'timestamp': timestamp,
             'folder': folder,
+            'resource_type': resource_type,
             'signature': signature,
-            'upload_url': f'https://api.cloudinary.com/v1_1/{cloud_name}/video/upload',
+            'upload_url': f'https://api.cloudinary.com/v1_1/{cloud_name}/{resource_type}/upload',
         })
 
 

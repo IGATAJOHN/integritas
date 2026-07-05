@@ -162,32 +162,99 @@ export const adminCoursesService = {
     unpublishLessonInModule: async (_moduleId, lessonId) => adminCoursesService.unpublishLesson(lessonId),
 
     /**
-     * Upload the lesson video. Backend: POST /admin/lessons/{id}/video (multipart)
-     * Accepts either a File or a FormData payload (existing callers send FormData).
+     * Upload the lesson video using Cloudinary direct upload.
+     * Flow: fetch signed credentials → upload file straight to Cloudinary CDN
+     *       → save the resulting URL to our backend (tiny payload, no timeout).
+     *
+     * @param {number} lessonId
+     * @param {File|FormData} formDataOrFile  — the raw video File or FormData containing it
+     * @param {string} fieldName              — FormData field key (default 'video')
+     * @param {function} onProgress           — optional callback(percent: number)
      */
-    uploadLessonMedia: async (lessonId, formDataOrFile, fieldName = 'video') => {
-        let body = formDataOrFile;
-        if (!(typeof FormData !== 'undefined' && formDataOrFile instanceof FormData)) {
-            body = new FormData();
-            body.append(fieldName, formDataOrFile);
+    uploadLessonMedia: async (lessonId, formDataOrFile, fieldName = 'video', onProgress = null) => {
+        // Extract the raw File from FormData if needed
+        let file = formDataOrFile;
+        if (typeof FormData !== 'undefined' && formDataOrFile instanceof FormData) {
+            file = formDataOrFile.get(fieldName) || formDataOrFile.get('video') || formDataOrFile.get('file');
         }
-        const response = await authFetch(`/admin/lessons/${encodeURIComponent(lessonId)}/video`, {
-            method: 'POST',
-            body,
-        });
-        if (!response.ok) {
-            let msg = 'Upload failed';
-            try {
-                const d = await response.json();
-                msg = d.message || msg;
-            } catch {
-                /* ignore */
+        if (!file || typeof file === 'string') {
+            throw new Error('No video file provided for upload.');
+        }
+
+        // Determine Cloudinary resource_type from MIME type
+        const isVideo = file.type?.startsWith('video/');
+        const resourceType = isVideo ? 'video' : 'raw';
+        const folder = 'integritas/lessons';
+
+        // 1. Get a short-lived signed upload credential from our backend
+        const sigRes = await apiService.get(
+            `/site/cloudinary-signature?resource_type=${resourceType}&folder=${encodeURIComponent(folder)}`
+        );
+        const sig = sigRes?.data ?? sigRes;
+
+        if (!sig?.signature || !sig?.upload_url) {
+            throw new Error(
+                sig?.message ||
+                'Could not get Cloudinary upload credentials. Ensure CLOUDINARY_URL is set on Render.'
+            );
+        }
+
+        // 2. Upload the file DIRECTLY to Cloudinary — Django never sees the file bytes
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('api_key', sig.api_key);
+        formData.append('timestamp', sig.timestamp);
+        formData.append('folder', sig.folder);
+        formData.append('signature', sig.signature);
+        formData.append('overwrite', 'true');
+        formData.append('resource_type', resourceType);
+
+        const cloudinaryResult = await new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', sig.upload_url);
+
+            if (onProgress) {
+                xhr.upload.addEventListener('progress', (e) => {
+                    if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+                });
             }
+
+            xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try { resolve(JSON.parse(xhr.responseText)); } catch { resolve({}); }
+                } else {
+                    try {
+                        const err = JSON.parse(xhr.responseText);
+                        reject(new Error(err?.error?.message || `Cloudinary upload failed (${xhr.status})`));
+                    } catch {
+                        reject(new Error(`Cloudinary upload failed (${xhr.status})`));
+                    }
+                }
+            };
+            xhr.onerror = () => reject(new Error('Network error during upload. Check your connection.'));
+            xhr.send(formData);
+        });
+
+        const videoUrl = cloudinaryResult.secure_url;
+        const publicId = cloudinaryResult.public_id;
+
+        if (!videoUrl) throw new Error('Cloudinary did not return a video URL.');
+
+        // 3. Save just the URL to our backend — tiny JSON payload, no timeout risk
+        const saveRes = await authFetch(`/admin/lessons/${encodeURIComponent(lessonId)}/video`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ video_url: videoUrl, public_id: publicId }),
+        });
+
+        if (!saveRes.ok) {
+            let msg = 'Failed to save video URL';
+            try { const d = await saveRes.json(); msg = d.message || msg; } catch { /* ignore */ }
             throw new Error(msg);
         }
-        if (response.status === 204) return null;
-        return response.json();
+        return saveRes.status === 204 ? null : saveRes.json();
     },
+
 
     // ===== MATERIALS =====
     listMaterials: async (lessonId) => {
