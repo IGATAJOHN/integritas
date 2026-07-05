@@ -9,7 +9,7 @@ from django.conf import settings as django_settings
 from .models import SiteSettings
 
 
-# ── Custom permission: checks app role field, not Django's is_staff ───────────
+# ── Custom permissions: checks app role field, not Django's is_staff ──────────
 
 class IsAdminRole(permissions.BasePermission):
     """
@@ -21,6 +21,19 @@ class IsAdminRole(permissions.BasePermission):
             return False
         role = str(getattr(request.user, 'role', '') or '').lower()
         return role in ('admin', 'super_admin')
+
+
+class IsAdminOrTutorRole(permissions.BasePermission):
+    """
+    Allows access to users whose `role` field is 'admin', 'super_admin', or 'tutor'.
+    Tutors need access to request signatures for uploading lesson videos/materials.
+    """
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        role = str(getattr(request.user, 'role', '') or '').lower()
+        return role in ('admin', 'super_admin', 'tutor')
+
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
@@ -63,14 +76,14 @@ def _cloudinary_signature(params: dict, api_secret: str) -> str:
 class CloudinarySignatureView(views.APIView):
     """
     GET /api/v1/site/cloudinary-signature?resource_type=video&folder=integritas/lessons
-    Admin-only. Returns a short-lived signed upload credential so the browser
+    Admin and Tutor access. Returns a short-lived signed upload credential so the browser
     can upload directly to Cloudinary without routing the file through Django.
 
     Query params:
         resource_type  — 'video' (default) | 'raw' (PDF/docs) | 'image'
         folder         — Cloudinary folder (default: 'integritas/hero')
     """
-    permission_classes = [IsAdminRole]
+    permission_classes = [IsAdminOrTutorRole]
 
     def get(self, request):
         cloud_name, api_key, api_secret = _get_cloudinary_creds()
