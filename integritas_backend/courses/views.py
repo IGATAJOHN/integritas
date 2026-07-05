@@ -235,14 +235,21 @@ class LessonMaterialUploadView(views.APIView):
             material_file = request.FILES.get('material')
         if not material_file:
             return Response({'message': 'No material file provided'}, status=status.HTTP_400_BAD_REQUEST)
-        
+
         from django.core.files.storage import default_storage
         filename = default_storage.save(f'materials/{lesson.id}_{material_file.name}', material_file)
+        # default_storage.url() returns a full Cloudinary CDN URL when
+        # MediaCloudinaryStorage is active, or a local /media/ path in dev.
         material_url = default_storage.url(filename)
-        
+
+        # Ensure URL is always absolute (Cloudinary URLs are already absolute)
+        if material_url and not material_url.startswith('http'):
+            material_url = request.build_absolute_uri(material_url)
+
         lesson.material_url = material_url
         lesson.save()
         return Response(LessonSerializer(lesson).data, status=status.HTTP_200_OK)
+
 
 class CategoryListView(views.APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]

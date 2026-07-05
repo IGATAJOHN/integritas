@@ -24,6 +24,8 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
+    'cloudinary_storage',          # must come BEFORE django.contrib.staticfiles
+    'cloudinary',
     
     # Custom project apps
     'authentication',
@@ -103,8 +105,27 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # Enable WhiteNoise to serve static files directly
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-MEDIA_URL = 'media/'
+# Media files — stored on Cloudinary CDN (Render's disk is ephemeral)
+# All FileField / ImageField uploads automatically go to Cloudinary.
+MEDIA_URL = '/media/'  # kept for local dev fallback
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Cloudinary credentials (parsed once here so the cloudinary package is configured)
+_CLOUDINARY_URL = os.getenv('CLOUDINARY_URL', '')
+if _CLOUDINARY_URL.startswith('cloudinary://'):
+    import cloudinary
+    cloudinary.config(cloudinary_url=_CLOUDINARY_URL)
+else:
+    _cn = os.getenv('CLOUDINARY_CLOUD_NAME', '')
+    _ak = os.getenv('CLOUDINARY_API_KEY', '')
+    _as = os.getenv('CLOUDINARY_API_SECRET', '')
+    if _cn and _ak and _as:
+        import cloudinary
+        cloudinary.config(cloud_name=_cn, api_key=_ak, api_secret=_as)
+
+# Use Cloudinary as Django's default file storage when credentials are available
+if _CLOUDINARY_URL or (os.getenv('CLOUDINARY_CLOUD_NAME') and os.getenv('CLOUDINARY_API_KEY')):
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -150,10 +171,9 @@ DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
 # Paystack Payment Gateway Integration settings
 PAYSTACK_SECRET_KEY = os.getenv('PAYSTACK_SECRET_KEY')
 
-# Cloudinary — media storage for large uploads (hero video, etc.)
+# Cloudinary — individual env var references (used by site_settings/views.py signature generator)
 CLOUDINARY_CLOUD_NAME = os.getenv('CLOUDINARY_CLOUD_NAME', '')
 CLOUDINARY_API_KEY = os.getenv('CLOUDINARY_API_KEY', '')
 CLOUDINARY_API_SECRET = os.getenv('CLOUDINARY_API_SECRET', '')
-# Optional: single CLOUDINARY_URL string overrides the individual vars
-# Format: cloudinary://api_key:api_secret@cloud_name
+# Full URL string also supported: cloudinary://api_key:api_secret@cloud_name
 CLOUDINARY_URL = os.getenv('CLOUDINARY_URL', '')
