@@ -1,24 +1,100 @@
+import time
+import hashlib
+import hmac
+import os
+
 from rest_framework import views, permissions, status
 from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser, FormParser
 from django.conf import settings as django_settings
+
 from .models import SiteSettings
 
 
-def _build_video_url(request, site_settings):
-    """Return an absolute URL for the hero_video, or None if not set."""
-    if not site_settings.hero_video:
-        return None
-    # Build an absolute URL using the request's scheme and host
-    relative = site_settings.hero_video.url
-    # hero_video.url already contains the MEDIA_URL prefix
-    return request.build_absolute_uri(relative)
+# ── helpers ──────────────────────────────────────────────────────────────────
+
+def _get_cloudinary_creds():
+    """
+    Support both individual vars and the CLOUDINARY_URL string.
+    CLOUDINARY_URL format: cloudinary://api_key:api_secret@cloud_name
+    """
+    cloud_url = getattr(django_settings, 'CLOUDINARY_URL', '') or ''
+    if cloud_url.startswith('cloudinary://'):
+        # Parse: cloudinary://key:secret@cloud_name
+        rest = cloud_url[len('cloudinary://'):]
+        key_secret, cloud_name = rest.rsplit('@', 1)
+        api_key, api_secret = key_secret.split(':', 1)
+        return cloud_name.strip(), api_key.strip(), api_secret.strip()
+
+    cloud_name = getattr(django_settings, 'CLOUDINARY_CLOUD_NAME', '') or ''
+    api_key = getattr(django_settings, 'CLOUDINARY_API_KEY', '') or ''
+    api_secret = getattr(django_settings, 'CLOUDINARY_API_SECRET', '') or ''
+    return cloud_name.strip(), api_key.strip(), api_secret.strip()
+
+
+def _cloudinary_signature(params: dict, api_secret: str) -> str:
+    """
+    Produce the SHA-1 signature Cloudinary expects for authenticated uploads.
+    https://cloudinary.com/documentation/upload_images#generating_authentication_signatures
+    """
+    # Sort params alphabetically, exclude 'file', 'api_key', 'resource_type', 'cloud_name'
+    exclude = {'file', 'api_key', 'resource_type', 'cloud_name'}
+    sorted_params = '&'.join(
+        f'{k}={v}' for k, v in sorted(params.items()) if k not in exclude
+    )
+    to_sign = sorted_params + api_secret
+    return hashlib.sha1(to_sign.encode('utf-8')).hexdigest()
+
+
+# ── Views ─────────────────────────────────────────────────────────────────────
+
+class CloudinarySignatureView(views.APIView):
+    """
+    GET /api/v1/site/cloudinary-signature
+    Admin-only. Returns a short-lived signed upload credential so the browser
+    can upload directly to Cloudinary without routing the file through Django.
+    """
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        cloud_name, api_key, api_secret = _get_cloudinary_creds()
+
+        if not all([cloud_name, api_key, api_secret]):
+            return Response(
+                {
+                    'message': (
+                        'Cloudinary credentials are not configured on this server. '
+                        'Set CLOUDINARY_URL (or CLOUDINARY_CLOUD_NAME + CLOUDINARY_API_KEY '
+                        '+ CLOUDINARY_API_SECRET) in your environment variables on Render.'
+                    )
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        timestamp = int(time.time())
+        folder = 'integritas/hero'
+        params = {
+            'timestamp': timestamp,
+            'folder': folder,
+            'overwrite': 'true',
+            'resource_type': 'video',
+        }
+        signature = _cloudinary_signature(params, api_secret)
+
+        return Response({
+            'cloud_name': cloud_name,
+            'api_key': api_key,
+            'timestamp': timestamp,
+            'folder': folder,
+            'signature': signature,
+            'upload_url': f'https://api.cloudinary.com/v1_1/{cloud_name}/video/upload',
+        })
 
 
 class HeroVideoView(views.APIView):
     """
     GET  /api/v1/site/hero-video   — public, returns the current hero video URL
-    POST /api/v1/site/hero-video   — admin only, accepts multipart video upload
+    POST /api/v1/site/hero-video   — admin only, saves the Cloudinary URL returned
+                                     by the browser after a direct upload
     """
 
     def get_permissions(self):
@@ -26,38 +102,31 @@ class HeroVideoView(views.APIView):
             return [permissions.AllowAny()]
         return [permissions.IsAdminUser()]
 
-    parser_classes = [MultiPartParser, FormParser]
-
     def get(self, request):
         site = SiteSettings.get_solo()
-        video_url = _build_video_url(request, site)
         return Response({
-            'hero_video_url': video_url,
+            'hero_video_url': site.hero_video_url or None,
             'updated_at': site.hero_video_updated_at,
         })
 
     def post(self, request):
-        video_file = request.FILES.get('hero_video')
-        if not video_file:
+        video_url = request.data.get('hero_video_url', '').strip()
+        public_id = request.data.get('public_id', '').strip()
+
+        if not video_url:
             return Response(
-                {'message': 'No video file provided. Send a multipart field named "hero_video".'},
-                status=status.HTTP_400_BAD_REQUEST
+                {'message': 'Missing required field: hero_video_url'},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         site = SiteSettings.get_solo()
-
-        # Delete old file to avoid orphaned media files
-        if site.hero_video:
-            try:
-                site.hero_video.delete(save=False)
-            except Exception:
-                pass
-
-        site.hero_video = video_file
+        site.hero_video_url = video_url
+        if public_id:
+            site.hero_video_public_id = public_id
         site.save()
 
         return Response({
-            'message': 'Hero video uploaded successfully.',
-            'hero_video_url': _build_video_url(request, site),
+            'message': 'Hero video updated successfully.',
+            'hero_video_url': site.hero_video_url,
             'updated_at': site.hero_video_updated_at,
         }, status=status.HTTP_200_OK)

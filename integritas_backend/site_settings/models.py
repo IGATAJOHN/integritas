@@ -5,12 +5,21 @@ class SiteSettings(models.Model):
     """
     Singleton model for storing site-wide configuration.
     Only one row should ever exist (pk=1).
+
+    hero_video_url  — Cloudinary (or any CDN) URL for the home-page hero video.
+    hero_video_public_id — Cloudinary public_id so we can delete/overwrite it later.
     """
-    hero_video = models.FileField(
-        upload_to='site/hero/',
+    hero_video_url = models.URLField(
         blank=True,
         null=True,
-        help_text='The welcome address video shown in the hero section of the home page.'
+        max_length=1024,
+        help_text='Full Cloudinary CDN URL of the hero video on the home page.'
+    )
+    hero_video_public_id = models.CharField(
+        blank=True,
+        null=True,
+        max_length=512,
+        help_text='Cloudinary public_id — used to delete/overwrite the asset.'
     )
     hero_video_updated_at = models.DateTimeField(auto_now=True)
 

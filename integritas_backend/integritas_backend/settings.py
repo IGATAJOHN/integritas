@@ -150,4 +150,10 @@ DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
 # Paystack Payment Gateway Integration settings
 PAYSTACK_SECRET_KEY = os.getenv('PAYSTACK_SECRET_KEY')
 
-
+# Cloudinary — media storage for large uploads (hero video, etc.)
+CLOUDINARY_CLOUD_NAME = os.getenv('CLOUDINARY_CLOUD_NAME', '')
+CLOUDINARY_API_KEY = os.getenv('CLOUDINARY_API_KEY', '')
+CLOUDINARY_API_SECRET = os.getenv('CLOUDINARY_API_SECRET', '')
+# Optional: single CLOUDINARY_URL string overrides the individual vars
+# Format: cloudinary://api_key:api_secret@cloud_name
+CLOUDINARY_URL = os.getenv('CLOUDINARY_URL', '')
