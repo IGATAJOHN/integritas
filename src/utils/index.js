@@ -149,9 +149,21 @@ export const getVideoUrl = (path) => {
     if (!path) return '';
     const trimmed = String(path).trim();
     if (!trimmed) return '';
-    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) return trimmed;
-    return `${BACKEND_ORIGIN}/${trimmed.replace(/^\//, '')}`;
+    
+    let url = trimmed;
+    if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://') && !trimmed.startsWith('data:')) {
+        url = `${BACKEND_ORIGIN}/${trimmed.replace(/^\//, '')}`;
+    }
+
+    // Cloudinary PDF delivery fix:
+    // If it's a Cloudinary materials URL and doesn't end with .pdf, append .pdf so Cloudinary serves it correctly
+    // and the frontend can identify it as a PDF for inline iframe rendering.
+    if (url.includes('res.cloudinary.com') && url.includes('/materials/') && !url.toLowerCase().endsWith('.pdf')) {
+        return `${url}.pdf`;
+    }
+    return url;
 };
+
 
 export {
     getPrimaryRole,
