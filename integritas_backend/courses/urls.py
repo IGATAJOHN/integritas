@@ -4,8 +4,9 @@ from .views import (
     CourseViewSet, ModuleDetailView, CourseModulesView, CourseModulesReorderView,
     ModuleLessonsView, ModuleLessonsReorderView, LessonDetailView,
     LessonPublishView, LessonUnpublishView, LessonVideoUploadView,
-    LessonMaterialUploadView
+    LessonMaterialUploadView, CourseAIImportPDFView, CourseAIImportSaveView
 )
+
 
 router = SimpleRouter(trailing_slash=False)
 router.register('courses', CourseViewSet, basename='courses')
@@ -26,5 +27,10 @@ urlpatterns = [
     path('lessons/<int:lesson_id>/unpublish', LessonUnpublishView.as_view(), name='lesson_unpublish'),
     path('lessons/<int:lesson_id>/video', LessonVideoUploadView.as_view(), name='lesson_video_upload'),
     path('lessons/<int:lesson_id>/material', LessonMaterialUploadView.as_view(), name='lesson_material_upload'),
+    
+    # AI Course Importer
+    path('courses/<int:course_id>/import-pdf', CourseAIImportPDFView.as_view(), name='course_ai_import_pdf'),
+    path('courses/<int:course_id>/import-save', CourseAIImportSaveView.as_view(), name='course_ai_import_save'),
 ]
+
 

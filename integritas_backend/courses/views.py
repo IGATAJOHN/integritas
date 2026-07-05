@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+from django.db import transaction
 from rest_framework import viewsets, permissions, views, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -6,6 +7,8 @@ from django.utils import timezone
 from .models import Course, Module, Lesson, Category, ProjectSubmission, ProjectSubmissionFile
 
 from .serializers import CourseSerializer, ModuleSerializer, LessonSerializer
+from .ai_utils import extract_text_from_pdf, parse_outline_with_gemini
+
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -711,6 +714,120 @@ class LearnerLessonPlaybackView(views.APIView):
 
     def post(self, request, lesson_slug):
         return Response({"status": "success", "message": "Position recorded."}, status=status.HTTP_200_OK)
+
+
+class CourseAIImportPDFView(views.APIView):
+    """
+    POST /api/v1/admin/courses/{course_id}/import-pdf
+    Takes an uploaded PDF file, extracts its text, structures it into modules/lessons JSON via Gemini, and returns it.
+    """
+    permission_classes = [permissions.IsAdminUser]
+
+    def post(self, request, course_id):
+        # We verify the course exists
+        get_object_or_404(Course, id=course_id)
+
+        pdf_file = request.FILES.get('file')
+        if not pdf_file:
+            return Response(
+                {"message": "No file uploaded. Please upload a PDF file using the 'file' field."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not pdf_file.name.lower().endswith('.pdf'):
+            return Response(
+                {"message": "Unsupported file format. Please upload a PDF document."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # 1. Extract text from the PDF file
+            extracted_text = extract_text_from_pdf(pdf_file)
+            if not extracted_text.strip():
+                return Response(
+                    {"message": "No readable text content could be extracted from this PDF file."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # 2. Parse using Gemini LLM
+            parsed_outline = parse_outline_with_gemini(extracted_text)
+            return Response(parsed_outline, status=status.HTTP_200_OK)
+
+        except ValueError as ve:
+            return Response({"message": str(ve)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response(
+                {"message": f"An unexpected error occurred during import processing: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class CourseAIImportSaveView(views.APIView):
+    """
+    POST /api/v1/admin/courses/{course_id}/import-save
+    Saves the finalized JSON modules and lessons array to the course.
+    """
+    permission_classes = [permissions.IsAdminUser]
+
+    def post(self, request, course_id):
+        course = get_object_or_404(Course, id=course_id)
+        modules_data = request.data.get('modules')
+
+        if not isinstance(modules_data, list):
+            return Response(
+                {"message": "Invalid payload format. Expected a 'modules' list."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            with transaction.atomic():
+                # Find current max order for modules in this course to append
+                max_mod_order = Module.objects.filter(course=course).aggregate(
+                    models.Max('order')
+                )['order__max']
+                next_mod_order = (max_mod_order or 0) + 1
+
+                for mod_data in modules_data:
+                    title = (mod_data.get('title') or '').strip()
+                    if not title:
+                        continue  # Skip modules without a title
+
+                    # Create the module
+                    module = Module.objects.create(
+                        course=course,
+                        title=title,
+                        order=next_mod_order,
+                        status='draft'
+                    )
+                    next_mod_order += 1
+
+                    # Add lessons
+                    next_les_order = 1
+                    for les_data in mod_data.get('lessons', []):
+                        l_title = (les_data.get('title') or '').strip()
+                        if not l_title:
+                            continue  # Skip lessons without a title
+
+                        Lesson.objects.create(
+                            module=module,
+                            title=l_title,
+                            content=(les_data.get('description') or '').strip(),
+                            order=next_les_order,
+                            status='draft'
+                        )
+                        next_les_order += 1
+
+            return Response(
+                {"status": "success", "message": f"Successfully imported {len(modules_data)} modules."},
+                status=status.HTTP_201_CREATED
+            )
+
+        except Exception as e:
+            return Response(
+                {"message": f"Failed to save course outline: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
 
 
 

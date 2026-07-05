@@ -13,11 +13,13 @@ import {
     School, Language, Timer, Payments, CheckCircle,
     Cancel, PlayCircleOutline, Close,
     CloudUpload, Quiz, VideoLibrary, DragIndicator,
-    ContentCopy, Upgrade,
+    ContentCopy, Upgrade, AutoAwesome
 } from '@mui/icons-material';
 import { Tooltip, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { adminCoursesService } from '../services/courseService';
 import { getImageUrl } from '../../../utils';
+import AILessonImporterModal from '../components/AILessonImporterModal';
+
 import {
     modalStyle,
     paperStyle,
@@ -75,6 +77,8 @@ const AdminCourseDetail = () => {
     const [moduleTitle, setModuleTitle] = useState('');
     const [moduleDescription, setModuleDescription] = useState('');
     const [editingModuleId, setEditingModuleId] = useState(null);
+    const [aiImportModalOpen, setAiImportModalOpen] = useState(false);
+
 
     // Lesson Modal State
     const [lessonModalOpen, setLessonModalOpen] = useState(false);
@@ -812,15 +816,26 @@ const AdminCourseDetail = () => {
                 <Box>
                     <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
                         <Typography variant="h6" sx={{ fontWeight: 600 }}>Course Content</Typography>
-                        <Button
-                            variant="contained"
-                            startIcon={<Add />}
-                            onClick={() => { setEditingModuleId(null); setModuleTitle(''); setModuleDescription(''); setModuleModalOpen(true); }}
-                            sx={{ bgcolor: '#178A83', '&:hover': { bgcolor: '#126E68' }, textTransform: 'none', fontWeight: 600 }}
-                        >
-                            Add Module
-                        </Button>
+                        <Stack direction="row" spacing={1.5}>
+                            <Button
+                                variant="outlined"
+                                startIcon={<AutoAwesome />}
+                                onClick={() => setAiImportModalOpen(true)}
+                                sx={{ color: '#178A83', borderColor: '#178A83', '&:hover': { borderColor: '#126E68', bgcolor: 'rgba(23,138,131,0.05)' }, textTransform: 'none', fontWeight: 600 }}
+                            >
+                                Import via AI
+                            </Button>
+                            <Button
+                                variant="contained"
+                                startIcon={<Add />}
+                                onClick={() => { setEditingModuleId(null); setModuleTitle(''); setModuleDescription(''); setModuleModalOpen(true); }}
+                                sx={{ bgcolor: '#178A83', '&:hover': { bgcolor: '#126E68' }, textTransform: 'none', fontWeight: 600 }}
+                            >
+                                Add Module
+                            </Button>
+                        </Stack>
                     </Stack>
+
 
                     {/* Warn when server modules_count doesn't match loaded count */}
                     {course?.modules_count > 0 && modules.length < course.modules_count && (
@@ -1631,7 +1646,15 @@ const AdminCourseDetail = () => {
                     {snackbar.message}
                 </Alert>
             </Snackbar>
+
+            <AILessonImporterModal
+                open={aiImportModalOpen}
+                courseId={courseId}
+                onClose={() => setAiImportModalOpen(false)}
+                onImportSuccess={() => loadCourse()}
+            />
         </Box>
+
     );
 };
 

@@ -55,8 +55,11 @@ import {
     GetApp,
     InsertDriveFile,
     MenuBook,
+    AutoAwesome,
 } from '@mui/icons-material';
 import { adminCoursesService } from '../services/courseService';
+import AILessonImporterModal from '../components/AILessonImporterModal';
+
 import { adminFoundationalTutorService } from '../services/foundationalTutorService';
 import { adminTransactionsService } from '../services/transactionsService';
 import {
@@ -148,7 +151,9 @@ const FoundationalProgram = () => {
     const [moduleOpen, setModuleOpen] = useState(false);
     const [moduleForm, setModuleForm] = useState(emptyModuleForm);
     const [editingModule, setEditingModule] = useState(null);
+    const [aiImportModalOpen, setAiImportModalOpen] = useState(false);
     const [lessonOpen, setLessonOpen] = useState(false);
+
     const [lessonForm, setLessonForm] = useState(emptyLessonForm);
     const [selectedModule, setSelectedModule] = useState(null);
     const [editingLesson, setEditingLesson] = useState(null);
@@ -450,14 +455,30 @@ const FoundationalProgram = () => {
                         Manage the Foundational Courses, tutors, lesson assignments, content, and CBT.
                     </Typography>
                 </Box>
-                <Stack direction="row" spacing={1}>
+                <Stack direction="row" spacing={1.5}>
                     <Button startIcon={<Refresh />} onClick={refresh} disabled={loading} sx={{ color: '#D1D5DB', textTransform: 'none' }}>
                         Refresh
+                    </Button>
+                    <Button
+                        variant="outlined"
+                        startIcon={<AutoAwesome />}
+                        onClick={() => setAiImportModalOpen(true)}
+                        disabled={!course || loading}
+                        sx={{
+                            color: '#178A83',
+                            borderColor: '#178A83',
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            '&:hover': { borderColor: '#126E68', bgcolor: 'rgba(23,138,131,0.05)' }
+                        }}
+                    >
+                        Import via AI
                     </Button>
                     <Button variant="contained" startIcon={<Add />} onClick={() => openModule()} disabled={!course} sx={{ ...primaryButtonStyle, textTransform: 'none' }}>
                         Add Module
                     </Button>
                 </Stack>
+
             </Stack>
 
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -504,7 +525,9 @@ const FoundationalProgram = () => {
                             uploadProgress={uploadProgress}
                             expandedLessonPreviewId={expandedLessonPreviewId}
                             setExpandedLessonPreviewId={setExpandedLessonPreviewId}
+                            onImportPdf={() => setAiImportModalOpen(true)}
                         />
+
                     )}
                     {tab === 2 && <TutorsTab tutors={tutors} onManage={() => navigate('/admin/users/tutors?tab=foundational')} />}
                     {tab === 3 && <AssignmentsTab lessons={lessons} tutors={tutors} onAssign={(lesson) => openLesson(lesson.module, lesson)} assignedTutorName={assignedTutorName} />}
@@ -517,10 +540,17 @@ const FoundationalProgram = () => {
             <ModuleDialog open={moduleOpen} form={moduleForm} setForm={setModuleForm} editing={!!editingModule} saving={actionLoading} onClose={() => setModuleOpen(false)} onSave={saveModule} />
             <LessonDialog open={lessonOpen} form={lessonForm} setForm={setLessonForm} tutors={tutors} editing={!!editingLesson} saving={actionLoading} onClose={() => setLessonOpen(false)} onSave={saveLesson} />
             <LessonPreviewDialog lesson={previewLesson} onClose={() => setPreviewLesson(null)} />
+            <AILessonImporterModal
+                open={aiImportModalOpen}
+                courseId={getCourseId(course)}
+                onClose={() => setAiImportModalOpen(false)}
+                onImportSuccess={refresh}
+            />
             <Snackbar open={snackbar.open} autoHideDuration={4500} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}>
                 <Alert severity={snackbar.severity} sx={{ width: '100%' }}>{snackbar.message}</Alert>
             </Snackbar>
         </Box>
+
     );
 };
 
@@ -1003,12 +1033,30 @@ const ContentTab = ({
     uploadProgress,
     expandedLessonPreviewId,
     setExpandedLessonPreviewId,
+    onImportPdf,
 }) => (
     <Stack spacing={2}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
             <Typography variant="h6" sx={{ color: '#FFFFFF', fontWeight: 700 }}>Course Content</Typography>
-            <Button variant="contained" startIcon={<Add />} onClick={onAddModule} sx={{ ...primaryButtonStyle, textTransform: 'none' }}>Add Module</Button>
+            <Stack direction="row" spacing={1.5}>
+                <Button
+                    variant="outlined"
+                    startIcon={<AutoAwesome />}
+                    onClick={onImportPdf}
+                    sx={{
+                        color: '#178A83',
+                        borderColor: '#178A83',
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        '&:hover': { borderColor: '#126E68', bgcolor: 'rgba(23,138,131,0.05)' }
+                    }}
+                >
+                    Import via AI
+                </Button>
+                <Button variant="contained" startIcon={<Add />} onClick={onAddModule} sx={{ ...primaryButtonStyle, textTransform: 'none' }}>Add Module</Button>
+            </Stack>
         </Stack>
+
         {modules.length === 0 ? (
             <Paper sx={{ ...paperStyle, p: 5, textAlign: 'center', color: '#9CA3AF' }}>No modules yet.</Paper>
         ) : modules.map((module, moduleIndex) => (
