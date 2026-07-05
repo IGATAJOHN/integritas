@@ -76,14 +76,15 @@ def _cloudinary_signature(params: dict, api_secret: str) -> str:
 class CloudinarySignatureView(views.APIView):
     """
     GET /api/v1/site/cloudinary-signature?resource_type=video&folder=integritas/lessons
-    Admin and Tutor access. Returns a short-lived signed upload credential so the browser
+    Authenticated access. Returns a short-lived signed upload credential so the browser
     can upload directly to Cloudinary without routing the file through Django.
 
     Query params:
         resource_type  — 'video' (default) | 'raw' (PDF/docs) | 'image'
         folder         — Cloudinary folder (default: 'integritas/hero')
     """
-    permission_classes = [IsAdminOrTutorRole]
+    permission_classes = [permissions.IsAuthenticated]
+
 
     def get(self, request):
         cloud_name, api_key, api_secret = _get_cloudinary_creds()
