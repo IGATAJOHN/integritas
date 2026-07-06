@@ -40,9 +40,13 @@ class CourseSerializer(serializers.ModelSerializer):
         ]
 
     def to_internal_value(self, data):
-        # Map frontend's 'type' to backend's 'track'
-        if 'type' in data and 'track' not in data:
+        # Map frontend's 'type'/'track' to backend's 'track' ('expert' -> 'experta')
+        track_val = data.get('track') or data.get('type')
+        if track_val:
             data = data.copy()
-            data['track'] = data['type']
+            if track_val == 'expert':
+                data['track'] = 'experta'
+            else:
+                data['track'] = track_val
         return super().to_internal_value(data)
 

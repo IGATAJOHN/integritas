@@ -757,7 +757,10 @@ const AdminCourseDetail = () => {
         { value: readSettingValue(settings, ['foundational_enrolment_fee', 'foundational_enrollment_fee', 'enrolment_fee', 'enrollment_fee', 'course_enrolment_fee', 'course_enrollment_fee', 'course_fee', 'foundational_fee']) },
     ]);
 
-    const getCourseType = (courseData = {}) => String(courseData.type || courseData.track || courseData.course_type || '').toLowerCase();
+    const getCourseType = (courseData = {}) => {
+        const type = String(courseData.type || courseData.track || courseData.course_type || '').toLowerCase();
+        return type === 'experta' ? 'expert' : type;
+    };
 
     const getCoursePrice = (courseData = {}) => {
         const coursePrice = firstMoneyValue([
@@ -791,7 +794,8 @@ const AdminCourseDetail = () => {
         ]);
 
         if (coursePrice > 0) return coursePrice;
-        return getCourseType(courseData) === 'foundational' ? getPricingSettingsFee(pricingSettings) : 0;
+        const globalFee = getCourseType(courseData) === 'foundational' ? getPricingSettingsFee(pricingSettings) : 0;
+        return globalFee > 0 ? globalFee : coursePrice;
     };
 
     const getCourseCurrency = (courseData = {}) => courseData.currency || courseData.pricing?.currency || courseData.fees?.currency || 'NGN';

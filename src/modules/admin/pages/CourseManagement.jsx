@@ -67,7 +67,10 @@ import theme from '../../../styles/theme';
 const TYPE_FOUNDATIONAL = 'foundational';
 const TYPE_EXPERT = 'expert';
 
-const getCourseType = (course = {}) => String(course.type || course.track || course.course_type || '').toLowerCase();
+const getCourseType = (course = {}) => {
+    const type = String(course.type || course.track || course.course_type || '').toLowerCase();
+    return type === 'experta' ? 'expert' : type;
+};
 
 const courseTypeChip = (courseType) => {
     const t = String(courseType || '').toLowerCase();
@@ -177,7 +180,8 @@ const getCoursePrice = (course = {}, pricingSettings = null) => {
     ]);
 
     if (coursePrice > 0) return coursePrice;
-    return getCourseType(course) === TYPE_FOUNDATIONAL ? getPricingSettingsFee(pricingSettings) : 0;
+    const globalFee = getCourseType(course) === TYPE_FOUNDATIONAL ? getPricingSettingsFee(pricingSettings) : 0;
+    return globalFee > 0 ? globalFee : coursePrice;
 };
 
 const getCourseCurrency = (course = {}) => course.currency || course.pricing?.currency || course.fees?.currency || 'NGN';
@@ -619,10 +623,11 @@ const CourseManagement = () => {
                                 sx={selectStyle}
                                 MenuProps={selectMenuProps}
                             >
+                                <MenuItem value={TYPE_FOUNDATIONAL}>Foundational</MenuItem>
                                 <MenuItem value={TYPE_EXPERT}>Expert</MenuItem>
                             </Select>
                             <Typography variant="caption" sx={{ color: '#9CA3AF', display: 'block', mt: 1 }}>
-                                Foundational is managed from the dedicated Foundational menu to keep it as one programme course.
+                                Select the track/type for the new course.
                             </Typography>
                             <Stack direction="row" spacing={1.5} sx={{ display: 'none' }}>
                                 {[

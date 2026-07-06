@@ -30,7 +30,9 @@ const buildQuery = (params = {}) => {
 export const adminCoursesService = {
     // ===== COURSES =====
     listCourses: async ({ page, per_page = 20, q, status, level, language, type, track } = {}) => {
-        const query = buildQuery({ page, per_page, q, status, level, language, type: type || track });
+        let mappedType = type || track;
+        if (mappedType === 'expert') mappedType = 'experta';
+        const query = buildQuery({ page, per_page, q, status, level, language, type: mappedType });
         const res = await apiService.get(`/admin/courses${query}`);
         return unwrapList(res);
     },
@@ -426,6 +428,7 @@ export const adminCoursesService = {
         title: payload.title || 'Foundational Courses',
         summary: payload.summary || 'Foundational governance and integrity programme.',
         description: payload.description || payload.summary || 'Foundational governance and integrity programme.',
+        price: payload.price === '' || payload.price === undefined ? 0.00 : parseFloat(String(payload.price).replace(/[^\d.]/g, '')),
     }),
 
     // ===== CBT QUESTIONS (per lesson version) =====
