@@ -15,9 +15,11 @@ class LessonSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lesson
         fields = [
-            'id', 'title', 'slug', 'content', 'video_url', 'material_url', 'order',
+            'id', 'title', 'slug', 'content', 'video_url', 'material_url',
+            'additional_videos', 'additional_materials', 'order',
             'status', 'assigned_tutor', 'assigned_tutor_id'
         ]
+
 
 class ModuleSerializer(serializers.ModelSerializer):
     lessons = LessonSerializer(many=True, read_only=True)

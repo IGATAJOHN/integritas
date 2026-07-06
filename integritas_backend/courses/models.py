@@ -77,6 +77,8 @@ class Lesson(models.Model):
     content = models.TextField(blank=True)
     video_url = models.URLField(blank=True, null=True)
     material_url = models.URLField(blank=True, null=True)
+    additional_videos = models.JSONField(default=list, blank=True)
+    additional_materials = models.JSONField(default=list, blank=True)
     order = models.PositiveIntegerField(default=0)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
     assigned_tutor = models.ForeignKey(
@@ -86,6 +88,7 @@ class Lesson(models.Model):
         null=True,
         related_name='assigned_lessons'
     )
+
 
     class Meta:
         ordering = ['order']

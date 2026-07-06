@@ -23,6 +23,7 @@ import {
     Dialog,
     DialogTitle,
     DialogContent,
+    Grid,
 } from '@mui/material';
 import {
     AccessTime as ClockIcon,
@@ -414,8 +415,63 @@ const CourseLesson = () => {
         );
     }
 
-    const videoSrc = signedPlaybackUrl || getVideoUrl(currentLesson?.video_url || currentLesson?.video || '');
-    const materialSrc = currentLesson?.material_url ? getVideoUrl(currentLesson.material_url) : null;
+    // Assemble all videos for this lesson
+    const lessonVideos = useMemo(() => {
+        const list = [];
+        if (currentLesson?.video_url) {
+            list.push({ title: 'Primary Video', url: currentLesson.video_url, isSigned: true });
+        } else if (currentLesson?.video) {
+            list.push({ title: 'Primary Video', url: currentLesson.video, isSigned: true });
+        }
+        if (currentLesson?.additional_videos && Array.isArray(currentLesson.additional_videos)) {
+            currentLesson.additional_videos.forEach((vid, idx) => {
+                list.push({ title: vid.title || `Video ${idx + 2}`, url: vid.url, isSigned: false });
+            });
+        }
+        return list;
+    }, [currentLesson]);
+
+    // Track active video index
+    const [activeVideoIdx, setActiveVideoIdx] = useState(0);
+
+    // Reset active video index when currentLesson changes
+    useEffect(() => {
+        setActiveVideoIdx(0);
+    }, [currentLesson?.slug]);
+
+    // Get the source for the currently playing video
+    const activeVideo = lessonVideos[activeVideoIdx] || null;
+    const videoSrc = useMemo(() => {
+        if (!activeVideo) return '';
+        if (activeVideo.isSigned && signedPlaybackUrl) return signedPlaybackUrl;
+        return getVideoUrl(activeVideo.url || '');
+    }, [activeVideo, signedPlaybackUrl]);
+
+    // Assemble all study materials for this lesson
+    const lessonMaterials = useMemo(() => {
+        const list = [];
+        if (currentLesson?.material_url) {
+            list.push({ title: 'Primary Material', url: currentLesson.material_url });
+        }
+        if (currentLesson?.additional_materials && Array.isArray(currentLesson.additional_materials)) {
+            currentLesson.additional_materials.forEach((mat, idx) => {
+                list.push({ title: mat.title || `Material ${idx + 2}`, url: mat.url });
+            });
+        }
+        return list;
+    }, [currentLesson]);
+
+    // Track active material index inside viewer modal
+    const [activeMaterialIdx, setActiveMaterialIdx] = useState(0);
+
+    // Reset active material index when currentLesson changes or modal closes
+    useEffect(() => {
+        setActiveMaterialIdx(0);
+    }, [currentLesson?.slug]);
+
+    const activeMaterial = lessonMaterials[activeMaterialIdx] || null;
+    const materialSrc = activeMaterial ? getVideoUrl(activeMaterial.url) : null;
+
 
     const isYouTube = /youtube\.com|youtu\.be/.test(videoSrc);
     const isVimeo = /vimeo\.com/.test(videoSrc);
@@ -856,6 +912,44 @@ const CourseLesson = () => {
                                 )}
                             </Box>
 
+                            {/* Video Playlist Selector */}
+                            {lessonVideos.length > 1 && (
+                                <Box sx={{ mt: 2.5, mb: 3, p: 2, bgcolor: 'rgba(255,255,255,0.02)', borderRadius: 2, border: `1px solid ${colors.border || 'rgba(255,255,255,0.08)'}` }}>
+                                    <Typography variant="caption" sx={{ color: colors.textSecondary || '#9CA3AF', display: 'block', mb: 1.5, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', fontSize: '0.75rem' }}>
+                                        Video Playlist ({lessonVideos.length})
+                                    </Typography>
+                                    <Stack direction="row" spacing={1.5} sx={{ overflowX: 'auto', pb: 0.5 }}>
+                                        {lessonVideos.map((vid, idx) => {
+                                            const isActive = idx === activeVideoIdx;
+                                            return (
+                                                <Button
+                                                    key={idx}
+                                                    variant={isActive ? "contained" : "outlined"}
+                                                    onClick={() => setActiveVideoIdx(idx)}
+                                                    size="small"
+                                                    startIcon={<PlayArrow />}
+                                                    sx={{
+                                                        textTransform: 'none',
+                                                        borderRadius: 1.5,
+                                                        whiteSpace: 'nowrap',
+                                                        bgcolor: isActive ? '#178A83' : 'transparent',
+                                                        color: isActive ? '#fff' : '#9CA3AF',
+                                                        borderColor: isActive ? '#178A83' : '#374151',
+                                                        fontWeight: isActive ? 600 : 400,
+                                                        '&:hover': {
+                                                            bgcolor: isActive ? '#126E68' : 'rgba(255,255,255,0.05)',
+                                                            borderColor: isActive ? '#126E68' : '#4B5563'
+                                                        }
+                                                    }}
+                                                >
+                                                    {vid.title}
+                                                </Button>
+                                            );
+                                        })}
+                                    </Stack>
+                                </Box>
+                            )}
+
                             {/* Lesson Title & Material Download */}
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2, mb: 3 }}>
                                 <Box>
@@ -869,14 +963,14 @@ const CourseLesson = () => {
                                     )}
                                 </Box>
                                 <Stack direction="row" spacing={1.5} alignItems="center">
-                                    {materialSrc && (
+                                    {lessonMaterials.length > 0 && (
                                         <Button
                                             variant="outlined"
                                             onClick={() => setMaterialViewerOpen(true)}
                                             startIcon={<InsertDriveFile />}
                                             sx={{ borderColor: '#60A5FA', color: '#60A5FA', textTransform: 'none', '&:hover': { borderColor: '#93C5FD', bgcolor: 'rgba(96,165,250,0.05)' } }}
                                         >
-                                            View Material
+                                            {lessonMaterials.length > 1 ? 'View Materials' : 'View Material'}
                                         </Button>
                                     )}
                                     {courseData?.track === 'experta' ? (
@@ -1111,39 +1205,126 @@ const CourseLesson = () => {
                     </Stack>
                 </DialogTitle>
                 <DialogContent sx={{ p: 0, overflow: 'hidden', height: '100%' }}>
-                    {materialSrc ? (
-                        materialSrc.toLowerCase().endsWith('.pdf') || materialSrc.toLowerCase().includes('.pdf') ? (
-                            <iframe
-                                src={`${materialSrc}#toolbar=0`}
-                                title={currentLesson?.title || 'Material'}
-                                width="100%"
-                                height="100%"
-                                style={{ border: 'none', background: '#323639' }}
-                            />
-                        ) : (
-                            <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 4, textAlign: 'center' }}>
-                                <InsertDriveFile sx={{ fontSize: 64, color: '#178A83', mb: 2 }} />
-                                <Typography variant="h6" sx={{ color: '#fff', fontWeight: 650, mb: 1 }}>
-                                    {currentLesson?.title || 'Lesson Material'}
-                                </Typography>
-                                <Typography variant="body2" sx={{ color: '#9CA3AF', mb: 3, maxWidth: 400 }}>
-                                    This material type cannot be displayed inline. Click the button below to download and view it.
-                                </Typography>
-                                <Button
-                                    variant="contained"
-                                    href={materialSrc}
-                                    download
-                                    startIcon={<GetApp />}
-                                    sx={{ bgcolor: '#178A83', '&:hover': { bgcolor: '#116B65' } }}
-                                >
-                                    Download Material
-                                </Button>
-                            </Box>
-                        )
-                    ) : (
+                    {lessonMaterials.length === 0 ? (
                         <Box sx={{ p: 4, textAlign: 'center' }}>
                             <Typography sx={{ color: '#94A3B8' }}>No material source available.</Typography>
                         </Box>
+                    ) : lessonMaterials.length > 1 ? (
+                        <Grid container sx={{ height: '100%' }}>
+                            {/* Materials List Sidebar */}
+                            <Grid item xs={12} md={3.5} sx={{ borderRight: '1px solid rgba(255,255,255,0.08)', height: '100%', overflowY: 'auto', bgcolor: 'rgba(0,0,0,0.15)', p: 1 }}>
+                                <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 600, p: 1.5, display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                    Resources ({lessonMaterials.length})
+                                </Typography>
+                                <List disablePadding sx={{ px: 0.5 }}>
+                                    {lessonMaterials.map((mat, idx) => {
+                                        const isActive = idx === activeMaterialIdx;
+                                        return (
+                                            <ListItemButton
+                                                key={idx}
+                                                selected={isActive}
+                                                onClick={() => setActiveMaterialIdx(idx)}
+                                                sx={{
+                                                    borderRadius: 1.5,
+                                                    mb: 0.5,
+                                                    p: 1.25,
+                                                    '&.Mui-selected': {
+                                                        bgcolor: 'rgba(23,138,131,0.15)',
+                                                        '&:hover': { bgcolor: 'rgba(23,138,131,0.25)' }
+                                                    },
+                                                    '&:hover': { bgcolor: 'rgba(255,255,255,0.03)' }
+                                                }}
+                                            >
+                                                <ListItemIcon sx={{ minWidth: 32, color: isActive ? '#178A83' : '#94A3B8' }}>
+                                                    <InsertDriveFile fontSize="small" />
+                                                </ListItemIcon>
+                                                <ListItemText
+                                                    primary={
+                                                        <Typography variant="body2" sx={{ color: isActive ? '#fff' : '#94A3B8', fontWeight: isActive ? 600 : 400 }}>
+                                                            {mat.title}
+                                                        </Typography>
+                                                    }
+                                                />
+                                            </ListItemButton>
+                                        );
+                                    })}
+                                </List>
+                            </Grid>
+                            
+                            {/* Preview Panel */}
+                            <Grid item xs={12} md={8.5} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                                {materialSrc ? (
+                                    materialSrc.toLowerCase().endsWith('.pdf') || materialSrc.toLowerCase().includes('.pdf') ? (
+                                        <iframe
+                                            src={`${materialSrc}#toolbar=0`}
+                                            title={activeMaterial?.title || 'Material'}
+                                            width="100%"
+                                            height="100%"
+                                            style={{ border: 'none', background: '#323639' }}
+                                        />
+                                    ) : (
+                                        <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 4, textAlign: 'center' }}>
+                                            <InsertDriveFile sx={{ fontSize: 64, color: '#178A83', mb: 2 }} />
+                                            <Typography variant="h6" sx={{ color: '#fff', fontWeight: 650, mb: 1 }}>
+                                                {activeMaterial?.title || 'Lesson Material'}
+                                            </Typography>
+                                            <Typography variant="body2" sx={{ color: '#9CA3AF', mb: 3, maxWidth: 400 }}>
+                                                This material type cannot be displayed inline. Click the button below to download and view it.
+                                            </Typography>
+                                            <Button
+                                                variant="contained"
+                                                href={materialSrc}
+                                                download
+                                                startIcon={<GetApp />}
+                                                sx={{ bgcolor: '#178A83', '&:hover': { bgcolor: '#116B65' } }}
+                                            >
+                                                Download Material
+                                            </Button>
+                                        </Box>
+                                    )
+                                ) : (
+                                    <Box sx={{ p: 4, textAlign: 'center' }}>
+                                        <Typography sx={{ color: '#94A3B8' }}>Select a resource to preview</Typography>
+                                    </Box>
+                                )}
+                            </Grid>
+                        </Grid>
+                    ) : (
+                        /* Single material full width layout */
+                        materialSrc ? (
+                            materialSrc.toLowerCase().endsWith('.pdf') || materialSrc.toLowerCase().includes('.pdf') ? (
+                                <iframe
+                                    src={`${materialSrc}#toolbar=0`}
+                                    title={activeMaterial?.title || 'Material'}
+                                    width="100%"
+                                    height="100%"
+                                    style={{ border: 'none', background: '#323639' }}
+                                />
+                            ) : (
+                                <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 4, textAlign: 'center' }}>
+                                    <InsertDriveFile sx={{ fontSize: 64, color: '#178A83', mb: 2 }} />
+                                    <Typography variant="h6" sx={{ color: '#fff', fontWeight: 650, mb: 1 }}>
+                                        {activeMaterial?.title || 'Lesson Material'}
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ color: '#9CA3AF', mb: 3, maxWidth: 400 }}>
+                                        This material type cannot be displayed inline. Click the button below to download and view it.
+                                    </Typography>
+                                    <Button
+                                        variant="contained"
+                                        href={materialSrc}
+                                        download
+                                        startIcon={<GetApp />}
+                                        sx={{ bgcolor: '#178A83', '&:hover': { bgcolor: '#116B65' } }}
+                                    >
+                                        Download Material
+                                    </Button>
+                                </Box>
+                            )
+                        ) : (
+                            <Box sx={{ p: 4, textAlign: 'center' }}>
+                                <Typography sx={{ color: '#94A3B8' }}>No material source available.</Typography>
+                            </Box>
+                        )
                     )}
                 </DialogContent>
             </Dialog>

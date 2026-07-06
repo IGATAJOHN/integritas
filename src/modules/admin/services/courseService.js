@@ -171,6 +171,59 @@ export const adminCoursesService = {
      * @param {string} fieldName              — FormData field key (default 'video')
      * @param {function} onProgress           — optional callback(percent: number)
      */
+    uploadToCloudinary: async (file, resourceType = 'raw', folder = 'integritas/media', onProgress = null) => {
+        // 1. Get signed signature
+        const sigRes = await apiService.get(
+            `/site/cloudinary-signature?resource_type=${resourceType}&folder=${encodeURIComponent(folder)}`
+        );
+        const sig = sigRes?.data ?? sigRes;
+
+        if (!sig?.signature || !sig?.upload_url) {
+            throw new Error(
+                sig?.message ||
+                'Could not get Cloudinary upload credentials. Ensure CLOUDINARY_URL is set on Render.'
+            );
+        }
+
+        // 2. Upload to Cloudinary
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('api_key', sig.api_key);
+        formData.append('timestamp', sig.timestamp);
+        formData.append('folder', sig.folder);
+        formData.append('signature', sig.signature);
+        formData.append('overwrite', 'true');
+        formData.append('resource_type', resourceType);
+
+        const cloudinaryResult = await new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', sig.upload_url);
+
+            if (onProgress) {
+                xhr.upload.addEventListener('progress', (e) => {
+                    if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+                });
+            }
+
+            xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try { resolve(JSON.parse(xhr.responseText)); } catch { resolve({}); }
+                } else {
+                    try {
+                        const err = JSON.parse(xhr.responseText);
+                        reject(new Error(err?.error?.message || `Cloudinary upload failed (${xhr.status})`));
+                    } catch {
+                        reject(new Error(`Cloudinary upload failed (${xhr.status})`));
+                    }
+                }
+            };
+            xhr.onerror = () => reject(new Error('Network error during upload. Check your connection.'));
+            xhr.send(formData);
+        });
+
+        return cloudinaryResult.secure_url;
+    },
+
     uploadLessonMedia: async (lessonId, formDataOrFile, fieldName = 'video', onProgress = null) => {
         // Extract the raw File from FormData if needed
         let file = formDataOrFile;

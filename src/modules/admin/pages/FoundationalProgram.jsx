@@ -84,7 +84,22 @@ const DEFAULT_COURSE = {
 };
 
 const emptyModuleForm = { title: '', description: '' };
-const emptyLessonForm = { title: '', description: '', assigned_tutor_id: '', video_url: '', material_url: '' };
+const emptyLessonForm = {
+    title: '',
+    description: '',
+    assigned_tutor_id: '',
+    video_url: '',
+    material_url: '',
+    video_file: null,
+    material_file: null,
+    additional_videos: [],
+    additional_materials: [],
+    new_video_title: '',
+    new_video_url: '',
+    new_material_title: '',
+    new_material_url: ''
+};
+
 
 const getCourseId = (course) => course?.id || course?.course_id || course?.slug;
 const getLessonVersionId = (lesson) => (
@@ -298,8 +313,74 @@ const FoundationalProgram = () => {
             assigned_tutor_id: getAssignedTutorId(lesson),
             video_url: lesson?.video_url || '',
             material_url: lesson?.material_url || '',
+            video_file: null,
+            material_file: null,
+            additional_videos: lesson?.additional_videos || [],
+            additional_materials: lesson?.additional_materials || [],
+            new_video_title: '',
+            new_video_url: '',
+            new_material_title: '',
+            new_material_url: ''
         });
         setLessonOpen(true);
+    };
+
+    const handleAddAdditionalLink = (type) => {
+        const titleField = type === 'video' ? 'new_video_title' : 'new_material_title';
+        const urlField = type === 'video' ? 'new_video_url' : 'new_material_url';
+        const listField = type === 'video' ? 'additional_videos' : 'additional_materials';
+
+        const title = lessonForm[titleField].trim();
+        const url = lessonForm[urlField].trim();
+
+        if (!url) {
+            showMessage('URL is required.', 'error');
+            return;
+        }
+
+        setLessonForm(prev => ({
+            ...prev,
+            [listField]: [...prev[listField], { title: title || 'Untitled Link', url }],
+            [titleField]: '',
+            [urlField]: '',
+        }));
+    };
+
+    const handleRemoveAdditional = (type, idx) => {
+        const listField = type === 'video' ? 'additional_videos' : 'additional_materials';
+        setLessonForm(prev => ({
+            ...prev,
+            [listField]: prev[listField].filter((_, i) => i !== idx)
+        }));
+    };
+
+    const handleUploadAdditional = async (file, type) => {
+        if (!file) return;
+        setActionLoading(true);
+        try {
+            const resourceType = type === 'video' ? 'video' : 'raw';
+            const folder = type === 'video' ? 'integritas/lessons' : 'integritas/materials';
+            showMessage(`Uploading ${type} file to Cloudinary...`);
+            
+            const secureUrl = await adminCoursesService.uploadToCloudinary(file, resourceType, folder);
+            
+            setLessonForm(prev => {
+                const listField = type === 'video' ? 'additional_videos' : 'additional_materials';
+                const titleField = type === 'video' ? 'new_video_title' : 'new_material_title';
+                const title = prev[titleField].trim() || file.name;
+                
+                return {
+                    ...prev,
+                    [listField]: [...prev[listField], { title, url: secureUrl }],
+                    [titleField]: '',
+                };
+            });
+            showMessage(`${type === 'video' ? 'Video' : 'Material'} uploaded and added.`);
+        } catch (err) {
+            showMessage(err.message || 'Upload failed.', 'error');
+        } finally {
+            setActionLoading(false);
+        }
     };
 
     const saveLesson = async () => {
@@ -315,14 +396,33 @@ const FoundationalProgram = () => {
                 assigned_tutor_id: lessonForm.assigned_tutor_id || null,
                 video_url: lessonForm.video_url.trim() || null,
                 material_url: lessonForm.material_url.trim() || null,
+                additional_videos: lessonForm.additional_videos,
+                additional_materials: lessonForm.additional_materials,
             };
+            
+            let lesson = null;
             if (editingLesson) {
-                await adminCoursesService.updateLesson(editingLesson.id, payload);
+                lesson = await adminCoursesService.updateLesson(editingLesson.id, payload);
                 showMessage('Lesson updated.');
             } else {
-                await adminCoursesService.createLesson(selectedModule.id, payload);
+                lesson = await adminCoursesService.createLesson(selectedModule.id, payload);
                 showMessage('Lesson created.');
             }
+
+            const lessonId = lesson?.id || lesson?.data?.id;
+
+            // Upload primary video if selected in the modal
+            if (lessonForm.video_file && lessonId) {
+                showMessage('Uploading lesson primary video...');
+                await adminCoursesService.uploadLessonMedia(lessonId, lessonForm.video_file, 'video');
+            }
+
+            // Upload primary material if selected in the modal
+            if (lessonForm.material_file && lessonId) {
+                showMessage('Uploading lesson primary material...');
+                await adminCoursesService.uploadLessonMaterial(lessonId, lessonForm.material_file);
+            }
+            
             setLessonOpen(false);
             await reloadCourseOnly();
         } catch (err) {
@@ -331,6 +431,7 @@ const FoundationalProgram = () => {
             setActionLoading(false);
         }
     };
+
 
     const publishLesson = async (lesson, shouldPublish) => {
         if (shouldPublish && !getAssignedTutorId(lesson)) {
@@ -538,7 +639,19 @@ const FoundationalProgram = () => {
 
             <CourseSetupDialog open={setupOpen} form={setupForm} setForm={setSetupForm} saving={actionLoading} onClose={() => setSetupOpen(false)} onSave={handleCreateCourse} />
             <ModuleDialog open={moduleOpen} form={moduleForm} setForm={setModuleForm} editing={!!editingModule} saving={actionLoading} onClose={() => setModuleOpen(false)} onSave={saveModule} />
-            <LessonDialog open={lessonOpen} form={lessonForm} setForm={setLessonForm} tutors={tutors} editing={!!editingLesson} saving={actionLoading} onClose={() => setLessonOpen(false)} onSave={saveLesson} />
+            <LessonDialog
+                open={lessonOpen}
+                form={lessonForm}
+                setForm={setLessonForm}
+                tutors={tutors}
+                editing={!!editingLesson}
+                saving={actionLoading}
+                onClose={() => setLessonOpen(false)}
+                onSave={saveLesson}
+                handleAddAdditionalLink={handleAddAdditionalLink}
+                handleRemoveAdditional={handleRemoveAdditional}
+                handleUploadAdditional={handleUploadAdditional}
+            />
             <LessonPreviewDialog lesson={previewLesson} onClose={() => setPreviewLesson(null)} />
             <AILessonImporterModal
                 open={aiImportModalOpen}
@@ -1380,7 +1493,19 @@ const ModuleDialog = ({ open, form, setForm, editing, saving, onClose, onSave })
     </Dialog>
 );
 
-const LessonDialog = ({ open, form, setForm, tutors, editing, saving, onClose, onSave }) => (
+const LessonDialog = ({
+    open,
+    form,
+    setForm,
+    tutors,
+    editing,
+    saving,
+    onClose,
+    onSave,
+    handleAddAdditionalLink,
+    handleRemoveAdditional,
+    handleUploadAdditional
+}) => (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" PaperProps={{ sx: dialogPaperSx }}>
         <DialogTitle sx={{ bgcolor: '#111827', borderBottom: '1px solid #374151', px: 3, py: 2.25 }}>
             <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
@@ -1425,9 +1550,11 @@ const LessonDialog = ({ open, form, setForm, tutors, editing, saving, onClose, o
                         </Select>
                     </FormControl>
                 </Box>
+                
+                {/* Primary Video */}
                 <Box>
                     <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#E5E7EB', mb: 0.75 }}>
-                        Video Source <Box component="span" sx={{ color: '#9CA3AF', fontWeight: 400 }}>- external URL or file upload</Box>
+                        Primary Video Source <Box component="span" sx={{ color: '#9CA3AF', fontWeight: 400 }}>- URL or file upload</Box>
                     </Typography>
                     <Stack direction="row" spacing={1.5} alignItems="center">
                         <TextField
@@ -1471,9 +1598,89 @@ const LessonDialog = ({ open, form, setForm, tutors, editing, saving, onClose, o
                         </Typography>
                     )}
                 </Box>
-                <Box>
+
+                {/* Additional Videos */}
+                <Box sx={{ borderTop: '1px solid #374151', pt: 2.5 }}>
+                    <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#178A83', mb: 1.5 }}>
+                        Additional Videos
+                    </Typography>
+                    
+                    {form.additional_videos && form.additional_videos.length > 0 && (
+                        <Stack spacing={1} sx={{ mb: 2 }}>
+                            {form.additional_videos.map((vid, idx) => (
+                                <Stack key={idx} direction="row" spacing={1} alignItems="center" justifyContent="space-between" sx={{ bgcolor: 'rgba(255,255,255,0.03)', p: 1, px: 1.5, borderRadius: 1, border: '1px solid #374151' }}>
+                                    <Box sx={{ overflow: 'hidden', flexGrow: 1 }}>
+                                        <Typography variant="body2" sx={{ color: '#E5E7EB', fontWeight: 500, noWrap: true }}>
+                                            {vid.title}
+                                        </Typography>
+                                        <Typography variant="caption" sx={{ color: '#9CA3AF', noWrap: true, display: 'block' }}>
+                                            {vid.url}
+                                        </Typography>
+                                    </Box>
+                                    <IconButton size="small" onClick={() => handleRemoveAdditional('video', idx)} sx={{ color: '#EF4444', '&:hover': { bgcolor: 'rgba(239,68,68,0.1)' } }}>
+                                        <Delete fontSize="small" />
+                                    </IconButton>
+                                </Stack>
+                            ))}
+                        </Stack>
+                    )}
+
+                    <Stack spacing={1.5}>
+                        <TextField
+                            placeholder="Video Title (e.g. Lesson Demo)"
+                            value={form.new_video_title}
+                            onChange={(e) => setForm(prev => ({ ...prev, new_video_title: e.target.value }))}
+                            sx={textFieldStyle}
+                            fullWidth
+                        />
+                        <Stack direction="row" spacing={1.5} alignItems="center">
+                            <TextField
+                                placeholder="Paste additional video URL..."
+                                value={form.new_video_url}
+                                onChange={(e) => setForm(prev => ({ ...prev, new_video_url: e.target.value }))}
+                                sx={{ ...textFieldStyle, flexGrow: 1 }}
+                                fullWidth
+                            />
+                            <Button
+                                variant="contained"
+                                onClick={() => handleAddAdditionalLink('video')}
+                                disabled={!form.new_video_url.trim()}
+                                sx={{ ...primaryButtonStyle, height: '40px', px: 2, whiteSpace: 'nowrap' }}
+                            >
+                                Add URL
+                            </Button>
+                            <Button
+                                variant="outlined"
+                                component="label"
+                                sx={{
+                                    color: '#178A83',
+                                    borderColor: '#178A83',
+                                    textTransform: 'none',
+                                    whiteSpace: 'nowrap',
+                                    height: '40px',
+                                    px: 2,
+                                    '&:hover': { borderColor: '#116B65', bgcolor: 'rgba(23,138,131,0.05)' }
+                                }}
+                            >
+                                Upload
+                                <input
+                                    type="file"
+                                    accept="video/*"
+                                    hidden
+                                    onChange={(e) => {
+                                        const file = e.target.files[0];
+                                        if (file) handleUploadAdditional(file, 'video');
+                                    }}
+                                />
+                            </Button>
+                        </Stack>
+                    </Stack>
+                </Box>
+
+                {/* Primary Study Material */}
+                <Box sx={{ borderTop: '1px solid #374151', pt: 2.5 }}>
                     <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#E5E7EB', mb: 0.75 }}>
-                        Study Material <Box component="span" sx={{ color: '#9CA3AF', fontWeight: 400 }}>- external URL or PDF/Doc upload</Box>
+                        Primary Study Material <Box component="span" sx={{ color: '#9CA3AF', fontWeight: 400 }}>- URL or PDF/Doc upload</Box>
                     </Typography>
                     <Stack direction="row" spacing={1.5} alignItems="center">
                         <TextField
@@ -1518,7 +1725,85 @@ const LessonDialog = ({ open, form, setForm, tutors, editing, saving, onClose, o
                     )}
                 </Box>
 
-                <Box>
+                {/* Additional Study Materials */}
+                <Box sx={{ borderTop: '1px solid #374151', pt: 2.5 }}>
+                    <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#178A83', mb: 1.5 }}>
+                        Additional Study Materials
+                    </Typography>
+                    
+                    {form.additional_materials && form.additional_materials.length > 0 && (
+                        <Stack spacing={1} sx={{ mb: 2 }}>
+                            {form.additional_materials.map((mat, idx) => (
+                                <Stack key={idx} direction="row" spacing={1} alignItems="center" justifyContent="space-between" sx={{ bgcolor: 'rgba(255,255,255,0.03)', p: 1, px: 1.5, borderRadius: 1, border: '1px solid #374151' }}>
+                                    <Box sx={{ overflow: 'hidden', flexGrow: 1 }}>
+                                        <Typography variant="body2" sx={{ color: '#E5E7EB', fontWeight: 500, noWrap: true }}>
+                                            {mat.title}
+                                        </Typography>
+                                        <Typography variant="caption" sx={{ color: '#9CA3AF', noWrap: true, display: 'block' }}>
+                                            {mat.url}
+                                        </Typography>
+                                    </Box>
+                                    <IconButton size="small" onClick={() => handleRemoveAdditional('material', idx)} sx={{ color: '#EF4444', '&:hover': { bgcolor: 'rgba(239,68,68,0.1)' } }}>
+                                        <Delete fontSize="small" />
+                                    </IconButton>
+                                </Stack>
+                            ))}
+                        </Stack>
+                    )}
+
+                    <Stack spacing={1.5}>
+                        <TextField
+                            placeholder="Material Title (e.g. Lecture Slides)"
+                            value={form.new_material_title}
+                            onChange={(e) => setForm(prev => ({ ...prev, new_material_title: e.target.value }))}
+                            sx={textFieldStyle}
+                            fullWidth
+                        />
+                        <Stack direction="row" spacing={1.5} alignItems="center">
+                            <TextField
+                                placeholder="Paste additional material URL..."
+                                value={form.new_material_url}
+                                onChange={(e) => setForm(prev => ({ ...prev, new_material_url: e.target.value }))}
+                                sx={{ ...textFieldStyle, flexGrow: 1 }}
+                                fullWidth
+                            />
+                            <Button
+                                variant="contained"
+                                onClick={() => handleAddAdditionalLink('material')}
+                                disabled={!form.new_material_url.trim()}
+                                sx={{ ...primaryButtonStyle, height: '40px', px: 2, whiteSpace: 'nowrap' }}
+                            >
+                                Add URL
+                            </Button>
+                            <Button
+                                variant="outlined"
+                                component="label"
+                                sx={{
+                                    color: '#178A83',
+                                    borderColor: '#178A83',
+                                    textTransform: 'none',
+                                    whiteSpace: 'nowrap',
+                                    height: '40px',
+                                    px: 2,
+                                    '&:hover': { borderColor: '#116B65', bgcolor: 'rgba(23,138,131,0.05)' }
+                                }}
+                            >
+                                Upload
+                                <input
+                                    type="file"
+                                    accept=".pdf,.doc,.docx,.zip"
+                                    hidden
+                                    onChange={(e) => {
+                                        const file = e.target.files[0];
+                                        if (file) handleUploadAdditional(file, 'material');
+                                    }}
+                                />
+                            </Button>
+                        </Stack>
+                    </Stack>
+                </Box>
+
+                <Box sx={{ borderTop: '1px solid #374151', pt: 2.5 }}>
                     <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#E5E7EB', mb: 0.75 }}>
                         Description <Box component="span" sx={{ color: '#9CA3AF', fontWeight: 400 }}>- optional</Box>
                     </Typography>
@@ -1544,3 +1829,4 @@ const LessonDialog = ({ open, form, setForm, tutors, editing, saving, onClose, o
 );
 
 export default FoundationalProgram;
+

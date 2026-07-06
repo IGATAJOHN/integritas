@@ -89,6 +89,12 @@ const AdminCourseDetail = () => {
     const [lessonDuration, setLessonDuration] = useState(0);
     const [lessonFile, setLessonFile] = useState(null);
     const [lessonFileName, setLessonFileName] = useState('');
+    const [additionalVideos, setAdditionalVideos] = useState([]);
+    const [additionalMaterials, setAdditionalMaterials] = useState([]);
+    const [newVideoTitle, setNewVideoTitle] = useState('');
+    const [newVideoUrl, setNewVideoUrl] = useState('');
+    const [newMaterialTitle, setNewMaterialTitle] = useState('');
+    const [newMaterialUrl, setNewMaterialUrl] = useState('');
 
     // Reject Modal State
     const [rejectModalOpen, setRejectModalOpen] = useState(false);
@@ -387,7 +393,73 @@ const AdminCourseDetail = () => {
         setLessonDuration(0);
         setLessonFile(null);
         setLessonFileName('');
+        setAdditionalVideos([]);
+        setAdditionalMaterials([]);
+        setNewVideoTitle('');
+        setNewVideoUrl('');
+        setNewMaterialTitle('');
+        setNewMaterialUrl('');
         setLessonModalOpen(true);
+    };
+
+    const handleAddAdditionalLink = (type) => {
+        const isVideo = type === 'video';
+        const title = isVideo ? newVideoTitle.trim() : newMaterialTitle.trim();
+        const url = isVideo ? newVideoUrl.trim() : newMaterialUrl.trim();
+
+        if (!url) {
+            showSnackbar('URL is required', 'error');
+            return;
+        }
+
+        const newItem = { title: title || 'Untitled Link', url };
+        if (isVideo) {
+            setAdditionalVideos(prev => [...prev, newItem]);
+            setNewVideoTitle('');
+            setNewVideoUrl('');
+        } else {
+            setAdditionalMaterials(prev => [...prev, newItem]);
+            setNewMaterialTitle('');
+            setNewMaterialUrl('');
+        }
+    };
+
+    const handleRemoveAdditional = (type, idx) => {
+        if (type === 'video') {
+            setAdditionalVideos(prev => prev.filter((_, i) => i !== idx));
+        } else {
+            setAdditionalMaterials(prev => prev.filter((_, i) => i !== idx));
+        }
+    };
+
+    const handleUploadAdditional = async (file, type) => {
+        if (!file) return;
+        setActionLoading(true);
+        try {
+            const resourceType = type === 'video' ? 'video' : 'raw';
+            const folder = type === 'video' ? 'integritas/lessons' : 'integritas/materials';
+            showSnackbar(`Uploading ${type} file to Cloudinary...`);
+            
+            const secureUrl = await adminCoursesService.uploadToCloudinary(file, resourceType, folder);
+            
+            const title = type === 'video' 
+                ? (newVideoTitle.trim() || file.name)
+                : (newMaterialTitle.trim() || file.name);
+
+            const newItem = { title, url: secureUrl };
+            if (type === 'video') {
+                setAdditionalVideos(prev => [...prev, newItem]);
+                setNewVideoTitle('');
+            } else {
+                setAdditionalMaterials(prev => [...prev, newItem]);
+                setNewMaterialTitle('');
+            }
+            showSnackbar(`${type === 'video' ? 'Video' : 'Material'} uploaded and added`);
+        } catch (err) {
+            showSnackbar(err.message || 'Upload failed', 'error');
+        } finally {
+            setActionLoading(false);
+        }
     };
 
     const handleCreateLesson = async () => {
@@ -399,31 +471,30 @@ const AdminCourseDetail = () => {
         try {
             setActionLoading(true);
 
-            // API: POST /admin/modules/{module}/lessons { title, description, assigned_tutor_id }
+            // API: POST /admin/modules/{module}/lessons
             const payload = {
                 title: lessonTitle.trim(),
                 description: lessonContent.trim() || undefined,
+                duration: lessonDuration ? parseInt(lessonDuration, 10) : undefined,
+                additional_videos: additionalVideos,
+                additional_materials: additionalMaterials,
             };
 
             const newLesson = await adminCoursesService.createLesson(selectedModuleForLesson, payload);
+            const lessonId = newLesson?.id || newLesson?.data?.id;
 
-            if ((lessonType === 'video' || lessonType === 'document') && lessonFile && newLesson?.id) {
-                const formData = new FormData();
-                formData.append('video', lessonFile);
-                await adminCoursesService.uploadLessonMedia(newLesson.id, formData).catch(() => {});
+            if (lessonId && lessonFile) {
+                if (lessonType === 'video') {
+                    showSnackbar('Uploading primary video...');
+                    await adminCoursesService.uploadLessonMedia(lessonId, lessonFile, 'video');
+                } else if (lessonType === 'document') {
+                    showSnackbar('Uploading primary study material...');
+                    await adminCoursesService.uploadLessonMaterial(lessonId, lessonFile);
+                }
             }
 
-            // Append lesson directly to the correct module in state and persist
-            const created = newLesson || { id: Date.now(), title: lessonTitle.trim(), type: lessonType, published_at: null };
-            setModules(prev => {
-                const updated = prev.map(m =>
-                    m.id === selectedModuleForLesson
-                        ? { ...m, lessons: [...(m.lessons || []), created] }
-                        : m
-                );
-                persistModules(updated);
-                return updated;
-            });
+            // Reload course data to get correct state
+            await refreshCourse();
 
             showSnackbar('Lesson created');
             setLessonModalOpen(false);
@@ -1355,7 +1426,163 @@ const AdminCourseDetail = () => {
                             </Box>
                         )}
 
-                        <Box>
+                        {/* Additional Videos */}
+                        <Box sx={{ borderTop: `1px solid ${modalBorder}`, pt: 2.5 }}>
+                            <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#178A83', mb: 1.5 }}>
+                                Additional Videos
+                            </Typography>
+                            
+                            {additionalVideos && additionalVideos.length > 0 && (
+                                <Stack spacing={1} sx={{ mb: 2 }}>
+                                    {additionalVideos.map((vid, idx) => (
+                                        <Stack key={idx} direction="row" spacing={1} alignItems="center" justifyContent="space-between" sx={{ bgcolor: isDark ? 'rgba(255,255,255,0.02)' : '#F8FAFC', p: 1, px: 1.5, borderRadius: 1.5, border: `1px solid ${modalBorder}` }}>
+                                            <Box sx={{ overflow: 'hidden', flexGrow: 1 }}>
+                                                <Typography variant="body2" sx={{ color: isDark ? '#E5E7EB' : '#1E293B', fontWeight: 500, noWrap: true }}>
+                                                    {vid.title}
+                                                </Typography>
+                                                <Typography variant="caption" sx={{ color: 'text.secondary', noWrap: true, display: 'block' }}>
+                                                    {vid.url}
+                                                </Typography>
+                                            </Box>
+                                            <IconButton size="small" onClick={() => handleRemoveAdditional('video', idx)} sx={{ color: '#EF4444', '&:hover': { bgcolor: 'rgba(239,68,68,0.08)' } }}>
+                                                <Delete fontSize="small" />
+                                            </IconButton>
+                                        </Stack>
+                                    ))}
+                                </Stack>
+                            )}
+
+                            <Stack spacing={1.5}>
+                                <TextField
+                                    placeholder="Video Title (e.g. Supplementary Material)"
+                                    value={newVideoTitle}
+                                    onChange={(e) => setNewVideoTitle(e.target.value)}
+                                    sx={inputSx}
+                                    fullWidth
+                                />
+                                <Stack direction="row" spacing={1.5} alignItems="center">
+                                    <TextField
+                                        placeholder="Paste additional video URL..."
+                                        value={newVideoUrl}
+                                        onChange={(e) => setNewVideoUrl(e.target.value)}
+                                        sx={{ ...inputSx, flexGrow: 1 }}
+                                        fullWidth
+                                    />
+                                    <Button
+                                        variant="contained"
+                                        onClick={() => handleAddAdditionalLink('video')}
+                                        disabled={!newVideoUrl.trim()}
+                                        sx={{ bgcolor: '#178A83', height: '40px', px: 2.25, whiteSpace: 'nowrap', '&:hover': { bgcolor: '#126E68' }, textTransform: 'none' }}
+                                    >
+                                        Add URL
+                                    </Button>
+                                    <Button
+                                        variant="outlined"
+                                        component="label"
+                                        sx={{
+                                            color: '#178A83',
+                                            borderColor: '#178A83',
+                                            textTransform: 'none',
+                                            whiteSpace: 'nowrap',
+                                            height: '40px',
+                                            px: 2.25,
+                                            '&:hover': { borderColor: '#116B65', bgcolor: 'rgba(23,138,131,0.05)' }
+                                        }}
+                                    >
+                                        Upload
+                                        <input
+                                            type="file"
+                                            accept="video/*"
+                                            hidden
+                                            onChange={(e) => {
+                                                const file = e.target.files[0];
+                                                if (file) handleUploadAdditional(file, 'video');
+                                            }}
+                                        />
+                                    </Button>
+                                </Stack>
+                            </Stack>
+                        </Box>
+
+                        {/* Additional Study Materials */}
+                        <Box sx={{ borderTop: `1px solid ${modalBorder}`, pt: 2.5 }}>
+                            <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#178A83', mb: 1.5 }}>
+                                Additional Study Materials
+                            </Typography>
+                            
+                            {additionalMaterials && additionalMaterials.length > 0 && (
+                                <Stack spacing={1} sx={{ mb: 2 }}>
+                                    {additionalMaterials.map((mat, idx) => (
+                                        <Stack key={idx} direction="row" spacing={1} alignItems="center" justifyContent="space-between" sx={{ bgcolor: isDark ? 'rgba(255,255,255,0.02)' : '#F8FAFC', p: 1, px: 1.5, borderRadius: 1.5, border: `1px solid ${modalBorder}` }}>
+                                            <Box sx={{ overflow: 'hidden', flexGrow: 1 }}>
+                                                <Typography variant="body2" sx={{ color: isDark ? '#E5E7EB' : '#1E293B', fontWeight: 500, noWrap: true }}>
+                                                    {mat.title}
+                                                </Typography>
+                                                <Typography variant="caption" sx={{ color: 'text.secondary', noWrap: true, display: 'block' }}>
+                                                    {mat.url}
+                                                </Typography>
+                                            </Box>
+                                            <IconButton size="small" onClick={() => handleRemoveAdditional('material', idx)} sx={{ color: '#EF4444', '&:hover': { bgcolor: 'rgba(239,68,68,0.08)' } }}>
+                                                <Delete fontSize="small" />
+                                            </IconButton>
+                                        </Stack>
+                                    ))}
+                                </Stack>
+                            )}
+
+                            <Stack spacing={1.5}>
+                                <TextField
+                                    placeholder="Material Title (e.g. Resource PDF)"
+                                    value={newMaterialTitle}
+                                    onChange={(e) => setNewMaterialTitle(e.target.value)}
+                                    sx={inputSx}
+                                    fullWidth
+                                />
+                                <Stack direction="row" spacing={1.5} alignItems="center">
+                                    <TextField
+                                        placeholder="Paste additional material URL..."
+                                        value={newMaterialUrl}
+                                        onChange={(e) => setNewMaterialUrl(e.target.value)}
+                                        sx={{ ...inputSx, flexGrow: 1 }}
+                                        fullWidth
+                                    />
+                                    <Button
+                                        variant="contained"
+                                        onClick={() => handleAddAdditionalLink('material')}
+                                        disabled={!newMaterialUrl.trim()}
+                                        sx={{ bgcolor: '#178A83', height: '40px', px: 2.25, whiteSpace: 'nowrap', '&:hover': { bgcolor: '#126E68' }, textTransform: 'none' }}
+                                    >
+                                        Add URL
+                                    </Button>
+                                    <Button
+                                        variant="outlined"
+                                        component="label"
+                                        sx={{
+                                            color: '#178A83',
+                                            borderColor: '#178A83',
+                                            textTransform: 'none',
+                                            whiteSpace: 'nowrap',
+                                            height: '40px',
+                                            px: 2.25,
+                                            '&:hover': { borderColor: '#116B65', bgcolor: 'rgba(23,138,131,0.05)' }
+                                        }}
+                                    >
+                                        Upload
+                                        <input
+                                            type="file"
+                                            accept=".pdf,.doc,.docx,.zip"
+                                            hidden
+                                            onChange={(e) => {
+                                                const file = e.target.files[0];
+                                                if (file) handleUploadAdditional(file, 'material');
+                                            }}
+                                        />
+                                    </Button>
+                                </Stack>
+                            </Stack>
+                        </Box>
+
+                        <Box sx={{ borderTop: `1px solid ${modalBorder}`, pt: 2.5 }}>
                             <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: labelColor, mb: 0.75 }}>
                                 Duration <Box component="span" sx={{ color: 'text.secondary', fontWeight: 400 }}> (minutes)</Box>
                             </Typography>
