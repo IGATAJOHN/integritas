@@ -92,7 +92,7 @@ const AILessonImporterModal = ({ open, courseId, onClose, onImportSuccess }) => 
         try {
             // Call backend parsing API
             const response = await apiService.post(
-                `/courses/${encodeURIComponent(courseId)}/import-pdf`,
+                `/admin/courses/${encodeURIComponent(courseId)}/import-pdf`,
                 formData,
                 { headers: { 'Content-Type': 'multipart/form-data' } }
             );
@@ -189,7 +189,7 @@ const AILessonImporterModal = ({ open, courseId, onClose, onImportSuccess }) => 
         }
 
         try {
-            await apiService.post(`/courses/${encodeURIComponent(courseId)}/import-save`, {
+            await apiService.post(`/admin/courses/${encodeURIComponent(courseId)}/import-save`, {
                 modules: finalModules
             });
             setSuccess(true);
