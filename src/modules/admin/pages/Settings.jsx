@@ -20,7 +20,6 @@ import {
     ErrorOutlined as ErrorIcon,
     VideoCameraBack as VideoIcon,
     Refresh as RefreshIcon,
-    InfoOutlined as InfoIcon,
 } from '@mui/icons-material';
 import { apiService } from '../../../services/api';
 import { useThemeMode } from '../../../contexts';
@@ -236,26 +235,7 @@ const Settings = () => {
                     This video plays in the welcome section of the public home page.
                 </Typography>
 
-                {/* Info banner — Cloudinary direct upload */}
-                <Box
-                    sx={{
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: 1,
-                        bgcolor: isDark ? 'rgba(99,102,241,0.1)' : 'rgba(99,102,241,0.06)',
-                        border: '1px solid rgba(99,102,241,0.2)',
-                        borderRadius: 2,
-                        p: 1.5,
-                        mb: 3,
-                    }}
-                >
-                    <InfoIcon sx={{ color: '#6366F1', fontSize: 18, mt: 0.15, flexShrink: 0 }} />
-                    <Typography sx={{ color: isDark ? '#A5B4FC' : '#4338CA', fontSize: '0.8rem', lineHeight: 1.6 }}>
-                        Videos are uploaded <strong>directly to Cloudinary CDN</strong> — no size limits, no timeouts.
-                        The file goes straight from your browser to Cloudinary; only the URL is saved here.
-                        Requires <strong>CLOUDINARY_URL</strong> (or <strong>CLOUDINARY_CLOUD_NAME / API_KEY / API_SECRET</strong>) environment variables set on Render.
-                    </Typography>
-                </Box>
+
 
                 <Divider sx={{ borderColor: colors.border, mb: 3 }} />
 
