@@ -217,8 +217,9 @@ const PartnersPage = () => {
                         <Box component="span" sx={{ color: theme.colors.brand }}>
                             Partners
                         </Box>{' '}
-                        &amp; Collaborators
+                        &amp; Numbers
                     </Typography>
+
                     <Typography
                         sx={{
                             fontSize: '1.125rem',
