@@ -398,23 +398,6 @@ const CourseLesson = () => {
         if (ownerModule) setExpandedModule(ownerModule.id);
     };
 
-    // --- Render ---
-    if (loading) {
-        return (
-            <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <CircularProgress />
-            </Box>
-        );
-    }
-
-    if (error) {
-        return (
-            <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4 }}>
-                <Alert severity="error">{error}</Alert>
-            </Box>
-        );
-    }
-
     // Assemble all videos for this lesson
     const lessonVideos = useMemo(() => {
         const list = [];
@@ -472,6 +455,22 @@ const CourseLesson = () => {
     const activeMaterial = lessonMaterials[activeMaterialIdx] || null;
     const materialSrc = activeMaterial ? getVideoUrl(activeMaterial.url) : null;
 
+    // --- Render ---
+    if (loading) {
+        return (
+            <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <CircularProgress />
+            </Box>
+        );
+    }
+
+    if (error) {
+        return (
+            <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4 }}>
+                <Alert severity="error">{error}</Alert>
+            </Box>
+        );
+    }
 
     const isYouTube = /youtube\.com|youtu\.be/.test(videoSrc);
     const isVimeo = /vimeo\.com/.test(videoSrc);
