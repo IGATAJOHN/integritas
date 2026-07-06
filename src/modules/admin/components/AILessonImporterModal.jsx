@@ -28,7 +28,7 @@ import {
     MenuBook,
     Edit
 } from '@mui/icons-material';
-import apiService from '../../../services/apiService';
+import { apiService } from '../../../services/api';
 
 const dialogPaperSx = {
     bgcolor: '#0F172A',
