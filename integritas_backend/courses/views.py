@@ -75,14 +75,14 @@ class CourseViewSet(viewsets.ModelViewSet):
                 defaults={
                     'title': course.title,
                     'video_url': course.video_url or '',
-                    'material_url': course.material_url or '',
+                    'material_url': getattr(course, 'material_url', '') or '',
                     'status': 'published'
                 }
             )
-            if lesson.title != course.title or lesson.video_url != course.video_url or lesson.material_url != course.material_url:
+            if lesson.title != course.title or lesson.video_url != course.video_url or lesson.material_url != (getattr(course, 'material_url', '') or ''):
                 lesson.title = course.title
                 lesson.video_url = course.video_url or ''
-                lesson.material_url = course.material_url or ''
+                lesson.material_url = getattr(course, 'material_url', '') or ''
                 lesson.save()
 
     def handle_file_uploads(self, course):

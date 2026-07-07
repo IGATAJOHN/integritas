@@ -260,7 +260,7 @@ const Explore = ({ type }) => {
             setDialogError('');
             setError('');
             
-            if (course.price === 0) {
+            if (!course.price || parseFloat(course.price) === 0) {
                 await learnerEnrollmentService.enrolFreeExpertCourse(course.slug || course.id);
                 setEnrolledIds(prev => {
                     const next = new Set(prev);
@@ -553,7 +553,7 @@ const Explore = ({ type }) => {
                                                         {course.title}
                                                     </Typography>
                                                     <Typography sx={{ color: '#22C55E', fontWeight: 700, fontSize: '0.875rem' }}>
-                                                        {isEnrolled ? 'UNLOCKED' : course.price ? `₦${course.price.toLocaleString()}` : 'FREE'}
+                                                        {isEnrolled ? 'UNLOCKED' : (course.price && parseFloat(course.price) > 0) ? `₦${parseFloat(course.price).toLocaleString()}` : 'FREE'}
                                                     </Typography>
                                                 </Box>
                                             </Box>
