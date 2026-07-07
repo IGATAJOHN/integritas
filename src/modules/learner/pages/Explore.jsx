@@ -441,6 +441,48 @@ const Explore = ({ type }) => {
 
                 {/* Categories & Video Slider rows */}
                 <Box sx={{ px: { xs: 3, md: 8 } }}>
+                    {/* Search Bar for Exemplar Series */}
+                    <Box 
+                        sx={{ 
+                            mb: 6, 
+                            maxWidth: '600px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            bgcolor: 'rgba(255, 255, 255, 0.03)',
+                            borderRadius: '50px',
+                            px: 3,
+                            py: 1.25,
+                            border: '1px solid rgba(255, 255, 255, 0.08)',
+                            transition: 'all 0.3s ease',
+                            '&:focus-within': {
+                                bgcolor: 'rgba(255, 255, 255, 0.06)',
+                                borderColor: 'rgba(59, 130, 246, 0.5)',
+                                boxShadow: '0 0 15px rgba(59, 130, 246, 0.15)'
+                            }
+                        }}
+                    >
+                        <SearchIcon sx={{ color: 'rgba(255, 255, 255, 0.4)', mr: 1.5 }} />
+                        <Box
+                            component="input"
+                            type="text"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="Search Exemplar Series videos..."
+                            sx={{
+                                border: 'none',
+                                outline: 'none',
+                                width: '100%',
+                                bgcolor: 'transparent',
+                                color: '#FFFFFF',
+                                fontSize: '1rem',
+                                fontWeight: 500,
+                                '&::placeholder': {
+                                    color: 'rgba(255, 255, 255, 0.3)'
+                                }
+                            }}
+                        />
+                    </Box>
+
                     {error && <Alert severity="error" sx={{ mb: 4, bgcolor: '#1E293B', color: '#EF4444' }}>{error}</Alert>}
                     
                     {loading && courses.length === 0 ? (
@@ -449,7 +491,9 @@ const Explore = ({ type }) => {
                         </Box>
                     ) : Object.keys(groupedCourses).length === 0 ? (
                         <Box sx={{ py: 6, textAlign: 'center', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 2 }}>
-                            <Typography sx={{ color: '#94A3B8' }}>No Exemplar classes available at the moment.</Typography>
+                            <Typography sx={{ color: '#94A3B8' }}>
+                                {searchTerm ? `No videos match "${searchTerm}"` : 'No Exemplar classes available at the moment.'}
+                            </Typography>
                         </Box>
                     ) : (
                         Object.entries(groupedCourses).map(([topic, topicCourses]) => (
