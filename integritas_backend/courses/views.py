@@ -47,11 +47,25 @@ class CourseViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
+        
+        # Track filter
         track = self.request.query_params.get('track', None) or self.request.query_params.get('type', None)
         if track:
             if track == 'expert':
                 track = 'experta'
             queryset = queryset.filter(track=track)
+            
+        # Search filter
+        q = self.request.query_params.get('q', None)
+        if q:
+            from django.db.models import Q
+            queryset = queryset.filter(
+                Q(title__icontains=q) |
+                Q(description__icontains=q) |
+                Q(summary__icontains=q) |
+                Q(instructor__icontains=q)
+            )
+            
         return queryset
 
     def perform_create(self, serializer):
