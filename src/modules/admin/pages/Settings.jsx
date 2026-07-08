@@ -67,6 +67,8 @@ const Settings = () => {
 
     const fileInputRef = useRef(null);
 
+    const [deleteLoading, setDeleteLoading] = useState(false);
+
     /* ── fetch current hero video ── */
     const fetchCurrentVideo = async () => {
         setFetchLoading(true);
@@ -79,6 +81,21 @@ const Settings = () => {
             setFetchError('Could not load the current hero video.');
         } finally {
             setFetchLoading(false);
+        }
+    };
+
+    const handleDeleteCurrentVideo = async () => {
+        if (!window.confirm("Are you sure you want to delete the live hero video? This will remove it from the home page section.")) return;
+        setDeleteLoading(true);
+        setFetchError(null);
+        try {
+            await apiService.delete(HERO_VIDEO_ENDPOINT);
+            setCurrentVideoUrl(null);
+            setUploadSuccess(true);
+        } catch (err) {
+            setFetchError(err.message || 'Failed to delete the hero video.');
+        } finally {
+            setDeleteLoading(false);
         }
     };
 
@@ -269,6 +286,11 @@ const Settings = () => {
                             <Tooltip title="Refresh">
                                 <IconButton size="small" onClick={fetchCurrentVideo} sx={{ color: colors.textSecondary }}>
                                     <RefreshIcon fontSize="small" />
+                                </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Delete Video">
+                                <IconButton size="small" onClick={handleDeleteCurrentVideo} disabled={deleteLoading} sx={{ color: '#EF4444' }}>
+                                    {deleteLoading ? <CircularProgress size={18} color="inherit" /> : <DeleteIcon fontSize="small" />}
                                 </IconButton>
                             </Tooltip>
                         </Box>

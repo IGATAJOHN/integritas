@@ -171,3 +171,14 @@ class HeroVideoView(views.APIView):
             'hero_video_url': site.hero_video_url,
             'updated_at': site.hero_video_updated_at,
         }, status=status.HTTP_200_OK)
+
+    def delete(self, request):
+        site = SiteSettings.get_solo()
+        site.hero_video_url = ""
+        site.hero_video_public_id = ""
+        site.save()
+        return Response({
+            'message': 'Hero video deleted successfully.',
+            'hero_video_url': None,
+            'updated_at': site.hero_video_updated_at,
+        }, status=status.HTTP_200_OK)
