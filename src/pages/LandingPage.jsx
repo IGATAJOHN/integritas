@@ -384,6 +384,7 @@ const LandingPage = () => {
                                     key={heroVideoUrl}
                                     component="video"
                                     controls
+                                    loop
                                     poster={heroImage}
                                     src={heroVideoUrl}
                                     sx={{
