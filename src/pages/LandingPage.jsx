@@ -210,16 +210,46 @@ const LandingPage = () => {
 
     const testimonials = [
         {
-            quote: "The Integritas has transformed how our department approaches policy making. The rigorous curriculum and practical tools are unmatched in the field of public service education.",
-            name: 'CEO Integritas',
-            title: 'Senior Policy adviser',
-            avatar: '',
+            quote: "This is a clarion’s call for Nigerians to demand integrity, inspiring policymakers, scholars, and citizens to engage in meaningful dialogue and action towards a nation that fulfills its immense potential.",
+            name: "Ibrahim A Waziri",
+            title: "Member, Editorial Board Leadership Newspaper",
+            avatar: "",
         },
         {
-            quote: "Umar has eloquently, even if not intentionally, argued for a fourth arm of government-the Integrity arm. We need strong institutions led by people with character.",
-            name: ' Kole Shettima,',
-            title: 'Country Director, MacArthur Foundation, Nigeria',
-            avatar: '',
+            quote: "This presents what is essentially the blueprint for transforming Nigeria in such a lucid way, leaving no questions about what Nigeria must do to succeed. The dream so vividly expressed is probably one thay all Nigerians with conscience and conviction have dreamt at some point.",
+            name: "Adesoji Adelaja",
+            title: "John A Hannah distinguished Professor Emeritus, Michigan State University; Emeritus Professor, Dean and Executive Dean, Rutgers University; and Chairman, Chapel Hill Dunham",
+            avatar: "",
+        },
+        {
+            quote: "This is not a method for diagnosis but a manifesto of hope, calling on citizens, leaders and institutions alike to imagine and build a future anchored on integrity, justice and national renewal.",
+            name: "Samuel Baba Ayegba",
+            title: "Researcher, Nigeria Defense Academy",
+            avatar: "",
+        },
+        {
+            quote: "The Center partners with MDAs whose staff it has continued to train, as well as enlighten other citizens on the need for transparency and integrity. The collection of articles presented here are therefore just a tip of the iceberg in terms of Umar’s capability.",
+            name: "Madam Angela Nworgu",
+            title: "Former Senior Advisor to the President of the United Nations General Assembly",
+            avatar: "",
+        },
+        {
+            quote: "Through Meticulous research and real-world experiences, Umar sheds light on the country’s descent into moral decadence and the widespread impunity that has become deeply ingrained. His work is a clarion call for reform, grounded in a deep understanding of the systems and structures perpetuating poverty, injustice and underdevelopment.",
+            name: "Nelson Aluya",
+            title: "Physician and Medical Advocate, New Jersey USA",
+            avatar: "",
+        },
+        {
+            quote: "Umar Yakubu is one of the most consistent, prolific and vocal advocates of integrity in his generation. In his daily work as a development worker, he is not shy to pose the necessary questions. He then proceeds to demand for correct answers and challenges public and private sector actors to submit themselves to the necessary interrogation of their duty of care via innovative platforms and initiatives.",
+            name: "Haroun Harry Audu",
+            title: "INIDR marketing communication consultant, Legal practioner and public affairs strategist",
+            avatar: "",
+        },
+        {
+            quote: "This is a call to confront poor governance and build a better future. It is a work not merely a critique of broken systems but a clarion’s call for reform, grounded in meticulous research and real world experience.",
+            name: "Ugoji Egbujo",
+            title: "Author, The spirit of Danfo'",
+            avatar: "",
         },
     ];
 
