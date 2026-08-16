@@ -21,20 +21,26 @@ try:
         user.set_password(password)
         user.is_superuser = True
         user.is_staff = True
+        user.role = 'admin'
+        user.roles_list = ['admin']
         user.save()
-        print('SUCCESS: Admin user password updated/verified.')
+        print('SUCCESS: Admin user password updated/verified and role elevated.')
     elif User.objects.filter(username=username).exists():
         user = User.objects.get(username=username)
         user.email = email
         user.set_password(password)
         user.is_superuser = True
         user.is_staff = True
+        user.role = 'admin'
+        user.roles_list = ['admin']
         user.save()
-        print('SUCCESS: Admin user updated by username.')
+        print('SUCCESS: Admin user updated by username and role elevated.')
     else:
-        User.objects.create_superuser(username, email, password)
-        print('SUCCESS: Admin user created successfully.')
+        user = User.objects.create_superuser(username, email, password)
+        user.role = 'admin'
+        user.roles_list = ['admin']
+        user.save()
+        print('SUCCESS: Admin user created successfully and role elevated.')
 except Exception as e:
     print('ERROR creating/updating admin user:', str(e))
 " | python manage.py shell
-
