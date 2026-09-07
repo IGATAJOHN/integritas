@@ -24,8 +24,8 @@ class Course(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     currency = models.CharField(max_length=10, default='NGN')
     duration_minutes = models.IntegerField(default=0)
-    thumbnail_url = models.URLField(blank=True, null=True)
-    video_url = models.URLField(blank=True, null=True)  # Used for Exemplar Series single videos
+    thumbnail_url = models.URLField(max_length=1000, blank=True, null=True)
+    video_url = models.URLField(max_length=1000, blank=True, null=True)  # Used for Exemplar Series single videos
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
     instructor = models.CharField(max_length=255, blank=True)
     project_brief = models.TextField(blank=True, null=True)
@@ -75,8 +75,8 @@ class Lesson(models.Model):
     title = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     content = models.TextField(blank=True)
-    video_url = models.URLField(blank=True, null=True)
-    material_url = models.URLField(blank=True, null=True)
+    video_url = models.URLField(max_length=1000, blank=True, null=True)
+    material_url = models.URLField(max_length=1000, blank=True, null=True)
     additional_videos = models.JSONField(default=list, blank=True)
     additional_materials = models.JSONField(default=list, blank=True)
     order = models.PositiveIntegerField(default=0)

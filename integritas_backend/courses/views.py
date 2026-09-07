@@ -1,5 +1,6 @@
 from django.shortcuts import get_object_or_404
 from django.db import transaction
+from django.conf import settings
 from rest_framework import viewsets, permissions, views, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -9,6 +10,34 @@ from .models import Course, Module, Lesson, Category, ProjectSubmission, Project
 from .serializers import CourseSerializer, ModuleSerializer, LessonSerializer
 from .ai_utils import extract_text_from_pdf, parse_outline_with_gemini
 
+
+def _cloudinary_media_enabled():
+    return 'cloudinary_storage' in str(getattr(settings, 'DEFAULT_FILE_STORAGE', ''))
+
+
+def _storage_for_resource(resource_type):
+    from django.core.files.storage import default_storage
+
+    if not _cloudinary_media_enabled():
+        return default_storage
+
+    from cloudinary_storage.storage import (
+        MediaCloudinaryStorage,
+        RawMediaCloudinaryStorage,
+        VideoMediaCloudinaryStorage,
+    )
+
+    if resource_type == 'video':
+        return VideoMediaCloudinaryStorage()
+    if resource_type == 'raw':
+        return RawMediaCloudinaryStorage()
+    return MediaCloudinaryStorage()
+
+
+def _save_uploaded_media(path, uploaded_file, resource_type='image'):
+    storage = _storage_for_resource(resource_type)
+    filename = storage.save(path, uploaded_file)
+    return storage.url(filename)
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -103,17 +132,22 @@ class CourseViewSet(viewsets.ModelViewSet):
         thumbnail_file = self.request.FILES.get('thumbnail')
         video_file = self.request.FILES.get('video')
         
-        from django.core.files.storage import default_storage
         updated = False
         
         if thumbnail_file:
-            filename = default_storage.save(f'thumbnails/{course.id}_{thumbnail_file.name}', thumbnail_file)
-            course.thumbnail_url = default_storage.url(filename)
+            course.thumbnail_url = _save_uploaded_media(
+                f'thumbnails/{course.id}_{thumbnail_file.name}',
+                thumbnail_file,
+                'image'
+            )
             updated = True
             
         if video_file:
-            filename = default_storage.save(f'videos/{course.id}_{video_file.name}', video_file)
-            course.video_url = default_storage.url(filename)
+            course.video_url = _save_uploaded_media(
+                f'videos/{course.id}_{video_file.name}',
+                video_file,
+                'video'
+            )
             updated = True
             
         if updated:
@@ -241,9 +275,11 @@ class LessonVideoUploadView(views.APIView):
         if not video_url:
             video_file = request.FILES.get('video') or request.FILES.get('file')
             if video_file:
-                from django.core.files.storage import default_storage
-                filename = default_storage.save(f'videos/{lesson.id}_{video_file.name}', video_file)
-                video_url = default_storage.url(filename)
+                video_url = _save_uploaded_media(
+                    f'videos/{lesson.id}_{video_file.name}',
+                    video_file,
+                    'video'
+                )
 
         if not video_url:
             return Response(
@@ -272,9 +308,11 @@ class LessonMaterialUploadView(views.APIView):
         if not material_url:
             material_file = request.FILES.get('video') or request.FILES.get('material') or request.FILES.get('file')
             if material_file:
-                from django.core.files.storage import default_storage
-                filename = default_storage.save(f'materials/{lesson.id}_{material_file.name}', material_file)
-                material_url = default_storage.url(filename)
+                material_url = _save_uploaded_media(
+                    f'materials/{lesson.id}_{material_file.name}',
+                    material_file,
+                    'raw'
+                )
 
         if not material_url:
             return Response(
