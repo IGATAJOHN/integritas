@@ -6,6 +6,7 @@ from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
 from .serializers import UserSerializer, RegisterSerializer, AuditLogSerializer
 from .models import User, Profile, TutorInvite, Notification, KycSubmission, AuditLog
+from .permissions import IsAdminRole
 
 
 
@@ -675,7 +676,7 @@ class TutorEarningsView(views.APIView):
         })
 
 class AdminKycQueueView(views.APIView):
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsAdminRole]
 
     def get(self, request):
         status_filter = request.query_params.get('status')
@@ -759,7 +760,7 @@ class AdminKycQueueView(views.APIView):
         })
 
 class AdminKycDetailView(views.APIView):
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsAdminRole]
 
     def get(self, request, kyc_id):
         k = get_object_or_404(KycSubmission, id=kyc_id)
@@ -808,7 +809,7 @@ class AdminKycDetailView(views.APIView):
         })
 
 class AdminKycApproveView(views.APIView):
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsAdminRole]
 
     def post(self, request, kyc_id):
         k = get_object_or_404(KycSubmission, id=kyc_id)
@@ -827,7 +828,7 @@ class AdminKycApproveView(views.APIView):
         return Response({'success': True})
 
 class AdminKycRejectView(views.APIView):
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsAdminRole]
 
     def post(self, request, kyc_id):
         k = get_object_or_404(KycSubmission, id=kyc_id)
@@ -848,7 +849,7 @@ class AdminKycRejectView(views.APIView):
         return Response({'success': True})
 
 class AdminAuditLogsView(views.APIView):
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsAdminRole]
 
     def get(self, request):
         action = request.query_params.get('action')
@@ -984,7 +985,6 @@ class EmailVerifyView(views.APIView):
             return Response({'message': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
             
         return Response({'message': 'Email verified successfully!'})
-
 
 
 

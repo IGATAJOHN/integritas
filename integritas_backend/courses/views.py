@@ -9,6 +9,7 @@ from .models import Course, Module, Lesson, Category, ProjectSubmission, Project
 
 from .serializers import CourseSerializer, ModuleSerializer, LessonSerializer
 from .ai_utils import extract_text_from_pdf, parse_outline_with_gemini
+from authentication.permissions import IsAdminRole
 
 
 def _cloudinary_media_enabled():
@@ -515,7 +516,7 @@ class LearnerCourseProjectView(views.APIView):
         }, status=status.HTTP_200_OK)
 
 class AdminProjectSubmissionsView(views.APIView):
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsAdminRole]
 
     def get(self, request):
         status_filter = request.query_params.get('status')
@@ -571,7 +572,7 @@ class AdminProjectSubmissionsView(views.APIView):
         })
 
 class AdminProjectSubmissionDetailView(views.APIView):
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsAdminRole]
 
     def get(self, request, submission_id):
         sub = get_object_or_404(ProjectSubmission, id=submission_id)
@@ -604,7 +605,7 @@ class AdminProjectSubmissionDetailView(views.APIView):
         })
 
 class AdminProjectSubmissionGradeView(views.APIView):
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsAdminRole]
 
     def post(self, request, submission_id):
         sub = get_object_or_404(ProjectSubmission, id=submission_id)
@@ -775,7 +776,7 @@ class CourseAIImportPDFView(views.APIView):
     POST /api/v1/admin/courses/{course_id}/import-pdf
     Takes an uploaded PDF file, extracts its text, structures it into modules/lessons JSON via Gemini, and returns it.
     """
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsAdminRole]
 
     def post(self, request, course_id):
         # We verify the course exists
@@ -821,7 +822,7 @@ class CourseAIImportSaveView(views.APIView):
     POST /api/v1/admin/courses/{course_id}/import-save
     Saves the finalized JSON modules and lessons array to the course.
     """
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsAdminRole]
 
     def post(self, request, course_id):
         course = get_object_or_404(Course, id=course_id)

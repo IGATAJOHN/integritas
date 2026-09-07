@@ -7,6 +7,7 @@ from django.conf import settings
 from .models import Enrollment, Transaction, RefundRequest
 from .serializers import EnrollmentSerializer, TransactionSerializer, RefundRequestSerializer
 from courses.models import Course
+from authentication.permissions import IsAdminRole
 
 class InitiateEnrollmentView(views.APIView):
     def post(self, request):
@@ -238,7 +239,7 @@ class AdminEnrollmentsView(views.APIView):
         return Response(EnrollmentSerializer(enrollments, many=True).data)
 
 class AdminTransactionsView(views.APIView):
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsAdminRole]
 
     def get(self, request):
         status_filter = request.query_params.get('status')
@@ -270,7 +271,7 @@ class AdminTransactionsView(views.APIView):
         })
 
 class AdminTransactionDetailView(views.APIView):
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsAdminRole]
 
     def get(self, request, transaction_id):
         tx = get_object_or_404(Transaction, id=transaction_id)
@@ -279,7 +280,7 @@ class AdminTransactionDetailView(views.APIView):
         return Response(data)
 
 class AdminTransactionManualRefundView(views.APIView):
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsAdminRole]
 
     def post(self, request, transaction_id):
         tx = get_object_or_404(Transaction, id=transaction_id)
@@ -295,7 +296,7 @@ class AdminTransactionManualRefundView(views.APIView):
         return Response(data)
 
 class SupportTransactionFlagRefundView(views.APIView):
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsAdminRole]
 
     def post(self, request, transaction_id):
         tx = get_object_or_404(Transaction, id=transaction_id)
@@ -313,7 +314,7 @@ class SupportTransactionFlagRefundView(views.APIView):
         return Response(RefundRequestSerializer(req).data, status=status.HTTP_201_CREATED)
 
 class AdminRefundRequestsListView(views.APIView):
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsAdminRole]
 
     def get(self, request):
         status_filter = request.query_params.get('status')
@@ -341,7 +342,7 @@ class AdminRefundRequestsListView(views.APIView):
         })
 
 class AdminRefundRequestApproveView(views.APIView):
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsAdminRole]
 
     def post(self, request, request_id):
         req = get_object_or_404(RefundRequest, id=request_id)
@@ -360,7 +361,7 @@ class AdminRefundRequestApproveView(views.APIView):
         return Response(RefundRequestSerializer(req).data)
 
 class AdminRefundRequestRejectView(views.APIView):
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsAdminRole]
 
     def post(self, request, request_id):
         req = get_object_or_404(RefundRequest, id=request_id)

@@ -15,6 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
 import { apiService, API_BASE } from '../../../services/api';
 import { getImageUrl } from '../../../utils';
+import { adminCoursesService } from '../services/courseService';
 
 const TRACK = 'experta';
 
@@ -192,20 +193,37 @@ const ExemplarSeriesAdmin = () => {
             formData.append(`tags[${idx}]`, tag);
         });
 
-        if (form.videoFile) {
-            formData.append('video', form.videoFile);
-        } else if (form.video_url) {
-            formData.append('video_url', form.video_url);
-        }
-
-        if (form.thumbnailFile) {
-            formData.append('thumbnail', form.thumbnailFile);
-        } else if (form.thumbnail_url) {
-            formData.append('thumbnail_url', form.thumbnail_url);
-        }
-
         try {
             setUploadProgress(0);
+            let videoUrl = form.video_url;
+            let thumbnailUrl = form.thumbnail_url;
+
+            if (form.videoFile) {
+                videoUrl = await adminCoursesService.uploadToCloudinary(
+                    form.videoFile,
+                    'video',
+                    'integritas/exemplar-videos',
+                    setUploadProgress
+                );
+            }
+
+            if (form.thumbnailFile) {
+                thumbnailUrl = await adminCoursesService.uploadToCloudinary(
+                    form.thumbnailFile,
+                    'image',
+                    'integritas/exemplar-thumbnails',
+                    setUploadProgress
+                );
+            }
+
+            if (videoUrl) {
+                formData.append('video_url', videoUrl);
+            }
+
+            if (thumbnailUrl) {
+                formData.append('thumbnail_url', thumbnailUrl);
+            }
+
             if (editTarget) {
                 await uploadWithProgress(`${API_BASE}/lms/courses/${editTarget.id}`, 'PATCH', formData);
                 showAlert('Video updated successfully.');
