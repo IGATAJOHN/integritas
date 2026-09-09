@@ -31,6 +31,8 @@ const VIDEO_EXTENSIONS = new Set([
     '3g2', '3gp', 'avi', 'flv', 'm2ts', 'm4v', 'mkv', 'mov',
     'mp4', 'mpeg', 'mpg', 'mts', 'mxf', 'ogv', 'ts', 'webm', 'wmv'
 ]);
+const LARGE_VIDEO_UPLOAD_THRESHOLD = 90 * 1024 * 1024;
+const CLOUDINARY_CHUNK_SIZE = 20 * 1024 * 1024;
 
 const getFileExtension = (file) => {
     const name = String(file?.name || '').toLowerCase();
@@ -41,6 +43,11 @@ const getFileExtension = (file) => {
 const isVideoFile = (file) => {
     const mime = String(file?.type || '').toLowerCase();
     return mime.startsWith('video/') || VIDEO_EXTENSIONS.has(getFileExtension(file));
+};
+
+const createUploadId = () => {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+    return `upload-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 };
 
 export const adminCoursesService = {
@@ -228,6 +235,61 @@ export const adminCoursesService = {
             );
         }
 
+        const uploadChunked = async () => {
+            const uploadId = createUploadId();
+            const totalSize = file.size;
+            let finalResult = null;
+
+            for (let start = 0; start < totalSize; start += CLOUDINARY_CHUNK_SIZE) {
+                const endExclusive = Math.min(start + CLOUDINARY_CHUNK_SIZE, totalSize);
+                const chunk = file.slice(start, endExclusive, file.type || 'application/octet-stream');
+                const chunkForm = new FormData();
+                chunkForm.append('file', chunk, file.name);
+                chunkForm.append('api_key', sig.api_key);
+                chunkForm.append('timestamp', sig.timestamp);
+                chunkForm.append('folder', sig.folder);
+                chunkForm.append('signature', sig.signature);
+                chunkForm.append('overwrite', 'true');
+                chunkForm.append('resource_type', normalizedResourceType);
+
+                finalResult = await new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', sig.upload_url);
+                    xhr.setRequestHeader('X-Unique-Upload-Id', uploadId);
+                    xhr.setRequestHeader('Content-Range', `bytes ${start}-${endExclusive - 1}/${totalSize}`);
+
+                    xhr.upload.addEventListener('progress', (event) => {
+                        if (onProgress && event.lengthComputable) {
+                            const uploaded = start + event.loaded;
+                            onProgress(Math.min(99, Math.round((uploaded / totalSize) * 100)));
+                        }
+                    });
+
+                    xhr.onload = () => {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            try { resolve(JSON.parse(xhr.responseText)); } catch { resolve({}); }
+                        } else {
+                            try {
+                                const err = JSON.parse(xhr.responseText);
+                                reject(new Error(err?.error?.message || `Cloudinary upload failed (${xhr.status})`));
+                            } catch {
+                                reject(new Error(`Cloudinary upload failed (${xhr.status})`));
+                            }
+                        }
+                    };
+                    xhr.onerror = () => reject(new Error('Network error during chunked upload. Check your connection.'));
+                    xhr.send(chunkForm);
+                });
+            }
+
+            if (onProgress) onProgress(100);
+            return finalResult;
+        };
+
+        if (normalizedResourceType === 'video' && file.size > LARGE_VIDEO_UPLOAD_THRESHOLD) {
+            return (await uploadChunked()).secure_url;
+        }
+
         // 2. Upload to Cloudinary
         const formData = new FormData();
         formData.append('file', file);
@@ -264,6 +326,9 @@ export const adminCoursesService = {
             xhr.send(formData);
         }).catch(async (error) => {
             if (normalizedResourceType === 'video') {
+                if (String(error?.message || '').includes('413')) {
+                    return uploadChunked();
+                }
                 return { secure_url: await uploadViaBackend() };
             }
             throw error;
