@@ -1380,7 +1380,7 @@ const CreateCourse = () => {
                                 </Stack>
                                 <input
                                     type="file"
-                                    accept="video/*"
+                                    accept="video/*,.mov,.mp4,.m4v,.webm,.avi,.mkv,.wmv,.mpeg,.mpg,.3gp,.3g2,.ogv,.mts,.m2ts,.ts,.flv,.mxf"
                                     style={{ display: 'none' }}
                                     id="lesson-video-upload"
                                     onChange={(e) => {

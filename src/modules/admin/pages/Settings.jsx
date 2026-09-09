@@ -28,6 +28,17 @@ import appTheme from '../../../styles/theme';
 /* ── helpers ─────────────────────────────────────────────── */
 const HERO_VIDEO_ENDPOINT = '/site/hero-video';
 const SIGNATURE_ENDPOINT = '/site/cloudinary-signature';
+const VIDEO_EXTENSIONS = new Set([
+    '3g2', '3gp', 'avi', 'flv', 'm2ts', 'm4v', 'mkv', 'mov',
+    'mp4', 'mpeg', 'mpg', 'mts', 'mxf', 'ogv', 'ts', 'webm', 'wmv'
+]);
+
+const isVideoFile = (file) => {
+    const mime = String(file?.type || '').toLowerCase();
+    const name = String(file?.name || '').toLowerCase();
+    const extension = name.match(/\.([a-z0-9]+)$/)?.[1] || '';
+    return mime.startsWith('video/') || VIDEO_EXTENSIONS.has(extension);
+};
 
 const formatBytes = (bytes) => {
     if (!bytes) return '—';
@@ -105,7 +116,7 @@ const Settings = () => {
     const handleFileSelect = (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        if (!file.type.startsWith('video/')) {
+        if (!isVideoFile(file)) {
             setUploadError('Please select a valid video file (MP4, WebM, MOV, etc.).');
             return;
         }
@@ -334,7 +345,7 @@ const Settings = () => {
                     </Box>
                 )}
 
-                <input ref={fileInputRef} type="file" accept="video/*"
+                <input ref={fileInputRef} type="file" accept="video/*,.mov,.mp4,.m4v,.webm,.avi,.mkv,.wmv,.mpeg,.mpg,.3gp,.3g2,.ogv,.mts,.m2ts,.ts,.flv,.mxf"
                     style={{ display: 'none' }} onChange={handleFileSelect} />
 
                 {/* File selected — preview */}

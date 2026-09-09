@@ -131,6 +131,79 @@ class CloudinarySignatureView(views.APIView):
         })
 
 
+class CloudinaryUploadProxyView(views.APIView):
+    """
+    POST /api/v1/site/cloudinary-upload
+    Server-side fallback for Cloudinary uploads when browser CORS blocks direct
+    uploads. Accepts multipart field `file` plus optional `resource_type` and
+    `folder`, then returns Cloudinary's secure URL.
+    """
+    permission_classes = [IsAdminOrTutorRole]
+
+    def post(self, request):
+        cloud_name, api_key, api_secret = _get_cloudinary_creds()
+
+        if not all([cloud_name, api_key, api_secret]):
+            return Response(
+                {
+                    'message': (
+                        'Cloudinary credentials are not configured on this server. '
+                        'Set CLOUDINARY_URL (or CLOUDINARY_CLOUD_NAME + CLOUDINARY_API_KEY '
+                        '+ CLOUDINARY_API_SECRET) in your environment variables on Render.'
+                    )
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        uploaded_file = request.FILES.get('file')
+        if not uploaded_file:
+            return Response({'message': 'Missing required file field.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        resource_type = request.data.get('resource_type', 'video')
+        if resource_type not in ('video', 'raw', 'image'):
+            resource_type = 'video'
+
+        folder = request.data.get('folder', 'integritas/media')
+
+        try:
+            import cloudinary
+            import cloudinary.uploader
+
+            cloudinary.config(
+                cloud_name=cloud_name,
+                api_key=api_key,
+                api_secret=api_secret,
+                secure=True,
+            )
+            result = cloudinary.uploader.upload(
+                uploaded_file,
+                resource_type=resource_type,
+                folder=folder,
+                use_filename=True,
+                overwrite=True,
+            )
+        except Exception as exc:
+            return Response(
+                {'message': f'Cloudinary upload failed: {str(exc)}'},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        secure_url = result.get('secure_url') or result.get('url')
+        if not secure_url:
+            return Response(
+                {'message': 'Cloudinary did not return a media URL.'},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        return Response({
+            'secure_url': secure_url,
+            'url': secure_url,
+            'public_id': result.get('public_id'),
+            'resource_type': result.get('resource_type') or resource_type,
+            'format': result.get('format'),
+        }, status=status.HTTP_201_CREATED)
+
+
 class HeroVideoView(views.APIView):
     """
     GET  /api/v1/site/hero-video   — public, returns the current hero video URL

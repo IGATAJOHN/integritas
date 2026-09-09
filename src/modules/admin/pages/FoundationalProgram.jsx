@@ -1071,7 +1071,7 @@ const LessonActionsMenu = ({
             <input
                 ref={videoInputRef}
                 type="file"
-                accept="video/*"
+                accept="video/*,.mov,.mp4,.m4v,.webm,.avi,.mkv,.wmv,.mpeg,.mpg,.3gp,.3g2,.ogv,.mts,.m2ts,.ts,.flv,.mxf"
                 style={{ display: 'none' }}
                 onChange={(event) => {
                     const file = event.target.files?.[0];
@@ -1581,7 +1581,7 @@ const LessonDialog = ({
                             Upload File
                             <input
                                 type="file"
-                                accept="video/*"
+                                accept="video/*,.mov,.mp4,.m4v,.webm,.avi,.mkv,.wmv,.mpeg,.mpg,.3gp,.3g2,.ogv,.mts,.m2ts,.ts,.flv,.mxf"
                                 hidden
                                 onChange={(e) => {
                                     const file = e.target.files[0];
@@ -1665,7 +1665,7 @@ const LessonDialog = ({
                                 Upload
                                 <input
                                     type="file"
-                                    accept="video/*"
+                                    accept="video/*,.mov,.mp4,.m4v,.webm,.avi,.mkv,.wmv,.mpeg,.mpg,.3gp,.3g2,.ogv,.mts,.m2ts,.ts,.flv,.mxf"
                                     hidden
                                     onChange={(e) => {
                                         const file = e.target.files[0];

@@ -567,7 +567,7 @@ const ExemplarSeriesAdmin = () => {
                                     <input
                                         type="file"
                                         hidden
-                                        accept="video/*"
+                                        accept="video/*,.mov,.mp4,.m4v,.webm,.avi,.mkv,.wmv,.mpeg,.mpg,.3gp,.3g2,.ogv,.mts,.m2ts,.ts,.flv,.mxf"
                                         onChange={e => {
                                             const file = e.target.files?.[0];
                                             if (file) {

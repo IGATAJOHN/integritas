@@ -164,7 +164,7 @@ const AssignedLessonEditor = () => {
                     <Stack spacing={1.5}>
                         <Button component="label" variant="outlined" startIcon={<UploadFile />} disabled={saving} sx={{ textTransform: 'none' }}>
                             Upload Video
-                            <input hidden type="file" accept="video/*" onChange={(event) => uploadVideo(event.target.files?.[0])} />
+                            <input hidden type="file" accept="video/*,.mov,.mp4,.m4v,.webm,.avi,.mkv,.wmv,.mpeg,.mpg,.3gp,.3g2,.ogv,.mts,.m2ts,.ts,.flv,.mxf" onChange={(event) => uploadVideo(event.target.files?.[0])} />
                         </Button>
                         <Button component="label" variant="outlined" startIcon={<UploadFile />} disabled={saving} sx={{ textTransform: 'none' }}>
                             Upload Material

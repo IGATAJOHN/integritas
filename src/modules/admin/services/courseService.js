@@ -27,6 +27,22 @@ const buildQuery = (params = {}) => {
     return query ? `?${query}` : '';
 };
 
+const VIDEO_EXTENSIONS = new Set([
+    '3g2', '3gp', 'avi', 'flv', 'm2ts', 'm4v', 'mkv', 'mov',
+    'mp4', 'mpeg', 'mpg', 'mts', 'mxf', 'ogv', 'ts', 'webm', 'wmv'
+]);
+
+const getFileExtension = (file) => {
+    const name = String(file?.name || '').toLowerCase();
+    const match = name.match(/\.([a-z0-9]+)$/);
+    return match ? match[1] : '';
+};
+
+const isVideoFile = (file) => {
+    const mime = String(file?.type || '').toLowerCase();
+    return mime.startsWith('video/') || VIDEO_EXTENSIONS.has(getFileExtension(file));
+};
+
 export const adminCoursesService = {
     // ===== COURSES =====
     listCourses: async ({ page, per_page = 20, q, status, level, language, type, track } = {}) => {
@@ -174,9 +190,34 @@ export const adminCoursesService = {
      * @param {function} onProgress           — optional callback(percent: number)
      */
     uploadToCloudinary: async (file, resourceType = 'raw', folder = 'integritas/media', onProgress = null) => {
+        const normalizedResourceType = resourceType === 'video' || isVideoFile(file) ? 'video' : resourceType;
+
+        const uploadViaBackend = async () => {
+            const proxyForm = new FormData();
+            proxyForm.append('file', file);
+            proxyForm.append('resource_type', normalizedResourceType);
+            proxyForm.append('folder', folder);
+
+            const res = await authFetch('/site/cloudinary-upload', {
+                method: 'POST',
+                body: proxyForm,
+            });
+
+            let data = null;
+            try { data = await res.json(); } catch { data = null; }
+
+            if (!res.ok) {
+                throw new Error(data?.message || `Cloudinary upload failed (${res.status})`);
+            }
+
+            const secureUrl = data?.secure_url || data?.url;
+            if (!secureUrl) throw new Error('Cloudinary did not return a media URL.');
+            return secureUrl;
+        };
+
         // 1. Get signed signature
         const sigRes = await apiService.get(
-            `/site/cloudinary-signature?resource_type=${resourceType}&folder=${encodeURIComponent(folder)}`
+            `/site/cloudinary-signature?resource_type=${normalizedResourceType}&folder=${encodeURIComponent(folder)}`
         );
         const sig = sigRes?.data ?? sigRes;
 
@@ -195,7 +236,7 @@ export const adminCoursesService = {
         formData.append('folder', sig.folder);
         formData.append('signature', sig.signature);
         formData.append('overwrite', 'true');
-        formData.append('resource_type', resourceType);
+        formData.append('resource_type', normalizedResourceType);
 
         const cloudinaryResult = await new Promise((resolve, reject) => {
             const xhr = new XMLHttpRequest();
@@ -221,6 +262,11 @@ export const adminCoursesService = {
             };
             xhr.onerror = () => reject(new Error('Network error during upload. Check your connection.'));
             xhr.send(formData);
+        }).catch(async (error) => {
+            if (normalizedResourceType === 'video') {
+                return { secure_url: await uploadViaBackend() };
+            }
+            throw error;
         });
 
         return cloudinaryResult.secure_url;
@@ -236,62 +282,10 @@ export const adminCoursesService = {
             throw new Error('No video file provided for upload.');
         }
 
-        // Determine Cloudinary resource_type from MIME type
-        const isVideo = file.type?.startsWith('video/');
-        const resourceType = isVideo ? 'video' : 'raw';
+        const resourceType = isVideoFile(file) ? 'video' : 'raw';
         const folder = 'integritas/lessons';
 
-        // 1. Get a short-lived signed upload credential from our backend
-        const sigRes = await apiService.get(
-            `/site/cloudinary-signature?resource_type=${resourceType}&folder=${encodeURIComponent(folder)}`
-        );
-        const sig = sigRes?.data ?? sigRes;
-
-        if (!sig?.signature || !sig?.upload_url) {
-            throw new Error(
-                sig?.message ||
-                'Could not get Cloudinary upload credentials. Ensure CLOUDINARY_URL is set on Render.'
-            );
-        }
-
-        // 2. Upload the file DIRECTLY to Cloudinary — Django never sees the file bytes
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('api_key', sig.api_key);
-        formData.append('timestamp', sig.timestamp);
-        formData.append('folder', sig.folder);
-        formData.append('signature', sig.signature);
-        formData.append('overwrite', 'true');
-        formData.append('resource_type', resourceType);
-
-        const cloudinaryResult = await new Promise((resolve, reject) => {
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', sig.upload_url);
-
-            if (onProgress) {
-                xhr.upload.addEventListener('progress', (e) => {
-                    if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
-                });
-            }
-
-            xhr.onload = () => {
-                if (xhr.status >= 200 && xhr.status < 300) {
-                    try { resolve(JSON.parse(xhr.responseText)); } catch { resolve({}); }
-                } else {
-                    try {
-                        const err = JSON.parse(xhr.responseText);
-                        reject(new Error(err?.error?.message || `Cloudinary upload failed (${xhr.status})`));
-                    } catch {
-                        reject(new Error(`Cloudinary upload failed (${xhr.status})`));
-                    }
-                }
-            };
-            xhr.onerror = () => reject(new Error('Network error during upload. Check your connection.'));
-            xhr.send(formData);
-        });
-
-        const videoUrl = cloudinaryResult.secure_url;
-        const publicId = cloudinaryResult.public_id;
+        const videoUrl = await adminCoursesService.uploadToCloudinary(file, resourceType, folder, onProgress);
 
         if (!videoUrl) throw new Error('Cloudinary did not return a video URL.');
 
@@ -299,7 +293,7 @@ export const adminCoursesService = {
         const saveRes = await authFetch(`/admin/lessons/${encodeURIComponent(lessonId)}/video`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ video_url: videoUrl, public_id: publicId }),
+            body: JSON.stringify({ video_url: videoUrl }),
         });
 
         if (!saveRes.ok) {
