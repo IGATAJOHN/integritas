@@ -33,6 +33,14 @@ const VIDEO_EXTENSIONS = new Set([
 ]);
 const LARGE_VIDEO_UPLOAD_THRESHOLD = 90 * 1024 * 1024;
 const CLOUDINARY_CHUNK_SIZE = 20 * 1024 * 1024;
+const CLOUDINARY_VIDEO_SIZE_LIMIT = 100 * 1024 * 1024;
+
+const formatBytes = (bytes) => {
+    if (!Number.isFinite(bytes) || bytes <= 0) return '0 MB';
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+};
 
 const getFileExtension = (file) => {
     const name = String(file?.name || '').toLowerCase();
@@ -198,6 +206,12 @@ export const adminCoursesService = {
      */
     uploadToCloudinary: async (file, resourceType = 'raw', folder = 'integritas/media', onProgress = null) => {
         const normalizedResourceType = resourceType === 'video' || isVideoFile(file) ? 'video' : resourceType;
+
+        if (normalizedResourceType === 'video' && file.size > CLOUDINARY_VIDEO_SIZE_LIMIT) {
+            throw new Error(
+                `Video is ${formatBytes(file.size)}. Your current Cloudinary upload limit is ${formatBytes(CLOUDINARY_VIDEO_SIZE_LIMIT)}. Compress the video or increase the Cloudinary account upload limit.`
+            );
+        }
 
         const uploadViaBackend = async () => {
             const proxyForm = new FormData();
