@@ -14,16 +14,30 @@ class LoginView(views.APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        username = request.data.get('username')
+        username_input = request.data.get('username')
+        email_input = request.data.get('email')
         password = request.data.get('password')
-        email = request.data.get('email')
-        
-        if not username and email:
-            from .models import User
+
+        target_input = username_input or email_input
+        if not target_input or not password:
+            return Response({'message': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
+
+        from .models import User
+        username = target_input
+
+        # Check if input is an email or if user exists by email
+        if '@' in target_input:
             try:
-                username = User.objects.get(email=email).username
-            except User.DoesNotExist:
-                return Response({'message': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
+                user_obj = User.objects.filter(email__iexact=target_input).first()
+                if user_obj:
+                    username = user_obj.username
+            except Exception:
+                pass
+        else:
+            # Fallback check by username or email
+            user_obj = User.objects.filter(models.Q(username__iexact=target_input) | models.Q(email__iexact=target_input)).first()
+            if user_obj:
+                username = user_obj.username
 
         user = authenticate(username=username, password=password)
         if user:
@@ -33,6 +47,7 @@ class LoginView(views.APIView):
                 **UserSerializer(user).data
             })
         return Response({'message': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
+
 
 class RegisterView(views.APIView):
     permission_classes = [permissions.AllowAny]
